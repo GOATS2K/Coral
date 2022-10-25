@@ -5,6 +5,7 @@ public class Track
     public int Id { get; set; }
     public int? TrackNumber { get; set; }
     public int? DiscNumber { get; set; }
+    public int DurationInSeconds { get; set; }
 
     public string Title { get; set; } = null!;
     

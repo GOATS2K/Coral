@@ -9,6 +9,7 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
+    public IAsyncEnumerable<Track> GetTracks();
     public void IndexDirectory(string directory);
     public void IndexFile(FileInfo filePath);
 }
@@ -17,12 +18,18 @@ public class IndexerService : IIndexerService
 {
     private readonly CoralDbContext _context;
     private static readonly string[] AudioFileFormats = {".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac"};
+    private static readonly string[] ImageFileFormats = {".jpg", ".png"};
+    private static readonly string[] ImageFileNames = {"cover", "artwork", "folder", "front"};
 
     public IndexerService(CoralDbContext context)
     {
         _context = context;
     }
 
+    public IAsyncEnumerable<Track> GetTracks()
+    {
+        return _context.Tracks.AsAsyncEnumerable();
+    }
 
     public void IndexDirectory(string directory)
     {
@@ -33,7 +40,7 @@ public class IndexerService : IIndexerService
         }
 
         foreach (var fileToIndex in contentDirectory
-                     .EnumerateFiles("*", SearchOption.AllDirectories)
+                     .EnumerateFiles("*.*", SearchOption.AllDirectories)
                      .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName))))
         {
             IndexFile(fileToIndex);
@@ -63,6 +70,7 @@ public class IndexerService : IIndexerService
             DateIndexed = DateTime.UtcNow,
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
+            DurationInSeconds = atlTrack.Duration,
             FilePath = filePath.FullName
         };
         _context.Tracks.Add(indexedTrack);
@@ -100,6 +108,19 @@ public class IndexerService : IIndexerService
         return indexedArtist;
     }
 
+    private string? GetAlbumArtwork(ATL.Track atlTrack)
+    {
+        // get artwork from file parent folder
+        var albumDirectory = new DirectoryInfo(atlTrack.Path)
+            .Parent;
+
+        var artwork = albumDirectory?.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(f => ImageFileFormats.Contains(Path.GetExtension(f.FullName)) 
+                                 && ImageFileNames.Contains(f.Name.ToLowerInvariant()));
+        
+        return artwork?.FullName;
+    }
+    
     private Album GetAlbum(Artist artist, ATL.Track atlTrack)
     {
         var indexedAlbum = _context.Albums.FirstOrDefault(a => a.Name == atlTrack.Album
@@ -117,6 +138,7 @@ public class IndexerService : IIndexerService
                 DiscTotal = atlTrack.DiscTotal,
                 TrackTotal = atlTrack.TrackTotal,
                 DateIndexed = DateTime.UtcNow,
+                CoverFilePath = GetAlbumArtwork(atlTrack)
             };
             _context.Albums.Add(indexedAlbum);
         }

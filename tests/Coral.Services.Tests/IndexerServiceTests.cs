@@ -6,6 +6,7 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
 {
     private TestDatabase _testDatabase;
     private IIndexerService _indexerService;
+    private static readonly string TestDataPath = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
 
     public IndexerServiceTests(TestDatabase testDatabase)
     {
@@ -16,9 +17,26 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
     [Fact]
     public void EnsureTestFilesExist()
     {
-        var testFilesDirectory = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
-        var testFiles = new DirectoryInfo(testFilesDirectory);
-        
+        var testFiles = new DirectoryInfo(TestDataPath);
         Assert.NotEmpty(testFiles.GetFiles());
+    }
+
+    [Fact]
+    public async Task IndexDirectory_JupiterMoons_CreatesValidMetadata()
+    {
+        // arrange
+        var jupiterAlbum = "Jupiter - Moons - 2022 - FLAC [no disc tags]";
+        var moonsPath = Path.Join(TestDataPath, jupiterAlbum);
+        
+        // act
+        _indexerService.IndexDirectory(moonsPath);
+        
+        // assert
+        var jupiterArtist = await _indexerService.GetArtist("Jupiter").FirstOrDefaultAsync();
+        var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
+        
+        Assert.NotNull(jupiterArtist);
+        Assert.NotNull(moonsAlbum);
+        Assert.Equal(3, moonsAlbum.Tracks.Count);
     }
 }

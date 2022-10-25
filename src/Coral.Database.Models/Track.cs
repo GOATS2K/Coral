@@ -8,14 +8,8 @@ public class Track
     public int DurationInSeconds { get; set; }
 
     public string Title { get; set; } = null!;
-    
-    public int ArtistId { get; set; }
     public Artist Artist { get; set; } = null!;
-
-    public int AlbumId { get; set; }
     public Album? Album { get; set; }
-
-    public int GenreId { get; set; }
     public Genre? Genre { get; set; }
     
     public string? Comment { get; set; }

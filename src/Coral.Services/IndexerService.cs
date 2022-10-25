@@ -4,11 +4,13 @@ using System.IO;
 using System.Linq;
 using Coral.Database;
 using Coral.Database.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Services;
 
 public interface IIndexerService
 {
+    public IAsyncEnumerable<Artist> GetArtist(string artistName);
     public IAsyncEnumerable<Track> GetTracks();
     public void IndexDirectory(string directory);
     public void IndexFile(FileInfo filePath);
@@ -29,6 +31,11 @@ public class IndexerService : IIndexerService
     public IAsyncEnumerable<Track> GetTracks()
     {
         return _context.Tracks.AsAsyncEnumerable();
+    }
+    
+    public IAsyncEnumerable<Artist> GetArtist(string artistName)
+    {
+        return _context.Artists.Where(a => a.Name == artistName).AsAsyncEnumerable();
     }
 
     public void IndexDirectory(string directory)
@@ -88,6 +95,7 @@ public class IndexerService : IIndexerService
                 DateIndexed = DateTime.UtcNow
             };
             _context.Genres.Add(indexedGenre);
+            _context.SaveChanges();
         }
 
         return indexedGenre;
@@ -104,6 +112,7 @@ public class IndexerService : IIndexerService
                 DateIndexed = DateTime.UtcNow
             };
             _context.Artists.Add(indexedArtist);
+            _context.SaveChanges();
         }
         return indexedArtist;
     }
@@ -141,6 +150,7 @@ public class IndexerService : IIndexerService
                 CoverFilePath = GetAlbumArtwork(atlTrack)
             };
             _context.Albums.Add(indexedAlbum);
+            _context.SaveChanges();
         }
 
         if (indexedAlbum.Artists.All(a => a.Name != artist.Name))

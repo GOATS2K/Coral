@@ -8,13 +8,14 @@
 
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj"/>
-        <ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj"/>
+        <ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj" />
+        <ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="xunit" Version="2.4.2"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1"/>
+        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -27,8 +28,8 @@
 
     <Target Name="CopyTestData" AfterTargets="AfterBuild">
         <ItemGroup>
-            <TestData Include="..\Content\**"/>
+            <TestData Include="..\Content\**" />
         </ItemGroup>
-        <Copy SourceFiles="@(TestData)" DestinationFolder="$(OutDir)\Content\%(RecursiveDir)" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="@(TestData)" DestinationFolder="$(OutDir)\Content\%(RecursiveDir)" SkipUnchangedFiles="false" />
     </Target>
 </Project>

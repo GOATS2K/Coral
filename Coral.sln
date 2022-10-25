@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Database.Models", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Services", "src\Coral.Services\Coral.Services.csproj", "{CFA96249-89E6-446F-A5E9-2BB522D44B15}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{77EC9A57-2FA4-413D-B521-7C54FA6E8A69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Services.Tests", "tests\Coral.Services.Tests\Coral.Services.Tests.csproj", "{EF328A5B-EC8D-4C04-A364-1106ED0B450A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,12 @@ Global
 		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EF328A5B-EC8D-4C04-A364-1106ED0B450A} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
 	EndGlobalSection
 EndGlobal

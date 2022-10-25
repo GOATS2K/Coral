@@ -123,9 +123,8 @@ public class IndexerService : IIndexerService
         var albumDirectory = new DirectoryInfo(atlTrack.Path)
             .Parent;
 
-        var artwork = albumDirectory?.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly)
-            .FirstOrDefault(f => ImageFileFormats.Contains(Path.GetExtension(f.FullName)) 
-                                 && ImageFileNames.Contains(f.Name.ToLowerInvariant()));
+        var artwork = albumDirectory?.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(f => ImageFileFormats.Contains(Path.GetExtension(f.FullName)));
         
         return artwork?.FullName;
     }

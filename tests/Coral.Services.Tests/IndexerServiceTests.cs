@@ -37,6 +37,7 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
         
         Assert.NotNull(jupiterArtist);
         Assert.NotNull(moonsAlbum);
+        Assert.NotNull(moonsAlbum.CoverFilePath);
         Assert.Equal(3, moonsAlbum.Tracks.Count);
     }
 }

@@ -1,12 +1,8 @@
 namespace Coral.Database.Models;
 
-public class Artist
+public class Genre
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
-    
-    public List<Album> Albums { get; set; } = null!;
-    
     public DateTime DateIndexed { get; set; }
-    
 }

@@ -2,5 +2,25 @@
 
 public class Track
 {
+    public int Id { get; set; }
+    public int? TrackNumber { get; set; }
+    public int? DiscNumber { get; set; }
+
+    public string Title { get; set; } = null!;
     
+    public int ArtistId { get; set; }
+    public Artist Artist { get; set; } = null!;
+
+    public int AlbumId { get; set; }
+    public Album? Album { get; set; }
+
+    public int GenreId { get; set; }
+    public Genre? Genre { get; set; }
+    
+    public string? Comment { get; set; }
+    
+    public string FilePath { get; set; } = null!;
+    
+    public DateTime DateIndexed { get; set; }
+    public DateTime DateModified { get; set; }
 }

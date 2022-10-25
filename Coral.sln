@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Api", "src\Coral.Api\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Database", "src\Coral.Database\Coral.Database.csproj", "{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Database.Models", "src\Coral.Database.Models\Coral.Database.Models.csproj", "{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Services", "src\Coral.Services\Coral.Services.csproj", "{CFA96249-89E6-446F-A5E9-2BB522D44B15}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFA96249-89E6-446F-A5E9-2BB522D44B15}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

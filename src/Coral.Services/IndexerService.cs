@@ -13,7 +13,7 @@ public interface IIndexerService
     public IAsyncEnumerable<Artist> GetArtist(string artistName);
     public IAsyncEnumerable<Track> GetTracks();
     public void IndexDirectory(string directory);
-    public void IndexFile(FileInfo filePath);
+    public void IndexFile(ATL.Track atlTrack);
 }
 
 public class IndexerService : IIndexerService
@@ -50,23 +50,22 @@ public class IndexerService : IIndexerService
                      .EnumerateFiles("*.*", SearchOption.AllDirectories)
                      .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName))))
         {
-            IndexFile(fileToIndex);
+            var atlTrack = new ATL.Track(fileToIndex.FullName);
+            IndexFile(atlTrack);
         }
     }
 
-    public void IndexFile(FileInfo filePath)
+    public void IndexFile(ATL.Track atlTrack)
     {
-        var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == filePath.FullName);
+        var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
         {
             return;
         }
-
-        var atlTrack = new ATL.Track(filePath.FullName);
         var indexedArtist = GetArtist(atlTrack);
         var indexedAlbum = GetAlbum(indexedArtist, atlTrack);
         var indexedGenre = GetGenre(atlTrack);
-        
+
         indexedTrack = new Track()
         {
             Album = indexedAlbum,
@@ -78,7 +77,7 @@ public class IndexerService : IIndexerService
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
             DurationInSeconds = atlTrack.Duration,
-            FilePath = filePath.FullName
+            FilePath = atlTrack.Path
         };
         _context.Tracks.Add(indexedTrack);
         _context.SaveChanges();

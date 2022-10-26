@@ -17,8 +17,10 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
     [Fact]
     public void EnsureTestFilesExist()
     {
-        var testFiles = new DirectoryInfo(TestDataPath);
-        Assert.NotEmpty(testFiles.GetFiles());
+        var contentDir = new DirectoryInfo(TestDataPath);
+        var testAlbums = contentDir.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
+        Assert.True(contentDir.Exists);
+        Assert.NotEmpty(testAlbums);
     }
 
     [Fact]

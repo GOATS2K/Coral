@@ -10,10 +10,9 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
-    public IAsyncEnumerable<Artist> GetArtist(string artistName);
+    public IAsyncEnumerable<Artist> ListArtists(string artistName);
     public IAsyncEnumerable<Track> GetTracks();
-    public void IndexDirectory(string directory);
-    public void IndexFile(ATL.Track atlTrack);
+    public void ReadDirectory(string directory);
 }
 
 public class IndexerService : IIndexerService
@@ -33,12 +32,12 @@ public class IndexerService : IIndexerService
         return _context.Tracks.AsAsyncEnumerable();
     }
     
-    public IAsyncEnumerable<Artist> GetArtist(string artistName)
+    public IAsyncEnumerable<Artist> ListArtists(string artistName)
     {
         return _context.Artists.Where(a => a.Name == artistName).AsAsyncEnumerable();
     }
 
-    public void IndexDirectory(string directory)
+    public void ReadDirectory(string directory)
     {
         var contentDirectory = new DirectoryInfo(directory);
         if (!contentDirectory.Exists)
@@ -46,33 +45,104 @@ public class IndexerService : IIndexerService
             throw new ApplicationException("Content directory does not exist.");
         }
 
-        foreach (var fileToIndex in contentDirectory
-                     .EnumerateFiles("*.*", SearchOption.AllDirectories)
-                     .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName))))
+        var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
+            .GroupBy(f => f.Directory?.Name, f => f);
+        
+        // enumerate directories
+        foreach (var directoryGroup in directoryGroups)
         {
-            var atlTrack = new ATL.Track(fileToIndex.FullName);
-            IndexFile(atlTrack);
+            var tracksInDirectory = directoryGroup.ToList();
+            
+            // we generally shouldn't be introducing side-effects in linq
+            // but it's a lot prettier this way ;_;
+            var analyzedTracks = tracksInDirectory.Select(x => new ATL.Track(x.FullName)).ToList();
+            bool folderIsAlbum = analyzedTracks.Select(x => x.Album).Distinct().Count() == 1;
+
+            if (folderIsAlbum)
+            {
+                IndexAlbum(analyzedTracks);
+            }
+            else
+            {
+                IndexSingleFiles(analyzedTracks);
+            }
+        }
+        
+        _context.SaveChanges();
+    }
+
+    private void IndexSingleFiles(List<ATL.Track> tracks)
+    {
+        foreach (var atlTrack in tracks)
+        {
+            var indexedArtist = GetArtist(atlTrack.Artist);
+            var indexedAlbum = GetAlbum(indexedArtist, atlTrack);
+            var indexedGenre = GetGenre(atlTrack.Genre);
+            IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
         }
     }
 
-    public void IndexFile(ATL.Track atlTrack)
+    public void IndexAlbum(List<ATL.Track> tracks)
+    {
+        // verify that the collection is not empty
+        if (!tracks.Any())
+        {
+            throw new ArgumentException("The track collection cannot be empty.");
+        }
+
+        // verify that we in fact have an album
+        if (tracks.Select(t => t.Album).Distinct().Count() > 1)
+        {
+            throw new ArgumentException("The tracks are not from the same album.");
+        }
+
+        // get all artists from tracks
+        var distinctArtists = tracks.Select(t => t.Artist).Distinct();
+        var distinctGenres = tracks.Select(t => t.Genre).Distinct();
+        var createdArtists = new List<Artist>();
+        var createdGenres = new List<Genre>();
+        
+        foreach (var artist in distinctArtists)
+        {
+            createdArtists.Add(GetArtist(artist));
+        }
+
+        foreach (var genre in distinctGenres)
+        {
+            var indexedGenre = GetGenre(genre);
+            if (indexedGenre == null)
+            {
+                continue;
+            }
+            createdGenres.Add(indexedGenre);
+        }
+        
+        // most attributes are going to be the same in an album
+        var indexedAlbum = GetAlbum(createdArtists.First(), tracks.First());
+        foreach (var trackToIndex in tracks)
+        {
+            var targetArtist = createdArtists.Single(a => a.Name == trackToIndex.Artist);
+            var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
+            IndexFile(targetArtist, indexedAlbum, targetGenre, trackToIndex);
+        }
+    }
+
+    public void IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
         {
             return;
         }
-        var indexedArtist = GetArtist(atlTrack);
-        var indexedAlbum = GetAlbum(indexedArtist, atlTrack);
-        var indexedGenre = GetGenre(atlTrack);
-
+        
         indexedTrack = new Track()
         {
             Album = indexedAlbum,
             Artist = indexedArtist,
             Title = atlTrack.Title,
             Comment = atlTrack.Comment,
-            Genre = !string.IsNullOrEmpty(atlTrack.Genre) ? indexedGenre : null,
+            Genre = indexedGenre,
             DateIndexed = DateTime.UtcNow,
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
@@ -80,17 +150,17 @@ public class IndexerService : IIndexerService
             FilePath = atlTrack.Path
         };
         _context.Tracks.Add(indexedTrack);
-        _context.SaveChanges();
     }
 
-    private Genre GetGenre(ATL.Track atlTrack)
+    private Genre? GetGenre(string? genreName)
     {
-        var indexedGenre = _context.Genres.FirstOrDefault(g => g.Name == atlTrack.Genre);
+        if (genreName == null) return null;
+        var indexedGenre = _context.Genres.FirstOrDefault(g => g.Name == genreName);
         if (indexedGenre == null)
         {
             indexedGenre = new Genre()
             {
-                Name = atlTrack.Genre,
+                Name = genreName,
                 DateIndexed = DateTime.UtcNow
             };
             _context.Genres.Add(indexedGenre);
@@ -100,14 +170,14 @@ public class IndexerService : IIndexerService
         return indexedGenre;
     }
     
-    private Artist GetArtist(ATL.Track atlTrack)
+    private Artist GetArtist(string artistName)
     {
-        var indexedArtist = _context.Artists.FirstOrDefault(a => a.Name == atlTrack.Artist);
+        var indexedArtist = _context.Artists.FirstOrDefault(a => a.Name == artistName);
         if (indexedArtist == null)
         {
             indexedArtist = new Artist()
             {
-                Name = atlTrack.Artist,
+                Name = artistName,
                 DateIndexed = DateTime.UtcNow
             };
             _context.Artists.Add(indexedArtist);

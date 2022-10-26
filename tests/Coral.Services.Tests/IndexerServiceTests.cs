@@ -24,17 +24,17 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
     }
 
     [Fact]
-    public async Task IndexDirectory_JupiterMoons_CreatesValidMetadata()
+    public async Task ReadDirectory_JupiterMoons_CreatesValidMetadata()
     {
         // arrange
         var jupiterAlbum = "Jupiter - Moons - 2022 - FLAC [no disc tags]";
         var moonsPath = Path.Join(TestDataPath, jupiterAlbum);
         
         // act
-        _indexerService.IndexDirectory(moonsPath);
+        _indexerService.ReadDirectory(moonsPath);
         
         // assert
-        var jupiterArtist = await _indexerService.GetArtist("Jupiter").FirstOrDefaultAsync();
+        var jupiterArtist = await _indexerService.ListArtists("Jupiter").FirstOrDefaultAsync();
         var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
         
         Assert.NotNull(jupiterArtist);

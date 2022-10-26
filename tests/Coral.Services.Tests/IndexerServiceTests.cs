@@ -41,5 +41,10 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
         Assert.NotNull(moonsAlbum);
         Assert.NotNull(moonsAlbum.CoverFilePath);
         Assert.Equal(3, moonsAlbum.Tracks.Count);
+
+        var metisTrack = moonsAlbum.Tracks.Single(t => t.Title == "Metis");
+        Assert.Equal(1, metisTrack.TrackNumber);
+        Assert.Equal("Noise", metisTrack.Genre?.Name);
+        Assert.Equal("this has a comment", metisTrack.Comment);
     }
 }

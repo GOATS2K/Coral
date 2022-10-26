@@ -83,7 +83,7 @@ public class IndexerService : IIndexerService
         }
     }
 
-    public void IndexAlbum(List<ATL.Track> tracks)
+    private void IndexAlbum(List<ATL.Track> tracks)
     {
         // verify that the collection is not empty
         if (!tracks.Any())
@@ -128,7 +128,7 @@ public class IndexerService : IIndexerService
         }
     }
 
-    public void IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
+    private void IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)

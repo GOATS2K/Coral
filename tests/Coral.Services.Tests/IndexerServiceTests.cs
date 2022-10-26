@@ -2,15 +2,14 @@ using Xunit;
 
 namespace Coral.Services.Tests;
 
-public class IndexerServiceTests : IClassFixture<TestDatabase>
+public class IndexerServiceTests
 {
-    private TestDatabase _testDatabase;
-    private IIndexerService _indexerService;
+    private readonly IIndexerService _indexerService;
     private static readonly string TestDataPath = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
 
-    public IndexerServiceTests(TestDatabase testDatabase)
+    public IndexerServiceTests()
     {
-        _testDatabase = testDatabase;
+        var testDatabase = new TestDatabase();
         _indexerService = new IndexerService(testDatabase.Context);
     }
 
@@ -21,6 +20,27 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
         var testAlbums = contentDir.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
         Assert.True(contentDir.Exists);
         Assert.NotEmpty(testAlbums);
+    }
+
+    [Fact]
+    public async Task ReadDirectory_MixedAlbums_CreatesTwoAlbums()
+    {
+        // arrange
+        var mixedContentDir = "Mixed Album Tags";
+        var contentPath = Path.Join(TestDataPath, mixedContentDir);
+
+        // act
+        _indexerService.ReadDirectory(contentPath);
+
+        // assert
+        var jupiter = await _indexerService.ListArtists("Jupiter").SingleAsync();
+        var neptune = await _indexerService.ListArtists("Neptune").SingleAsync();
+        
+        Assert.NotEmpty(jupiter.Albums);
+        Assert.NotEmpty(neptune.Albums);
+        
+        Assert.Equal(1, jupiter.Albums.Count());
+        Assert.Equal(1, neptune.Albums.Count());
     }
 
     [Fact]
@@ -39,6 +59,7 @@ public class IndexerServiceTests : IClassFixture<TestDatabase>
         
         Assert.NotNull(jupiterArtist);
         Assert.NotNull(moonsAlbum);
+        // for some reason, this is null when all tests are run together
         Assert.NotNull(moonsAlbum.CoverFilePath);
         Assert.Equal(3, moonsAlbum.Tracks.Count);
 

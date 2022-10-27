@@ -10,8 +10,6 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
-    public IAsyncEnumerable<Artist> ListArtists(string artistName);
-    public IAsyncEnumerable<Track> GetTracks();
     public void ReadDirectory(string directory);
 }
 
@@ -25,16 +23,6 @@ public class IndexerService : IIndexerService
     public IndexerService(CoralDbContext context)
     {
         _context = context;
-    }
-
-    public IAsyncEnumerable<Track> GetTracks()
-    {
-        return _context.Tracks.AsAsyncEnumerable();
-    }
-    
-    public IAsyncEnumerable<Artist> ListArtists(string artistName)
-    {
-        return _context.Artists.Where(a => a.Name == artistName).AsAsyncEnumerable();
     }
 
     public void ReadDirectory(string directory)

@@ -5,12 +5,14 @@ namespace Coral.Services.Tests;
 public class IndexerServiceTests
 {
     private readonly IIndexerService _indexerService;
+    private readonly ILibraryService _libraryService;
     private static readonly string TestDataPath = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
 
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
         _indexerService = new IndexerService(testDatabase.Context);
+        _libraryService = new LibraryService(testDatabase.Context);
     }
 
     [Fact]
@@ -33,14 +35,14 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(contentPath);
 
         // assert
-        var jupiter = await _indexerService.ListArtists("Jupiter").SingleAsync();
-        var neptune = await _indexerService.ListArtists("Neptune").SingleAsync();
+        var jupiter = await _libraryService.ListArtists("Jupiter").SingleAsync();
+        var neptune = await _libraryService.ListArtists("Neptune").SingleAsync();
         
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
         
-        Assert.Equal(1, jupiter.Albums.Count());
-        Assert.Equal(1, neptune.Albums.Count());
+        Assert.Single(jupiter.Albums);
+        Assert.Single(neptune.Albums);
     }
 
     [Fact]
@@ -54,7 +56,7 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(moonsPath);
         
         // assert
-        var jupiterArtist = await _indexerService.ListArtists("Jupiter").FirstOrDefaultAsync();
+        var jupiterArtist = await _libraryService.ListArtists("Jupiter").FirstOrDefaultAsync();
         var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
         
         Assert.NotNull(jupiterArtist);

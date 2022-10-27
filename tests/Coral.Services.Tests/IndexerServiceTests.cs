@@ -6,8 +6,7 @@ public class IndexerServiceTests
 {
     private readonly IIndexerService _indexerService;
     private readonly ILibraryService _libraryService;
-    private static readonly string TestDataPath = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
-
+    
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
@@ -18,7 +17,7 @@ public class IndexerServiceTests
     [Fact]
     public void EnsureTestFilesExist()
     {
-        var contentDir = new DirectoryInfo(TestDataPath);
+        var contentDir = new DirectoryInfo(TestDataRepository.ContentDirectory);
         var testAlbums = contentDir.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
         Assert.True(contentDir.Exists);
         Assert.NotEmpty(testAlbums);
@@ -28,15 +27,13 @@ public class IndexerServiceTests
     public async Task ReadDirectory_MixedAlbums_CreatesTwoAlbums()
     {
         // arrange
-        var mixedContentDir = "Mixed Album Tags";
-        var contentPath = Path.Join(TestDataPath, mixedContentDir);
-
+        
         // act
-        _indexerService.ReadDirectory(contentPath);
+        _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _libraryService.ListArtists("Jupiter").SingleAsync();
-        var neptune = await _libraryService.ListArtists("Neptune").SingleAsync();
+        var jupiter = await _libraryService.GetArtist("Jupiter").SingleAsync();
+        var neptune = await _libraryService.GetArtist("Neptune").SingleAsync();
         
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
@@ -49,14 +46,12 @@ public class IndexerServiceTests
     public async Task ReadDirectory_JupiterMoons_CreatesValidMetadata()
     {
         // arrange
-        var jupiterAlbum = "Jupiter - Moons - 2022 - FLAC [no disc tags]";
-        var moonsPath = Path.Join(TestDataPath, jupiterAlbum);
         
         // act
-        _indexerService.ReadDirectory(moonsPath);
+        _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
         
         // assert
-        var jupiterArtist = await _libraryService.ListArtists("Jupiter").FirstOrDefaultAsync();
+        var jupiterArtist = await _libraryService.GetArtist("Jupiter").FirstOrDefaultAsync();
         var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
         
         Assert.NotNull(jupiterArtist);

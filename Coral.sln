@@ -1,16 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Api", "src\Coral.Api\Coral.Api.csproj", "{00C73B7A-69C5-483E-921C-38530065572C}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Database", "src\Coral.Database\Coral.Database.csproj", "{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Database", "src\Coral.Database\Coral.Database.csproj", "{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Database.Models", "src\Coral.Database.Models\Coral.Database.Models.csproj", "{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Database.Models", "src\Coral.Database.Models\Coral.Database.Models.csproj", "{51972AEC-3BE5-4996-9CB3-8CBD1824D89B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Services", "src\Coral.Services\Coral.Services.csproj", "{CFA96249-89E6-446F-A5E9-2BB522D44B15}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Services", "src\Coral.Services\Coral.Services.csproj", "{CFA96249-89E6-446F-A5E9-2BB522D44B15}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{77EC9A57-2FA4-413D-B521-7C54FA6E8A69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Services.Tests", "tests\Coral.Services.Tests\Coral.Services.Tests.csproj", "{EF328A5B-EC8D-4C04-A364-1106ED0B450A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Services.Tests", "tests\Coral.Services.Tests\Coral.Services.Tests.csproj", "{EF328A5B-EC8D-4C04-A364-1106ED0B450A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Api", "src\Coral.Api\Coral.Api.csproj", "{A802EBA0-F6F1-49EC-A0A3-F84929429F92}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,10 +21,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{00C73B7A-69C5-483E-921C-38530065572C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{00C73B7A-69C5-483E-921C-38530065572C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{00C73B7A-69C5-483E-921C-38530065572C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{00C73B7A-69C5-483E-921C-38530065572C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF7EFE40-5EFE-457A-9C74-5FB94C2F5CD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -38,8 +37,18 @@ Global
 		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF328A5B-EC8D-4C04-A364-1106ED0B450A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EF328A5B-EC8D-4C04-A364-1106ED0B450A} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C1EA6E10-ED2D-4CAE-B2EE-E10813275C71}
 	EndGlobalSection
 EndGlobal

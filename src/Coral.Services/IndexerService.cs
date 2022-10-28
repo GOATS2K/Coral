@@ -45,7 +45,10 @@ public class IndexerService : IIndexerService
             // we generally shouldn't be introducing side-effects in linq
             // but it's a lot prettier this way ;_;
             var analyzedTracks = tracksInDirectory.Select(x => new ATL.Track(x.FullName)).ToList();
-            bool folderIsAlbum = analyzedTracks.Select(x => x.Album).Distinct().Count() == 1;
+            bool folderIsAlbum = analyzedTracks
+                .Where(x => !string.IsNullOrEmpty(x.Album))
+                .Select(x => x.Album)
+                .Distinct().Count() == 1;
 
             if (folderIsAlbum)
             {
@@ -128,7 +131,7 @@ public class IndexerService : IIndexerService
         {
             Album = indexedAlbum,
             Artist = indexedArtist,
-            Title = atlTrack.Title,
+            Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path),
             Comment = atlTrack.Comment,
             Genre = indexedGenre,
             DateIndexed = DateTime.UtcNow,
@@ -152,7 +155,6 @@ public class IndexerService : IIndexerService
                 DateIndexed = DateTime.UtcNow
             };
             _context.Genres.Add(indexedGenre);
-            _context.SaveChanges();
         }
 
         return indexedGenre;
@@ -160,6 +162,7 @@ public class IndexerService : IIndexerService
     
     private Artist GetArtist(string artistName)
     {
+        if (string.IsNullOrEmpty(artistName)) artistName = "Unknown Artist";
         var indexedArtist = _context.Artists.FirstOrDefault(a => a.Name == artistName);
         if (indexedArtist == null)
         {
@@ -169,7 +172,6 @@ public class IndexerService : IIndexerService
                 DateIndexed = DateTime.UtcNow
             };
             _context.Artists.Add(indexedArtist);
-            _context.SaveChanges();
         }
         return indexedArtist;
     }
@@ -188,7 +190,8 @@ public class IndexerService : IIndexerService
     
     private Album GetAlbum(Artist artist, ATL.Track atlTrack)
     {
-        var indexedAlbum = _context.Albums.FirstOrDefault(a => a.Name == atlTrack.Album
+        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : "Unknown Album";
+        var indexedAlbum = _context.Albums.FirstOrDefault(a => a.Name == albumName
                                                                && a.Artists.Any(a => a.Name == artist.Name));
         if (indexedAlbum == null)
         {
@@ -206,13 +209,11 @@ public class IndexerService : IIndexerService
                 CoverFilePath = GetAlbumArtwork(atlTrack)
             };
             _context.Albums.Add(indexedAlbum);
-            _context.SaveChanges();
         }
 
-        if (indexedAlbum.Artists.All(a => a.Name != artist.Name))
+        if (!indexedAlbum.Artists.Any(a => a.Name != artist.Name))
         {
             indexedAlbum.Artists.Add(artist);
-            _context.SaveChanges();
         }
         return indexedAlbum;
     }

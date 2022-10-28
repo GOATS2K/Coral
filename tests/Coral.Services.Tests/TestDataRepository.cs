@@ -19,6 +19,9 @@ namespace Coral.Services.Tests
         // properly formatted
         public static readonly string NeptuneDiscovery = GetTestFolder("Neptune - Discovery - 2022 - FLAC");
 
+        // missing most metadata
+        public static readonly string MarsMissingMetadata = GetTestFolder("Mars - Moons - FLAC [missing metadata]");
+
 
 
         public static string GetTestFolder(string folderName)

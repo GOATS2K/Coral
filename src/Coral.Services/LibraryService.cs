@@ -12,7 +12,7 @@ namespace Coral.Services
     public interface ILibraryService
     {
         public IAsyncEnumerable<Track> GetTracks();
-        public IAsyncEnumerable<Artist> ListArtists(string artistName);
+        public IAsyncEnumerable<Artist> GetArtist(string artistName);
     }
 
     public class LibraryService : ILibraryService
@@ -29,7 +29,7 @@ namespace Coral.Services
             return _context.Tracks.AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<Artist> ListArtists(string artistName)
+        public IAsyncEnumerable<Artist> GetArtist(string artistName)
         {
             return _context.Artists.Where(a => a.Name == artistName).AsAsyncEnumerable();
         }

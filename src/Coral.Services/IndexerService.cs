@@ -16,13 +16,25 @@ public interface IIndexerService
 public class IndexerService : IIndexerService
 {
     private readonly CoralDbContext _context;
-    private static readonly string[] AudioFileFormats = {".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac"};
-    private static readonly string[] ImageFileFormats = {".jpg", ".png"};
-    private static readonly string[] ImageFileNames = {"cover", "artwork", "folder", "front"};
+    private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac" };
+    private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
+    private static readonly string[] ImageFileNames = { "cover", "artwork", "folder", "front" };
 
     public IndexerService(CoralDbContext context)
     {
         _context = context;
+    }
+
+    private bool ContentDirectoryNeedsRescan(DirectoryInfo contentDirectory)
+    {
+        try
+        {
+            return _context.Tracks.Max(t => t.DateModified) < contentDirectory.LastWriteTimeUtc;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
     }
 
     public void ReadDirectory(string directory)
@@ -33,15 +45,17 @@ public class IndexerService : IIndexerService
             throw new ApplicationException("Content directory does not exist.");
         }
 
+        if (!ContentDirectoryNeedsRescan(contentDirectory)) return;
+
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
             .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
             .GroupBy(f => f.Directory?.Name, f => f);
-        
+
         // enumerate directories
         foreach (var directoryGroup in directoryGroups)
         {
             var tracksInDirectory = directoryGroup.ToList();
-            
+
             // we generally shouldn't be introducing side-effects in linq
             // but it's a lot prettier this way ;_;
             var analyzedTracks = tracksInDirectory.Select(x => new ATL.Track(x.FullName)).ToList();
@@ -59,7 +73,7 @@ public class IndexerService : IIndexerService
                 IndexSingleFiles(analyzedTracks);
             }
         }
-        
+
         _context.SaveChanges();
     }
 
@@ -93,7 +107,7 @@ public class IndexerService : IIndexerService
         var distinctGenres = tracks.Select(t => t.Genre).Distinct();
         var createdArtists = new List<Artist>();
         var createdGenres = new List<Genre>();
-        
+
         foreach (var artist in distinctArtists)
         {
             createdArtists.Add(GetArtist(artist));
@@ -108,7 +122,7 @@ public class IndexerService : IIndexerService
             }
             createdGenres.Add(indexedGenre);
         }
-        
+
         // most attributes are going to be the same in an album
         var indexedAlbum = GetAlbum(createdArtists.First(), tracks.First());
         foreach (var trackToIndex in tracks)
@@ -126,7 +140,7 @@ public class IndexerService : IIndexerService
         {
             return;
         }
-        
+
         indexedTrack = new Track()
         {
             Album = indexedAlbum,
@@ -135,6 +149,7 @@ public class IndexerService : IIndexerService
             Comment = atlTrack.Comment,
             Genre = indexedGenre,
             DateIndexed = DateTime.UtcNow,
+            DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
             DurationInSeconds = atlTrack.Duration,
@@ -159,7 +174,7 @@ public class IndexerService : IIndexerService
 
         return indexedGenre;
     }
-    
+
     private Artist GetArtist(string artistName)
     {
         if (string.IsNullOrEmpty(artistName)) artistName = "Unknown Artist";
@@ -184,10 +199,10 @@ public class IndexerService : IIndexerService
 
         var artwork = albumDirectory?.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
             .FirstOrDefault(f => ImageFileFormats.Contains(Path.GetExtension(f.FullName)));
-        
+
         return artwork?.FullName;
     }
-    
+
     private Album GetAlbum(Artist artist, ATL.Track atlTrack)
     {
         var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : "Unknown Album";

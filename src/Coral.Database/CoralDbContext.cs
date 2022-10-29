@@ -16,8 +16,9 @@ public class CoralDbContext : DbContext
         : base(options)
     {
         var folder = Environment.SpecialFolder.LocalApplicationData;
-        var path = Environment.GetFolderPath(folder);
-        DbPath = Path.Join(path, "Coral", "coral.db");
+        var path = Path.Join(Environment.GetFolderPath(folder), "Coral");
+        Directory.CreateDirectory(path);
+        DbPath = Path.Join(path, "coral.db");
     }
 
     // The following configures EF to create a Sqlite database file in the

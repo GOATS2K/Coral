@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Services.Tests", "tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Api", "src\Coral.Api\Coral.Api.csproj", "{A802EBA0-F6F1-49EC-A0A3-F84929429F92}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Dto", "src\Coral.Dto\Coral.Dto.csproj", "{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A802EBA0-F6F1-49EC-A0A3-F84929429F92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

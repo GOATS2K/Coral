@@ -1,3 +1,5 @@
+using Coral.Database;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Coral.Services.Tests;
@@ -5,13 +7,13 @@ namespace Coral.Services.Tests;
 public class IndexerServiceTests
 {
     private readonly IIndexerService _indexerService;
-    private readonly ILibraryService _libraryService;
+    private readonly CoralDbContext _testDatabase;
 
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
         _indexerService = new IndexerService(testDatabase.Context);
-        _libraryService = new LibraryService(testDatabase.Context);
+        _testDatabase = testDatabase.Context;
     }
 
     [Fact]
@@ -32,8 +34,8 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _libraryService.GetArtist("Jupiter").SingleAsync();
-        var neptune = await _libraryService.GetArtist("Neptune").SingleAsync();
+        var jupiter = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Jupiter");
+        var neptune = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Neptune");
 
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
@@ -51,7 +53,7 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
 
         // assert
-        var jupiterArtist = await _libraryService.GetArtist("Jupiter").FirstOrDefaultAsync();
+        var jupiterArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Jupiter");
         var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
 
         Assert.NotNull(jupiterArtist);
@@ -75,8 +77,8 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);
 
         // arrange
-        var marsArtist = await _libraryService.GetArtist("Mars").FirstOrDefaultAsync();
-        var unknownArtist = await _libraryService.GetArtist("Unknown Artist").FirstOrDefaultAsync();
+        var marsArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
+        var unknownArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
 
         Assert.NotNull(marsArtist);
         Assert.NotNull(unknownArtist);

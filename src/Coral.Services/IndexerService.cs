@@ -29,7 +29,12 @@ public class IndexerService : IIndexerService
     {
         try
         {
-            return _context.Tracks.Max(t => t.DateModified) < contentDirectory.LastWriteTimeUtc;
+            var maxValue = _context.Tracks.Max(t => t.DateModified);
+            var contentsLastModified = contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
+                .Max(x => x.LastWriteTimeUtc);
+            return maxValue.ToUniversalTime() < contentsLastModified;
         }
         catch (InvalidOperationException)
         {
@@ -206,8 +211,10 @@ public class IndexerService : IIndexerService
     private Album GetAlbum(Artist artist, ATL.Track atlTrack)
     {
         var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : "Unknown Album";
-        var indexedAlbum = _context.Albums.FirstOrDefault(a => a.Name == albumName
-                                                               && a.Artists.Any(a => a.Name == artist.Name));
+        var indexedAlbum = _context.Albums
+            .Include(x => x.Artists)
+            .FirstOrDefault(a => a.Name == albumName
+                                 && a.Artists.Any(a => a.Name == artist.Name));
         if (indexedAlbum == null)
         {
             indexedAlbum = new Album()

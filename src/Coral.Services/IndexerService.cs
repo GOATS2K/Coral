@@ -87,7 +87,10 @@ public class IndexerService : IIndexerService
         foreach (var atlTrack in tracks)
         {
             var indexedArtist = GetArtist(atlTrack.Artist);
-            var indexedAlbum = GetAlbum(indexedArtist, atlTrack);
+            var indexedAlbum = GetAlbum(new List<Artist>()
+            {
+                indexedArtist   
+            }, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
             IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
         }
@@ -129,7 +132,7 @@ public class IndexerService : IIndexerService
         }
 
         // most attributes are going to be the same in an album
-        var indexedAlbum = GetAlbum(createdArtists.First(), tracks.First());
+        var indexedAlbum = GetAlbum(createdArtists, tracks.First());
         foreach (var trackToIndex in tracks)
         {
             var targetArtist = createdArtists.Single(a => a.Name == trackToIndex.Artist);
@@ -208,21 +211,18 @@ public class IndexerService : IIndexerService
         return artwork?.FullName;
     }
 
-    private Album GetAlbum(Artist artist, ATL.Track atlTrack)
+    private Album GetAlbum(List<Artist> artists, ATL.Track atlTrack)
     {
         var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : "Unknown Album";
         var indexedAlbum = _context.Albums
             .Include(x => x.Artists)
-            .FirstOrDefault(a => a.Name == albumName
-                                 && a.Artists.Any(a => a.Name == artist.Name));
+            .Where(a => a.Artists.Any(dbArtist => artists.Contains(dbArtist)))
+            .FirstOrDefault(a => a.Name == albumName);
         if (indexedAlbum == null)
         {
             indexedAlbum = new Album()
             {
-                Artists = new List<Artist>()
-                {
-                    artist
-                },
+                Artists = artists,
                 Name = atlTrack.Album,
                 ReleaseYear = atlTrack.Year,
                 DiscTotal = atlTrack.DiscTotal,
@@ -233,9 +233,12 @@ public class IndexerService : IIndexerService
             _context.Albums.Add(indexedAlbum);
         }
 
-        if (!indexedAlbum.Artists.Any(a => a.Name != artist.Name))
+        if (!indexedAlbum.Artists
+                .OrderBy(a => a.Name)
+                .SequenceEqual(artists.OrderBy(a => a.Name)))
         {
-            indexedAlbum.Artists.Add(artist);
+            var missingArtists = artists.Where(a => !indexedAlbum.Artists.Contains(a));
+            _context.Artists.AddRange(missingArtists);
         }
         return indexedAlbum;
     }

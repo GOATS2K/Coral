@@ -21,9 +21,10 @@ namespace Coral.Services.Tests
 
         // missing most metadata
         public static readonly string MarsMissingMetadata = GetTestFolder("Mars - Moons - FLAC [missing metadata]");
-
-
-
+        
+        // multi-artist album
+        public static readonly string NeptuneSaturnRings = GetTestFolder("Neptune & Saturn - Rings - 2022 - FLAC");
+        
         public static string GetTestFolder(string folderName)
         {
             return Path.Join(ContentDirectory, folderName);

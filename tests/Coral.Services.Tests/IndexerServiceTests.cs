@@ -83,4 +83,21 @@ public class IndexerServiceTests
         Assert.NotNull(marsArtist);
         Assert.NotNull(unknownArtist);
     }
+
+    [Fact]
+    public async Task ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
+    {
+        // arrange
+        
+        // act
+        _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
+        
+        // assert
+        var ringsAlbum = _testDatabase.Albums.FirstOrDefault(a => a.Name == "Rings");
+        var saturn = ringsAlbum.Artists.FirstOrDefault(a => a.Name == "Saturn");
+        var neptune = ringsAlbum.Artists.FirstOrDefault(a => a.Name == "Neptune");
+        Assert.NotNull(ringsAlbum);
+        Assert.NotNull(saturn);
+        Assert.NotNull(neptune);
+    }
 }

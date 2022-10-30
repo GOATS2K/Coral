@@ -8,6 +8,7 @@ public class AlbumProfile : Profile
 {
     public AlbumProfile()
     {
-        CreateMap<Album, AlbumDto>();
+        CreateMap<Album, AlbumDto>()
+            .ForMember(des => des.CoverPresent, opt => opt.MapFrom(src => src.CoverFilePath != null));
     }
 }

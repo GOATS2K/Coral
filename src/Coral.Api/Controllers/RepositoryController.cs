@@ -1,4 +1,6 @@
-﻿using Coral.Database.Models;
+﻿using System.Diagnostics.Contracts;
+using System.Net.Mime;
+using Coral.Database.Models;
 using Coral.Dto.Models;
 using Coral.Services;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +17,24 @@ namespace Coral.Api.Controllers
         public RepositoryController(ILibraryService libraryService)
         {
             _libraryService = libraryService;
+        }
+
+        [HttpGet]
+        [Route("tracks/{trackId}/stream")]
+        public async Task<ActionResult> StreamTrack(int trackId)
+        {
+            try
+            {
+                var trackStream = await _libraryService.GetStreamForTrack(trackId);
+                return File(trackStream.Stream, trackStream.ContentType);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(new
+                {
+                    Message = ex.Message
+                });
+            }
         }
 
         [HttpGet]

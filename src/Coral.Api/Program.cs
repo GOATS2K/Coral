@@ -2,6 +2,7 @@ using System.Net.Mime;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Services;
+using Coral.Services.EncoderFrontend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
+builder.Services.AddScoped<IEncoderFactory, EncoderFactory>();
 builder.Services.AddScoped<ITranscoderService, TranscoderService>();
 builder.Services.AddAutoMapper(opt =>
 {

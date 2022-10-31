@@ -1,3 +1,6 @@
+using Coral.Services.HelperModels;
+using FFMpegCore.Enums;
+
 namespace Coral.Services.Helpers;
 
 public static class MimeTypeHelper
@@ -14,14 +17,14 @@ public static class MimeTypeHelper
         };
     }
     
-    public static string GetMimeTypeForCodec(string codec)
+    public static string GetMimeTypeForCodec(OutputFormat codec)
     {
         return codec switch
         {
-            "mp3" => "audio/mpeg",
-            "aac" => "audio/mp4",
-            "ogg" => "audio/ogg",
-            "opus" => "audio/webm;codecs=\"opus\"",
+            OutputFormat.MP3 => "audio/mpeg",
+            OutputFormat.AAC => "audio/x-m4a",
+            OutputFormat.Ogg => "audio/ogg",
+            OutputFormat.Opus => "audio/webm;codecs=\"opus\"",
             _ => "application/octet-stream"
         };
     }

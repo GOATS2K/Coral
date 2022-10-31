@@ -17,7 +17,7 @@ public class AfConvertTests
 
         // act
         var encoder = new AfConvert();
-        var process = encoder
+        var transcodedStream = encoder
             .Configure()
             .SetBitrate(256)
             .SetSourceFile(targetFile.FullName)
@@ -25,7 +25,8 @@ public class AfConvertTests
             .Transcode();
 
         // assert
-        Assert.Equal(0, process.ExitCode);
+        Assert.NotNull(transcodedStream);
+        Assert.NotEqual(0, transcodedStream.Length);
         Assert.True(File.Exists(destinationFile));
         
         // cleanup - delete destination file

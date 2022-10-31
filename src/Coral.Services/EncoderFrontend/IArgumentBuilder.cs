@@ -7,6 +7,6 @@ public interface IArgumentBuilder
     IArgumentBuilder SetBitrate(int value);
     IArgumentBuilder SetSourceFile(string path);
     IArgumentBuilder SetDestinationFile(string path);
-    Process Transcode();
+    Stream Transcode();
     Task<Process> TranscodeAsync();
 }

@@ -1,4 +1,5 @@
 using Coral.Database.Models;
+using Coral.Services.EncoderFrontend;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
 using FFMpegCore;
@@ -10,34 +11,51 @@ namespace Coral.Services;
 
 public interface ITranscoderService
 {
-    // public Task<TrackStream> Transcode(Track track, OutputFormat format = OutputFormat.AAC, int bitrate = 256);
+    public TrackStream Transcode(Track track, OutputFormat format = OutputFormat.AAC, int bitrate = 256);
 }
 
-// it really would be nice to use ffmpeg,
-// but the existing wrappers don't function as expected on macOS
 public class TranscoderService : ITranscoderService
 {
-    private string GetExtensionForCodec(string codec)
+    private readonly IEncoderFactory _encoderFactory;
+
+    public TranscoderService(IEncoderFactory encoderFactory)
+    {
+        _encoderFactory = encoderFactory;
+    }
+
+    private string GetExtensionForCodec(OutputFormat codec)
     {
         return codec switch
         {
-            "mp3" => ".mp3",
-            "aac" => ".m4a",
-            "ogg" => ".ogg",
-            "opus" => ".webm",
-            _ => "application/octet-stream"
+            OutputFormat.MP3 => "mp3",
+            OutputFormat.AAC => "m4a",
+            OutputFormat.Ogg => "ogg",
+            OutputFormat.Opus => "webm",
+            _ => "tmp"
         };
     }
     
-    // public async Task<TrackStream> Transcode(Track track, OutputFormat format = OutputFormat.AAC, int bitrate = 256)
-    // {
-    //     var outputStream = new MemoryStream();
-    //
-    //     return new TrackStream()
-    //     {
-    //         ContentType = MimeTypeHelper.GetMimeTypeForCodec(requestedCodec),
-    //         FileName = $"{track.Id}.{GetExtensionForCodec(codec)}",
-    //         Stream = outputStream
-    //     };
-    // }
+    public TrackStream Transcode(Track track, OutputFormat format = OutputFormat.AAC, int bitrate = 256)
+    {
+        var encoder = _encoderFactory
+            .GetEncoder(format);
+
+        if (encoder == null)
+        {
+            throw new ApplicationException("Unable to get encoder for platform.");
+        }
+        
+        var fileStream = encoder
+            .Configure()
+            .SetBitrate(bitrate)
+            .SetSourceFile(track.FilePath)
+            .Transcode();
+
+        return new TrackStream()
+        {
+            ContentType = MimeTypeHelper.GetMimeTypeForCodec(format),
+            FileName = $"{track.Id}.{GetExtensionForCodec(format)}",
+            Stream = fileStream
+        };
+    }
 }

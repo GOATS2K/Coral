@@ -16,20 +16,20 @@ public class TranscodeController : ControllerBase
         _transcoderService = transcoderService;
     }
     
-    // [HttpGet]
-    // [Route("tracks/{trackId}")]
-    // public async Task<IActionResult> TranscodeTrack(int trackId)
-    // {
-    //     var dbTrack = await _libraryService.GetDatabaseTrack(trackId);
-    //     if (dbTrack == null)
-    //     {
-    //         return NotFound(new
-    //         {
-    //             Message = "Track not found."
-    //         });
-    //     }
-    //
-    //     var transcode = await _transcoderService.Transcode(dbTrack);
-    //     return File(transcode.Stream, transcode.ContentType, fileDownloadName: transcode.FileName);
-    // }
+    [HttpGet]
+    [Route("tracks/{trackId}")]
+    public async Task<IActionResult> TranscodeTrack(int trackId)
+    {
+        var dbTrack = await _libraryService.GetDatabaseTrack(trackId);
+        if (dbTrack == null)
+        {
+            return NotFound(new
+            {
+                Message = "Track not found."
+            });
+        }
+    
+        var transcode = _transcoderService.Transcode(dbTrack);
+        return File(transcode.Stream, transcode.ContentType);
+    }
 }

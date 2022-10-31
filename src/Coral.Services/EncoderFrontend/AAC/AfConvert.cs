@@ -1,7 +1,4 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Text;
-using AutoMapper;
 using Coral.Database.Models;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
@@ -12,7 +9,7 @@ public class AfConvertBuilder: IArgumentBuilder
 {
     private string _inputFile = string.Empty;
     private string _outputFile = string.Empty;
-    private List<string> _arguments;
+    private readonly List<string> _arguments;
     public AfConvertBuilder()
     {
         _arguments = new List<string>();
@@ -38,7 +35,7 @@ public class AfConvertBuilder: IArgumentBuilder
         return this;
     }
     
-    public Process Transcode()
+    public Stream Transcode()
     {
         var startInfo = new ProcessStartInfo()
         {
@@ -51,6 +48,10 @@ public class AfConvertBuilder: IArgumentBuilder
         // set input/output
         startInfo.ArgumentList.Add(_inputFile);
         startInfo.ArgumentList.Add("-o");
+        if (string.IsNullOrEmpty(_outputFile))
+        {
+            _outputFile = Path.GetTempFileName();
+        }
         startInfo.ArgumentList.Add(_outputFile);
         
         // set format
@@ -66,15 +67,31 @@ public class AfConvertBuilder: IArgumentBuilder
         // toggle verbose
         startInfo.ArgumentList.Add("-v");
         
+        // set aac format
+        startInfo.ArgumentList.Add("-f");
+        startInfo.ArgumentList.Add("m4af");
+        
         var process = Process.Start(startInfo);
         if (process == null)
         {
             throw new ApplicationException("Transcoder failed to execute.");
         }
 
-        process.WaitForExit();
+        var stdOut = process.StandardOutput.ReadToEnd();
+        var stdErr = process.StandardError.ReadToEnd();
+        if (!string.IsNullOrWhiteSpace(stdErr))
+        {
+            throw new ApplicationException("Errors captured attempting to run transcoder.");
+        }
+        
+        while (!File.Exists(_outputFile))
+        {
+            Thread.Sleep(250);
+        }
 
-        return process;
+        // process.WaitForExit();
+        
+        return new FileStream(_outputFile, FileMode.Open);
     }
 
     public async Task<Process> TranscodeAsync()

@@ -6,7 +6,13 @@ namespace Coral.Services.EncoderFrontend.AAC;
 [EncoderFrontend("Qaac", OutputFormat.AAC, Platform.Windows)]
 public class Qaac : IEncoder
 {
+    
     public bool EnsureEncoderExists()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IArgumentBuilder Configure()
     {
         throw new NotImplementedException();
     }

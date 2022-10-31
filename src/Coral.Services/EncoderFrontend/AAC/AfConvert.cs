@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Coral.Database.Models;
 using Coral.Services.HelperModels;
+using Coral.Services.Helpers;
 
 namespace Coral.Services.EncoderFrontend.AAC;
 
@@ -8,7 +10,7 @@ public class AfConvert : IEncoder
 {
     public bool EnsureEncoderExists()
     {
-        throw new NotImplementedException();
+        return CommonEncoderMethods.CheckEncoderExists("afconvert");
     }
 
     public async Task<Stream> Transcode(Track track, int bitrate)

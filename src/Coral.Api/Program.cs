@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
+builder.Services.AddScoped<ITranscoderService, TranscoderService>();
 builder.Services.AddAutoMapper(opt =>
 {
     opt.AddMaps(typeof(TrackProfile));

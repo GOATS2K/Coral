@@ -34,8 +34,8 @@ public class IndexerServiceTests
         _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Jupiter");
-        var neptune = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Neptune");
+        var jupiter = await _testDatabase.Artists.FirstAsync(a => a.Name == "Jupiter");
+        var neptune = await _testDatabase.Artists.FirstAsync(a => a.Name == "Neptune");
 
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
@@ -94,7 +94,7 @@ public class IndexerServiceTests
         
         // assert
         var ringsAlbum = _testDatabase.Albums.FirstOrDefault(a => a.Name == "Rings");
-        var saturn = ringsAlbum.Artists.FirstOrDefault(a => a.Name == "Saturn");
+        var saturn = ringsAlbum.Artists.First(a => a.Name == "Saturn");
         var neptune = ringsAlbum.Artists.FirstOrDefault(a => a.Name == "Neptune");
         Assert.NotNull(ringsAlbum);
         Assert.NotNull(saturn);

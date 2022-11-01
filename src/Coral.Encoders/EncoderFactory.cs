@@ -26,7 +26,7 @@ public class EncoderFactory : IEncoderFactory
             return Platform.Windows;
         }
 
-        throw new PlatformNotSupportedException($"Coral does not know of any transcoders for your platform");
+        throw new PlatformNotSupportedException("Only Windows, Linux and macOS are currently supported platforms.");
     }
 
     public IEncoder? GetEncoder(OutputFormat format)

@@ -1,4 +1,4 @@
-﻿namespace Coral.Dto.Models;
+﻿namespace Coral.Dto.DatabaseModels;
 
 public record TrackDto
 {

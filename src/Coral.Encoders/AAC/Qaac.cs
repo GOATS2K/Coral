@@ -4,6 +4,8 @@ namespace Coral.Encoders.AAC;
 
 public class QaacBuilder : IArgumentBuilder
 {
+    private readonly List<string> _arguments = new List<string>();
+
     public Guid CreateHLSTranscode()
     {
         throw new NotImplementedException();

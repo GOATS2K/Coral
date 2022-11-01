@@ -1,4 +1,4 @@
-﻿using Coral.Dto.Models;
+﻿using Coral.Dto.DatabaseModels;
 using Coral.Services;
 using Microsoft.AspNetCore.Mvc;
 

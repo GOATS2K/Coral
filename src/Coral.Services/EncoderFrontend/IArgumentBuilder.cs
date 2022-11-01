@@ -8,5 +8,4 @@ public interface IArgumentBuilder
     IArgumentBuilder SetSourceFile(string path);
     IArgumentBuilder SetDestinationFile(string path);
     Stream Transcode();
-    Task<Process> TranscodeAsync();
 }

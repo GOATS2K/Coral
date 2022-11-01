@@ -30,6 +30,6 @@ public class TranscodeController : ControllerBase
         }
     
         var transcode = _transcoderService.Transcode(dbTrack);
-        return File(transcode.Stream, transcode.ContentType);
+        return new FileStreamResult(transcode.Stream, transcode.ContentType);
     }
 }

@@ -11,11 +11,11 @@ public class Track
     public Artist Artist { get; set; } = null!;
     public Album? Album { get; set; }
     public Genre? Genre { get; set; }
-    
+
     public string? Comment { get; set; }
-    
+
     public string FilePath { get; set; } = null!;
-    
+
     public DateTime DateIndexed { get; set; }
     public DateTime DateModified { get; set; }
 }

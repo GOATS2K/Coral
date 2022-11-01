@@ -1,10 +1,7 @@
 using Coral.Database.Models;
-using Coral.Services.EncoderFrontend;
+using Coral.Encoders;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
-using FFMpegCore;
-using FFMpegCore.Arguments;
-using FFMpegCore.Pipes;
 using Microsoft.Extensions.Logging;
 
 namespace Coral.Services;
@@ -34,7 +31,7 @@ public class TranscoderService : ITranscoderService
             _ => "tmp"
         };
     }
-    
+
     public TrackStream Transcode(Track track, OutputFormat format = OutputFormat.AAC, int bitrate = 256)
     {
         var encoder = _encoderFactory
@@ -44,7 +41,7 @@ public class TranscoderService : ITranscoderService
         {
             throw new ApplicationException("Unable to get encoder for platform.");
         }
-        
+
         var fileStream = encoder
             .Configure()
             .SetBitrate(bitrate)

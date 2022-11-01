@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Coral.Services.Helpers;
+namespace Coral.Encoders;
 
 public static class CommonEncoderMethods
 {

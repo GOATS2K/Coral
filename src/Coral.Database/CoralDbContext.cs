@@ -1,5 +1,4 @@
-﻿using System.Security.Principal;
-using Coral.Database.Models;
+﻿using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Database;
@@ -11,7 +10,7 @@ public class CoralDbContext : DbContext
     public DbSet<Album> Albums { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
     private string DbPath { get; }
-    
+
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
         : base(options)
     {

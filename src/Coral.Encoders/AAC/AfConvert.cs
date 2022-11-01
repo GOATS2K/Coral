@@ -1,11 +1,8 @@
 using System.Diagnostics;
-using Coral.Database.Models;
-using Coral.Services.HelperModels;
-using Coral.Services.Helpers;
 
-namespace Coral.Services.EncoderFrontend.AAC;
+namespace Coral.Encoders.AAC;
 
-public class AfConvertBuilder: IArgumentBuilder
+public class AfConvertBuilder : IArgumentBuilder
 {
     private string _inputFile = string.Empty;
     private string _outputFile = string.Empty;
@@ -19,7 +16,7 @@ public class AfConvertBuilder: IArgumentBuilder
         var bitrate = value * 1000;
         _arguments.Add("-b");
         _arguments.Add($"{bitrate}");
-        
+
         return this;
     }
 
@@ -28,13 +25,13 @@ public class AfConvertBuilder: IArgumentBuilder
         _inputFile = path;
         return this;
     }
-    
+
     public IArgumentBuilder SetDestinationFile(string path)
     {
         _outputFile = path;
         return this;
     }
-    
+
     public Stream Transcode()
     {
         if (string.IsNullOrEmpty(_outputFile))
@@ -43,9 +40,9 @@ public class AfConvertBuilder: IArgumentBuilder
         }
         // create output file for reading
         File.Create(_outputFile);
-        
+
         var startInfo = CreateStartInfo();
-        
+
         var process = Process.Start(startInfo);
         if (process == null)
         {
@@ -94,8 +91,13 @@ public class AfConvertBuilder: IArgumentBuilder
         // set aac format
         startInfo.ArgumentList.Add("-f");
         startInfo.ArgumentList.Add("m4af");
-        
+
         return startInfo;
+    }
+
+    public Guid CreateHLSTranscode()
+    {
+        throw new NotImplementedException();
     }
 }
 

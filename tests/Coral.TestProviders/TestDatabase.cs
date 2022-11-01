@@ -4,14 +4,14 @@ using Coral.Dto.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Coral.Services.Tests;
+namespace Coral.TestProviders;
 
 public class TestDatabase : IDisposable
 {
     public CoralDbContext Context;
     public IMapper Mapper;
     private readonly IServiceProvider _serviceProvider;
-    
+
     public TestDatabase()
     {
         var serviceCollection = new ServiceCollection();

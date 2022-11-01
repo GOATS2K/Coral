@@ -1,11 +1,10 @@
-using Coral.Services.EncoderFrontend;
-using Coral.Services.EncoderFrontend.AAC;
-using Coral.Services.HelperModels;
+using Coral.Encoders;
+using Coral.Encoders.AAC;
 using NSubstitute;
 using NSubstitute.Extensions;
 using Xunit;
 
-namespace Coral.Services.Tests;
+namespace Coral.Encoders.Tests;
 
 public class EncoderFactoryTests
 {
@@ -15,7 +14,7 @@ public class EncoderFactoryTests
     {
         _encoderFactory = Substitute.ForPartsOf<EncoderFactory>();
     }
-    
+
     [Fact]
     public void GetEncoder_AACOnMacOS_ReturnsAfConvert()
     {
@@ -26,10 +25,11 @@ public class EncoderFactoryTests
         var encoder = _encoderFactory.GetEncoder(OutputFormat.AAC);
 
         // assert
+        Assert.NotNull(encoder);
         var encoderType = encoder.GetType();
         Assert.Equal(nameof(AfConvert), encoderType.Name);
     }
-    
+
     [Fact]
     public void GetEncoder_AACOnWindows_ReturnsQaac()
     {
@@ -40,7 +40,8 @@ public class EncoderFactoryTests
         var encoder = _encoderFactory.GetEncoder(OutputFormat.AAC);
 
         // assert
-        var encoderType = encoder.GetType();
+        Assert.NotNull(encoder);
+        var encoderType = encoder.GetType()!;
         Assert.Equal(nameof(Qaac), encoderType.Name);
     }
 }

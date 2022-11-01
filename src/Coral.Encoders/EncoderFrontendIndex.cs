@@ -1,7 +1,4 @@
-using System.Security.AccessControl;
-using Coral.Services.HelperModels;
-
-namespace Coral.Services.EncoderFrontend;
+namespace Coral.Encoders;
 
 public class EncoderFrontendIndex
 {
@@ -46,7 +43,7 @@ public class EncoderFrontendIndex
             }
         });
     }
-    
+
     public List<EncoderApp> GetEncodersForPlatform()
     {
         Platform platform;

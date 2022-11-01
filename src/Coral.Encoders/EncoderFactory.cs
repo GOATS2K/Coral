@@ -1,6 +1,4 @@
-using Coral.Services.HelperModels;
-
-namespace Coral.Services.EncoderFrontend;
+namespace Coral.Encoders;
 
 public interface IEncoderFactory
 {
@@ -17,20 +15,20 @@ public class EncoderFactory : IEncoderFactory
         {
             return Platform.MacOS;
         }
-        
+
         if (OperatingSystem.IsLinux())
         {
             return Platform.Linux;
         }
-        
+
         if (OperatingSystem.IsWindows())
         {
             return Platform.Windows;
         }
-        
+
         throw new PlatformNotSupportedException($"Coral does not know of any transcoders for your platform");
     }
-    
+
     public IEncoder? GetEncoder(OutputFormat format)
     {
         var assemblies = typeof(IEncoder).Assembly;
@@ -38,10 +36,10 @@ public class EncoderFactory : IEncoderFactory
             .GetTypes()
             // get IEncoder classes
             .Where(x => x.GetInterface(nameof(IEncoder)) != null);
-            
+
         foreach (var type in encoders)
         {
-            var attribute = (EncoderFrontendAttribute) Attribute
+            var attribute = (EncoderFrontendAttribute)Attribute
                 .GetCustomAttribute(type, typeof(EncoderFrontendAttribute))!;
             if (attribute.OutputFormat == format && attribute.SupportedPlatforms.Any(p => p == GetPlatform()))
             {

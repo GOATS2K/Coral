@@ -10,6 +10,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj" />
         <ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj" />
+        <ProjectReference Include="..\Coral.TestProviders\Coral.TestProviders.csproj" />
     </ItemGroup>
 
     <ItemGroup>

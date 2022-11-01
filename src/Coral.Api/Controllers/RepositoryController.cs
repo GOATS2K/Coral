@@ -1,9 +1,5 @@
-﻿using System.Diagnostics.Contracts;
-using System.Net.Mime;
-using Coral.Database.Models;
-using Coral.Dto.Models;
+﻿using Coral.Dto.Models;
 using Coral.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
@@ -46,7 +42,7 @@ namespace Coral.Api.Controllers
                 yield return track;
             }
         }
-        
+
         [HttpGet]
         [Route("albums")]
         public async IAsyncEnumerable<AlbumDto> GetAlbums()

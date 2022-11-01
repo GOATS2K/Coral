@@ -15,7 +15,7 @@ public class TranscodeController : ControllerBase
         _libraryService = libraryService;
         _transcoderService = transcoderService;
     }
-    
+
     [HttpGet]
     [Route("tracks/{trackId}")]
     public async Task<IActionResult> TranscodeTrack(int trackId)
@@ -28,7 +28,7 @@ public class TranscodeController : ControllerBase
                 Message = "Track not found."
             });
         }
-    
+
         var transcode = _transcoderService.Transcode(dbTrack);
         return new FileStreamResult(transcode.Stream, transcode.ContentType);
     }

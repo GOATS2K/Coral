@@ -1,11 +1,11 @@
-﻿using Coral.Database;
-using Microsoft.EntityFrameworkCore;
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
+using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Services
 {
@@ -22,7 +22,7 @@ namespace Coral.Services
     {
         private readonly CoralDbContext _context;
         private readonly IMapper _mapper;
-        
+
         public LibraryService(CoralDbContext context, IMapper mapper)
         {
             _context = context;
@@ -48,9 +48,9 @@ namespace Coral.Services
                 FileName = Path.GetFileName(track.FilePath),
                 Length = new FileInfo(track.FilePath).Length,
                 Stream = fileStream,
-                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.FilePath)) 
+                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.FilePath))
             };
-            
+
             return trackStream;
         }
 

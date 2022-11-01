@@ -1,11 +1,12 @@
-using Coral.Services.EncoderFrontend.AAC;
+using Coral.Encoders.AAC;
+using Coral.TestProviders;
 using Xunit;
 
-namespace Coral.Services.Tests;
+namespace Coral.Encoders.Tests;
 
 public class AfConvertTests
 {
-    [Fact]
+    [SkippableFact]
     public void AfConvert_TranscodeWithBuilder_ReturnsExitCodeZero()
     {
         // arrange
@@ -28,7 +29,7 @@ public class AfConvertTests
         Assert.NotNull(transcodedStream);
         Assert.NotEqual(0, transcodedStream.Length);
         Assert.True(File.Exists(destinationFile));
-        
+
         // cleanup - delete destination file
         File.Delete(destinationFile);
     }

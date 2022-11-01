@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Coral.Services.Tests
+﻿namespace Coral.TestProviders
 {
     public static class TestDataRepository
     {
         public static readonly string ContentDirectory = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "Content");
-        
+
         // mixed album tags
         public static readonly string MixedAlbumTags = GetTestFolder("Mixed Album Tags");
 
@@ -21,10 +15,10 @@ namespace Coral.Services.Tests
 
         // missing most metadata
         public static readonly string MarsMissingMetadata = GetTestFolder("Mars - Moons - FLAC [missing metadata]");
-        
+
         // multi-artist album
         public static readonly string NeptuneSaturnRings = GetTestFolder("Neptune & Saturn - Rings - 2022 - FLAC");
-        
+
         public static string GetTestFolder(string folderName)
         {
             return Path.Join(ContentDirectory, folderName);

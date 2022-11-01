@@ -1,5 +1,5 @@
+using Coral.Encoders;
 using Coral.Services.HelperModels;
-using FFMpegCore.Enums;
 
 namespace Coral.Services.Helpers;
 
@@ -16,7 +16,7 @@ public static class MimeTypeHelper
             _ => "application/octet-stream"
         };
     }
-    
+
     public static string GetMimeTypeForCodec(OutputFormat codec)
     {
         return codec switch

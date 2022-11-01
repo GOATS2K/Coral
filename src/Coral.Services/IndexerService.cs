@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Coral.Database;
+﻿using Coral.Database;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -89,7 +85,7 @@ public class IndexerService : IIndexerService
             var indexedArtist = GetArtist(atlTrack.Artist);
             var indexedAlbum = GetAlbum(new List<Artist>()
             {
-                indexedArtist   
+                indexedArtist
             }, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
             IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);

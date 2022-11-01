@@ -1,6 +1,4 @@
-using Coral.Services.HelperModels;
-
-namespace Coral.Services.EncoderFrontend;
+namespace Coral.Encoders;
 
 public class EncoderFrontendAttribute : Attribute
 {

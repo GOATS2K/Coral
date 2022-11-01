@@ -1,4 +1,5 @@
 using Coral.Database;
+using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -88,14 +89,14 @@ public class IndexerServiceTests
     public async Task ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
     {
         // arrange
-        
+
         // act
         _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
-        
+
         // assert
-        var ringsAlbum = _testDatabase.Albums.FirstOrDefault(a => a.Name == "Rings");
+        var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");
         var saturn = ringsAlbum.Artists.First(a => a.Name == "Saturn");
-        var neptune = ringsAlbum.Artists.FirstOrDefault(a => a.Name == "Neptune");
+        var neptune = ringsAlbum.Artists.First(a => a.Name == "Neptune");
         Assert.NotNull(ringsAlbum);
         Assert.NotNull(saturn);
         Assert.NotNull(neptune);

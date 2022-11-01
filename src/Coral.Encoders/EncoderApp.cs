@@ -1,13 +1,13 @@
-namespace Coral.Services.HelperModels;
+namespace Coral.Encoders;
 
 public enum Platform
 {
-    MacOS, Windows, Linux, 
+    MacOS, Windows, Linux,
 }
 
 public enum OutputFormat
 {
-    AAC, MP3, Ogg, Opus 
+    AAC, MP3, Ogg, Opus
 }
 
 public class EncoderApp

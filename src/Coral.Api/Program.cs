@@ -1,8 +1,7 @@
-using System.Net.Mime;
 using Coral.Database;
 using Coral.Dto.Profiles;
+using Coral.Encoders;
 using Coral.Services;
-using Coral.Services.EncoderFrontend;
 
 var builder = WebApplication.CreateBuilder(args);
 

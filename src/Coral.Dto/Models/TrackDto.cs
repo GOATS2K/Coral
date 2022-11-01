@@ -11,5 +11,5 @@ public record TrackDto
     public ArtistDto Artist { get; init; } = default!;
     public AlbumDto Album { get; init; } = default!;
     public GenreDto? Genre { get; init; }
-    
+
 }

@@ -1,4 +1,4 @@
-namespace Coral.Encoders;
+namespace Coral.Encoders.EncodingModels;
 
 public class EncoderFrontendAttribute : Attribute
 {

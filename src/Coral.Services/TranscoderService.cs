@@ -1,5 +1,6 @@
 using Coral.Database.Models;
 using Coral.Encoders;
+using Coral.Encoders.EncodingModels;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
 using Microsoft.Extensions.Logging;

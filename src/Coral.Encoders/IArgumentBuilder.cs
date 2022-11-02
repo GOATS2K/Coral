@@ -5,6 +5,6 @@ public interface IArgumentBuilder
     IArgumentBuilder SetBitrate(int value);
     IArgumentBuilder SetSourceFile(string path);
     IArgumentBuilder SetDestinationFile(string path);
-    Guid CreateHLSTranscode();
-    Stream Transcode();
+    IArgumentBuilder GenerateHLSStream();
+    public string[] BuildArguments();
 }

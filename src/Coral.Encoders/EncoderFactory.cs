@@ -1,3 +1,5 @@
+using Coral.Encoders.EncodingModels;
+
 namespace Coral.Encoders;
 
 public interface IEncoderFactory

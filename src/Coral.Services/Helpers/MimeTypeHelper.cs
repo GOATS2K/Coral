@@ -1,4 +1,4 @@
-using Coral.Encoders;
+using Coral.Encoders.EncodingModels;
 using Coral.Services.HelperModels;
 
 namespace Coral.Services.Helpers;

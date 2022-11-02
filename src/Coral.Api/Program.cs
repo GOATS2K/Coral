@@ -11,6 +11,7 @@ builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
 builder.Services.AddScoped<IEncoderFactory, EncoderFactory>();
 builder.Services.AddScoped<ITranscoderService, TranscoderService>();
+builder.Services.AddSingleton<ITranscodingJobManager, TranscodingJobManager>();
 builder.Services.AddAutoMapper(opt =>
 {
     opt.AddMaps(typeof(TrackProfile));

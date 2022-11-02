@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Coral.Encoders.EncodingModels;
 
 namespace Coral.Encoders.AAC;
 
@@ -41,13 +42,13 @@ public class AfConvertBuilder : IArgumentBuilder
         // create output file for reading
         File.Create(_outputFile);
 
-        var startInfo = CreateStartInfo();
+        var startInfo = BuildArguments();
 
-        var process = Process.Start(startInfo);
-        if (process == null)
-        {
-            throw new ApplicationException("Transcoder failed to execute.");
-        }
+        //var process = Process.Start(startInfo);
+        //if (process == null)
+        //{
+        //    throw new ApplicationException("Transcoder failed to execute.");
+        //}
 
         // var stdOut = process.StandardOutput.ReadToEnd();
         // var stdErr = process.StandardError.ReadToEnd();
@@ -56,46 +57,45 @@ public class AfConvertBuilder : IArgumentBuilder
         //     throw new ApplicationException("Errors captured attempting to run transcoder.");
         // }
 
-        process.WaitForExit();
+        // process.WaitForExit();
         return File.OpenRead(_outputFile);
     }
 
-    private ProcessStartInfo CreateStartInfo()
+    public string[] BuildArguments()
     {
-        var startInfo = new ProcessStartInfo()
-        {
-            FileName = "afconvert",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var localArgumentList = new List<string>();
 
         // set input/output
-        startInfo.ArgumentList.Add(_inputFile);
-        startInfo.ArgumentList.Add("-o");
-        startInfo.ArgumentList.Add(_outputFile);
+        localArgumentList.Add(_inputFile);
+        localArgumentList.Add("-o");
+        localArgumentList.Add(_outputFile);
 
         // set format
-        startInfo.ArgumentList.Add("-d");
-        startInfo.ArgumentList.Add("aac");
+        localArgumentList.Add("-d");
+        localArgumentList.Add("aac");
 
         // add all arguments
         foreach (var arg in _arguments)
         {
-            startInfo.ArgumentList.Add(arg);
+            localArgumentList.Add(arg);
         }
 
         // toggle verbose
-        startInfo.ArgumentList.Add("-v");
+        localArgumentList.Add("-v");
 
         // set aac format
-        startInfo.ArgumentList.Add("-f");
-        startInfo.ArgumentList.Add("m4af");
+        localArgumentList.Add("-f");
+        localArgumentList.Add("m4af");
 
-        return startInfo;
+        return localArgumentList.ToArray();
     }
 
     public Guid CreateHLSTranscode()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IArgumentBuilder GenerateHLSStream()
     {
         throw new NotImplementedException();
     }

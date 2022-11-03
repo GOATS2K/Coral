@@ -58,7 +58,7 @@ namespace Coral.Encoders
             }
 
             // check for existing job for the same file
-            var existingJob = _transcodingJobs.Where(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id).FirstOrDefault();
+            var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id);
             if (existingJob != null)
             {
                 return existingJob;
@@ -69,27 +69,35 @@ namespace Coral.Encoders
             _transcodingJobs.Add(job);
 
             // run job
-            Command? jobCommand = null;
+            Command? jobCommand;
+            var transcodingErrorStream = new StringBuilder();
+            var pipeErrorStream = new StringBuilder();
             if (job.PipeCommand != null)
             {
-                jobCommand = (job.TranscodingCommand! | job.PipeCommand);
+                jobCommand = (job.TranscodingCommand!
+                                  .WithStandardErrorPipe(PipeTarget.ToStringBuilder(transcodingErrorStream))
+                              | job.PipeCommand
+                                  .WithStandardErrorPipe(PipeTarget.ToStringBuilder(pipeErrorStream)));
             }
             else
             {
                 jobCommand = job.TranscodingCommand!;
             }
-
+            
             jobCommand.ExecuteAsync();
-
+            
             int msWaited = 0;
             while (!File.Exists(job.HlsPlaylistPath))
             {
                 await Task.Delay(100);
                 msWaited += 100;
-
-                if (msWaited == 20000)
+    
+                if (!string.IsNullOrEmpty(transcodingErrorStream.ToString()) 
+                    || !string.IsNullOrEmpty(pipeErrorStream.ToString()))
                 {
-                    throw new ApplicationException("Transcoder timed out.");
+                    throw new ApplicationException("Transcoder failed:\n" +
+                                        $"Transcoder: {transcodingErrorStream}\n\n" +
+                                        $"Pipe: {pipeErrorStream}\n");
                 }
             }
 

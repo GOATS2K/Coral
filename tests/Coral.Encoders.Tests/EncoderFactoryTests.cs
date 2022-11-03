@@ -16,7 +16,7 @@ public class EncoderFactoryTests
     }
 
     [Fact]
-    public void GetEncoder_AACOnMacOS_ReturnsAfConvert()
+    public void GetEncoder_AACOnMacOS_ReturnsFdkAac()
     {
         // arrange
         _encoderFactory.Configure().GetPlatform().Returns(Platform.MacOS);
@@ -27,7 +27,7 @@ public class EncoderFactoryTests
         // assert
         Assert.NotNull(encoder);
         var encoderType = encoder.GetType();
-        Assert.Equal(nameof(AfConvert), encoderType.Name);
+        Assert.Equal(nameof(Ffmpeg), encoderType.Name);
     }
 
     [Fact]

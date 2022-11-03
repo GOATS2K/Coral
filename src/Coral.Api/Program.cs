@@ -43,6 +43,7 @@ app.UseCors(cors =>
 app.UseHttpsRedirection();
 
 // setup file provider for hls
+Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
 var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
 var hlsRoute = "/hls";
 
@@ -68,6 +69,6 @@ if (string.IsNullOrEmpty(contentDirectory))
     throw new ApplicationException("CORAL_CONTENT_DIRECTORY has not been set.");
 }
 
-indexerService.ReadDirectory(contentDirectory);
+// indexerService.ReadDirectory(contentDirectory);
 
 app.Run();

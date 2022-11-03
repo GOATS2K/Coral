@@ -71,8 +71,8 @@ public class Qaac : IEncoder
     {
         return new QaacBuilder();
     }
-
-    // qaac "01 - Alix Perez - Wondering at Loss.flac" --adts -c 256 -o- | MP4Box -dash 5000 -dynamic -segment-name chunk-$Number$ -profile onDemand -out hls/test.m3u8 stdin:#Bitrate=256000:#Duration=266
+    
+    // this can probably be abstracted into a common function for all encoders
     public TranscodingJob ConfigureTranscodingJob(TranscodingJobRequest request)
     {
         var job = new TranscodingJob()
@@ -87,24 +87,10 @@ public class Qaac : IEncoder
         if (request.RequestType == TranscodeRequestType.HLS)
         {
             configuration.GenerateHLSStream();
-            var jobDir = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString());
-            Directory.CreateDirectory(jobDir);
-            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString(), "index.m3u8");
-            job.PipeCommand = Cli.Wrap("ffmpeg")
-                .WithArguments(new string[]
-                {
-                    "-i",
-                    "-",
-                    "-f",
-                    "hls",
-                    "-hls_time",
-                    "5",
-                    "-hls_playlist_type",
-                    "event",
-                    "-hls_segment_filename",
-                    $"{Path.Combine(jobDir, "chunk-%02d.ts")}",
-                    $"{job.HlsPlaylistPath}"
-                });
+            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory,
+                job.Id.ToString(),
+                "index.m3u8");
+            job.PipeCommand = CommonEncoderMethods.GetHlsPipeCommand(job);
         }
 
         var arguments = configuration.BuildArguments();

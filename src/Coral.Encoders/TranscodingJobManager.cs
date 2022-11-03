@@ -57,6 +57,13 @@ namespace Coral.Encoders
                 throw new ArgumentException("Unsupported format.");
             }
 
+            // check for existing job for the same file
+            var existingJob = _transcodingJobs.Where(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id).FirstOrDefault();
+            if (existingJob != null)
+            {
+                return existingJob;
+            }
+
             // configure encoder
             var job = encoder.ConfigureTranscodingJob(requestData);
             _transcodingJobs.Add(job);
@@ -75,7 +82,7 @@ namespace Coral.Encoders
             jobCommand.ExecuteAsync();
 
             int msWaited = 0;
-            while (!File.Exists(Path.Join(job.HlsPlaylistPath)))
+            while (!File.Exists(job.HlsPlaylistPath))
             {
                 await Task.Delay(100);
                 msWaited += 100;

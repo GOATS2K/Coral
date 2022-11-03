@@ -38,6 +38,6 @@ public class TranscodeController : ControllerBase
             opt.Bitrate = 256;
             opt.RequestType = TranscodeRequestType.HLS;
         });
-        return Redirect($"~/hls/{job.Id}/init.mp4");
+        return Redirect($"~/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}");
     }
 }

@@ -87,19 +87,23 @@ public class Qaac : IEncoder
         if (request.RequestType == TranscodeRequestType.HLS)
         {
             configuration.GenerateHLSStream();
-            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString(), "init.mp4");
-            job.PipeCommand = Cli.Wrap("MP4Box")
+            var jobDir = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString());
+            Directory.CreateDirectory(jobDir);
+            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString(), "index.m3u8");
+            job.PipeCommand = Cli.Wrap("ffmpeg")
                 .WithArguments(new string[]
                 {
-                    "-dash",
-                    "5000",
-                    "-profile",
-                    "onDemand",
-                    "-segment-name",
-                    "$Number$",
-                    "-out",
-                    $"{Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString(), "playlist.m3u8")}",
-                    $"stdin:#Bitrate={request.Bitrate}000:#Duration={request.SourceTrack.DurationInSeconds}"
+                    "-i",
+                    "-",
+                    "-f",
+                    "hls",
+                    "-hls_time",
+                    "5",
+                    "-hls_playlist_type",
+                    "event",
+                    "-hls_segment_filename",
+                    $"{Path.Combine(jobDir, "chunk-%02d.ts")}",
+                    $"{job.HlsPlaylistPath}"
                 });
         }
 

@@ -2,7 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.DatabaseModels;
+using Coral.Dto.Models;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;

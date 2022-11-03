@@ -17,11 +17,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Api", "src\Coral.Api\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Dto", "src\Coral.Dto\Coral.Dto.csproj", "{0F33EFC2-C218-4B2C-BC3C-E0C3142EFF0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Encoders", "src\Coral.Encoders\Coral.Encoders.csproj", "{66A467F1-E119-4D6F-8C65-B4CE39A0C649}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Encoders", "src\Coral.Encoders\Coral.Encoders.csproj", "{66A467F1-E119-4D6F-8C65-B4CE39A0C649}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Encoders.Tests", "tests\Coral.Encoders.Tests\Coral.Encoders.Tests.csproj", "{06BD902C-38FF-438E-860E-5B62B4210F9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Encoders.Tests", "tests\Coral.Encoders.Tests\Coral.Encoders.Tests.csproj", "{06BD902C-38FF-438E-860E-5B62B4210F9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.TestProviders", "tests\Coral.TestProviders\Coral.TestProviders.csproj", "{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.TestProviders", "tests\Coral.TestProviders\Coral.TestProviders.csproj", "{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Configuration", "src\Coral.Configuration\Coral.Configuration.csproj", "{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +67,10 @@ Global
 		{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

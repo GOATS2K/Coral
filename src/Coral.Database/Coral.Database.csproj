@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Coral.Configuration\Coral.Configuration.csproj" />
       <ProjectReference Include="..\Coral.Database.Models\Coral.Database.Models.csproj" />
     </ItemGroup>
 

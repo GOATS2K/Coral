@@ -1,7 +1,9 @@
+using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
 using Coral.Services;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,8 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
-builder.Services.AddScoped<IEncoderFactory, EncoderFactory>();
-builder.Services.AddScoped<ITranscoderService, TranscoderService>();
+builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscodingJobManager, TranscodingJobManager>();
 builder.Services.AddAutoMapper(opt =>
 {
@@ -31,7 +32,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors(cors =>
+{
+    cors.
+    AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader();
+});
+
 app.UseHttpsRedirection();
+
+// setup file provider for hls
+var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
+var hlsRoute = "/hls";
+
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = fileProvider,
+    RequestPath = hlsRoute,
+    ServeUnknownFileTypes = true
+});
 
 app.UseAuthorization();
 

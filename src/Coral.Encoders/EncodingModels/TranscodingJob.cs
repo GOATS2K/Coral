@@ -1,4 +1,4 @@
-﻿using Coral.Database.Models;
+﻿using CliWrap;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +10,10 @@ namespace Coral.Encoders.EncodingModels
     public class TranscodingJob
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public Track SourceTrack { get; set; } = null!;
+        public TranscodingJobRequest Request { get; set; } = null!;
         public string? OutputPath { get; set; }
         public string? HlsPlaylistPath { get; set; }
-        public OutputFormat RequestedFormat { get; set; }
-        public bool TranscodingProcessHasExited { get; set; }
+        public Command? TranscodingCommand { get; set; }
+        public Command? PipeCommand { get; set; }
     }
 }

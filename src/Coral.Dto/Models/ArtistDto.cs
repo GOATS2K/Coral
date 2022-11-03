@@ -1,6 +1,6 @@
-namespace Coral.Dto.DatabaseModels;
+namespace Coral.Dto.Models;
 
-public record GenreDto
+public record ArtistDto
 {
     public int Id { get; set; } = default!;
     public string Name { get; set; } = default!;

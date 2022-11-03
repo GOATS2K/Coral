@@ -113,4 +113,9 @@ public class AfConvert : IEncoder
     {
         return new AfConvertBuilder();
     }
+
+    public TranscodingJob ConfigureTranscodingJob(TranscodingJobRequest request)
+    {
+        throw new NotImplementedException();
+    }
 }

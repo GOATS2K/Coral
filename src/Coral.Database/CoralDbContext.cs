@@ -1,4 +1,5 @@
-﻿using Coral.Database.Models;
+﻿using Coral.Configuration;
+using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Database;
@@ -14,8 +15,7 @@ public class CoralDbContext : DbContext
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
         : base(options)
     {
-        var folder = Environment.SpecialFolder.LocalApplicationData;
-        var path = Path.Join(Environment.GetFolderPath(folder), "Coral");
+        var path = ApplicationConfiguration.AppData;
         Directory.CreateDirectory(path);
         DbPath = Path.Join(path, "Coral.db");
     }

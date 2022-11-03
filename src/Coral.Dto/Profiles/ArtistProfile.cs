@@ -1,6 +1,6 @@
 using AutoMapper;
 using Coral.Database.Models;
-using Coral.Dto.DatabaseModels;
+using Coral.Dto.Models;
 
 namespace Coral.Dto.Profiles;
 

@@ -86,7 +86,7 @@ public class IndexerServiceTests
     }
 
     [Fact]
-    public async Task ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
+    public void ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
     {
         // arrange
 

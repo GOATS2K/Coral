@@ -1,5 +1,8 @@
+using Coral.Encoders;
+using Coral.Encoders.EncodingModels;
 using Coral.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
 
 namespace Coral.Api.Controllers;
 
@@ -7,13 +10,13 @@ namespace Coral.Api.Controllers;
 [Route("api/[controller]")]
 public class TranscodeController : ControllerBase
 {
-    private readonly ITranscoderService _transcoderService;
     private readonly ILibraryService _libraryService;
+    private readonly ITranscodingJobManager _jobManager;
 
-    public TranscodeController(ILibraryService libraryService, ITranscoderService transcoderService)
+    public TranscodeController(ILibraryService libraryService, ITranscodingJobManager jobManager)
     {
         _libraryService = libraryService;
-        _transcoderService = transcoderService;
+        _jobManager = jobManager;
     }
 
     [HttpGet]
@@ -29,7 +32,12 @@ public class TranscodeController : ControllerBase
             });
         }
 
-        var transcode = _transcoderService.Transcode(dbTrack);
-        return new FileStreamResult(transcode.Stream, transcode.ContentType);
+        var job = await _jobManager.CreateJob(OutputFormat.AAC, opt =>
+        {
+            opt.SourceTrack = dbTrack;
+            opt.Bitrate = 256;
+            opt.RequestType = TranscodeRequestType.HLS;
+        });
+        return Redirect($"~/hls/{job.Id}/init.mp4");
     }
 }

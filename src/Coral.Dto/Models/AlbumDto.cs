@@ -1,4 +1,4 @@
-namespace Coral.Dto.DatabaseModels;
+namespace Coral.Dto.Models;
 
 public record AlbumDto
 {

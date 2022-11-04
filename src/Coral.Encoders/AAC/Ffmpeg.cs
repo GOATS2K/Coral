@@ -12,7 +12,7 @@ public class FfmpegBuilder : IArgumentBuilder
     private readonly List<string> _arguments = new List<string>();
     private readonly string _codec;
     private string _outputFile = "-";
-    private string _inputFile;
+    private string _inputFile = string.Empty;
     private bool _transcodeForHls;
 
     public FfmpegBuilder(string codec)
@@ -70,45 +70,21 @@ public class FfmpegBuilder : IArgumentBuilder
 }
 
 
-[EncoderFrontend(nameof(Ffmpeg), OutputFormat.AAC, Platform.MacOS)]
-public class Ffmpeg : IEncoder
+[EncoderFrontend(nameof(FfmpegForMacOS), OutputFormat.AAC, Platform.MacOS)]
+public class FfmpegForMacOS : IEncoder
 {
+    public string ExecutableName => "ffmpeg";
+
+    public bool WritesOutputToStdErr => false;
 
     public bool EnsureEncoderExists()
     {
-        
-        return CommonEncoderMethods.CheckEncoderExists("ffmpeg");
+        return CommonEncoderMethods.CheckEncoderExists(ExecutableName);
     }
 
     public IArgumentBuilder Configure()
     {
+        // This codec is only available on MacOS.
         return new FfmpegBuilder("aac_at");
-    }
-    
-    public TranscodingJob ConfigureTranscodingJob(TranscodingJobRequest request)
-    {
-        var job = new TranscodingJob()
-        {
-            Request = request,
-        };
-
-        var configuration = Configure()
-            .SetSourceFile(request.SourceTrack.FilePath)
-            .SetBitrate(request.Bitrate);
-
-        if (request.RequestType == TranscodeRequestType.HLS)
-        {
-            configuration.GenerateHLSStream();
-            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory, job.Id.ToString(), "index.m3u8");
-            job.PipeCommand = CommonEncoderMethods.GetHlsPipeCommand(job);
-        }
-
-        var arguments = configuration.BuildArguments();
-
-        job.TranscodingCommand = Cli.Wrap("ffmpeg")
-            .WithValidation(CommandResultValidation.ZeroExitCode)
-            .WithArguments(arguments);
-
-        return job;
     }
 }

@@ -59,45 +59,17 @@ public class QaacBuilder : IArgumentBuilder
 [EncoderFrontend("Qaac", OutputFormat.AAC, Platform.Windows)]
 public class Qaac : IEncoder
 {
+    public string ExecutableName => "qaac";
+
+    public bool WritesOutputToStdErr => true;
 
     public bool EnsureEncoderExists()
     {
-        var mp4BoxStatus = CommonEncoderMethods.CheckEncoderExists("MP4Box");
-        var qaacStatus = CommonEncoderMethods.CheckEncoderExists("qaac");
-        return mp4BoxStatus && qaacStatus;
+        return CommonEncoderMethods.CheckEncoderExists(ExecutableName);
     }
 
     public IArgumentBuilder Configure()
     {
         return new QaacBuilder();
-    }
-    
-    // this can probably be abstracted into a common function for all encoders
-    public TranscodingJob ConfigureTranscodingJob(TranscodingJobRequest request)
-    {
-        var job = new TranscodingJob()
-        {
-            Request = request,
-        };
-
-        var configuration = Configure()
-            .SetSourceFile(request.SourceTrack.FilePath)
-            .SetBitrate(request.Bitrate);
-
-        if (request.RequestType == TranscodeRequestType.HLS)
-        {
-            configuration.GenerateHLSStream();
-            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory,
-                job.Id.ToString(),
-                "index.m3u8");
-            job.PipeCommand = CommonEncoderMethods.GetHlsPipeCommand(job);
-        }
-
-        var arguments = configuration.BuildArguments();
-
-        job.TranscodingCommand = Cli.Wrap("qaac")
-            .WithArguments(arguments);
-
-        return job;
     }
 }

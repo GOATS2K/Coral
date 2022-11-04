@@ -15,5 +15,6 @@ namespace Coral.Encoders.EncodingModels
         public string? HlsPlaylistPath { get; set; }
         public Command? TranscodingCommand { get; set; }
         public Command? PipeCommand { get; set; }
+        public bool EncoderWritesToStandardError;
     }
 }

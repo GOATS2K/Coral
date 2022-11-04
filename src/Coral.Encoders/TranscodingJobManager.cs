@@ -37,7 +37,18 @@ namespace Coral.Encoders
 
             if (!string.IsNullOrEmpty(job.HlsPlaylistPath))
             {
-                Directory.Delete(job.HlsPlaylistPath);
+                var parent = Directory.GetParent(job.HlsPlaylistPath);
+                if (parent == null)
+                {
+                    return;
+                }
+
+                foreach (var file in parent.EnumerateFiles())
+                {
+                    file.Delete();
+                }
+                parent.Delete();
+                
             }
 
             if (!string.IsNullOrEmpty(job.OutputPath))
@@ -54,7 +65,7 @@ namespace Coral.Encoders
             var encoder = _encoderFactory.GetEncoder(format);
             if (encoder == null || !encoder.EnsureEncoderExists())
             {
-                throw new ArgumentException("Unsupported format.");
+                throw new ArgumentException("Unsupported format or missing encoder.");
             }
 
             // check for existing job for the same file
@@ -72,25 +83,30 @@ namespace Coral.Encoders
             Command? jobCommand;
             var transcodingErrorStream = new StringBuilder();
             var pipeErrorStream = new StringBuilder();
+            
+            // only save error logs if the encoder writes regular logs to stdout (looking at you qaac);
+            if (!encoder.WritesOutputToStdErr)
+            {
+                job.TranscodingCommand = job.TranscodingCommand!.WithStandardErrorPipe(PipeTarget.ToStringBuilder(transcodingErrorStream));
+            }
+            
+
             if (job.PipeCommand != null)
             {
-                jobCommand = (job.TranscodingCommand!
-                                  .WithStandardErrorPipe(PipeTarget.ToStringBuilder(transcodingErrorStream))
-                              | job.PipeCommand
-                                  .WithStandardErrorPipe(PipeTarget.ToStringBuilder(pipeErrorStream)));
+                jobCommand = (job.TranscodingCommand! | job.PipeCommand.WithStandardErrorPipe(PipeTarget.ToStringBuilder(pipeErrorStream)));
             }
             else
             {
                 jobCommand = job.TranscodingCommand!;
             }
             
+            #pragma warning disable CS4014 // I want this to run in the background.
             jobCommand.ExecuteAsync();
+            #pragma warning restore CS4014
             
-            int msWaited = 0;
             while (!File.Exists(job.HlsPlaylistPath))
             {
-                await Task.Delay(100);
-                msWaited += 100;
+                await Task.Delay(20);
     
                 if (!string.IsNullOrEmpty(transcodingErrorStream.ToString()) 
                     || !string.IsNullOrEmpty(pipeErrorStream.ToString()))

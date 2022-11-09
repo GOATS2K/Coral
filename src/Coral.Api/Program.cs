@@ -3,6 +3,7 @@ using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
 using Coral.Services;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,11 +48,17 @@ Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
 var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
 var hlsRoute = "/hls";
 
+// setup content type provider
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".m3u8"] = "application/x-MPEGurl";
+contentTypeProvider.Mappings[".ts"] = "audio/MP2T";
+
 app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = fileProvider,
     RequestPath = hlsRoute,
-    ServeUnknownFileTypes = true
+    ServeUnknownFileTypes = true,
+    ContentTypeProvider = contentTypeProvider
 });
 
 app.UseAuthorization();

@@ -8,8 +8,8 @@ public record TrackDto
     public string? Comment { get; set; } = default!;
     public int TrackNumber { get; set; } = default!;
     public int DiscNumber { get; set; } = default!;
-    public ArtistDto Artist { get; init; } = default!;
-    public AlbumDto Album { get; init; } = default!;
+    public SimpleArtistDto Artist { get; init; } = default!;
+    public SimpleAlbumDto Album { get; init; } = default!;
     public GenreDto? Genre { get; init; }
 
 }

@@ -10,5 +10,7 @@ public class AlbumProfile : Profile
     {
         CreateMap<Album, AlbumDto>()
             .ForMember(des => des.CoverPresent, opt => opt.MapFrom(src => src.CoverFilePath != null));
+        CreateMap<Album, SimpleAlbumDto>()
+            .ForMember(des => des.CoverPresent, opt => opt.MapFrom(src => src.CoverFilePath != null));
     }
 }

@@ -67,13 +67,14 @@ app.MapControllers();
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 await db.Database.EnsureCreatedAsync();
 
 var indexerService = scope.ServiceProvider.GetRequiredService<IIndexerService>();
 var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
 if (string.IsNullOrEmpty(contentDirectory))
 {
-    throw new ApplicationException("CORAL_CONTENT_DIRECTORY has not been set.");
+    logger.LogError("CORAL_CONTENT_DIRECTORY has not been set.");
 }
 
 // indexerService.ReadDirectory(contentDirectory);

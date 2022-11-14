@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj" />
-    <ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj" />
+		<ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj" />
+	</ItemGroup>
 
 </Project>

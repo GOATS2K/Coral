@@ -1,20 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="AutoMapper" Version="12.0.0" />
-      <PackageReference Include="z440.atl.core" Version="4.13.0" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="12.0.0" />
+		<PackageReference Include="z440.atl.core" Version="4.13.0" />
+	</ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Coral.Database\Coral.Database.csproj" />
-      <ProjectReference Include="..\Coral.Dto\Coral.Dto.csproj" />
-      <ProjectReference Include="..\Coral.Encoders\Coral.Encoders.csproj" />
-    </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Coral.Database\Coral.Database.csproj" />
+		<ProjectReference Include="..\Coral.Dto\Coral.Dto.csproj" />
+		<ProjectReference Include="..\Coral.Encoders\Coral.Encoders.csproj" />
+	</ItemGroup>
 
 </Project>

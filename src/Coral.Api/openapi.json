@@ -1,0 +1,279 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Coral.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/Repository/tracks/{trackId}/stream": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Repository/tracks": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Repository/albums": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Transcode/tracks/{trackId}": {
+      "get": {
+        "tags": [
+          "Transcode"
+        ],
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlbumDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistDto"
+            },
+            "nullable": true
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            },
+            "nullable": true
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenreDto"
+            },
+            "nullable": true
+          },
+          "releaseYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "coverPresent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ArtistDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GenreDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimpleAlbumDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "coverPresent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimpleArtistDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TrackDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationInSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "trackNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "discNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "$ref": "#/components/schemas/SimpleArtistDto"
+          },
+          "album": {
+            "$ref": "#/components/schemas/SimpleAlbumDto"
+          },
+          "genre": {
+            "$ref": "#/components/schemas/GenreDto"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

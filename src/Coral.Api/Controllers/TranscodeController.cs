@@ -1,3 +1,4 @@
+using Coral.Dto.Models;
 using Coral.Encoders;
 using Coral.Encoders.EncodingModels;
 using Coral.Services;
@@ -21,7 +22,7 @@ public class TranscodeController : ControllerBase
 
     [HttpGet]
     [Route("tracks/{trackId}")]
-    public async Task<IActionResult> TranscodeTrack(int trackId)
+    public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId)
     {
         var dbTrack = await _libraryService.GetDatabaseTrack(trackId);
         if (dbTrack == null)
@@ -38,6 +39,9 @@ public class TranscodeController : ControllerBase
             opt.Bitrate = 256;
             opt.RequestType = TranscodeRequestType.HLS;
         });
-        return Redirect($"~/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}");
+        return new StreamDto()
+        {
+            Link = $"/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}"
+        };
     }
 }

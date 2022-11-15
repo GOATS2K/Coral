@@ -1,3 +1,4 @@
+using Coral.Api;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
@@ -22,7 +23,11 @@ builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(conf =>
+{
+    conf.SupportNonNullableReferenceTypes();
+    conf.SchemaFilter<RequiredNotNullableSchemaFilter>();
+});
 
 var app = builder.Build();
 

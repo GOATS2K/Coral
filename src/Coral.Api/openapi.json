@@ -122,7 +122,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              }
+            }
           }
         }
       }
@@ -131,6 +148,15 @@
   "components": {
     "schemas": {
       "AlbumDto": {
+        "required": [
+          "artists",
+          "coverPresent",
+          "genres",
+          "id",
+          "name",
+          "releaseYear",
+          "tracks"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -138,29 +164,25 @@
             "format": "int32"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "artists": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistDto"
-            },
-            "nullable": true
+            }
           },
           "tracks": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TrackDto"
-            },
-            "nullable": true
+            }
           },
           "genres": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GenreDto"
-            },
-            "nullable": true
+            }
           },
           "releaseYear": {
             "type": "integer",
@@ -173,6 +195,10 @@
         "additionalProperties": false
       },
       "ArtistDto": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -180,13 +206,16 @@
             "format": "int32"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "GenreDto": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -194,13 +223,18 @@
             "format": "int32"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "SimpleAlbumDto": {
+        "required": [
+          "coverPresent",
+          "id",
+          "name",
+          "releaseYear"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -208,8 +242,7 @@
             "format": "int32"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "releaseYear": {
             "type": "integer",
@@ -222,6 +255,10 @@
         "additionalProperties": false
       },
       "SimpleArtistDto": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -229,13 +266,33 @@
             "format": "int32"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StreamDto": {
+        "required": [
+          "link"
+        ],
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "TrackDto": {
+        "required": [
+          "album",
+          "artist",
+          "discNumber",
+          "durationInSeconds",
+          "id",
+          "title",
+          "trackNumber"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -243,8 +300,7 @@
             "format": "int32"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "durationInSeconds": {
             "type": "integer",

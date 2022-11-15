@@ -2,6 +2,7 @@ using Coral.Dto.Models;
 using Coral.Encoders;
 using Coral.Encoders.EncodingModels;
 using Coral.Services;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
 
@@ -41,7 +42,9 @@ public class TranscodeController : ControllerBase
         });
         return new StreamDto()
         {
-            Link = $"/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}"
+            Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}",
+            RequestedBitrate = 256,
+            RequestedFormat = OutputFormat.AAC
         };
     }
 }

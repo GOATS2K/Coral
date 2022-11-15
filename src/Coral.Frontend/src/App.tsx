@@ -1,9 +1,10 @@
 import { MantineProvider, Text } from '@mantine/core';
+import Player from './components/Player';
 
 export default function App() {
   return (
     <MantineProvider withGlobalStyles withNormalizeCSS>
-      <Text>Welcome to Mantine!</Text>
+      <Player></Player>
     </MantineProvider>
   );
 }

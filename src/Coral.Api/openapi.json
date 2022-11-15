@@ -228,6 +228,16 @@
         },
         "additionalProperties": false
       },
+      "OutputFormat": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "SimpleAlbumDto": {
         "required": [
           "coverPresent",
@@ -273,12 +283,21 @@
       },
       "StreamDto": {
         "required": [
-          "link"
+          "link",
+          "requestedBitrate",
+          "requestedFormat"
         ],
         "type": "object",
         "properties": {
           "link": {
             "type": "string"
+          },
+          "requestedBitrate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestedFormat": {
+            "$ref": "#/components/schemas/OutputFormat"
           }
         },
         "additionalProperties": false

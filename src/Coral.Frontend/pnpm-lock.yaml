@@ -8,6 +8,7 @@ specifiers:
   '@mantine/core': ^5.7.1
   '@mantine/hooks': ^5.7.1
   '@mantine/notifications': ^5.7.1
+  '@tabler/icons': ^1.111.0
   '@testing-library/dom': '>=7.21.4'
   '@testing-library/jest-dom': ^5.16.5
   '@testing-library/react': ^13.4.0
@@ -31,6 +32,7 @@ dependencies:
   '@mantine/core': 5.7.1_etrvyeh76ry4n4cxjc37hheh7y
   '@mantine/hooks': 5.7.1_react@18.2.0
   '@mantine/notifications': 5.7.1_zuzwjqu2bpvvkpc66ml3tmhnfm
+  '@tabler/icons': 1.111.0_biqbaboplfbrettd7655fr4n2y
   '@testing-library/jest-dom': 5.16.5
   '@testing-library/react': 13.4.0_biqbaboplfbrettd7655fr4n2y
   '@testing-library/user-event': 13.5.0_aaq3sbffpfe3jnxzm2zngsddei
@@ -2477,6 +2479,21 @@ packages:
       loader-utils: 2.0.3
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /@tabler/icons/1.111.0_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-TZWYiMT5ccqfHxRE0Qtgvl+sGsMbNkrv7cJMt/tm8TN9l/CDXx/o7d8uAwUN+3PAlSFfF5e/rD1bi1WJs2xNIA==}
+    peerDependencies:
+      react: ^16.x || 17.x || 18.x
+      react-dom: ^16.x || 17.x || 18.x
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
     dev: false
 
   /@testing-library/dom/8.19.0:

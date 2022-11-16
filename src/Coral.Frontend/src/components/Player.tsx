@@ -1,8 +1,8 @@
-import { Button, Flex, Paper, Slider, Text } from '@mantine/core';
+import { Button, Flex, Paper, Slider, Text, UnstyledButton } from '@mantine/core';
 import React, { useState } from 'react'
 import ReactPlayer from 'react-player';
 import { RepositoryService, TrackDto, TranscodeService } from '../client'
-import { IconPlayerSkipForward, IconPlayerSkipBack, IconPlayerPlay } from '@tabler/icons'
+import { IconPlayerSkipForward, IconPlayerSkipBack, IconPlayerPlay, IconPlayerPause } from '@tabler/icons'
 
 async function getTracks(): Promise<TrackDto[]> {
   return await RepositoryService.getApiRepositoryTracks();
@@ -27,7 +27,7 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[6])
+    setSelectedTrack(tracks[1])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {
@@ -67,7 +67,9 @@ export default function Player() {
             marginBottom: "12px"
           }}>
             <IconPlayerSkipBack size={36}></IconPlayerSkipBack>
-            <IconPlayerPlay size={36}></IconPlayerPlay>
+            <UnstyledButton onClick={() => setPlayState(!playState)}>
+              {playState ? <IconPlayerPause size={36}></IconPlayerPause> : <IconPlayerPlay size={36}></IconPlayerPlay>}
+            </UnstyledButton>
             <IconPlayerSkipForward size={36}></IconPlayerSkipForward>
           </div>
           <div>
@@ -79,7 +81,6 @@ export default function Player() {
           </div>
         </div>
       </Paper >
-      <Button onClick={() => setPlayState(!playState)}>Play!</Button>
       <ReactPlayer ref={playerRef} url={playlist} playing={playState} onDuration={(playerDuration) => setDuration(playerDuration)} onProgress={(state) => {
         setSecondsPlayed(state.playedSeconds)
       }}></ReactPlayer>

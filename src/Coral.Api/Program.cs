@@ -77,11 +77,9 @@ await db.Database.EnsureCreatedAsync();
 
 var indexerService = scope.ServiceProvider.GetRequiredService<IIndexerService>();
 var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
-if (string.IsNullOrEmpty(contentDirectory))
+if (!string.IsNullOrEmpty(contentDirectory))
 {
-    logger.LogError("CORAL_CONTENT_DIRECTORY has not been set.");
+    indexerService.ReadDirectory(contentDirectory);
+    app.Run();
 }
-
-// indexerService.ReadDirectory(contentDirectory);
-
-app.Run();
+logger.LogCritical("CORAL_CONTENT_DIRECTORY has not been set.");

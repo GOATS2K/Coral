@@ -12,5 +12,6 @@ namespace Coral.Dto.Models
         public required string Link { get; set; }
         public required int RequestedBitrate { get; set; }
         public required OutputFormat RequestedFormat { get; set; }
+        public string? ArtworkUrl { get; set; }
     }
 }

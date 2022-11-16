@@ -28,6 +28,29 @@
         }
       }
     },
+    "/api/Repository/artwork/{trackId}": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Repository/tracks": {
       "get": {
         "tags": [
@@ -298,6 +321,10 @@
           },
           "requestedFormat": {
             "$ref": "#/components/schemas/OutputFormat"
+          },
+          "artworkUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

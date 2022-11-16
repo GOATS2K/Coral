@@ -1,4 +1,4 @@
-import { MantineProvider, Text } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import Player from './components/Player';
 
 export default function App() {

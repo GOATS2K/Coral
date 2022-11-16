@@ -1,5 +1,6 @@
 ﻿using Coral.Dto.Models;
 using Coral.Services;
+using Coral.Services.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
@@ -31,6 +32,18 @@ namespace Coral.Api.Controllers
                     Message = ex.Message
                 });
             }
+        }
+
+        [HttpGet]
+        [Route("artwork/{trackId}")]
+        public async Task<ActionResult> GetTrackArtwork(int trackId)
+        {
+            var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
+            if (artworkPath == null)
+            {
+                return NotFound();
+            }
+            return new PhysicalFileResult(artworkPath, MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
         }
 
         [HttpGet]

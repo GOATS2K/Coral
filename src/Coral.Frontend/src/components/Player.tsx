@@ -1,10 +1,11 @@
-import { Group, Paper, Slider, Text, UnstyledButton } from '@mantine/core';
+import { Paper, Slider, Text, UnstyledButton, Image } from '@mantine/core';
 import React, { useState } from 'react'
 import ReactPlayer from 'react-player';
 import { RepositoryService, TrackDto, TranscodeService } from '../client'
 import { IconPlayerSkipForward, IconPlayerSkipBack, IconPlayerPlay, IconPlayerPause } from '@tabler/icons'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
+import { StreamDto } from '../client/models/StreamDto';
 
 dayjs.extend(duration)
 
@@ -18,7 +19,7 @@ function formatSecondsToMinutes(value: number): string {
 
 export default function Player() {
   const [tracks, setTracks] = useState<TrackDto[]>([] as TrackDto[]);
-  const [playlist, setPlaylist] = useState("");
+  const [streamTrack, setStreamTrack] = useState({} as StreamDto);
   const [playState, setPlayState] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState({} as TrackDto);
   // const [duration, setDuration] = useState(0);
@@ -26,7 +27,7 @@ export default function Player() {
   const playerRef = React.useRef<ReactPlayer>(null);
 
   const buttonSize = 32
-  const strokeSize = 1
+  const strokeSize = 0.8
 
   React.useEffect(() => {
     const getApiTracks = async () => {
@@ -38,12 +39,12 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[4])
+    setSelectedTrack(tracks[12])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {
-      let playlistUrl = await TranscodeService.getApiTranscodeTracks(selectedTrack.id!)
-      setPlaylist(playlistUrl?.link!)
+      let streamTrack = await TranscodeService.getApiTranscodeTracks(selectedTrack.id!)
+      setStreamTrack(streamTrack)
     }
     getTrackPlaylist()
   }, [tracks, selectedTrack])
@@ -55,11 +56,14 @@ export default function Player() {
         flexDirection: "row",
         flexWrap: "nowrap",
       }}>
+        <div style={{ maxWidth: "70px", marginRight: "8px" }}>
+          <Image src={streamTrack.artworkUrl} withPlaceholder width={"70px"} height={"70px"}></Image>
+        </div>
         <div style={{
           // vertically center
-          margin: "auto 0"
+          margin: "auto 0",
         }}>
-          <Text fz="md" fw={700}>{selectedTrack.title}</Text>
+          <Text fz="sm" fw={700} lineClamp={1}>{selectedTrack.title}</Text>
           <Text fz="xs">{selectedTrack.artist?.name}</Text>
         </div>
         <div style={{
@@ -93,7 +97,7 @@ export default function Player() {
           </div>
         </div>
       </Paper >
-      <ReactPlayer ref={playerRef} url={playlist} playing={playState} onProgress={(state) => {
+      <ReactPlayer ref={playerRef} url={streamTrack.link} playing={playState} onProgress={(state) => {
         setSecondsPlayed(state.playedSeconds)
       }}></ReactPlayer>
     </div >

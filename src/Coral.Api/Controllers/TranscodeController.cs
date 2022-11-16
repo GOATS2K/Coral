@@ -40,11 +40,21 @@ public class TranscodeController : ControllerBase
             opt.Bitrate = 256;
             opt.RequestType = TranscodeRequestType.HLS;
         });
-        return new StreamDto()
+
+        var artworkUrl = _libraryService.GetArtworkForTrack(trackId);
+        var streamData = new StreamDto()
         {
             Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}",
             RequestedBitrate = 256,
             RequestedFormat = OutputFormat.AAC
         };
+
+        if (artworkUrl != null)
+        {
+            // generate this url programmatically
+            streamData.ArtworkUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/repository/artwork/{trackId}";
+        }
+
+        return streamData;
     }
 }

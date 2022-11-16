@@ -25,6 +25,9 @@ export default function Player() {
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const playerRef = React.useRef<ReactPlayer>(null);
 
+  const buttonSize = 32
+  const strokeSize = 1
+
   React.useEffect(() => {
     const getApiTracks = async () => {
       let tracks = await getTracks()
@@ -35,7 +38,7 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[0])
+    setSelectedTrack(tracks[4])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {
@@ -72,13 +75,13 @@ export default function Player() {
             columnGap: "18px",
             // horizontally center
             margin: "0 auto",
-            marginBottom: "12px"
+            marginBottom: "4px"
           }}>
-            <IconPlayerSkipBack size={36}></IconPlayerSkipBack>
+            <IconPlayerSkipBack size={buttonSize} strokeWidth={strokeSize}></IconPlayerSkipBack>
             <UnstyledButton onClick={() => setPlayState(!playState)}>
-              {playState ? <IconPlayerPause size={36}></IconPlayerPause> : <IconPlayerPlay size={36}></IconPlayerPlay>}
+              {playState ? <IconPlayerPause size={buttonSize} strokeWidth={strokeSize}></IconPlayerPause> : <IconPlayerPlay size={buttonSize} strokeWidth={strokeSize}></IconPlayerPlay>}
             </UnstyledButton>
-            <IconPlayerSkipForward size={36}></IconPlayerSkipForward>
+            <IconPlayerSkipForward size={buttonSize} strokeWidth={strokeSize}></IconPlayerSkipForward>
           </div>
           <div style={{ minWidth: "75%", display: "flex", flexDirection: "row" }}>
             <Text mr={16} fz={"sm"}>{formatSecondsToMinutes(secondsPlayed)}</Text>

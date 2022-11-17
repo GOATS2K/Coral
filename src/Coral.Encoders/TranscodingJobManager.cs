@@ -72,6 +72,7 @@ namespace Coral.Encoders
             var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id);
             if (existingJob != null)
             {
+                await WaitForFile(existingJob.HlsPlaylistPath!);
                 return existingJob;
             }
 
@@ -103,21 +104,31 @@ namespace Coral.Encoders
             #pragma warning disable CS4014 // I want this to run in the background.
             jobCommand.ExecuteAsync();
             #pragma warning restore CS4014
-            
-            while (!File.Exists(job.HlsPlaylistPath))
-            {
-                await Task.Delay(200);
-    
-                if (!string.IsNullOrEmpty(transcodingErrorStream.ToString()) 
-                    || !string.IsNullOrEmpty(pipeErrorStream.ToString()))
-                {
-                    throw new ApplicationException("Transcoder failed:\n" +
-                                        $"Transcoder: {transcodingErrorStream}\n\n" +
-                                        $"Pipe: {pipeErrorStream}\n");
-                }
-            }
+
+            await WaitForFile(job.HlsPlaylistPath!, () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
 
             return job;
+        }
+
+        private static async Task WaitForFile(string filePath, Action? action = null)
+        {
+            while (!File.Exists(filePath))
+            {
+                await Task.Delay(20);
+                action?.Invoke();
+            }
+        }
+
+
+        private static void CheckForTranscoderFailure(StringBuilder transcodingErrorStream, StringBuilder pipeErrorStream)
+        {
+            if (!string.IsNullOrEmpty(transcodingErrorStream.ToString())
+                                || !string.IsNullOrEmpty(pipeErrorStream.ToString()))
+            {
+                throw new ApplicationException("Transcoder failed:\n" +
+                                    $"Transcoder: {transcodingErrorStream}\n\n" +
+                                    $"Pipe: {pipeErrorStream}\n");
+            }
         }
 
         public void EndJob(Guid id)

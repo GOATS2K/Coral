@@ -40,23 +40,12 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[22])
+    setSelectedTrack(tracks[21])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {
       console.log("Getting stream for track: ", selectedTrack)
       let streamTrack = await TranscodeService.getApiTranscodeTracks(selectedTrack.id!)
-      // validate stream is live
-      while (true) {
-        try {
-          let streamResult = await axios.get(streamTrack.link)
-          if (streamResult.status === 200) {
-            break;
-          }
-        } catch (error) {
-          await new Promise(r => setTimeout(r, 500));
-        }
-      }
       setStreamTrack(streamTrack)
     }
     getTrackPlaylist()

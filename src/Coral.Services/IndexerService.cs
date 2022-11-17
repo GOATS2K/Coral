@@ -89,6 +89,12 @@ public class IndexerService : IIndexerService
             }, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
             IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
+            
+            // When writing albums with no album tag, we default back to using their parent directory.
+            
+            // This means that in order not create duplicate albums, we have to save changes for every track
+            // so the albums are persisted.
+            _context.SaveChanges();
         }
     }
 
@@ -209,17 +215,18 @@ public class IndexerService : IIndexerService
 
     private Album GetAlbum(List<Artist> artists, ATL.Track atlTrack)
     {
-        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : "Unknown Album";
-        var indexedAlbum = _context.Albums
-            .Include(x => x.Artists)
-            .Where(a => a.Artists.Any(dbArtist => artists.Contains(dbArtist)))
-            .FirstOrDefault(a => a.Name == albumName);
+        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : Directory.GetParent(atlTrack.Path).Name;
+        // Albums can have the same name, so in order to differentiate between them
+        // we also use supplemental metadata. 
+        var albumQuery = _context.Albums
+            .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal && a.TrackTotal == atlTrack.TrackTotal);
+        var indexedAlbum = albumQuery.FirstOrDefault();
         if (indexedAlbum == null)
         {
             indexedAlbum = new Album()
             {
                 Artists = artists,
-                Name = atlTrack.Album,
+                Name = albumName!,
                 ReleaseYear = atlTrack.Year,
                 DiscTotal = atlTrack.DiscTotal,
                 TrackTotal = atlTrack.TrackTotal,

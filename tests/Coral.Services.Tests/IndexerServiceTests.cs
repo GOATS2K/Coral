@@ -73,14 +73,27 @@ public class IndexerServiceTests
     public async Task ReadDirectory_MissingMetadata_IndexesOK()
     {
         // arrange
+        var directoryName = new DirectoryInfo(TestDataRepository.MarsMissingMetadata).Name;
 
         // act
         _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);
 
-        // arrange
+        // assert
         var marsArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
         var unknownArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
 
+        // take the Android approach and name the albums with no album tag the same as the folder they're in
+        var albumList = await _testDatabase.Albums.Where(a => a.Name == directoryName).ToListAsync();
+
+        // ensure only one album was created for both tracks
+        Assert.Equal(1, albumList.Count());
+        // ensure the album has both tracks
+        var album = albumList.Single();
+        Assert.Equal(2, album.Tracks.Count());
+        
+
+
+        Assert.NotNull(albumList);
         Assert.NotNull(marsArtist);
         Assert.NotNull(unknownArtist);
     }

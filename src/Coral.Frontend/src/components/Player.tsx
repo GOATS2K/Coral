@@ -6,7 +6,6 @@ import { IconPlayerSkipForward, IconPlayerSkipBack, IconPlayerPlay, IconPlayerPa
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import { StreamDto } from '../client/models/StreamDto';
-import axios from 'axios';
 
 dayjs.extend(duration)
 
@@ -40,7 +39,7 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[21])
+    setSelectedTrack(tracks[19])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {

@@ -106,7 +106,7 @@ namespace Coral.Encoders
             
             while (!File.Exists(job.HlsPlaylistPath))
             {
-                await Task.Delay(20);
+                await Task.Delay(200);
     
                 if (!string.IsNullOrEmpty(transcodingErrorStream.ToString()) 
                     || !string.IsNullOrEmpty(pipeErrorStream.ToString()))

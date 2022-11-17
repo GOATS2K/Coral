@@ -6,6 +6,7 @@ import { IconPlayerSkipForward, IconPlayerSkipBack, IconPlayerPlay, IconPlayerPa
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import { StreamDto } from '../client/models/StreamDto';
+import axios from 'axios';
 
 dayjs.extend(duration)
 
@@ -27,7 +28,7 @@ export default function Player() {
   const playerRef = React.useRef<ReactPlayer>(null);
 
   const buttonSize = 32
-  const strokeSize = 0.8
+  const strokeSize = 1.2
 
   React.useEffect(() => {
     const getApiTracks = async () => {
@@ -39,11 +40,23 @@ export default function Player() {
 
   React.useEffect(() => {
     if (tracks?.length === 0 || tracks == null) return;
-    setSelectedTrack(tracks[12])
+    setSelectedTrack(tracks[22])
     if (selectedTrack == null) return;
 
     const getTrackPlaylist = async () => {
+      console.log("Getting stream for track: ", selectedTrack)
       let streamTrack = await TranscodeService.getApiTranscodeTracks(selectedTrack.id!)
+      // validate stream is live
+      while (true) {
+        try {
+          let streamResult = await axios.get(streamTrack.link)
+          if (streamResult.status === 200) {
+            break;
+          }
+        } catch (error) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
       setStreamTrack(streamTrack)
     }
     getTrackPlaylist()
@@ -69,13 +82,12 @@ export default function Player() {
         <div style={{
           display: "flex",
           flexDirection: "column",
-          minWidth: "70%",
+          minWidth: "50%",
           // horizontally center
           margin: "0 auto",
         }}>
           <div style={{
             display: "flex",
-            maxWidth: "60%",
             columnGap: "18px",
             // horizontally center
             margin: "0 auto",
@@ -89,7 +101,7 @@ export default function Player() {
           </div>
           <div style={{ minWidth: "75%", display: "flex", flexDirection: "row" }}>
             <Text mr={16} fz={"sm"}>{formatSecondsToMinutes(secondsPlayed)}</Text>
-            <Slider style={{ flex: 1, margin: "auto 0" }} size={6} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
+            <Slider style={{ flex: 1, margin: "auto 0" }} size={4} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
               playerRef.current?.seekTo(value)
               setSecondsPlayed(value)
             }} label={(value) => formatSecondsToMinutes(value)}></Slider>
@@ -99,6 +111,8 @@ export default function Player() {
       </Paper >
       <ReactPlayer ref={playerRef} url={streamTrack.link} playing={playState} onProgress={(state) => {
         setSecondsPlayed(state.playedSeconds)
+      }} onError={(error, data, hlsInstance) => {
+        console.log({ error, data, hlsInstance })
       }}></ReactPlayer>
     </div >
   )

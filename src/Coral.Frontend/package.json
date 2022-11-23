@@ -30,7 +30,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate-client": "openapi --input ../Coral.Api/openapi.json --output src/client --client axios"
+    "generate-client": "openapi --input ../Coral.Api/openapi.json --output src/client --client axios",
+    "format": "prettier --write src"
   },
   "eslintConfig": {
     "extends": [
@@ -56,7 +57,8 @@
     "@babel/plugin-transform-react-jsx": "^7.14.9",
     "@testing-library/dom": ">=7.21.4",
     "form-data": "4.x",
-    "openapi-typescript-codegen": "^0.23.0"
+    "openapi-typescript-codegen": "^0.23.0",
+    "prettier": "^2.8.0"
   },
   "peerDependencies": {
     "@babel/core": ">=7.0.0-0 <8.0.0",

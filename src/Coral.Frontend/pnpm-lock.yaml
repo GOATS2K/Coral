@@ -24,6 +24,7 @@ specifiers:
   form-data: 4.x
   next: ^13.0.4
   openapi-typescript-codegen: ^0.23.0
+  prettier: ^2.8.0
   react: ^18.2.0
   react-dom: ^18.2.0
   react-player: ^2.11.0
@@ -61,6 +62,7 @@ devDependencies:
   '@testing-library/dom': 8.19.0
   form-data: 4.0.0
   openapi-typescript-codegen: 0.23.0
+  prettier: 2.8.0
 
 packages:
 
@@ -1827,6 +1829,12 @@ packages:
       picocolors: 1.0.0
       source-map-js: 1.0.2
     dev: false
+
+  /prettier/2.8.0:
+    resolution: {integrity: sha512-9Lmg8hTFZKG0Asr/kW9Bp8tJjRVluO8EJQVfY2T7FMw9T5jy4I/Uvx0Rca/XWf50QQ1/SS48+6IJWnrb+2yemA==}
+    engines: {node: '>=10.13.0'}
+    hasBin: true
+    dev: true
 
   /pretty-format/27.5.1:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}

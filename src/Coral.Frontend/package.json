@@ -4,8 +4,10 @@
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.5",
+    "@emotion/server": "^11.10.0",
     "@mantine/core": "^5.7.1",
     "@mantine/hooks": "^5.7.1",
+    "@mantine/next": "^5.8.3",
     "@mantine/notifications": "^5.7.1",
     "@tabler/icons": "^1.111.0",
     "@testing-library/jest-dom": "^5.16.5",
@@ -17,19 +19,17 @@
     "@types/react-dom": "^18.0.8",
     "axios": "^1.1.3",
     "dayjs": "^1.11.6",
+    "next": "^13.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-player": "^2.11.0",
-    "react-scripts": "5.0.1",
     "typescript": "^4.8.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "generate-client": "openapi --input ../Coral.Api/openapi.json --output src/client --client axios"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "eslintConfig": {
     "extends": [

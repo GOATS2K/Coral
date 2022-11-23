@@ -43,6 +43,9 @@ function Player({ tracks }: PlayerProps) {
     console.info("Next track called: ", { "position": playerPosition + 1, "targetTrack": tracks[playerPosition + 1] })
     if (playerPosition !== tracks.length - 1) {
       setPlayerPosition(playerPosition + 1);
+    } else {
+      // stop playing when we've reached the end
+      setPlayState(false);
     }
   }
 
@@ -75,6 +78,7 @@ function Player({ tracks }: PlayerProps) {
         <div style={{
           // vertically center
           alignSelf: "center",
+          // allow metadata panel to take up 20% of the space in the flexbox
           width: "20%"
         }}>
           <Text fz="sm" fw={700} lineClamp={2}>{selectedTrack.title}</Text>
@@ -84,6 +88,9 @@ function Player({ tracks }: PlayerProps) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          // by allowing the container to take up 50% of the width
+          // we can ensure it's fully centered
+          // some funny wizardry I don't quite get yet
           width: "50%"
         }}>
           <div style={{
@@ -105,9 +112,9 @@ function Player({ tracks }: PlayerProps) {
               <IconPlayerSkipForward size={buttonSize} strokeWidth={strokeSize}></IconPlayerSkipForward>
             </UnstyledButton>
           </div>
-          <div style={{ minWidth: "50%", display: "flex", flexDirection: "row", }}>
+          <div style={{ minWidth: "75%", display: "flex", flexDirection: "row", alignSelf: "center" }}>
             <Text mr={16} fz={"sm"}>{formatSecondsToMinutes(secondsPlayed)}</Text>
-            <Slider style={{ flex: 1, margin: "auto 0" }} size={4} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
+            <Slider style={{ flex: 1, alignSelf: "center" }} size={4} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
               playerRef.current?.seekTo(value)
               setSecondsPlayed(value)
             }} label={(value) => formatSecondsToMinutes(value)}></Slider>
@@ -119,7 +126,7 @@ function Player({ tracks }: PlayerProps) {
         setSecondsPlayed(state.playedSeconds)
       }} onError={(error, data, hlsInstance) => {
         console.log({ error, data, hlsInstance })
-      }}></ReactPlayer>
+      }} onEnded={() => nextTrack()}></ReactPlayer>
     </div >
   )
 }

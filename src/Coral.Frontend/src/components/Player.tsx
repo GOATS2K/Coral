@@ -77,15 +77,14 @@ function Player({ tracks }: PlayerProps) {
           alignSelf: "center",
           width: "20%"
         }}>
-          <Text fz="sm" fw={700} lineClamp={1}>{selectedTrack.title}</Text>
+          <Text fz="sm" fw={700} lineClamp={2}>{selectedTrack.title}</Text>
           <Text fz="xs">{selectedTrack.artist?.name}</Text>
         </div>
         <div style={{
           display: "flex",
           flexDirection: "column",
-          minWidth: "50%",
-          // horizontally center
-          margin: "0 auto",
+          justifyContent: "center",
+          width: "50%"
         }}>
           <div style={{
             display: "flex",
@@ -106,7 +105,7 @@ function Player({ tracks }: PlayerProps) {
               <IconPlayerSkipForward size={buttonSize} strokeWidth={strokeSize}></IconPlayerSkipForward>
             </UnstyledButton>
           </div>
-          <div style={{ minWidth: "75%", display: "flex", flexDirection: "row" }}>
+          <div style={{ minWidth: "50%", display: "flex", flexDirection: "row", }}>
             <Text mr={16} fz={"sm"}>{formatSecondsToMinutes(secondsPlayed)}</Text>
             <Slider style={{ flex: 1, margin: "auto 0" }} size={4} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
               playerRef.current?.seekTo(value)

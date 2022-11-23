@@ -41,7 +41,7 @@ public class TranscodeController : ControllerBase
             opt.RequestType = TranscodeRequestType.HLS;
         });
 
-        var artworkUrl = _libraryService.GetArtworkForTrack(trackId);
+        var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
         var streamData = new StreamDto()
         {
             Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}",
@@ -49,7 +49,7 @@ public class TranscodeController : ControllerBase
             RequestedFormat = OutputFormat.AAC
         };
 
-        if (artworkUrl != null)
+        if (!string.IsNullOrEmpty(artworkPath))
         {
             // generate this url programmatically
             streamData.ArtworkUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/repository/artwork/{trackId}";

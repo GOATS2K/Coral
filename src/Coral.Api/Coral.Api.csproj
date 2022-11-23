@@ -18,12 +18,6 @@
 	</ItemGroup>
 
 	<Target Name="NodeDependencies" BeforeTargets="BeforeBuild">
-		<!-- Is node installed? -->
-		<Exec
-		   Command="node" ContinueOnError="false" />
-		<Exec
-		   Command="pnpm --version" ContinueOnError="false" />
-		<!-- it is, so have pnpm install all dependencies -->
 		<Exec
 		  WorkingDirectory="..\Coral.Frontend"
 		  Command="pnpm install"

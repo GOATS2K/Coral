@@ -25,6 +25,89 @@ function Player({ tracks }: PlayerProps) {
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [playerPosition, setPlayerPosition] = useState(0);
 
+  const updatePositionState = () => {
+    navigator.mediaSession.setPositionState({
+      position: secondsPlayed,
+      duration: selectedTrack.durationInSeconds,
+      playbackRate: 1
+    })
+  }
+
+  const announceMediaSession = () => {
+    if (selectedTrack == null) {
+      return;
+    }
+
+    if ("mediaSession" in navigator) {
+      console.log("Announcing media info for track: ", selectedTrack);
+      let metadata = new MediaMetadata({
+        title: selectedTrack.title,
+        artist: selectedTrack.artist?.name,
+        album: selectedTrack.album?.name,
+      });
+
+      if (streamTrack.artworkUrl != null) {
+        metadata["artwork"] = [
+          {
+            src: streamTrack.artworkUrl,
+            type: "image/jpg"
+          }
+        ]
+      }
+
+      navigator.mediaSession.metadata = metadata;
+      navigator.mediaSession.setActionHandler("play", () => {
+        setPlayState(true)
+      })
+      navigator.mediaSession.setActionHandler("pause", () => {
+        setPlayState(false)
+      })
+      navigator.mediaSession.setActionHandler("previoustrack", () => {
+        prevTrack()
+      })
+      navigator.mediaSession.setActionHandler("nexttrack", () => {
+        nextTrack()
+      })
+
+      navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+        if (playerRef.current?.getCurrentTime() == 0) {
+          return;
+        }
+        let seekTime = Math.floor(playerRef.current!.getCurrentTime() - (details.seekOffset != null ? details.seekOffset : 10))
+        if (seekTime < 0) {
+          return;
+        }
+        playerRef.current?.seekTo(seekTime)
+        setSecondsPlayed(seekTime)
+        updatePositionState();
+      })
+      navigator.mediaSession.setActionHandler("seekforward", (details) => {
+        if (playerRef.current!.getCurrentTime() == 0) {
+          return;
+        }
+
+        let seekTime = playerRef.current!.getCurrentTime() + (details.seekOffset != null ? details.seekOffset : 10)
+        if (seekTime > selectedTrack.durationInSeconds) {
+          return;
+        }
+
+        playerRef.current?.seekTo(seekTime)
+        setSecondsPlayed(seekTime)
+        updatePositionState();
+      })
+    }
+  };
+
+  React.useEffect(() => {
+    if (playState) {
+      announceMediaSession();
+      console.log("Media Session: ", navigator.mediaSession.metadata);
+      navigator.mediaSession.playbackState = "playing";
+    } else {
+      navigator.mediaSession.playbackState = "paused";
+    }
+  }, [playState, selectedTrack])
+
   React.useEffect(() => {
     const handleTrackChange = async () => {
       let track = tracks[playerPosition];
@@ -117,16 +200,27 @@ function Player({ tracks }: PlayerProps) {
             <Slider style={{ flex: 1, alignSelf: "center" }} size={4} value={secondsPlayed} max={selectedTrack.durationInSeconds} onChange={(value) => {
               playerRef.current?.seekTo(value)
               setSecondsPlayed(value)
+              updatePositionState();
             }} label={(value) => formatSecondsToMinutes(value)}></Slider>
             <Text ml={16} fz={"sm"}>{formatSecondsToMinutes(selectedTrack.durationInSeconds!)}</Text>
           </div>
         </div>
       </Paper >
-      <ReactPlayer ref={playerRef} url={streamTrack.link} playing={playState} onProgress={(state) => {
-        setSecondsPlayed(state.playedSeconds)
-      }} onError={(error, data, hlsInstance) => {
-        console.log({ error, data, hlsInstance })
-      }} onEnded={() => nextTrack()}></ReactPlayer>
+      <ReactPlayer
+        ref={playerRef}
+        url={streamTrack.link}
+        playing={playState}
+        onProgress={(state) => {
+          setSecondsPlayed(state.playedSeconds)
+          updatePositionState();
+        }}
+        onError={(error, data, hlsInstance) => {
+          console.log({ error, data, hlsInstance })
+        }}
+        onEnded={() => nextTrack()}
+        width={0}
+        height={0}
+        style={{ display: "none" }}></ReactPlayer>
     </div >
   )
 }

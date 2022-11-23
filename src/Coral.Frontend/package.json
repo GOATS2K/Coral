@@ -29,7 +29,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "generate-client": "openapi --input ../Coral.Api/openapi.json --output src/client --client axios"
   },
   "eslintConfig": {
     "extends": [

@@ -1,6 +1,5 @@
 import React from 'react'
 import { RepositoryService, TrackDto } from '../../client';
-import Player from '../../components/Player'
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 

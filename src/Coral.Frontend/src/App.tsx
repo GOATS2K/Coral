@@ -1,10 +1,10 @@
 import { MantineProvider } from '@mantine/core';
-import Player from './components/Player';
+import Album from './pages/Album';
 
 export default function App() {
   return (
-    <MantineProvider withGlobalStyles withNormalizeCSS theme={{ colorScheme: 'dark' }}>
-      <Player></Player>
+    <MantineProvider withGlobalStyles withNormalizeCSS theme={{ colorScheme: 'light' }}>
+      <Album></Album>
     </MantineProvider>
   );
 }

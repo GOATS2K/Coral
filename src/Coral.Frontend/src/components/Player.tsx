@@ -65,14 +65,15 @@ function Player({ tracks }: PlayerProps) {
       // make sure we're not re-setting metadata
       // as that can cause the browser player to stop working
       let existingMetadata = navigator.mediaSession.metadata;
-      if (existingMetadata?.artist == metadata.artist 
+      if (existingMetadata?.artist == metadata.artist
         && existingMetadata?.title == metadata.title
         && existingMetadata.album == metadata.album) {
-          return;
+        return;
       }
 
+      console.info("Annoucing media session for track: ", metadata);
       navigator.mediaSession.metadata = metadata;
-      updatePositionState(0);
+      updatePositionState(playerRef.current?.getCurrentTime());
 
       navigator.mediaSession.setActionHandler("play", () => {
         setPlayState(true);
@@ -87,38 +88,38 @@ function Player({ tracks }: PlayerProps) {
         nextTrack();
       });
 
-      navigator.mediaSession.setActionHandler("seekbackward", (details) => {
-        if (playerRef.current?.getCurrentTime() == 0) {
-          return;
-        }
-        let seekTime = Math.floor(
-          playerRef.current!.getCurrentTime() -
-            (details.seekOffset != null ? details.seekOffset : 10)
-        );
-        if (seekTime < 0) {
-          return;
-        }
-        playerRef.current?.seekTo(seekTime);
-        setSecondsPlayed(seekTime);
-        updatePositionState(seekTime);
-      });
+      // navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+      //   if (playerRef.current?.getCurrentTime() == 0) {
+      //     return;
+      //   }
+      //   let seekTime = Math.floor(
+      //     playerRef.current!.getCurrentTime() -
+      //     (details.seekOffset != null ? details.seekOffset : 10)
+      //   );
+      //   if (seekTime < 0) {
+      //     return;
+      //   }
+      //   playerRef.current?.seekTo(seekTime);
+      //   setSecondsPlayed(seekTime);
+      //   updatePositionState(seekTime);
+      // });
 
-      navigator.mediaSession.setActionHandler("seekforward", (details) => {
-        if (playerRef.current!.getCurrentTime() == 0) {
-          return;
-        }
+      // navigator.mediaSession.setActionHandler("seekforward", (details) => {
+      //   if (playerRef.current!.getCurrentTime() == 0) {
+      //     return;
+      //   }
 
-        let seekTime =
-          playerRef.current!.getCurrentTime() +
-          (details.seekOffset != null ? details.seekOffset : 10);
-        if (seekTime > selectedTrack.durationInSeconds) {
-          return;
-        }
+      //   let seekTime =
+      //     playerRef.current!.getCurrentTime() +
+      //     (details.seekOffset != null ? details.seekOffset : 10);
+      //   if (seekTime > selectedTrack.durationInSeconds) {
+      //     return;
+      //   }
 
-        playerRef.current?.seekTo(seekTime);
-        setSecondsPlayed(seekTime);
-        updatePositionState(seekTime);
-      });
+      //   playerRef.current?.seekTo(seekTime);
+      //   setSecondsPlayed(seekTime);
+      //   updatePositionState(seekTime);
+      // });
 
       navigator.mediaSession.setActionHandler("seekto", (details) => {
         if (playerRef.current!.getCurrentTime() == 0) {
@@ -127,21 +128,11 @@ function Player({ tracks }: PlayerProps) {
         if (details.seekTime != null) {
           playerRef.current?.seekTo(details.seekTime);
           setSecondsPlayed(details.seekTime);
-          updatePositionState(details.seekTime);
+          // updatePositionState(details.seekTime);
         }
       });
     }
   };
-
-
-  React.useEffect(() => {
-    if (playState) {
-      announceMediaSession();
-      navigator.mediaSession.playbackState = "playing";
-    } else {
-      navigator.mediaSession.playbackState = "paused";
-    }
-  }, [playState, selectedTrack]);
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
@@ -149,7 +140,7 @@ function Player({ tracks }: PlayerProps) {
 
       if (track != null) {
         setSelectedTrack(track);
-        let streamTrack = await TranscodeService.getApiTranscodeTracks(
+        let streamTrack = await TranscodeService.transcodeTrack(
           track.id
         );
         setStreamTrack(streamTrack);
@@ -296,6 +287,7 @@ function Player({ tracks }: PlayerProps) {
         ref={playerRef}
         url={streamTrack.link}
         playing={playState}
+        onPlay={() => announceMediaSession()}
         onProgress={(state) => {
           setSecondsPlayed(state.playedSeconds);
         }}

@@ -73,9 +73,8 @@ public class IndexerService : IIndexerService
             {
                 IndexSingleFiles(analyzedTracks);
             }
+            _context.SaveChanges();
         }
-
-        _context.SaveChanges();
     }
 
     private void IndexSingleFiles(List<ATL.Track> tracks)
@@ -219,6 +218,9 @@ public class IndexerService : IIndexerService
         // Albums can have the same name, so in order to differentiate between them
         // we also use supplemental metadata. 
         var albumQuery = _context.Albums
+            .Include(a => a.Artists)
+            .Include(a => a.Genres)
+            .Include(a => a.Tracks)
             .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal && a.TrackTotal == atlTrack.TrackTotal);
         var indexedAlbum = albumQuery.FirstOrDefault();
         if (indexedAlbum == null)
@@ -241,7 +243,8 @@ public class IndexerService : IIndexerService
                 .SequenceEqual(artists.OrderBy(a => a.Name)))
         {
             var missingArtists = artists.Where(a => !indexedAlbum.Artists.Contains(a));
-            _context.Artists.AddRange(missingArtists);
+            indexedAlbum.Artists.AddRange(missingArtists);
+            _context.Albums.Update(indexedAlbum);
         }
         return indexedAlbum;
     }

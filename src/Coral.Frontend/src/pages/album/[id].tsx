@@ -9,7 +9,7 @@ export default function Album() {
   let { id } = router.query;
   React.useEffect(() => {
     const getAlbum = async () => {
-      let albums = await RepositoryService.getApiRepositoryAlbums();
+      let albums = await RepositoryService.getAlbums();
       let targetId = id != null ? +id : 1;
       let targetAlbum = albums.find((a) => a.id === targetId);
       if (targetAlbum != null) {

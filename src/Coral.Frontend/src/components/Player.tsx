@@ -11,6 +11,7 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { StreamDto } from "../client/models/StreamDto";
+import styles from "../styles/Player.module.css";
 
 dayjs.extend(duration);
 
@@ -38,7 +39,7 @@ function Player({ tracks }: PlayerProps) {
       position: timestamp != null ? timestamp : secondsPlayed,
       duration: selectedTrack.durationInSeconds,
       playbackRate: 1,
-    }
+    };
     navigator.mediaSession.setPositionState(state);
   };
 
@@ -65,9 +66,11 @@ function Player({ tracks }: PlayerProps) {
       // make sure we're not re-setting metadata
       // as that can cause the browser player to stop working
       let existingMetadata = navigator.mediaSession.metadata;
-      if (existingMetadata?.artist == metadata.artist
-        && existingMetadata?.title == metadata.title
-        && existingMetadata.album == metadata.album) {
+      if (
+        existingMetadata?.artist == metadata.artist &&
+        existingMetadata?.title == metadata.title &&
+        existingMetadata.album == metadata.album
+      ) {
         return;
       }
 
@@ -140,9 +143,7 @@ function Player({ tracks }: PlayerProps) {
 
       if (track != null) {
         setSelectedTrack(track);
-        let streamTrack = await TranscodeService.transcodeTrack(
-          track.id
-        );
+        let streamTrack = await TranscodeService.transcodeTrack(track.id);
         setStreamTrack(streamTrack);
       }
     };
@@ -169,120 +170,72 @@ function Player({ tracks }: PlayerProps) {
   const strokeSize = 1.2;
 
   return (
-    <div>
-      <Paper
-        shadow="xs"
-        radius="md"
-        p="md"
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          flexWrap: "nowrap",
-          // move to bottom of page
-          position: "absolute",
-          bottom: 0,
-          // restore width
-          width: "100%",
-        }}
-      >
-        <div style={{ maxWidth: "70px", marginRight: "8px" }}>
-          <Image
-            src={streamTrack.artworkUrl}
-            withPlaceholder
-            width={"70px"}
-            height={"70px"}
-          ></Image>
+    <Paper shadow="xs" radius="md" p="md" className={styles.wrapper}>
+      <div className={styles.imageBox}>
+        <Image
+          src={streamTrack.artworkUrl}
+          withPlaceholder
+          width={"70px"}
+          height={"70px"}
+        ></Image>
+      </div>
+      <div className={styles.imageText}>
+        <Text fz="sm" fw={700} lineClamp={2}>
+          {selectedTrack.title}
+        </Text>
+        <Text fz="xs">{selectedTrack.artist?.name}</Text>
+      </div>
+      <div className={styles.playerWrapper}>
+        <div className={styles.playerButtons}>
+          <UnstyledButton onClick={prevTrack}>
+            <IconPlayerSkipBack
+              size={buttonSize}
+              strokeWidth={strokeSize}
+            ></IconPlayerSkipBack>
+          </UnstyledButton>
+
+          <UnstyledButton onClick={() => setPlayState(!playState)}>
+            {playState ? (
+              <IconPlayerPause
+                size={buttonSize}
+                strokeWidth={strokeSize}
+              ></IconPlayerPause>
+            ) : (
+              <IconPlayerPlay
+                size={buttonSize}
+                strokeWidth={strokeSize}
+              ></IconPlayerPlay>
+            )}
+          </UnstyledButton>
+
+          <UnstyledButton onClick={nextTrack}>
+            <IconPlayerSkipForward
+              size={buttonSize}
+              strokeWidth={strokeSize}
+            ></IconPlayerSkipForward>
+          </UnstyledButton>
         </div>
-        <div
-          style={{
-            // vertically center
-            alignSelf: "center",
-            // allow metadata panel to take up 20% of the space in the flexbox
-            width: "20%",
-          }}
-        >
-          <Text fz="sm" fw={700} lineClamp={2}>
-            {selectedTrack.title}
+        <div className={styles.playerSeekbar}>
+          <Text mr={16} fz={"sm"}>
+            {formatSecondsToMinutes(secondsPlayed)}
           </Text>
-          <Text fz="xs">{selectedTrack.artist?.name}</Text>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            // by allowing the container to take up 50% of the width
-            // we can ensure it's fully centered
-            // some funny wizardry I don't quite get yet
-            width: "50%",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              columnGap: "1.2em",
-              // horizontally center
-              alignSelf: "center",
-              marginBottom: "4px",
+          <Slider
+            style={{ flex: 1, alignSelf: "center" }}
+            size={4}
+            value={secondsPlayed}
+            max={selectedTrack.durationInSeconds}
+            onChange={(value: number) => {
+              playerRef.current?.seekTo(value);
+              setSecondsPlayed(value);
+              updatePositionState(value);
             }}
-          >
-            <UnstyledButton onClick={prevTrack}>
-              <IconPlayerSkipBack
-                size={buttonSize}
-                strokeWidth={strokeSize}
-              ></IconPlayerSkipBack>
-            </UnstyledButton>
-
-            <UnstyledButton onClick={() => setPlayState(!playState)}>
-              {playState ? (
-                <IconPlayerPause
-                  size={buttonSize}
-                  strokeWidth={strokeSize}
-                ></IconPlayerPause>
-              ) : (
-                <IconPlayerPlay
-                  size={buttonSize}
-                  strokeWidth={strokeSize}
-                ></IconPlayerPlay>
-              )}
-            </UnstyledButton>
-
-            <UnstyledButton onClick={nextTrack}>
-              <IconPlayerSkipForward
-                size={buttonSize}
-                strokeWidth={strokeSize}
-              ></IconPlayerSkipForward>
-            </UnstyledButton>
-          </div>
-          <div
-            style={{
-              minWidth: "75%",
-              display: "flex",
-              flexDirection: "row",
-              alignSelf: "center",
-            }}
-          >
-            <Text mr={16} fz={"sm"}>
-              {formatSecondsToMinutes(secondsPlayed)}
-            </Text>
-            <Slider
-              style={{ flex: 1, alignSelf: "center" }}
-              size={4}
-              value={secondsPlayed}
-              max={selectedTrack.durationInSeconds}
-              onChange={(value: number) => {
-                playerRef.current?.seekTo(value);
-                setSecondsPlayed(value);
-                updatePositionState(value);
-              }}
-              label={(value: number) => formatSecondsToMinutes(value)}
-            ></Slider>
-            <Text ml={16} fz={"sm"}>
-              {formatSecondsToMinutes(selectedTrack.durationInSeconds!)}
-            </Text>
-          </div>
+            label={(value: number) => formatSecondsToMinutes(value)}
+          ></Slider>
+          <Text ml={16} fz={"sm"}>
+            {formatSecondsToMinutes(selectedTrack.durationInSeconds!)}
+          </Text>
         </div>
-      </Paper>
+      </div>
       <ReactPlayer
         ref={playerRef}
         url={streamTrack.link}
@@ -299,7 +252,7 @@ function Player({ tracks }: PlayerProps) {
         height={0}
         style={{ display: "none" }}
       ></ReactPlayer>
-    </div>
+    </Paper>
   );
 }
 

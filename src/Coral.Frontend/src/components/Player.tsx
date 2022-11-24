@@ -30,12 +30,16 @@ function Player({ tracks }: PlayerProps) {
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [playerPosition, setPlayerPosition] = useState(0);
 
-  const updatePositionState = () => {
-    navigator.mediaSession.setPositionState({
-      position: secondsPlayed,
+  const updatePositionState = (timestamp?: number) => {
+    if (selectedTrack.durationInSeconds == null) {
+      return;
+    }
+    let state = {
+      position: timestamp != null ? timestamp : secondsPlayed,
       duration: selectedTrack.durationInSeconds,
       playbackRate: 1,
-    });
+    }
+    navigator.mediaSession.setPositionState(state);
   };
 
   const announceMediaSession = () => {
@@ -44,7 +48,6 @@ function Player({ tracks }: PlayerProps) {
     }
 
     if ("mediaSession" in navigator) {
-      console.log("Announcing media info for track: ", selectedTrack);
       let metadata = new MediaMetadata({
         title: selectedTrack.title,
         artist: selectedTrack.artist?.name,
@@ -55,12 +58,22 @@ function Player({ tracks }: PlayerProps) {
         metadata["artwork"] = [
           {
             src: streamTrack.artworkUrl,
-            type: "image/jpg",
           },
         ];
       }
 
+      // make sure we're not re-setting metadata
+      // as that can cause the browser player to stop working
+      let existingMetadata = navigator.mediaSession.metadata;
+      if (existingMetadata?.artist == metadata.artist 
+        && existingMetadata?.title == metadata.title
+        && existingMetadata.album == metadata.album) {
+          return;
+      }
+
       navigator.mediaSession.metadata = metadata;
+      updatePositionState(0);
+
       navigator.mediaSession.setActionHandler("play", () => {
         setPlayState(true);
       });
@@ -87,7 +100,7 @@ function Player({ tracks }: PlayerProps) {
         }
         playerRef.current?.seekTo(seekTime);
         setSecondsPlayed(seekTime);
-        updatePositionState();
+        updatePositionState(seekTime);
       });
 
       navigator.mediaSession.setActionHandler("seekforward", (details) => {
@@ -104,7 +117,7 @@ function Player({ tracks }: PlayerProps) {
 
         playerRef.current?.seekTo(seekTime);
         setSecondsPlayed(seekTime);
-        updatePositionState();
+        updatePositionState(seekTime);
       });
 
       navigator.mediaSession.setActionHandler("seekto", (details) => {
@@ -114,16 +127,16 @@ function Player({ tracks }: PlayerProps) {
         if (details.seekTime != null) {
           playerRef.current?.seekTo(details.seekTime);
           setSecondsPlayed(details.seekTime);
-          updatePositionState();
+          updatePositionState(details.seekTime);
         }
       });
     }
   };
 
+
   React.useEffect(() => {
     if (playState) {
       announceMediaSession();
-      console.log("Media Session: ", navigator.mediaSession.metadata);
       navigator.mediaSession.playbackState = "playing";
     } else {
       navigator.mediaSession.playbackState = "paused";
@@ -136,7 +149,6 @@ function Player({ tracks }: PlayerProps) {
 
       if (track != null) {
         setSelectedTrack(track);
-        console.info("Getting stream for track: ", track);
         let streamTrack = await TranscodeService.getApiTranscodeTracks(
           track.id
         );
@@ -147,10 +159,6 @@ function Player({ tracks }: PlayerProps) {
   }, [tracks, selectedTrack, playerPosition]);
 
   const nextTrack = () => {
-    console.info("Next track called: ", {
-      position: playerPosition + 1,
-      targetTrack: tracks[playerPosition + 1],
-    });
     if (playerPosition !== tracks.length - 1) {
       setPlayerPosition(playerPosition + 1);
     } else {
@@ -160,10 +168,6 @@ function Player({ tracks }: PlayerProps) {
   };
 
   const prevTrack = () => {
-    console.info("Previous track called: ", {
-      position: playerPosition - 1,
-      targetTrack: tracks[playerPosition - 1],
-    });
     if (playerPosition !== 0) {
       setPlayerPosition(playerPosition - 1);
     }
@@ -275,12 +279,12 @@ function Player({ tracks }: PlayerProps) {
               size={4}
               value={secondsPlayed}
               max={selectedTrack.durationInSeconds}
-              onChange={(value) => {
+              onChange={(value: number) => {
                 playerRef.current?.seekTo(value);
                 setSecondsPlayed(value);
-                updatePositionState();
+                updatePositionState(value);
               }}
-              label={(value) => formatSecondsToMinutes(value)}
+              label={(value: number) => formatSecondsToMinutes(value)}
             ></Slider>
             <Text ml={16} fz={"sm"}>
               {formatSecondsToMinutes(selectedTrack.durationInSeconds!)}
@@ -294,7 +298,6 @@ function Player({ tracks }: PlayerProps) {
         playing={playState}
         onProgress={(state) => {
           setSecondsPlayed(state.playedSeconds);
-          updatePositionState();
         }}
         onError={(error, data, hlsInstance) => {
           console.log({ error, data, hlsInstance });

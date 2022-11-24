@@ -219,8 +219,7 @@ function Player({ tracks }: PlayerProps) {
           <Text mr={16} fz={"sm"}>
             {formatSecondsToMinutes(secondsPlayed)}
           </Text>
-          <Slider
-            style={{ flex: 1, alignSelf: "center" }}
+          <Slider className={styles.slider}
             size={4}
             value={secondsPlayed}
             max={selectedTrack.durationInSeconds}

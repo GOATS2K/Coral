@@ -37,3 +37,8 @@
   flex-direction: row;
   align-self: center;
 }
+
+.slider {
+  flex: 1;
+  align-self: center;
+}

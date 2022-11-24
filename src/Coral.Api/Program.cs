@@ -6,6 +6,8 @@ using Coral.Encoders;
 using Coral.Services;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,8 +27,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(conf =>
 {
+    conf.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Coral",
+        Version = "v1",
+    });
     conf.SupportNonNullableReferenceTypes();
     conf.SchemaFilter<RequiredNotNullableSchemaFilter>();
+    // Use method name as operationId
+    conf.CustomOperationIds(apiDesc =>
+    {
+        return apiDesc.TryGetMethodInfo(out MethodInfo methodInfo) ? methodInfo.Name : null;
+    });
 });
 
 var app = builder.Build();

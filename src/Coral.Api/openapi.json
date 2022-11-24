@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Coral.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "version": "1.0"
+    "title": "Coral",
+    "version": "v1"
   },
   "paths": {
     "/api/Repository/tracks/{trackId}/stream": {
@@ -10,6 +10,7 @@
         "tags": [
           "Repository"
         ],
+        "operationId": "StreamTrack",
         "parameters": [
           {
             "name": "trackId",
@@ -33,6 +34,7 @@
         "tags": [
           "Repository"
         ],
+        "operationId": "GetTrackArtwork",
         "parameters": [
           {
             "name": "trackId",
@@ -56,6 +58,7 @@
         "tags": [
           "Repository"
         ],
+        "operationId": "GetTracks",
         "responses": {
           "200": {
             "description": "Success",
@@ -94,6 +97,7 @@
         "tags": [
           "Repository"
         ],
+        "operationId": "GetAlbums",
         "responses": {
           "200": {
             "description": "Success",
@@ -132,6 +136,7 @@
         "tags": [
           "Transcode"
         ],
+        "operationId": "TranscodeTrack",
         "parameters": [
           {
             "name": "trackId",

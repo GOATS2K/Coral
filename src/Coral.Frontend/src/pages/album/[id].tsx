@@ -2,6 +2,7 @@ import React from "react";
 import { RepositoryService, TrackDto } from "../../client";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
+import Playlist from "../../components/Playlist";
 
 export default function Album() {
   const [album, setAlbum] = React.useState([] as TrackDto[]);
@@ -23,5 +24,10 @@ export default function Album() {
     ssr: false,
   });
 
-  return <Player tracks={album}></Player>;
+  return (
+    <div>
+      <Playlist tracks={album}></Playlist>
+      <Player tracks={album}></Player>
+    </div>
+  );
 }

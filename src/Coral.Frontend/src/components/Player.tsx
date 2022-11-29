@@ -8,16 +8,9 @@ import {
   IconPlayerPlay,
   IconPlayerPause,
 } from "@tabler/icons";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
-
-dayjs.extend(duration);
-
-function formatSecondsToMinutes(value: number): string {
-  return dayjs.duration(value, "seconds").format("mm:ss");
-}
+import { formatSecondsToMinutes } from '../utils';
 
 type PlayerProps = {
   tracks: TrackDto[];
@@ -219,7 +212,8 @@ function Player({ tracks }: PlayerProps) {
           <Text mr={16} fz={"sm"}>
             {formatSecondsToMinutes(secondsPlayed)}
           </Text>
-          <Slider className={styles.slider}
+          <Slider
+            className={styles.slider}
             size={4}
             value={secondsPlayed}
             max={selectedTrack.durationInSeconds}

@@ -10,16 +10,21 @@ import {
 } from "@tabler/icons";
 import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
-import { formatSecondsToMinutes } from '../utils';
+import { formatSecondsToMinutes } from "../utils";
+import { usePlayerStore } from '../store';
 
 type PlayerProps = {
   tracks: TrackDto[];
 };
 
 function Player({ tracks }: PlayerProps) {
+  const playState = usePlayerStore((state) => state.playState);
+  const selectedTrack = usePlayerStore((state) => state.selectedTrack);
+
+  const setPlayState = (value: boolean) => usePlayerStore.setState({playState: value});
+  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({selectedTrack: track});
+
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
-  const [playState, setPlayState] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState({} as TrackDto);
   // const [duration, setDuration] = useState(0);
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [playerPosition, setPlayerPosition] = useState(0);

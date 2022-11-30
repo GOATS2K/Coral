@@ -23,6 +23,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       id={track.id.toString()}
       onMouseEnter={() => setTrackHover(true)}
       onMouseLeave={() => setTrackHover(false)}
+      onDoubleClick={() => setSelectedTrack(track)}
       style={
         nowPlayingTrack.id === track.id
           ? {

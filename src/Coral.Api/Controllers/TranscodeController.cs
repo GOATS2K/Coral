@@ -52,7 +52,10 @@ public class TranscodeController : ControllerBase
         if (!string.IsNullOrEmpty(artworkPath))
         {
             // generate this url programmatically
-            streamData.ArtworkUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/repository/artwork/{trackId}";
+            streamData.ArtworkUrl = Url.Action("GetTrackArtwork",
+                "Repository",
+                new {trackId = trackId},
+                Request.Scheme);
         }
 
         return streamData;

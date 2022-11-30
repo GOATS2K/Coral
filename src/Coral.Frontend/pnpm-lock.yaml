@@ -30,6 +30,7 @@ specifiers:
   react-player: ^2.11.0
   typescript: ^4.8.4
   web-vitals: ^2.1.4
+  zustand: ^4.1.4
 
 dependencies:
   '@emotion/react': 11.10.5_cuziicjcvwawlf5iuhzacuhqcy
@@ -54,6 +55,7 @@ dependencies:
   react-player: 2.11.0_react@18.2.0
   typescript: 4.8.4
   web-vitals: 2.1.4
+  zustand: 4.1.4_react@18.2.0
 
 devDependencies:
   '@babel/core': 7.20.2
@@ -2230,4 +2232,20 @@ packages:
   /yaml/1.10.2:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}
     engines: {node: '>= 6'}
+    dev: false
+
+  /zustand/4.1.4_react@18.2.0:
+    resolution: {integrity: sha512-k2jVOlWo8p4R83mQ+/uyB8ILPO2PCJOf+QVjcL+1PbMCk1w5OoPYpAIxy9zd93FSfmJqoH6lGdwzzjwqJIRU5A==}
+    engines: {node: '>=12.7.0'}
+    peerDependencies:
+      immer: '>=9.0'
+      react: '>=16.8'
+    peerDependenciesMeta:
+      immer:
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      react: 18.2.0
+      use-sync-external-store: 1.2.0_react@18.2.0
     dev: false

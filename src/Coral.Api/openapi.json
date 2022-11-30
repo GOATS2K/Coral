@@ -29,7 +29,7 @@
         }
       }
     },
-    "/api/Repository/artwork/track/{trackId}": {
+    "/api/Repository/tracks/{trackId}/artwork": {
       "get": {
         "tags": [
           "Repository"

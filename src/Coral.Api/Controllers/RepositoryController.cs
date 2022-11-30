@@ -35,7 +35,7 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
-        [Route("artwork/track/{trackId}")]
+        [Route("tracks/{trackId}/artwork")]
         public async Task<ActionResult> GetTrackArtwork(int trackId)
         {
             var artworkPath = await _libraryService.GetArtworkForTrack(trackId);

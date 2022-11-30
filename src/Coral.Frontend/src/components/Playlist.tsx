@@ -1,28 +1,26 @@
 import { Paper, Text } from "@mantine/core";
-import React from "react";
+import React, { useState } from "react";
 import { TrackDto } from "../client";
 import { formatSecondsToSingleMinutes } from '../utils';
 import styles from "../styles/Playlist.module.css";
+import {IconPlayerPlay} from '@tabler/icons';
+import { PlaylistItem } from "./PlaylistItem";
 
 type PlaylistProps = {
   tracks: TrackDto[];
 };
 
+type HoverInfo = {
+  id: number,
+  hover: boolean
+};
+
 export default function Playlist({ tracks }: PlaylistProps) {
-  const playlistItems = tracks.map((track, index) => {
+  const playlistItems = tracks
+  .sort((a, b) => a.trackNumber - b.trackNumber)
+  .map((track) => {
     return (
-      <div className={styles.gridContainer}>
-        <div className={styles.trackNumber}>
-          <Text fz="lg">{index + 1}</Text>
-        </div>
-        <div className={styles.info}>
-          <Text fz="sm" fw={500}>{track.title}</Text>
-          <Text fz="xs">{track.artist.name}</Text>
-        </div>
-        <div className={styles.duration}>
-          <Text fz="xs">{formatSecondsToSingleMinutes(track.durationInSeconds)}</Text>
-        </div>
-      </div>
+      <PlaylistItem track={track}></PlaylistItem>
     )
   })
 

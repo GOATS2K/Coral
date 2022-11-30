@@ -13,7 +13,8 @@ type PlaylistItemProps = {
 export function PlaylistItem({ track }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
-  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({ selectedTrack: track })
+  const setSelectedTrack = (track: TrackDto) =>
+    usePlayerStore.setState({ selectedTrack: track });
   const theme = useMantineTheme();
 
   return (
@@ -27,16 +28,14 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       style={
         nowPlayingTrack.id === track.id
           ? {
-            color: theme.colors.blue[7],
-          }
+              color: theme.colors.blue[7],
+            }
           : {}
       }
     >
       <div className={styles.trackNumber}>
         {nowPlayingTrack.id !== track.id && trackHover ? (
-          <UnstyledButton
-            onClick={() => setSelectedTrack(track)}
-          >
+          <UnstyledButton onClick={() => setSelectedTrack(track)}>
             <IconPlayerPlay
               strokeWidth={1}
               size={24}

@@ -11,7 +11,7 @@ import {
 import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
-import { PlayerState, usePlayerStore } from '../store';
+import { PlayerState, usePlayerStore } from "../store";
 
 type PlayerProps = {
   tracks: TrackDto[];
@@ -19,10 +19,14 @@ type PlayerProps = {
 
 function Player({ tracks }: PlayerProps) {
   const playState = usePlayerStore((state: PlayerState) => state.playState);
-  const selectedTrack = usePlayerStore((state: PlayerState) => state.selectedTrack);
+  const selectedTrack = usePlayerStore(
+    (state: PlayerState) => state.selectedTrack
+  );
 
-  const setPlayState = (value: boolean) => usePlayerStore.setState({ playState: value });
-  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({ selectedTrack: track });
+  const setPlayState = (value: boolean) =>
+    usePlayerStore.setState({ playState: value });
+  const setSelectedTrack = (track: TrackDto) =>
+    usePlayerStore.setState({ selectedTrack: track });
 
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
   // const [duration, setDuration] = useState(0);
@@ -144,8 +148,8 @@ function Player({ tracks }: PlayerProps) {
       return;
     }
     // selectedTrack was modified by the playlist
-    setPlayerPosition(tracks.indexOf(selectedTrack))
-  }, [selectedTrack])
+    setPlayerPosition(tracks.indexOf(selectedTrack));
+  }, [selectedTrack]);
 
   React.useEffect(() => {
     const handleTrackChange = async () => {

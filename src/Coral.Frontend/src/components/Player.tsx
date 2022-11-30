@@ -149,6 +149,9 @@ function Player({ tracks }: PlayerProps) {
     }
     // selectedTrack was modified by the playlist
     setPlayerPosition(tracks.indexOf(selectedTrack));
+    if (playerPosition !== 0 && !playState) {
+      setPlayState(true);
+    }
   }, [selectedTrack]);
 
   React.useEffect(() => {

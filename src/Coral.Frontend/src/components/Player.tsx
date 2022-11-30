@@ -11,18 +11,18 @@ import {
 import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
-import { usePlayerStore } from '../store';
+import { PlayerState, usePlayerStore } from '../store';
 
 type PlayerProps = {
   tracks: TrackDto[];
 };
 
 function Player({ tracks }: PlayerProps) {
-  const playState = usePlayerStore((state) => state.playState);
-  const selectedTrack = usePlayerStore((state) => state.selectedTrack);
+  const playState = usePlayerStore((state: PlayerState) => state.playState);
+  const selectedTrack = usePlayerStore((state: PlayerState) => state.selectedTrack);
 
-  const setPlayState = (value: boolean) => usePlayerStore.setState({playState: value});
-  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({selectedTrack: track});
+  const setPlayState = (value: boolean) => usePlayerStore.setState({ playState: value });
+  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({ selectedTrack: track });
 
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
   // const [duration, setDuration] = useState(0);
@@ -136,9 +136,20 @@ function Player({ tracks }: PlayerProps) {
   };
 
   React.useEffect(() => {
+    if (selectedTrack == null) {
+      return;
+    }
+    // selectedTrack was modifed by the player controls
+    if (tracks.indexOf(selectedTrack) === playerPosition) {
+      return;
+    }
+    // selectedTrack was modified by the playlist
+    setPlayerPosition(tracks.indexOf(selectedTrack))
+  }, [selectedTrack])
+
+  React.useEffect(() => {
     const handleTrackChange = async () => {
       let track = tracks[playerPosition];
-
       if (track != null) {
         setSelectedTrack(track);
         let streamTrack = await TranscodeService.transcodeTrack(track.id);
@@ -146,7 +157,7 @@ function Player({ tracks }: PlayerProps) {
       }
     };
     handleTrackChange();
-  }, [tracks, selectedTrack, playerPosition]);
+  }, [tracks, playerPosition]);
 
   const nextTrack = () => {
     if (playerPosition !== tracks.length - 1) {

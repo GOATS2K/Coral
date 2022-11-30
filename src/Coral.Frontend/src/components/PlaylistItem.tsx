@@ -1,7 +1,7 @@
 import { IconPlayerPlay } from "@tabler/icons";
 import { TrackDto } from "../client";
 import styles from "../styles/Playlist.module.css";
-import { Text } from "@mantine/core";
+import { Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { formatSecondsToSingleMinutes } from "../utils";
 import { useState } from "react";
 import { usePlayerStore } from "../store";
@@ -13,6 +13,8 @@ type PlaylistItemProps = {
 export function PlaylistItem({ track }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
+  const setSelectedTrack = (track: TrackDto) => usePlayerStore.setState({ selectedTrack: track })
+  const theme = useMantineTheme();
 
   return (
     <div
@@ -24,21 +26,25 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       style={
         nowPlayingTrack.id === track.id
           ? {
-              color: "blue",
-            }
+            color: theme.colors.blue[7],
+          }
           : {}
       }
     >
       <div className={styles.trackNumber}>
-        {trackHover ? (
-          <IconPlayerPlay
-            strokeWidth={1}
-            size={24}
-            style={{
-              // center element
-              marginTop: "4px",
-            }}
-          ></IconPlayerPlay>
+        {nowPlayingTrack.id !== track.id && trackHover ? (
+          <UnstyledButton
+            onClick={() => setSelectedTrack(track)}
+          >
+            <IconPlayerPlay
+              strokeWidth={1}
+              size={24}
+              style={{
+                // center element
+                marginTop: "4px",
+              }}
+            ></IconPlayerPlay>
+          </UnstyledButton>
         ) : (
           <Text fz="lg">{track.trackNumber}</Text>
         )}

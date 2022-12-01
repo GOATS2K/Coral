@@ -1,9 +1,9 @@
 import React from "react";
-import { AlbumDto } from "../client";
+import { AlbumDto, TrackDto } from "../client";
 import styles from "../styles/AlbumInfo.module.css";
 import { Badge, Image, Text } from "@mantine/core";
 import { OpenAPI } from "../client";
-import { formatSecondsToDateString } from "../utils";
+import { formatSecondsToDateString, formatSecondsToMinutes } from "../utils";
 
 type AlbumInfoProps = {
   album: AlbumDto;
@@ -34,7 +34,7 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
   const getDuration = () => {
     let totalDurationInSeconds = album.tracks
       ?.map((t) => t.durationInSeconds)
-      .reduce((a, b) => a + b, 0);
+      .reduce((a, b) => a + b);
     console.log(totalDurationInSeconds);
     return formatSecondsToDateString(totalDurationInSeconds);
   };

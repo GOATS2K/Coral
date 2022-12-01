@@ -155,6 +155,47 @@
         }
       }
     },
+    "/api/Repository/albums/{albumId}": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "operationId": "GetAlbum",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Transcode/tracks/{trackId}": {
       "get": {
         "tags": [

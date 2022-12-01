@@ -77,5 +77,19 @@ namespace Coral.Api.Controllers
                 yield return album;
             }
         }
+
+        [HttpGet]
+        [Route("albums/{albumId}")]
+        public async Task<ActionResult<AlbumDto>> GetAlbum(int albumId)
+        {
+            var album = await _libraryService.GetAlbum(albumId);
+            if (album == null)
+            {
+                return NotFound();
+            }
+            return album;
+        }
+
+
     }
 }

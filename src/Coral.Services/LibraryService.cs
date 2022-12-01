@@ -20,6 +20,7 @@ namespace Coral.Services
         public IAsyncEnumerable<AlbumDto> GetAlbums();
         public Task<string?> GetArtworkForTrack(int trackId);
         public Task<string?> GetArtworkForAlbum(int albumId);
+        public Task<AlbumDto?> GetAlbum(int albumId);
     }
 
     public class LibraryService : ILibraryService
@@ -107,6 +108,13 @@ namespace Coral.Services
             }
 
             return album.CoverFilePath;
+        }
+
+        public async Task<AlbumDto?> GetAlbum(int albumId)
+        {
+            return await _context.Albums
+                .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(a => a.Id == albumId);
         }
     }
 }

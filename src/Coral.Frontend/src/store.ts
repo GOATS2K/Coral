@@ -1,5 +1,5 @@
 import create from "zustand";
-import { StreamDto, TrackDto } from "./client";
+import { TrackDto } from "./client";
 
 export interface PlayerState {
   playState: boolean;

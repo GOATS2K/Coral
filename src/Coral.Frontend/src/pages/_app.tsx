@@ -2,7 +2,7 @@ import { AppProps } from "next/app";
 import Head from "next/head";
 import { MantineProvider } from "@mantine/core";
 import { OpenAPI } from "../client";
-import '../styles/global.css';
+import "../styles/global.css";
 
 if (process.env.NODE_ENV === "development") {
   OpenAPI.BASE = "https://localhost:7031";

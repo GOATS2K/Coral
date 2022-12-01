@@ -12,7 +12,7 @@ type PlaylistProps = {
 
 export default function Playlist({ tracks }: PlaylistProps) {
   if (tracks == null) {
-    return <p>No tracks in playlist</p>
+    return <p>No tracks in playlist</p>;
   }
   const playlistItems = tracks
     .sort((a, b) => a.trackNumber - b.trackNumber)

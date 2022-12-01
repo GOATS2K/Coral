@@ -12,8 +12,6 @@ type PlaylistItemProps = {
 
 export function PlaylistItem({ track }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
-  const [trackFocus, setTrackFocus] = useState(false);
-
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const setSelectedTrack = (track: TrackDto) =>
     usePlayerStore.setState({ selectedTrack: track });
@@ -31,8 +29,8 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       style={
         nowPlayingTrack.id === track.id
           ? {
-            color: theme.colors.blue[3],
-          }
+              color: theme.colors.blue[3],
+            }
           : {}
       }
     >

@@ -18,9 +18,9 @@
 }
 
 .attribute:first-child::before {
-  content: '';
+  content: "";
 }
 
 .attribute:before {
-  content: ' • ';
+  content: " • ";
 }

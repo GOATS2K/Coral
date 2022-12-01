@@ -23,6 +23,11 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       key={track.id}
       tabIndex={track.id}
       id={track.id.toString()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          setSelectedTrack(track);
+        }
+      }}
       onMouseEnter={() => setTrackHover(true)}
       onMouseLeave={() => setTrackHover(false)}
       onDoubleClick={() => setSelectedTrack(track)}

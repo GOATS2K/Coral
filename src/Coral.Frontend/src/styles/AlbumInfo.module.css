@@ -11,6 +11,16 @@
   margin-left: 1em;
 }
 
+@media screen and (max-width: 579px) {
+  div .attributes {
+    flex-direction: column;
+  }
+  
+  div .attribute:before {
+    content: "";
+  }
+}
+
 .attributes {
   display: flex;
   flex-direction: row;

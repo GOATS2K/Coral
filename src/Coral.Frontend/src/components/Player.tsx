@@ -1,7 +1,7 @@
 import { Paper, Slider, Text, UnstyledButton, Image } from "@mantine/core";
 import React, { useState } from "react";
 import ReactPlayer from "react-player";
-import { TrackDto, TranscodeService } from "../client";
+import { OpenAPI, TrackDto, TranscodeService } from "../client";
 import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
@@ -38,7 +38,7 @@ function Player({ tracks }: PlayerProps) {
       return;
     }
     let state = {
-      position: timestamp != null ? timestamp : secondsPlayed,
+      position: timestamp,
       duration: selectedTrack.durationInSeconds,
       playbackRate: 1,
     };
@@ -132,7 +132,6 @@ function Player({ tracks }: PlayerProps) {
         }
         if (details.seekTime != null) {
           playerRef.current?.seekTo(details.seekTime);
-          setSecondsPlayed(details.seekTime);
           // updatePositionState(details.seekTime);
         }
       });
@@ -144,11 +143,11 @@ function Player({ tracks }: PlayerProps) {
       return;
     }
     // selectedTrack was modifed by the player controls
-    if (tracks.indexOf(selectedTrack) === playerPosition) {
+    if (tracks?.indexOf(selectedTrack) === playerPosition) {
       return;
     }
     // selectedTrack was modified by the playlist
-    setPlayerPosition(tracks.indexOf(selectedTrack));
+    setPlayerPosition(tracks?.indexOf(selectedTrack));
     if (playerPosition !== 0 && !playState) {
       setPlayState(true);
     }
@@ -156,6 +155,10 @@ function Player({ tracks }: PlayerProps) {
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
+      if (tracks == null) {
+        return;
+      }
+
       let track = tracks[playerPosition];
       if (track != null) {
         setSelectedTrack(track);
@@ -186,10 +189,10 @@ function Player({ tracks }: PlayerProps) {
   const strokeSize = 1.2;
 
   return (
-    <Paper shadow="xs" radius="md" p="md" className={styles.wrapper}>
+    <Paper p="md" className={styles.wrapper}>
       <div className={styles.imageBox}>
         <Image
-          src={streamTrack.artworkUrl}
+          src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}
           withPlaceholder
           width={"70px"}
           height={"70px"}

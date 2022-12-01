@@ -1,0 +1,26 @@
+.wrapper {
+  display: flex;
+  flex-direction: row;
+  padding: 1em;
+  max-height: 225px;
+}
+
+.metadataWrapper {
+  display: flex;
+  flex-direction: column;
+  margin-left: 1em;
+}
+
+.attributes {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.attribute:first-child::before {
+  content: '';
+}
+
+.attribute:before {
+  content: ' • ';
+}

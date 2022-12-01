@@ -47,6 +47,18 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("albums/{albumId}/artwork")]
+        public async Task<ActionResult> GetAlbumArtwork(int albumId)
+        {
+            var artworkPath = await _libraryService.GetArtworkForAlbum(albumId);
+            if (artworkPath == null)
+            {
+                return NotFound();
+            }
+            return new PhysicalFileResult(artworkPath, MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
+        }
+
+        [HttpGet]
         [Route("tracks")]
         public async IAsyncEnumerable<TrackDto> GetTracks()
         {

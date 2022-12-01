@@ -10,3 +10,7 @@ export function formatSecondsToMinutes(value: number): string {
 export function formatSecondsToSingleMinutes(value: number): string {
   return dayjs.duration(value, "seconds").format("m:ss");
 }
+
+export function formatSecondsToDateString(value: number): string {
+  return dayjs.duration(value, "seconds").format("m [min] ss [sec]");
+}

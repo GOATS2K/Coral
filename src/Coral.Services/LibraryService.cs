@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using ATL;
+using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
@@ -6,6 +7,7 @@ using Coral.Dto.Models;
 using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Track = Coral.Database.Models.Track;
 
 namespace Coral.Services
 {
@@ -17,6 +19,7 @@ namespace Coral.Services
         public Task<List<ArtistDto>> GetArtist(string artistName);
         public IAsyncEnumerable<AlbumDto> GetAlbums();
         public Task<string?> GetArtworkForTrack(int trackId);
+        public Task<string?> GetArtworkForAlbum(int albumId);
     }
 
     public class LibraryService : ILibraryService
@@ -91,6 +94,19 @@ namespace Coral.Services
             }
 
             return track.Album?.CoverFilePath;
+        }
+
+        public async Task<string?> GetArtworkForAlbum(int albumId)
+        {
+            var album = await _context.Albums
+                .FirstOrDefaultAsync(a => a.Id == albumId);
+
+            if (album == null)
+            {
+                return null;
+            }
+
+            return album.CoverFilePath;
         }
     }
 }

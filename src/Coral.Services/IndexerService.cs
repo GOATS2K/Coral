@@ -30,7 +30,13 @@ public class IndexerService : IIndexerService
                 .EnumerateFiles("*.*", SearchOption.AllDirectories)
                 .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
                 .Max(x => x.LastWriteTimeUtc);
-            return maxValue < contentsLastModified;
+
+            var contentsCreated = contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
+                .Max(x => x.CreationTimeUtc);
+
+            return maxValue < contentsLastModified || maxValue < contentsCreated;
         }
         catch (InvalidOperationException)
         {

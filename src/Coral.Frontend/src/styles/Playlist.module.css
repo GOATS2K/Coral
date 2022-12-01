@@ -2,29 +2,5 @@
   overflow: auto;
   /* ensure the player is always fixed at the bottom of the page
   player height is 100px */
-  min-height: calc(100vh - 100px);
-}
-
-.gridContainer {
-  display: grid;
-  grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
-  margin: 8px 0 8px;
-}
-
-.gridContainer:hover {
-  background-color: #e0e5e925;
-}
-
-.trackNumber {
-  grid-area: trackNumber;
-  margin: auto;
-}
-
-.info {
-  grid-area: mediaInfo;
-}
-
-.duration {
-  grid-area: duration;
-  align-self: center;
+  min-height: calc(99.7vh - var(--player-height) - var(--album-info-height));
 }

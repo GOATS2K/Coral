@@ -53,6 +53,30 @@
         }
       }
     },
+    "/api/Repository/albums/{albumId}/artwork": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "operationId": "GetAlbumArtwork",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Repository/tracks": {
       "get": {
         "tags": [

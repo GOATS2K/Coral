@@ -1,6 +1,6 @@
 import { IconPlayerPlay } from "@tabler/icons";
 import { TrackDto } from "../client";
-import styles from "../styles/Playlist.module.css";
+import styles from "../styles/PlaylistItem.module.css";
 import { Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { formatSecondsToSingleMinutes } from "../utils";
 import { useState } from "react";
@@ -12,6 +12,8 @@ type PlaylistItemProps = {
 
 export function PlaylistItem({ track }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
+  const [trackFocus, setTrackFocus] = useState(false);
+
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const setSelectedTrack = (track: TrackDto) =>
     usePlayerStore.setState({ selectedTrack: track });
@@ -21,6 +23,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
     <div
       className={styles.gridContainer}
       key={track.id}
+      tabIndex={track.id}
       id={track.id.toString()}
       onMouseEnter={() => setTrackHover(true)}
       onMouseLeave={() => setTrackHover(false)}
@@ -28,8 +31,8 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       style={
         nowPlayingTrack.id === track.id
           ? {
-              color: theme.colors.blue[7],
-            }
+            color: theme.colors.blue[3],
+          }
           : {}
       }
     >

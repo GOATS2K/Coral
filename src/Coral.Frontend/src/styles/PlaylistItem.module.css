@@ -1,0 +1,27 @@
+.gridContainer {
+  display: grid;
+  grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
+  margin: 8px 0 8px;
+}
+
+.gridContainer:hover {
+  background-color: #e0e5e925;
+}
+
+.gridContainer:focus {
+  background-color: #e0e5e93a;
+}
+
+.trackNumber {
+  grid-area: trackNumber;
+  margin: auto;
+}
+
+.info {
+  grid-area: mediaInfo;
+}
+
+.duration {
+  grid-area: duration;
+  align-self: center;
+}

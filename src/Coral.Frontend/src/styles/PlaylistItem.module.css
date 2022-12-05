@@ -19,6 +19,7 @@
 
 .info {
   grid-area: mediaInfo;
+  user-select: none;
 }
 
 .duration {

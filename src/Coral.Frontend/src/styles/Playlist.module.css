@@ -1,6 +1,4 @@
 .wrapper {
   overflow: auto;
-  /* ensure the player is always fixed at the bottom of the page
-  player height is 100px */
-  min-height: calc(99.7vh - var(--player-height) - var(--album-info-height));
+  margin-bottom: var(--player-height);
 }

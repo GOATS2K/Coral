@@ -190,7 +190,7 @@ function Player({ tracks }: PlayerProps) {
   const strokeSize = 1.2;
 
   return (
-    <Paper p="md" className={styles.wrapper}>
+    <div className={styles.wrapper}>
       <div className={styles.imageBox}>
         <Image
           src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}
@@ -272,7 +272,7 @@ function Player({ tracks }: PlayerProps) {
         height={0}
         style={{ display: "none" }}
       ></ReactPlayer>
-    </Paper>
+    </div>
   );
 }
 

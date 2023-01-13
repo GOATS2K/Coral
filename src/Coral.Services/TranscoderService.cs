@@ -6,10 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Coral.Encoders;
 
-namespace Coral.Encoders
+namespace Coral.Services
 {
-    public interface ITranscodingJobManager
+    public interface ITranscoderService
     {
         TranscodingJob GetJob(Guid id);
         void EndJob(Guid id);
@@ -17,12 +18,12 @@ namespace Coral.Encoders
         public Task<TranscodingJob> CreateJob(OutputFormat format, Action<TranscodingJobRequest> requestConfiguration);
     }
 
-    public class TranscodingJobManager : ITranscodingJobManager
+    public class TranscoderService : ITranscoderService
     {
         private readonly List<TranscodingJob> _transcodingJobs = new List<TranscodingJob>();
         private readonly IEncoderFactory _encoderFactory;
 
-        public TranscodingJobManager(IEncoderFactory encoderFactory)
+        public TranscoderService(IEncoderFactory encoderFactory)
         {
             _encoderFactory = encoderFactory;
         }

@@ -13,9 +13,9 @@ namespace Coral.Api.Controllers;
 public class TranscodeController : ControllerBase
 {
     private readonly ILibraryService _libraryService;
-    private readonly ITranscodingJobManager _jobManager;
+    private readonly ITranscoderService _jobManager;
 
-    public TranscodeController(ILibraryService libraryService, ITranscodingJobManager jobManager)
+    public TranscodeController(ILibraryService libraryService, ITranscoderService jobManager)
     {
         _libraryService = libraryService;
         _jobManager = jobManager;

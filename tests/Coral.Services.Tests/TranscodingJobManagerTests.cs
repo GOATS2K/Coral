@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Coral.Encoders;
 using Xunit;
 
-namespace Coral.Encoders.Tests
+namespace Coral.Services.Tests
 {
     public class TranscodingJobManagerTests
     {
-        private readonly ITranscodingJobManager _transcodingJobManager;
+        private readonly ITranscoderService _transcoderService;
         private readonly IEncoderFactory _encoderFactory;
         public Track TestTrack { get; } = new Track()
         {
@@ -37,7 +38,7 @@ namespace Coral.Encoders.Tests
         public TranscodingJobManagerTests()
         {
             _encoderFactory = Substitute.For<IEncoderFactory>();
-            _transcodingJobManager = new TranscodingJobManager(_encoderFactory);
+            _transcoderService = new TranscoderService(_encoderFactory);
         }
 
         [Fact]
@@ -48,7 +49,7 @@ namespace Coral.Encoders.Tests
             _encoderFactory.GetEncoder(OutputFormat.MP3).Returns(opt => null);
 
             // assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _transcodingJobManager.CreateJob(OutputFormat.MP3, opt =>
+            await Assert.ThrowsAsync<ArgumentException>(async () => await _transcoderService.CreateJob(OutputFormat.MP3, opt =>
             {
                 opt.Bitrate = 320;
                 opt.SourceTrack = TestTrack;

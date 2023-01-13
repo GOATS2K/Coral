@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Coral.Database\Coral.Database.csproj" />
+		<ProjectReference Include="..\Coral.Dto\Coral.Dto.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -36,9 +36,9 @@ namespace Coral.Services
                 return;
             }
 
-            if (!string.IsNullOrEmpty(job.HlsPlaylistPath))
+            if (!string.IsNullOrEmpty(job.OutputDirectory))
             {
-                var parent = Directory.GetParent(job.HlsPlaylistPath);
+                var parent = Directory.GetParent(job.OutputDirectory);
                 if (parent == null)
                 {
                     return;
@@ -52,9 +52,9 @@ namespace Coral.Services
                 
             }
 
-            if (!string.IsNullOrEmpty(job.OutputPath))
+            if (!string.IsNullOrEmpty(job.OutputDirectory))
             {
-                File.Delete(job.OutputPath);
+                File.Delete(job.OutputDirectory);
             }
         }
 
@@ -73,7 +73,7 @@ namespace Coral.Services
             var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id);
             if (existingJob != null)
             {
-                await WaitForFile(existingJob.HlsPlaylistPath!);
+                await WaitForFile(Path.Combine(existingJob.OutputDirectory, existingJob?.FinalOutputFile));
                 return existingJob;
             }
 
@@ -106,7 +106,7 @@ namespace Coral.Services
             jobCommand.ExecuteAsync();
             #pragma warning restore CS4014
 
-            await WaitForFile(job.HlsPlaylistPath!, () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
+            await WaitForFile(Path.Combine(job.OutputDirectory, job?.FinalOutputFile), () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
 
             return job;
         }

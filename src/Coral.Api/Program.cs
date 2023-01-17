@@ -16,7 +16,7 @@ builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
-builder.Services.AddSingleton<ITranscodingJobManager, TranscodingJobManager>();
+builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
 builder.Services.AddAutoMapper(opt =>
 {
     opt.AddMaps(typeof(TrackProfile));

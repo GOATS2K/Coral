@@ -43,7 +43,9 @@ public static class CommonEncoderMethods
                 "event",
                 "-hls_segment_filename",
                 $"{Path.Combine(jobDir, "chunk-%02d.ts")}",
-                $"{job.HlsPlaylistPath}"
+                "-master_pl_name",
+                $"{job.FinalOutputFile}",
+                $"{Path.Combine(jobDir, "playlist.m3u8")}"
             });
     }
 }

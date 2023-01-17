@@ -12,7 +12,7 @@ import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
-
+import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
 type PlayerProps = {
   tracks: TrackDto[];
 };
@@ -78,7 +78,7 @@ function Player({ tracks }: PlayerProps) {
 
       console.info("Annoucing media session for track: ", metadata);
       navigator.mediaSession.metadata = metadata;
-      updatePositionState(playerRef.current?.getCurrentTime());
+      updatePositionState(playerRef.current?.audioRef()?.currentTime);
 
       navigator.mediaSession.setActionHandler("play", () => {
         setPlayState(true);
@@ -127,11 +127,11 @@ function Player({ tracks }: PlayerProps) {
       // });
 
       navigator.mediaSession.setActionHandler("seekto", (details) => {
-        if (playerRef.current!.getCurrentTime() == 0) {
+        if (playerRef.current!.audioRef()?.currentTime == 0) {
           return;
         }
         if (details.seekTime != null) {
-          playerRef.current?.seekTo(details.seekTime);
+          playerRef.current!.audioRef()!.currentTime = details.seekTime;
           // updatePositionState(details.seekTime);
         }
       });
@@ -142,12 +142,18 @@ function Player({ tracks }: PlayerProps) {
     if (selectedTrack == null) {
       return;
     }
+    let currentTrackIndex = tracks?.indexOf(selectedTrack);
     // selectedTrack was modifed by the player controls
-    if (tracks?.indexOf(selectedTrack) === playerPosition) {
+    if (currentTrackIndex === playerPosition) {
+      return;
+    }
+
+    if (currentTrackIndex < 0) {
+      // the track hasn't fully loaded yet
       return;
     }
     // selectedTrack was modified by the playlist
-    setPlayerPosition(tracks?.indexOf(selectedTrack));
+    setPlayerPosition(currentTrackIndex);
     if (playerPosition !== 0 && !playState) {
       setStreamTrack({} as StreamDto);
       setPlayState(true);
@@ -156,6 +162,7 @@ function Player({ tracks }: PlayerProps) {
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
+      console.log("Player position is now: ", playerPosition);
       if (tracks == null) {
         return;
       }
@@ -185,7 +192,7 @@ function Player({ tracks }: PlayerProps) {
     }
   };
 
-  const playerRef = React.useRef<ReactPlayer>(null);
+  const playerRef = React.useRef<ShakaPlayerRef>(null);
   const buttonSize = 32;
   const strokeSize = 1.2;
 
@@ -245,7 +252,7 @@ function Player({ tracks }: PlayerProps) {
             value={secondsPlayed}
             max={selectedTrack.durationInSeconds}
             onChange={(value: number) => {
-              playerRef.current?.seekTo(value);
+              playerRef.current!.audioRef()!.currentTime = value;
               setSecondsPlayed(value);
               updatePositionState(value);
             }}
@@ -256,22 +263,19 @@ function Player({ tracks }: PlayerProps) {
           </Text>
         </div>
       </div>
-      <ReactPlayer
+      <ShakaPlayer
         ref={playerRef}
-        url={streamTrack.link}
-        playing={playState}
-        onPlay={() => announceMediaSession()}
-        onProgress={(state) => {
-          setSecondsPlayed(state.playedSeconds);
+        playState={playState}
+        source={streamTrack.link}
+        onDuration={(duration) => {
+          if (duration) {
+            setSecondsPlayed(duration);
+          }
         }}
-        onError={(error, data, hlsInstance) => {
-          console.log({ error, data, hlsInstance });
+        onPlay={() => {
+          announceMediaSession();
         }}
-        onEnded={() => nextTrack()}
-        width={0}
-        height={0}
-        style={{ display: "none" }}
-      ></ReactPlayer>
+      ></ShakaPlayer>
     </div>
   );
 }

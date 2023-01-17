@@ -11,8 +11,8 @@ namespace Coral.Encoders.EncodingModels
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public TranscodingJobRequest Request { get; set; } = null!;
-        public string? OutputPath { get; set; }
-        public string? HlsPlaylistPath { get; set; }
+        public string OutputDirectory { get; set; } = null!;
+        public string FinalOutputFile { get; set; } = null!;
         public Command? TranscodingCommand { get; set; }
         public Command? PipeCommand { get; set; }
         public bool EncoderWritesToStandardError;

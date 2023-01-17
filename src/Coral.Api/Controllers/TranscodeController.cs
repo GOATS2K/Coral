@@ -13,12 +13,12 @@ namespace Coral.Api.Controllers;
 public class TranscodeController : ControllerBase
 {
     private readonly ILibraryService _libraryService;
-    private readonly ITranscoderService _jobManager;
+    private readonly ITranscoderService _transcoderService;
 
-    public TranscodeController(ILibraryService libraryService, ITranscoderService jobManager)
+    public TranscodeController(ILibraryService libraryService, ITranscoderService transcoderService)
     {
         _libraryService = libraryService;
-        _jobManager = jobManager;
+        _transcoderService = transcoderService;
     }
 
     [HttpGet]
@@ -34,7 +34,7 @@ public class TranscodeController : ControllerBase
             });
         }
 
-        var job = await _jobManager.CreateJob(OutputFormat.AAC, opt =>
+        var job = await _transcoderService.CreateJob(OutputFormat.AAC, opt =>
         {
             opt.SourceTrack = dbTrack;
             opt.Bitrate = 256;
@@ -44,7 +44,7 @@ public class TranscodeController : ControllerBase
         var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
         var streamData = new StreamDto()
         {
-            Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{Path.GetFileName(job.HlsPlaylistPath)}",
+            Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
             RequestedBitrate = 256,
             RequestedFormat = OutputFormat.AAC
         };

@@ -25,9 +25,9 @@ public interface IEncoder
         if (request.RequestType == TranscodeRequestType.HLS)
         {
             configuration.GenerateHLSStream();
-            job.HlsPlaylistPath = Path.Combine(ApplicationConfiguration.HLSDirectory,
-                job.Id.ToString(),
-                "index.m3u8");
+            job.OutputDirectory = Path.Combine(ApplicationConfiguration.HLSDirectory,
+                job.Id.ToString());
+            job.FinalOutputFile = "master.m3u8";
             job.PipeCommand = CommonEncoderMethods.GetHlsPipeCommand(job);
         }
 

@@ -3,6 +3,8 @@ import Head from "next/head";
 import { MantineProvider } from "@mantine/core";
 import { OpenAPI } from "../client";
 import "../styles/global.css";
+import "mux.js";
+import Script from "next/script";
 
 if (process.env.NODE_ENV === "development") {
   OpenAPI.BASE = "https://localhost:7031";

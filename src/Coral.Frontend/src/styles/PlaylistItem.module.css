@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
   margin: 8px 0 8px;
+  padding: 0.150rem;
 }
 
 .gridContainer:hover {
@@ -9,7 +10,7 @@
 }
 
 .gridContainer:focus {
-  background-color: #e0e5e93a;
+  background-color: #413f3f52;
 }
 
 .trackNumber {

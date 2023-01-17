@@ -275,6 +275,9 @@ function Player({ tracks }: PlayerProps) {
         onPlay={() => {
           announceMediaSession();
         }}
+        onEnd={() => {
+          nextTrack();
+        }}
       ></ShakaPlayer>
     </div>
   );

@@ -38,7 +38,7 @@ public static class CommonEncoderMethods
                 "-f",
                 "hls",
                 "-hls_time",
-                "5",
+                "2",
                 "-hls_playlist_type",
                 "event",
                 "-hls_segment_filename",

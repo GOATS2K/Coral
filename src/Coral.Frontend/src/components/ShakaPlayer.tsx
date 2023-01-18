@@ -33,6 +33,13 @@ export const ShakaPlayer = forwardRef(
 
     React.useEffect(() => {
       const player = new Player(playerRef.current);
+      player.configure({
+        streaming: {
+          bufferingGoal: 30,
+          rebufferingGoal: 2,
+        },
+      });
+      console.log("Configured player!", player.getConfiguration());
       polyfill.installAll();
       setPlayer(player);
 

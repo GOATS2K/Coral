@@ -34,7 +34,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       style={
         nowPlayingTrack.id === track.id
           ? {
-              color: theme.colors.blue[3],
+              color: theme.colors.blue[4],
             }
           : {}
       }

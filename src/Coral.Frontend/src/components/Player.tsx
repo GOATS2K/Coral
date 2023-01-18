@@ -1,6 +1,5 @@
 import { Paper, Slider, Text, UnstyledButton, Image } from "@mantine/core";
 import React, { useState } from "react";
-import ReactPlayer from "react-player";
 import { OpenAPI, TrackDto, TranscodeService } from "../client";
 import {
   IconPlayerSkipForward,
@@ -149,15 +148,11 @@ function Player({ tracks }: PlayerProps) {
     }
 
     if (currentTrackIndex < 0) {
-      // the track hasn't fully loaded yet
+      // the track array hasn't fully loaded yet
       return;
     }
     // selectedTrack was modified by the playlist
     setPlayerPosition(currentTrackIndex);
-    if (playerPosition !== 0 && !playState) {
-      setStreamTrack({} as StreamDto);
-      setPlayState(true);
-    }
   }, [selectedTrack]);
 
   React.useEffect(() => {
@@ -165,6 +160,11 @@ function Player({ tracks }: PlayerProps) {
       console.log("Player position is now: ", playerPosition);
       if (tracks == null) {
         return;
+      }
+
+      if (playerPosition !== 0 && !playState) {
+        setStreamTrack({} as StreamDto);
+        setPlayState(true);
       }
 
       let track = tracks[playerPosition];

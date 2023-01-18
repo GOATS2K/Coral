@@ -3,6 +3,8 @@
   grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
   margin: 8px 0 8px;
   padding: 0.150rem;
+  border: none;
+  outline: none;
 }
 
 .gridContainer:hover {

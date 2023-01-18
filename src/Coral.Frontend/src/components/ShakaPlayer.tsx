@@ -42,15 +42,15 @@ export const ShakaPlayer = forwardRef(
     }, []);
 
     if (playerRef.current != null) {
-      playerRef.current.ontimeupdate = (ev) => {
+      playerRef.current.ontimeupdate = () => {
         onDuration(playerRef.current?.currentTime);
       };
 
-      playerRef.current.onplay = (ev) => {
+      playerRef.current.onplay = () => {
         onPlay();
       };
 
-      playerRef.current.onended = (ev) => {
+      playerRef.current.onended = () => {
         onEnd();
       };
     }

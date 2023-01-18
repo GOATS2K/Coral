@@ -20,7 +20,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
   return (
     <div
       className={styles.gridContainer}
-      key={track.id}
+      key={track.id.toString()}
       tabIndex={track.id}
       id={track.id.toString()}
       onKeyDown={(event) => {

@@ -1,4 +1,4 @@
-import create from "zustand";
+import {create} from "zustand";
 import { TrackDto } from "./client";
 
 export interface PlayerState {

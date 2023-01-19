@@ -1,5 +1,5 @@
 ﻿using CliWrap;
-using Coral.Encoders.EncodingModels;
+using Coral.Dto.EncodingModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Coral.Encoders;
+using Coral.Encoders.EncodingModels;
 
 namespace Coral.Services
 {
@@ -63,12 +64,6 @@ namespace Coral.Services
             var requestData = new TranscodingJobRequest();
             requestConfiguration.Invoke(requestData);
 
-            var encoder = _encoderFactory.GetEncoder(format);
-            if (encoder == null || !encoder.EnsureEncoderExists())
-            {
-                throw new ArgumentException("Unsupported format or missing encoder.");
-            }
-
             // check for existing job for the same file
             var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id);
             if (existingJob != null)
@@ -77,21 +72,34 @@ namespace Coral.Services
                 return existingJob;
             }
 
+            TranscodingJob job = await CreateAndRunEncoderJob(format, requestData);
+
+            return job;
+        }
+
+        private async Task<TranscodingJob> CreateAndRunEncoderJob(OutputFormat format, TranscodingJobRequest requestData)
+        {
+            var encoder = _encoderFactory.GetEncoder(format);
+            if (encoder == null || !encoder.EnsureEncoderExists())
+            {
+                throw new ArgumentException("Unsupported format or missing encoder.");
+            }
+
             // configure encoder
             var job = encoder.ConfigureTranscodingJob(requestData);
             _transcodingJobs.Add(job);
 
-            // run job
+            // create command to run
             Command? jobCommand;
             var transcodingErrorStream = new StringBuilder();
             var pipeErrorStream = new StringBuilder();
-            
+
             // only save error logs if the encoder writes regular logs to stdout (looking at you qaac);
             if (!encoder.WritesOutputToStdErr)
             {
                 job.TranscodingCommand = job.TranscodingCommand!.WithStandardErrorPipe(PipeTarget.ToStringBuilder(transcodingErrorStream));
             }
-            
+
 
             if (job.PipeCommand != null)
             {
@@ -101,13 +109,12 @@ namespace Coral.Services
             {
                 jobCommand = job.TranscodingCommand!;
             }
-            
+
             #pragma warning disable CS4014 // I want this to run in the background.
             jobCommand.ExecuteAsync();
             #pragma warning restore CS4014
 
             await WaitForFile(Path.Combine(job.OutputDirectory, job?.FinalOutputFile), () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
-
             return job;
         }
 

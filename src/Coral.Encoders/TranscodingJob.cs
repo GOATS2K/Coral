@@ -1,4 +1,5 @@
 ﻿using CliWrap;
+using Coral.Dto.EncodingModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;

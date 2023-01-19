@@ -1,3 +1,4 @@
+using Coral.Dto.EncodingModels;
 using Coral.Encoders.EncodingModels;
 using Coral.Services.HelperModels;
 

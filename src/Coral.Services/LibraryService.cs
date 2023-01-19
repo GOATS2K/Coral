@@ -14,7 +14,7 @@ namespace Coral.Services
     public interface ILibraryService
     {
         public Task<TrackStream> GetStreamForTrack(int trackId);
-        public Task<Track?> GetDatabaseTrack(int trackId);
+        public Task<Track?> GetTrack(int trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
         public Task<List<ArtistDto>> GetArtist(string artistName);
         public IAsyncEnumerable<AlbumDto> GetAlbums();
@@ -34,7 +34,7 @@ namespace Coral.Services
             _mapper = mapper;
         }
 
-        public async Task<Track?> GetDatabaseTrack(int trackId)
+        public async Task<Track?> GetTrack(int trackId)
         {
             return await _context.Tracks.FindAsync(trackId);
         }
@@ -89,25 +89,14 @@ namespace Coral.Services
             var track = await _context.Tracks.Include(t => t.Album)
                 .FirstOrDefaultAsync(t => t.Id == trackId);
 
-            if (track == null)
-            {
-                return null;
-            }
-
-            return track.Album?.CoverFilePath;
+            return track?.Album?.CoverFilePath;
         }
 
         public async Task<string?> GetArtworkForAlbum(int albumId)
         {
             var album = await _context.Albums
                 .FirstOrDefaultAsync(a => a.Id == albumId);
-
-            if (album == null)
-            {
-                return null;
-            }
-
-            return album.CoverFilePath;
+            return album?.CoverFilePath;
         }
 
         public async Task<AlbumDto?> GetAlbum(int albumId)

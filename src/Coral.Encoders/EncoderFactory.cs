@@ -1,4 +1,4 @@
-using Coral.Encoders.EncodingModels;
+using Coral.Dto.EncodingModels;
 
 namespace Coral.Encoders;
 

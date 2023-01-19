@@ -323,13 +323,12 @@
       },
       "OutputFormat": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "AAC",
+          "MP3",
+          "Ogg",
+          "Opus"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "SimpleAlbumDto": {
         "required": [

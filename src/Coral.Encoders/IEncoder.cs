@@ -1,5 +1,6 @@
 using CliWrap;
 using Coral.Configuration;
+using Coral.Dto.EncodingModels;
 using Coral.Encoders.EncodingModels;
 
 namespace Coral.Encoders;

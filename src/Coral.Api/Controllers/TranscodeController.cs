@@ -1,3 +1,4 @@
+using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Encoders;
 using Coral.Encoders.EncodingModels;
@@ -25,7 +26,7 @@ public class TranscodeController : ControllerBase
     [Route("tracks/{trackId}")]
     public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId)
     {
-        var dbTrack = await _libraryService.GetDatabaseTrack(trackId);
+        var dbTrack = await _libraryService.GetTrack(trackId);
         if (dbTrack == null)
         {
             return NotFound(new
@@ -45,8 +46,12 @@ public class TranscodeController : ControllerBase
         var streamData = new StreamDto()
         {
             Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
-            RequestedBitrate = 256,
-            RequestedFormat = OutputFormat.AAC
+            TranscodeInfo = new TranscodeInfoDto()
+            {
+                JobId = job.Id,
+                Bitrate = 256,
+                Format = OutputFormat.AAC
+            }
         };
 
         if (!string.IsNullOrEmpty(artworkPath))

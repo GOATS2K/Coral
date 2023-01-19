@@ -3,8 +3,7 @@
   grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
   margin: 8px 0 8px;
   padding: 0.150rem;
-  border: none;
-  outline: none;
+  border: 1px solid transparent;
 }
 
 .gridContainer:hover {
@@ -28,4 +27,19 @@
 .duration {
   grid-area: duration;
   align-self: center;
+}
+
+
+/* https://codepen.io/petrey/pen/bpKqJv */
+.spinningDisc {
+  padding: 0;
+  /* ensure the disc takes up as little space as it can */
+  display: flex;
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

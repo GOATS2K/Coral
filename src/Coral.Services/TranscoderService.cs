@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Coral.Dto.Models;
 using Coral.Encoders;
 using Coral.Encoders.EncodingModels;
 
@@ -28,7 +29,7 @@ namespace Coral.Services
         {
             _encoderFactory = encoderFactory;
         }
-
+        
         public void CleanUpFiles(Guid id)
         {
             var job = _transcodingJobs.FirstOrDefault(x => x.Id == id);

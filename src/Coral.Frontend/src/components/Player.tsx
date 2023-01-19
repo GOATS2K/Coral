@@ -1,4 +1,4 @@
-import { Paper, Slider, Text, UnstyledButton, Image } from "@mantine/core";
+import { Paper, Slider, Text, UnstyledButton, Image, ColorSchemeProvider, useMantineTheme } from "@mantine/core";
 import React, { useState } from "react";
 import { OpenAPI, TrackDto, TranscodeService } from "../client";
 import {
@@ -17,6 +17,8 @@ type PlayerProps = {
 };
 
 function Player({ tracks }: PlayerProps) {
+  const theme = useMantineTheme();
+
   const playState = usePlayerStore((state: PlayerState) => state.playState);
   const selectedTrack = usePlayerStore(
     (state: PlayerState) => state.selectedTrack
@@ -203,7 +205,11 @@ function Player({ tracks }: PlayerProps) {
   const strokeSize = 1.2;
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} style={
+      {
+        background: theme.colors.dark[7]
+      }
+    }>
       <div className={styles.imageBox}>
         <Image
           src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}

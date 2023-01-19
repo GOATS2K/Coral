@@ -5,12 +5,12 @@
     "version": "v1"
   },
   "paths": {
-    "/api/Repository/tracks/{trackId}/stream": {
+    "/api/Repository/tracks/{trackId}/original": {
       "get": {
         "tags": [
           "Repository"
         ],
-        "operationId": "StreamTrack",
+        "operationId": "GetFileFromLibrary",
         "parameters": [
           {
             "name": "trackId",
@@ -25,6 +25,47 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Repository/tracks/{trackId}/transcode": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "operationId": "TranscodeTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              }
+            }
           }
         }
       }
@@ -375,21 +416,15 @@
       },
       "StreamDto": {
         "required": [
-          "link",
-          "requestedBitrate",
-          "requestedFormat"
+          "link"
         ],
         "type": "object",
         "properties": {
           "link": {
             "type": "string"
           },
-          "requestedBitrate": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "requestedFormat": {
-            "$ref": "#/components/schemas/OutputFormat"
+          "transcodeInfo": {
+            "$ref": "#/components/schemas/TranscodeInfoDto"
           },
           "artworkUrl": {
             "type": "string",
@@ -441,6 +476,28 @@
           },
           "genre": {
             "$ref": "#/components/schemas/GenreDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TranscodeInfoDto": {
+        "required": [
+          "bitrate",
+          "format",
+          "jobId"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "format": {
+            "$ref": "#/components/schemas/OutputFormat"
+          },
+          "bitrate": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

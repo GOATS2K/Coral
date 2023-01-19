@@ -41,8 +41,12 @@ public static class CommonEncoderMethods
                 "2",
                 "-hls_playlist_type",
                 "event",
+                "-hls_segment_type",
+                "fmp4",
+                "-bsf:a",
+                "aac_adtstoasc",
                 "-hls_segment_filename",
-                $"{Path.Combine(jobDir, "chunk-%02d.ts")}",
+                $"{Path.Combine(jobDir, "chunk-%02d.m4s")}",
                 "-master_pl_name",
                 $"{job.FinalOutputFile}",
                 $"{Path.Combine(jobDir, "playlist.m3u8")}"

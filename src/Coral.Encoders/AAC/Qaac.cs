@@ -56,7 +56,7 @@ public class QaacBuilder : IArgumentBuilder
 }
 
 
-[EncoderFrontend("Qaac", OutputFormat.AAC, Platform.Windows)]
+[EncoderFrontend(nameof(Qaac), OutputFormat.AAC, Platform.Windows)]
 public class Qaac : IEncoder
 {
     public string ExecutableName => "qaac";

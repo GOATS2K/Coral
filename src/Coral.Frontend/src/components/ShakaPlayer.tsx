@@ -70,6 +70,7 @@ export const ShakaPlayer = forwardRef(
         if (player && source != null) {
           try {
             await player.load(source, 0);
+            console.log("Manifest loaded: ", player.getManifest())
             if (playState) {
               await playerRef.current?.play();
             }

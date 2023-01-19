@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { Player, polyfill, util } from "shaka-player";
+import { Player, polyfill } from "shaka-player";
 
 export type ShakaPlayerRef = {
   player: () => Player | undefined;
@@ -9,13 +9,16 @@ export type ShakaPlayerRef = {
 export type ShakaPlayerProps = {
   source: string;
   playState: boolean;
-  onDuration: (duration?: number) => void;
+  onTimeUpdate: (timeStamp?: number) => void;
   onPlay: () => void;
   onEnd: () => void;
 };
 
 export const ShakaPlayer = forwardRef(
-  ({ source, playState, onDuration, onPlay, onEnd }: ShakaPlayerProps, ref) => {
+  (
+    { source, playState, onTimeUpdate, onPlay, onEnd }: ShakaPlayerProps,
+    ref
+  ) => {
     const [player, setPlayer] = React.useState<Player>();
     const playerRef = React.useRef<HTMLAudioElement>(null);
     // needed for mp2t playback in Chrome
@@ -50,7 +53,7 @@ export const ShakaPlayer = forwardRef(
 
     if (playerRef.current != null) {
       playerRef.current.ontimeupdate = () => {
-        onDuration(playerRef.current?.currentTime);
+        onTimeUpdate(playerRef.current?.currentTime);
       };
 
       playerRef.current.onplay = () => {

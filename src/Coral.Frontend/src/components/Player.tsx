@@ -173,6 +173,12 @@ function Player({ tracks }: PlayerProps) {
         let streamTrack = await TranscodeService.transcodeTrack(track.id);
         setStreamTrack(streamTrack);
       }
+
+      // preload next track for faster skipping
+      if (track != null && tracks.length > playerPosition + 1) {
+        let nextTrack = tracks[playerPosition + 1];
+        await TranscodeService.transcodeTrack(nextTrack.id);
+      }
     };
     handleTrackChange();
   }, [tracks, playerPosition]);
@@ -267,7 +273,7 @@ function Player({ tracks }: PlayerProps) {
         ref={playerRef}
         playState={playState}
         source={streamTrack.link}
-        onDuration={(duration) => {
+        onTimeUpdate={(duration) => {
           if (duration) {
             setSecondsPlayed(duration);
           }

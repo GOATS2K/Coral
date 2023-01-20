@@ -38,7 +38,7 @@ namespace Coral.Services
         {
             return await _context.Tracks.FindAsync(trackId);
         }
-
+        
         public async Task<TrackStream> GetStreamForTrack(int trackId)
         {
             var track = await _context.Tracks.FindAsync(trackId);

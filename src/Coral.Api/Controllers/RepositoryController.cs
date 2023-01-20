@@ -20,7 +20,7 @@ namespace Coral.Api.Controllers
             _transcoderService = transcoderService;
         }
 
-        [HttpGet]
+        [HttpGet, HttpHead]
         [Route("tracks/{trackId}/original")]
         public async Task<ActionResult> GetFileFromLibrary(int trackId)
         {
@@ -40,7 +40,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/transcode")]
-        public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId)
+        public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId, int bitrate)
         {
             var dbTrack = await _libraryService.GetTrack(trackId);
             if (dbTrack == null)
@@ -54,7 +54,7 @@ namespace Coral.Api.Controllers
             var job = await _transcoderService.CreateJob(OutputFormat.AAC, opt =>
             {
                 opt.SourceTrack = dbTrack;
-                opt.Bitrate = 256;
+                opt.Bitrate = bitrate;
                 opt.RequestType = TranscodeRequestType.HLS;
             });
 
@@ -65,7 +65,7 @@ namespace Coral.Api.Controllers
                 TranscodeInfo = new TranscodeInfoDto()
                 {
                     JobId = job.Id,
-                    Bitrate = 256,
+                    Bitrate = job.Request.Bitrate,
                     Format = OutputFormat.AAC
                 }
             };
@@ -82,31 +82,30 @@ namespace Coral.Api.Controllers
             return streamData;
         }
 
-        // [HttpGet]
-        // [Route("tracks/{trackId}/stream")]
-        // public async Task<ActionResult<StreamDto>> StreamTrack(int trackId,
-        //     [FromQuery] int bitrate = 192,
-        //     [FromQuery] bool transcodeTrack = true)
-        // {
-        //     if (!transcodeTrack)
-        //     {
-        //         return new StreamDto()
-        //         {
-        //             Link = Url.Action("GetFileFromLibrary", "Repository", new
-        //             {
-        //                 trackId = trackId
-        //             })!
-        //         };
-        //     }
-        //
-        //     // get track
-        //     
-        //     // check if we should transcode
-        //         // if lossy, return original
-        //         // use requested bitrate
-        //         
-        //     // return StreamDto
-        // }
+        [HttpGet]
+        [Route("tracks/{trackId}/stream")]
+        public async Task<ActionResult<StreamDto>> StreamTrack(int trackId,
+            [FromQuery] int bitrate = 192,
+            [FromQuery] bool transcodeTrack = true)
+        {
+            if (!transcodeTrack)
+            {
+                return new StreamDto()
+                {
+                    Link = Url.Action("GetFileFromLibrary", "Repository", new
+                    {
+                        trackId = trackId
+                    }, Request.Scheme)!,
+                    TranscodeInfo = null,
+                    ArtworkUrl = Url.Action("GetTrackArtwork",
+                        "Repository",
+                        new {trackId = trackId},
+                        Request.Scheme)
+                };
+            }
+
+            return RedirectToAction("TranscodeTrack", new {trackId = trackId, bitrate = bitrate});
+        }
 
         [HttpGet]
         [Route("tracks/{trackId}/artwork")]

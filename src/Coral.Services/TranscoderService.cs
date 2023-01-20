@@ -59,7 +59,7 @@ namespace Coral.Services
                 File.Delete(job.OutputDirectory);
             }
         }
-
+        
         public async Task<TranscodingJob> CreateJob(OutputFormat format, Action<TranscodingJobRequest> requestConfiguration)
         {
             var requestData = new TranscodingJobRequest();

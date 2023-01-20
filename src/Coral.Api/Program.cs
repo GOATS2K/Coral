@@ -103,4 +103,7 @@ if (!string.IsNullOrEmpty(contentDirectory))
     indexerService.ReadDirectory(contentDirectory);
     app.Run();
 }
-logger.LogCritical("CORAL_CONTENT_DIRECTORY has not been set.");
+else
+{
+    logger.LogCritical("CORAL_CONTENT_DIRECTORY has not been set.");   
+}

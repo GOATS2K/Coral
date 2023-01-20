@@ -27,7 +27,7 @@ namespace Coral.Api.Controllers
             try
             {
                 var trackStream = await _libraryService.GetStreamForTrack(trackId);
-                return File(trackStream.Stream, trackStream.ContentType);
+                return File(trackStream.Stream, trackStream.ContentType, true);
             }
             catch (ArgumentException ex)
             {

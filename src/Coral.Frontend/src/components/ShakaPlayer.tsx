@@ -78,7 +78,6 @@ export const ShakaPlayer = forwardRef(
         if (player && source != null) {
           try {
             await player.load(source, 0, mimeType);
-            console.log("Loaded with mime-type:", mimeType);
             if (playState) {
               await playerRef.current?.play();
             }

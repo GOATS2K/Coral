@@ -54,8 +54,6 @@ function Player({ tracks }: PlayerProps) {
       ? `${selectedTrack.artist.name} - ${selectedTrack.title} | Coral`
       : "Coral";
 
-  usePlayerStore.setState({ selectedTrack: tracks[playerPosition] });
-
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
       return;
@@ -184,6 +182,8 @@ function Player({ tracks }: PlayerProps) {
       }
 
       let track = tracks[playerPosition];
+      usePlayerStore.setState({ selectedTrack: track });
+      
       let streamTrack = await RepositoryService.streamTrack(
         track.id,
         // parse as int and claim value is not null

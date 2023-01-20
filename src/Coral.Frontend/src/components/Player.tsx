@@ -30,6 +30,7 @@ import { formatSecondsToMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
 import axios from "axios";
+import Head from "next/head";
 type PlayerProps = {
   tracks: TrackDto[];
 };
@@ -56,6 +57,8 @@ function Player({ tracks }: PlayerProps) {
 
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
+
+  const [titleText, setTitleText] = useState("Coral");
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
@@ -166,6 +169,13 @@ function Player({ tracks }: PlayerProps) {
     if (selectedTrack == null) {
       return;
     }
+
+    setTitleText(
+      selectedTrack.artist != null
+        ? `${selectedTrack.artist.name} - ${selectedTrack.title} | Coral`
+        : "Coral"
+    );
+
     let currentTrackIndex = tracks?.indexOf(selectedTrack);
     // selectedTrack was modifed by the player controls
     if (currentTrackIndex === playerPosition) {
@@ -178,6 +188,8 @@ function Player({ tracks }: PlayerProps) {
     }
     // selectedTrack was modified by the playlist
     setPlayerPosition(currentTrackIndex);
+
+    // set title text
   }, [selectedTrack]);
 
   React.useEffect(() => {
@@ -251,6 +263,9 @@ function Player({ tracks }: PlayerProps) {
         background: theme.colors.dark[7],
       }}
     >
+      <Head>
+        <title>{titleText}</title>
+      </Head>
       <div className={styles.imageBox}>
         <Image
           src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}

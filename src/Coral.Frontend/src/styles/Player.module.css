@@ -44,3 +44,7 @@
   flex: 1;
   align-self: center;
 }
+
+.settings {
+  margin: auto;
+}

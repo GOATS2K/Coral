@@ -27,6 +27,28 @@
             "description": "Success"
           }
         }
+      },
+      "head": {
+        "tags": [
+          "Repository"
+        ],
+        "operationId": "GetFileFromLibrary",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
       }
     },
     "/api/Repository/tracks/{trackId}/transcode": {
@@ -43,6 +65,72 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "bitrate",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Repository/tracks/{trackId}/stream": {
+      "get": {
+        "tags": [
+          "Repository"
+        ],
+        "operationId": "StreamTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "bitrate",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 192
+            }
+          },
+          {
+            "name": "transcodeTrack",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
             }
           }
         ],
@@ -416,7 +504,8 @@
       },
       "StreamDto": {
         "required": [
-          "link"
+          "link",
+          "mimeType"
         ],
         "type": "object",
         "properties": {
@@ -425,6 +514,9 @@
           },
           "transcodeInfo": {
             "$ref": "#/components/schemas/TranscodeInfoDto"
+          },
+          "mimeType": {
+            "type": "string"
           },
           "artworkUrl": {
             "type": "string",

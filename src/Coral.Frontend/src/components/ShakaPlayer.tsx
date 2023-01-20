@@ -9,6 +9,7 @@ export type ShakaPlayerRef = {
 export type ShakaPlayerProps = {
   source: string;
   playState: boolean;
+  mimeType?: string;
   onTimeUpdate: (timeStamp?: number) => void;
   onPlay: () => void;
   onEnd: () => void;
@@ -16,7 +17,14 @@ export type ShakaPlayerProps = {
 
 export const ShakaPlayer = forwardRef(
   (
-    { source, playState, onTimeUpdate, onPlay, onEnd }: ShakaPlayerProps,
+    {
+      source,
+      mimeType,
+      playState,
+      onTimeUpdate,
+      onPlay,
+      onEnd,
+    }: ShakaPlayerProps,
     ref
   ) => {
     const [player, setPlayer] = React.useState<Player>();
@@ -69,8 +77,8 @@ export const ShakaPlayer = forwardRef(
       const loadSource = async () => {
         if (player && source != null) {
           try {
-            await player.load(source, 0);
-            console.log("Manifest loaded: ", player.getManifest())
+            await player.load(source, 0, mimeType);
+            console.log("Loaded with mime-type:", mimeType);
             if (playState) {
               await playerRef.current?.play();
             }

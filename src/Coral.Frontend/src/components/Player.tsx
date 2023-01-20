@@ -1,17 +1,35 @@
-import { Paper, Slider, Text, UnstyledButton, Image, ColorSchemeProvider, useMantineTheme } from "@mantine/core";
+import {
+  Paper,
+  Slider,
+  Text,
+  UnstyledButton,
+  Image,
+  ColorSchemeProvider,
+  useMantineTheme,
+  Menu,
+  Switch,
+  Select,
+} from "@mantine/core";
 import React, { useState } from "react";
-import { OpenAPI, TrackDto, TranscodeService } from "../client";
+import {
+  OpenAPI,
+  RepositoryService,
+  TrackDto,
+  TranscodeService,
+} from "../client";
 import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
   IconPlayerPlay,
   IconPlayerPause,
+  IconSettings,
 } from "@tabler/icons";
 import { StreamDto } from "../client/models/StreamDto";
 import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
+import axios from "axios";
 type PlayerProps = {
   tracks: TrackDto[];
 };
@@ -30,9 +48,14 @@ function Player({ tracks }: PlayerProps) {
     usePlayerStore.setState({ selectedTrack: track });
 
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
+  const [mimeType, setMimeType] = useState<string | undefined>();
+
   // const [duration, setDuration] = useState(0);
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [playerPosition, setPlayerPosition] = useState(0);
+
+  const [transcodeTrack, setTranscodeTrack] = useState(false);
+  const [bitrate, setBitrate] = useState<string | null>("192");
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
@@ -159,7 +182,6 @@ function Player({ tracks }: PlayerProps) {
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
-      console.log("Player position is now: ", playerPosition);
       if (tracks == null) {
         return;
       }
@@ -172,14 +194,32 @@ function Player({ tracks }: PlayerProps) {
       let track = tracks[playerPosition];
       if (track != null) {
         setSelectedTrack(track);
-        let streamTrack = await TranscodeService.transcodeTrack(track.id);
+        let streamTrack = await RepositoryService.streamTrack(
+          track.id,
+          // parse as int and claim value is not null
+          +bitrate!,
+          transcodeTrack
+        );
+        let resp = await axios.head(streamTrack.link);
+        // because Shaka doesn't automatically detect the correct content-type
+        // we need to set it ourselves
+        let contentType = resp.headers["content-type"];
+        setMimeType(contentType);
         setStreamTrack(streamTrack);
       }
 
       // preload next track for faster skipping
-      if (track != null && tracks.length > playerPosition + 1) {
+      if (
+        transcodeTrack &&
+        track != null &&
+        tracks.length > playerPosition + 1
+      ) {
         let nextTrack = tracks[playerPosition + 1];
-        await TranscodeService.transcodeTrack(nextTrack.id);
+        await RepositoryService.streamTrack(
+          nextTrack.id,
+          +bitrate!,
+          transcodeTrack
+        );
       }
     };
     handleTrackChange();
@@ -205,11 +245,12 @@ function Player({ tracks }: PlayerProps) {
   const strokeSize = 1.2;
 
   return (
-    <div className={styles.wrapper} style={
-      {
-        background: theme.colors.dark[7]
-      }
-    }>
+    <div
+      className={styles.wrapper}
+      style={{
+        background: theme.colors.dark[7],
+      }}
+    >
       <div className={styles.imageBox}>
         <Image
           src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}
@@ -279,6 +320,7 @@ function Player({ tracks }: PlayerProps) {
         ref={playerRef}
         playState={playState}
         source={streamTrack.link}
+        mimeType={mimeType}
         onTimeUpdate={(duration) => {
           if (duration) {
             setSecondsPlayed(duration);
@@ -291,6 +333,46 @@ function Player({ tracks }: PlayerProps) {
           nextTrack();
         }}
       ></ShakaPlayer>
+      <div className={styles.settings}>
+        <Menu shadow="md" width={200} closeOnItemClick={false}>
+          <Menu.Target>
+            <UnstyledButton>
+              <IconSettings></IconSettings>
+            </UnstyledButton>
+          </Menu.Target>
+
+          <Menu.Dropdown>
+            <Menu.Label>Playback</Menu.Label>
+            <Menu.Item
+              rightSection={
+                <Switch
+                  checked={transcodeTrack}
+                  onChange={(ev) => setTranscodeTrack(ev.currentTarget.checked)}
+                ></Switch>
+              }
+            >
+              Transcode audio
+            </Menu.Item>
+            <Menu.Item
+              disabled={!transcodeTrack}
+              rightSection={
+                <Select
+                  style={{
+                    marginLeft: "auto",
+                    maxWidth: "65%",
+                    alignSelf: "end",
+                  }}
+                  data={["128", "192", "256", "320"]}
+                  value={bitrate}
+                  onChange={setBitrate}
+                ></Select>
+              }
+            >
+              Bitrate
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </div>
     </div>
   );
 }

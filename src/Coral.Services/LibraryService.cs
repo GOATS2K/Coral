@@ -47,7 +47,7 @@ namespace Coral.Services
                 throw new ArgumentException($"Track ID {trackId} not found.");
             }
 
-            var fileStream = new FileStream(track.FilePath, FileMode.Open, FileAccess.Read);
+            var fileStream = new FileStream(track.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var trackStream = new TrackStream()
             {
                 FileName = Path.GetFileName(track.FilePath),

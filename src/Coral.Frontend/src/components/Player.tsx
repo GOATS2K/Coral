@@ -1,22 +1,15 @@
 import {
-  Paper,
   Slider,
   Text,
   UnstyledButton,
   Image,
-  ColorSchemeProvider,
   useMantineTheme,
   Menu,
   Switch,
   Select,
 } from "@mantine/core";
 import React, { useState } from "react";
-import {
-  OpenAPI,
-  RepositoryService,
-  TrackDto,
-  TranscodeService,
-} from "../client";
+import { OpenAPI, RepositoryService, TrackDto } from "../client";
 import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
@@ -39,26 +32,29 @@ function Player({ tracks }: PlayerProps) {
   const theme = useMantineTheme();
 
   const playState = usePlayerStore((state: PlayerState) => state.playState);
+
+  const [streamTrack, setStreamTrack] = useState({} as StreamDto);
+  const [mimeType, setMimeType] = useState<string | undefined>();
+
+  const [secondsPlayed, setSecondsPlayed] = useState(0);
+  const [playerPosition, setPlayerPosition] = useState(0);
+
   const selectedTrack = usePlayerStore(
     (state: PlayerState) => state.selectedTrack
   );
 
   const setPlayState = (value: boolean) =>
     usePlayerStore.setState({ playState: value });
-  const setSelectedTrack = (track: TrackDto) =>
-    usePlayerStore.setState({ selectedTrack: track });
-
-  const [streamTrack, setStreamTrack] = useState({} as StreamDto);
-  const [mimeType, setMimeType] = useState<string | undefined>();
-
-  // const [duration, setDuration] = useState(0);
-  const [secondsPlayed, setSecondsPlayed] = useState(0);
-  const [playerPosition, setPlayerPosition] = useState(0);
 
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
 
-  const [titleText, setTitleText] = useState("Coral");
+  const titleText =
+    selectedTrack.artist != null
+      ? `${selectedTrack.artist.name} - ${selectedTrack.title} | Coral`
+      : "Coral";
+
+  usePlayerStore.setState({ selectedTrack: tracks[playerPosition] });
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
@@ -166,16 +162,6 @@ function Player({ tracks }: PlayerProps) {
   };
 
   React.useEffect(() => {
-    if (selectedTrack == null) {
-      return;
-    }
-
-    setTitleText(
-      selectedTrack.artist != null
-        ? `${selectedTrack.artist.name} - ${selectedTrack.title} | Coral`
-        : "Coral"
-    );
-
     let currentTrackIndex = tracks?.indexOf(selectedTrack);
     // selectedTrack was modifed by the player controls
     if (currentTrackIndex === playerPosition) {
@@ -188,44 +174,31 @@ function Player({ tracks }: PlayerProps) {
     }
     // selectedTrack was modified by the playlist
     setPlayerPosition(currentTrackIndex);
-
-    // set title text
   }, [selectedTrack]);
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
-      if (tracks == null) {
-        return;
-      }
-
       if (playerPosition !== 0 && !playState) {
         setStreamTrack({} as StreamDto);
         setPlayState(true);
       }
 
       let track = tracks[playerPosition];
-      if (track != null) {
-        setSelectedTrack(track);
-        let streamTrack = await RepositoryService.streamTrack(
-          track.id,
-          // parse as int and claim value is not null
-          +bitrate!,
-          transcodeTrack
-        );
-        let resp = await axios.head(streamTrack.link);
-        // because Shaka doesn't automatically detect the correct content-type
-        // we need to set it ourselves
-        let contentType = resp.headers["content-type"];
-        setMimeType(contentType);
-        setStreamTrack(streamTrack);
-      }
+      let streamTrack = await RepositoryService.streamTrack(
+        track.id,
+        // parse as int and claim value is not null
+        +bitrate!,
+        transcodeTrack
+      );
+      let resp = await axios.head(streamTrack.link);
+      // because Shaka doesn't automatically detect the correct content-type
+      // we need to set it ourselves
+      let contentType = resp.headers["content-type"];
+      setMimeType(contentType);
+      setStreamTrack(streamTrack);
 
       // preload next track for faster skipping
-      if (
-        transcodeTrack &&
-        track != null &&
-        tracks.length > playerPosition + 1
-      ) {
+      if (transcodeTrack && tracks.length > playerPosition + 1) {
         let nextTrack = tracks[playerPosition + 1];
         await RepositoryService.streamTrack(
           nextTrack.id,

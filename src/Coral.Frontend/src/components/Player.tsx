@@ -99,7 +99,6 @@ function Player({ tracks }: PlayerProps) {
         return;
       }
 
-      console.info("Annoucing media session for track: ", metadata);
       navigator.mediaSession.metadata = metadata;
       updatePositionState(playerRef.current?.audioRef()?.currentTime);
 
@@ -281,7 +280,7 @@ function Player({ tracks }: PlayerProps) {
               strokeWidth={strokeSize}
             ></IconPlayerSkipBack>
           </UnstyledButton>
-          {!buffering ? playButton : loading}
+          {!buffering || !playState ? playButton : loading}
           <UnstyledButton onClick={nextTrack}>
             <IconPlayerSkipForward
               size={buttonSize}
@@ -327,6 +326,7 @@ function Player({ tracks }: PlayerProps) {
           nextTrack();
         }}
         onBuffer={(value) => {
+          console.log("Buffering: ", value);
           setBuffering(value);
         }}
       ></ShakaPlayer>

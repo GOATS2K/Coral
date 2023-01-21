@@ -32,8 +32,8 @@ export const ShakaPlayer = forwardRef(
     const [player, setPlayer] = React.useState<Player>();
     const playerRef = React.useRef<HTMLAudioElement>(null);
     // needed for mp2t playback in Chrome
-    const muxjs = require("mux.js");
-    window.muxjs = muxjs;
+    // const muxjs = require("mux.js");
+    // window.muxjs = muxjs;
 
     React.useImperativeHandle(ref, () => ({
       player() {
@@ -49,7 +49,7 @@ export const ShakaPlayer = forwardRef(
       player.configure({
         streaming: {
           bufferingGoal: 30,
-          rebufferingGoal: 10,
+          rebufferingGoal: 4,
         },
       });
 
@@ -86,7 +86,7 @@ export const ShakaPlayer = forwardRef(
           try {
             await player.load(source, 0, mimeType);
             if (playState) {
-              await playerRef.current?.play()
+              await playerRef.current?.play();
             }
           } catch (e) {
             console.error(e);

@@ -35,7 +35,6 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
     let totalDurationInSeconds = album.tracks
       ?.map((t) => t.durationInSeconds)
       .reduce((a, b) => a + b);
-    console.log(totalDurationInSeconds);
     return formatSecondsToDateString(totalDurationInSeconds);
   };
 

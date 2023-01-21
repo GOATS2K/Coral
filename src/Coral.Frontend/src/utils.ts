@@ -19,7 +19,7 @@ export function formatSecondsToSingleMinutes(value: number): string {
 
 export function formatSecondsToDateString(value: number): string {
   if (value > 3600) {
-    return dayjs.duration(value, "seconds").format("H [h] mm [min] ss [sec]");  
+    return dayjs.duration(value, "seconds").format("H[h] m[m] ss[s]");  
   }
-  return dayjs.duration(value, "seconds").format("mm [min] ss [sec]");
+  return dayjs.duration(value, "seconds").format("m[m] ss[s]");
 }

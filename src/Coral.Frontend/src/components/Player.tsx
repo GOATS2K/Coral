@@ -7,6 +7,7 @@ import {
   Menu,
   Switch,
   Select,
+  Loader,
 } from "@mantine/core";
 import React, { useState } from "react";
 import { OpenAPI, RepositoryService, TrackDto } from "../client";
@@ -38,6 +39,7 @@ function Player({ tracks }: PlayerProps) {
 
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [playerPosition, setPlayerPosition] = useState(0);
+  const [buffering, setBuffering] = useState(false);
 
   const selectedTrack = usePlayerStore(
     (state: PlayerState) => state.selectedTrack
@@ -183,7 +185,7 @@ function Player({ tracks }: PlayerProps) {
 
       let track = tracks[playerPosition];
       usePlayerStore.setState({ selectedTrack: track });
-      
+
       let streamTrack = await RepositoryService.streamTrack(
         track.id,
         // parse as int and claim value is not null
@@ -208,7 +210,7 @@ function Player({ tracks }: PlayerProps) {
       }
     };
     handleTrackChange();
-  }, [tracks, playerPosition]);
+  }, [tracks, playerPosition, transcodeTrack, bitrate]);
 
   const nextTrack = () => {
     if (playerPosition !== tracks.length - 1) {
@@ -228,6 +230,24 @@ function Player({ tracks }: PlayerProps) {
   const playerRef = React.useRef<ShakaPlayerRef>(null);
   const buttonSize = 32;
   const strokeSize = 1.2;
+
+  const playButton = (
+    <UnstyledButton onClick={() => setPlayState(!playState)}>
+      {playState ? (
+        <IconPlayerPause
+          size={buttonSize}
+          strokeWidth={strokeSize}
+        ></IconPlayerPause>
+      ) : (
+        <IconPlayerPlay
+          size={buttonSize}
+          strokeWidth={strokeSize}
+        ></IconPlayerPlay>
+      )}
+    </UnstyledButton>
+  );
+
+  const loading = <Loader size={30} />;
 
   return (
     <div
@@ -261,21 +281,7 @@ function Player({ tracks }: PlayerProps) {
               strokeWidth={strokeSize}
             ></IconPlayerSkipBack>
           </UnstyledButton>
-
-          <UnstyledButton onClick={() => setPlayState(!playState)}>
-            {playState ? (
-              <IconPlayerPause
-                size={buttonSize}
-                strokeWidth={strokeSize}
-              ></IconPlayerPause>
-            ) : (
-              <IconPlayerPlay
-                size={buttonSize}
-                strokeWidth={strokeSize}
-              ></IconPlayerPlay>
-            )}
-          </UnstyledButton>
-
+          {!buffering ? playButton : loading}
           <UnstyledButton onClick={nextTrack}>
             <IconPlayerSkipForward
               size={buttonSize}
@@ -319,6 +325,9 @@ function Player({ tracks }: PlayerProps) {
         }}
         onEnd={() => {
           nextTrack();
+        }}
+        onBuffer={(value) => {
+          setBuffering(value);
         }}
       ></ShakaPlayer>
       <div className={styles.settings}>

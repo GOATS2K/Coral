@@ -13,6 +13,7 @@ export type ShakaPlayerProps = {
   onTimeUpdate: (timeStamp?: number) => void;
   onPlay: () => void;
   onEnd: () => void;
+  onBuffer: (state: boolean) => void;
 };
 
 export const ShakaPlayer = forwardRef(
@@ -24,6 +25,7 @@ export const ShakaPlayer = forwardRef(
       onTimeUpdate,
       onPlay,
       onEnd,
+      onBuffer,
     }: ShakaPlayerProps,
     ref
   ) => {
@@ -47,9 +49,14 @@ export const ShakaPlayer = forwardRef(
       player.configure({
         streaming: {
           bufferingGoal: 30,
-          rebufferingGoal: 2,
+          rebufferingGoal: 10,
         },
       });
+
+      player.addEventListener("buffering", (ev: any) => {
+        onBuffer(ev.buffering);
+      });
+
       console.log("Configured player!", player.getConfiguration());
       polyfill.installAll();
       setPlayer(player);
@@ -79,7 +86,7 @@ export const ShakaPlayer = forwardRef(
           try {
             await player.load(source, 0, mimeType);
             if (playState) {
-              await playerRef.current?.play();
+              await playerRef.current?.play()
             }
           } catch (e) {
             console.error(e);

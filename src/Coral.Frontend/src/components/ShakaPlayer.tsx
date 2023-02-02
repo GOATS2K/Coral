@@ -48,8 +48,17 @@ export const ShakaPlayer = forwardRef(
       const player = new Player(playerRef.current);
       player.configure({
         streaming: {
-          bufferingGoal: 30,
+          bufferingGoal: 120,
           rebufferingGoal: 4,
+        },
+        retryParameters: {
+          timeout: 30000, // timeout in ms, after which we abort
+          stallTimeout: 5000, // stall timeout in ms, after which we abort
+          connectionTimeout: 10000, // connection timeout in ms, after which we abort
+          maxAttempts: 10, // the maximum number of requests before we fail
+          baseDelay: 1000, // the base delay in ms between retries
+          backoffFactor: 1, // the multiplicative backoff factor between retries
+          fuzzFactor: 0, // the fuzz factor to apply to each retry delay
         },
       });
 
@@ -58,7 +67,6 @@ export const ShakaPlayer = forwardRef(
       });
 
       console.log("Configured player!", player.getConfiguration());
-      polyfill.installAll();
       setPlayer(player);
 
       return () => {

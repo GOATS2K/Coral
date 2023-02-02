@@ -76,15 +76,22 @@ var hlsRoute = "/hls";
 
 // setup content type provider
 var contentTypeProvider = new FileExtensionContentTypeProvider();
-contentTypeProvider.Mappings[".m3u8"] = "application/x-MPEGurl";
-contentTypeProvider.Mappings[".ts"] = "audio/MP2T";
+contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
+contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
+contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
+
 
 app.UseStaticFiles(new StaticFileOptions()
 {
+    OnPrepareResponse = (ctx) =>
+    {
+        // HLS chunks should not be cached.
+        ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store");
+    },
     FileProvider = fileProvider,
     RequestPath = hlsRoute,
     ServeUnknownFileTypes = true,
-    ContentTypeProvider = contentTypeProvider
+    ContentTypeProvider = contentTypeProvider,
 });
 
 app.UseAuthorization();

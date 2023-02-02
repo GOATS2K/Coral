@@ -50,20 +50,28 @@ export const ShakaPlayer = forwardRef(
         streaming: {
           bufferingGoal: 120,
           rebufferingGoal: 4,
-        },
-        retryParameters: {
-          timeout: 30000, // timeout in ms, after which we abort
-          stallTimeout: 5000, // stall timeout in ms, after which we abort
-          connectionTimeout: 10000, // connection timeout in ms, after which we abort
-          maxAttempts: 10, // the maximum number of requests before we fail
-          baseDelay: 1000, // the base delay in ms between retries
-          backoffFactor: 1, // the multiplicative backoff factor between retries
-          fuzzFactor: 0, // the fuzz factor to apply to each retry delay
+          retryParameters: {
+            timeout: 30000, // timeout in ms, after which we abort
+            stallTimeout: 5000, // stall timeout in ms, after which we abort
+            connectionTimeout: 10000, // connection timeout in ms, after which we abort
+            maxAttempts: 100, // the maximum number of requests before we fail
+            baseDelay: 1000, // the base delay in ms between retries
+            backoffFactor: 1, // the multiplicative backoff factor between retries
+            fuzzFactor: 0, // the fuzz factor to apply to each retry delay
+          },
         },
       });
 
       player.addEventListener("buffering", (ev: any) => {
         onBuffer(ev.buffering);
+      });
+
+      player.addEventListener("stalldetected", (ev: any) => {
+        console.log("Stall detected!", ev);
+      });
+
+      player.addEventListener("error", (ev: any) => {
+        console.log(ev);
       });
 
       console.log("Configured player!", player.getConfiguration());

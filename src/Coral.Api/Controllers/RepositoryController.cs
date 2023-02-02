@@ -61,6 +61,8 @@ namespace Coral.Api.Controllers
             var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
             var streamData = new StreamDto()
             {
+                // this will require some baseurl modifications via the web server
+                // responsible for reverse proxying Coral
                 Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
                 TranscodeInfo = new TranscodeInfoDto()
                 {

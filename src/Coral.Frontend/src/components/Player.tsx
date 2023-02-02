@@ -326,7 +326,6 @@ function Player({ tracks }: PlayerProps) {
           nextTrack();
         }}
         onBuffer={(value) => {
-          console.log("Buffering: ", value);
           setBuffering(value);
         }}
       ></ShakaPlayer>

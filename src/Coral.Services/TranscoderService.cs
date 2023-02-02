@@ -66,7 +66,7 @@ namespace Coral.Services
             requestConfiguration.Invoke(requestData);
 
             // check for existing job for the same file
-            var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id);
+            var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id && x.Request.Bitrate == requestData.Bitrate);
             if (existingJob != null)
             {
                 await WaitForFile(Path.Combine(existingJob.OutputDirectory, existingJob?.FinalOutputFile));

@@ -7,7 +7,7 @@
 		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
 		<TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
 		<IsPackable>false</IsPackable>
-		<SpaRoot>..\Coral.Frontend</SpaRoot>
+		<SpaRoot>..\Coral.Frontend\</SpaRoot>
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
 		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
 		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
@@ -34,11 +34,7 @@
 		<Message Importance="high" Text="Restoring dependencies using 'pnpm'. This may take several minutes..." />
 		<Exec WorkingDirectory="..\Coral.Frontend" Command="pnpm install" ContinueOnError="false" />
 	</Target>
-
-	<Target Name="OpenApiClientGeneration" AfterTargets="PostBuildEvent">
-		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
-	</Target>
-
+	
 	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
 		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install" />
@@ -46,7 +42,7 @@
 
 		<!-- Include the newly-built files in the publish output -->
 		<ItemGroup>
-			<DistFiles Include="$(SpaRoot)build\**" />
+			<DistFiles Include="$(SpaRoot)out\**" />
 			<ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
 				<RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
 				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -58,5 +54,6 @@
 	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
 		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
+		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
 	</Target>
 </Project>

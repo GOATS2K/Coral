@@ -69,18 +69,18 @@ app.UseCors(cors =>
 
 app.UseHttpsRedirection();
 
-// setup file provider for hls
-Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
-var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
-var hlsRoute = "/hls";
-
 // setup content type provider
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
+// setup file provider for hls
+Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
+var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
+var hlsRoute = "/hls";
 
+// serve HLS
 app.UseStaticFiles(new StaticFileOptions()
 {
     OnPrepareResponse = (ctx) =>
@@ -94,9 +94,13 @@ app.UseStaticFiles(new StaticFileOptions()
     ContentTypeProvider = contentTypeProvider,
 });
 
+// serve SPA route
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapFallbackToFile("/album/{id}", "album/[id].html");
 app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();

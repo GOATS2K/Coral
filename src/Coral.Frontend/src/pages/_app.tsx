@@ -3,14 +3,10 @@ import Head from "next/head";
 import { MantineProvider } from "@mantine/core";
 import { OpenAPI } from "../client";
 import "../styles/global.css";
+import getConfig from "next/config";
 
 if (process.env.NODE_ENV === "development") {
-  const target = process.env.ASPNETCORE_HTTPS_PORT
-    ? `https://localhost:${process.env.ASPNETCORE_HTTPS_PORT}`
-    : process.env.ASPNETCORE_URLS
-    ? process.env.ASPNETCORE_URLS.split(";")[0]
-    : "http://localhost:5031";
-  OpenAPI.BASE = target;
+  OpenAPI.BASE = getConfig()["publicRuntimeConfig"]["openApiBaseUrl"];
 }
 
 export default function App(props: AppProps) {

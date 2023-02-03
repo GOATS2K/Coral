@@ -83,7 +83,7 @@ function Player({ tracks }: PlayerProps) {
       if (streamTrack.artworkUrl != null) {
         metadata["artwork"] = [
           {
-            src: streamTrack.artworkUrl,
+            src: `${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`,
           },
         ];
       }

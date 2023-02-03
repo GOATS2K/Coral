@@ -1,0 +1,15 @@
+const process = require("process")
+
+const getOpenApiBaseUrl = () => {
+  return process.env.ASPNETCORE_HTTPS_PORT != null
+      ? `https://localhost:${process.env.ASPNETCORE_HTTPS_PORT}`
+      : process.env.ASPNETCORE_URLS != null
+      ? process.env.ASPNETCORE_URLS.split(";")[0]
+      : "http://localhost:5031";
+};
+
+module.exports = {
+  publicRuntimeConfig: {
+    openApiBaseUrl: getOpenApiBaseUrl()
+  }
+}

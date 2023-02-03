@@ -4,9 +4,17 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+		<TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
+		<IsPackable>false</IsPackable>
+		<SpaRoot>..\Coral.Frontend</SpaRoot>
+		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
+		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.2" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 	</ItemGroup>
 
@@ -17,20 +25,38 @@
 		<ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
 	</ItemGroup>
 
-	<Target Name="NodeDependencies" BeforeTargets="BeforeBuild">
-		<Exec
-		  WorkingDirectory="..\Coral.Frontend"
-		  Command="pnpm install"
-		  ContinueOnError="false" />
+	<Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug'">
+		<!-- Ensure pnpm is installed -->
+		<Exec Command="pnpm --version" ContinueOnError="true">
+			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+		</Exec>
+		<Error Condition="'$(ErrorCode)' != '0'" Text="pnpm is required to build and run this project." />
+		<Message Importance="high" Text="Restoring dependencies using 'pnpm'. This may take several minutes..." />
+		<Exec WorkingDirectory="..\Coral.Frontend" Command="pnpm install" ContinueOnError="false" />
 	</Target>
 
-	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent">
-		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
-		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
-	</Target>
-	
 	<Target Name="OpenApiClientGeneration" AfterTargets="PostBuildEvent">
 		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
 	</Target>
 
+	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
+		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
+		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm run build" />
+
+		<!-- Include the newly-built files in the publish output -->
+		<ItemGroup>
+			<DistFiles Include="$(SpaRoot)build\**" />
+			<ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+				<RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+				<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			</ResolvedFileToPublish>
+		</ItemGroup>
+	</Target>
+	
+	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent">
+		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
+		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
+	</Target>
 </Project>

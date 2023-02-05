@@ -86,7 +86,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/stream")]
-        public async Task<ActionResult<StreamDto>> StreamTrack(int trackId,
+        public ActionResult<StreamDto> StreamTrack(int trackId,
             [FromQuery] int bitrate = 192,
             [FromQuery] bool transcodeTrack = true)
         {

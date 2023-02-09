@@ -1,7 +1,7 @@
-import { AlbumDto } from "../client/schemas";
+import { AlbumDto, SimpleAlbumDto } from "../client/schemas";
 import { formatSecondsToDateString } from "../utils";
 
-export const getAlbumArtists = (album: AlbumDto) => {
+export const getAlbumArtists = (album: AlbumDto | SimpleAlbumDto) => {
   if (album.artists?.length >= 4) {
     return "Various Artists";
   }

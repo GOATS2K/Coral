@@ -259,7 +259,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AlbumDto"
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
                   }
                 }
               },
@@ -267,7 +267,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AlbumDto"
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
                   }
                 }
               },
@@ -275,7 +275,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AlbumDto"
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
                   }
                 }
               }
@@ -420,6 +420,7 @@
       },
       "SimpleAlbumDto": {
         "required": [
+          "artists",
           "coverPresent",
           "id",
           "name",
@@ -433,6 +434,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleArtistDto"
+            }
           },
           "releaseYear": {
             "type": "integer",
@@ -463,8 +470,7 @@
       },
       "StreamDto": {
         "required": [
-          "link",
-          "mimeType"
+          "link"
         ],
         "type": "object",
         "properties": {
@@ -473,9 +479,6 @@
           },
           "transcodeInfo": {
             "$ref": "#/components/schemas/TranscodeInfoDto"
-          },
-          "mimeType": {
-            "type": "string"
           },
           "artworkUrl": {
             "type": "string",

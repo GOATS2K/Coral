@@ -338,7 +338,7 @@ export const useTracks = <TData = TracksResponse>(
 
 export type AlbumsError = Fetcher.ErrorWrapper<undefined>;
 
-export type AlbumsResponse = Schemas.AlbumDto[];
+export type AlbumsResponse = Schemas.SimpleAlbumDto[];
 
 export type AlbumsVariables = Context["fetcherOptions"];
 

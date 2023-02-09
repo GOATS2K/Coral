@@ -1,9 +1,10 @@
 import React from "react";
+import { useAlbums } from "../../client/components";
 import AlbumList from "../../components/AlbumList";
 
 export default function Albums() {
   // get list of albums
-  // render 4 x 5 grid of albums with covers
+  const { data, isLoading, error } = useAlbums({});
 
-  return <AlbumList></AlbumList>;
+  return <AlbumList albums={data}></AlbumList>;
 }

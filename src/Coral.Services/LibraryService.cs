@@ -17,7 +17,7 @@ namespace Coral.Services
         public Task<Track?> GetTrack(int trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
         public Task<List<ArtistDto>> GetArtist(string artistName);
-        public IAsyncEnumerable<AlbumDto> GetAlbums();
+        public IAsyncEnumerable<SimpleAlbumDto> GetAlbums();
         public Task<string?> GetArtworkForTrack(int trackId);
         public Task<string?> GetArtworkForAlbum(int albumId);
         public Task<AlbumDto?> GetAlbum(int albumId);
@@ -67,11 +67,11 @@ namespace Coral.Services
                 .AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<AlbumDto> GetAlbums()
+        public IAsyncEnumerable<SimpleAlbumDto> GetAlbums()
         {
             return _context
                 .Albums
-                .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .AsAsyncEnumerable();
         }
 

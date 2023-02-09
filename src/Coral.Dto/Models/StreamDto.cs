@@ -11,8 +11,6 @@ namespace Coral.Dto.Models
     {
         public required string Link { get; set; }
         public TranscodeInfoDto? TranscodeInfo { get; set; }
-        public string MimeType { get; set; } = null!;
-
         public string? ArtworkUrl { get; set; }
     }
 }

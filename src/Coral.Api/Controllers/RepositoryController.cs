@@ -149,7 +149,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums")]
-        public async IAsyncEnumerable<AlbumDto> Albums()
+        public async IAsyncEnumerable<SimpleAlbumDto> Albums()
         {
             await foreach (var album in _libraryService.GetAlbums())
             {

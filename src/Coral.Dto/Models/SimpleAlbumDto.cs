@@ -10,6 +10,7 @@ namespace Coral.Dto.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
+        public List<SimpleArtistDto> Artists { get; set; } = null!;
         public int ReleaseYear { get; set; }
         public bool CoverPresent { get; set; }
     }

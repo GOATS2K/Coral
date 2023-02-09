@@ -37,6 +37,8 @@ function Player({ tracks }: PlayerProps) {
   }
 
   const theme = useMantineTheme();
+  const playerBackground =
+    theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
 
   const playState = usePlayerStore((state: PlayerState) => state.playState);
 
@@ -274,7 +276,7 @@ function Player({ tracks }: PlayerProps) {
     <div
       className={styles.wrapper}
       style={{
-        background: theme.colors.dark[7],
+        background: playerBackground,
       }}
     >
       <Head>

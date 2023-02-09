@@ -43,6 +43,7 @@ export type SimpleAlbumDto = {
    */
   id: number;
   name: string;
+  artists: SimpleArtistDto[];
   /**
    * @format int32
    */
@@ -61,7 +62,6 @@ export type SimpleArtistDto = {
 export type StreamDto = {
   link: string;
   transcodeInfo?: TranscodeInfoDto;
-  mimeType: string;
   artworkUrl?: string | null;
 };
 

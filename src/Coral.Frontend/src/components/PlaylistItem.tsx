@@ -1,5 +1,5 @@
 import { IconPlayerPlay, IconDisc, IconVinyl } from "@tabler/icons";
-import { TrackDto } from "../client";
+import { TrackDto } from "../client/schemas";
 import styles from "../styles/PlaylistItem.module.css";
 import { Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { formatSecondsToSingleMinutes } from "../utils";

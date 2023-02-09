@@ -10,7 +10,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetFileFromLibrary",
+        "operationId": "FileFromLibrary",
         "parameters": [
           {
             "name": "trackId",
@@ -32,7 +32,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetFileFromLibrary",
+        "operationId": "FileFromLibrary",
         "parameters": [
           {
             "name": "trackId",
@@ -163,7 +163,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetTrackArtwork",
+        "operationId": "TrackArtwork",
         "parameters": [
           {
             "name": "trackId",
@@ -187,7 +187,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetAlbumArtwork",
+        "operationId": "AlbumArtwork",
         "parameters": [
           {
             "name": "albumId",
@@ -211,7 +211,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetTracks",
+        "operationId": "Tracks",
         "responses": {
           "200": {
             "description": "Success",
@@ -250,7 +250,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetAlbums",
+        "operationId": "Albums",
         "responses": {
           "200": {
             "description": "Success",
@@ -289,7 +289,7 @@
         "tags": [
           "Repository"
         ],
-        "operationId": "GetAlbum",
+        "operationId": "Album",
         "parameters": [
           {
             "name": "albumId",
@@ -318,47 +318,6 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AlbumDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Transcode/tracks/{trackId}": {
-      "get": {
-        "tags": [
-          "Transcode"
-        ],
-        "operationId": "TranscodeTrack",
-        "parameters": [
-          {
-            "name": "trackId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StreamDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StreamDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StreamDto"
                 }
               }
             }

@@ -1,4 +1,4 @@
-import { AlbumDto } from "../client";
+import { AlbumDto } from "../client/schemas";
 import { formatSecondsToDateString } from "../utils";
 
 export const getAlbumArtists = (album: AlbumDto) => {

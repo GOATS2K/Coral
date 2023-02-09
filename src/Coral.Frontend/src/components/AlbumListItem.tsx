@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, Text } from "@mantine/core";
-import { AlbumDto, ArtistDto } from "../client";
+import { AlbumDto, ArtistDto } from "../client/schemas";
 import styles from "../styles/AlbumListItem.module.css";
 import { getAlbumArtists } from "../common/album";
 

@@ -10,7 +10,7 @@ import {
   Loader,
 } from "@mantine/core";
 import React, { useState } from "react";
-import { OpenAPI, RepositoryService, TrackDto } from "../client";
+import { TrackDto } from "../client/schemas";
 import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
@@ -18,18 +18,24 @@ import {
   IconPlayerPause,
   IconSettings,
 } from "@tabler/icons";
-import { StreamDto } from "../client/models/StreamDto";
+import { StreamDto } from "../client/schemas";
 import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
 import axios from "axios";
 import Head from "next/head";
+import getConfig from "next/config";
+import { fetchStreamTrack, useStreamTrack } from "../client/components";
 type PlayerProps = {
-  tracks: TrackDto[];
+  tracks?: TrackDto[];
 };
 
 function Player({ tracks }: PlayerProps) {
+  if (tracks == null) {
+    return <p>Unable to load tracks.</p>;
+  }
+
   const theme = useMantineTheme();
 
   const playState = usePlayerStore((state: PlayerState) => state.playState);
@@ -83,7 +89,9 @@ function Player({ tracks }: PlayerProps) {
       if (streamTrack.artworkUrl != null) {
         metadata["artwork"] = [
           {
-            src: `${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`,
+            src: `${
+              getConfig().publicRuntimeConfig.apiBaseUrl
+            }/api/repository/albums/${selectedTrack.album?.id}/artwork`,
           },
         ];
       }
@@ -185,27 +193,41 @@ function Player({ tracks }: PlayerProps) {
       let track = tracks[playerPosition];
       usePlayerStore.setState({ selectedTrack: track });
 
-      let streamTrack = await RepositoryService.streamTrack(
-        track.id,
-        // parse as int and claim value is not null
-        +bitrate!,
-        transcodeTrack
-      );
-      let resp = await axios.head(streamTrack.link);
+      const data = await fetchStreamTrack({
+        pathParams: {
+          trackId: track.id,
+        },
+        queryParams: {
+          bitrate: +bitrate!,
+          transcodeTrack: transcodeTrack,
+        },
+      });
+
+      // let streamTrack = await RepositoryService.streamTrack(
+      //   track.id,
+      //   // parse as int and claim value is not null
+      //   +bitrate!,
+      //   transcodeTrack
+      // );
+      let resp = await fetch(data.link, { method: "HEAD" });
       // because Shaka doesn't automatically detect the correct content-type
       // we need to set it ourselves
-      let contentType = resp.headers["content-type"];
-      setMimeType(contentType);
-      setStreamTrack(streamTrack);
+      let contentType = resp.headers.get("content-type");
+      setMimeType(contentType!);
+      setStreamTrack(data!);
 
       // preload next track for faster skipping
       if (transcodeTrack && tracks.length > playerPosition + 1) {
         let nextTrack = tracks[playerPosition + 1];
-        await RepositoryService.streamTrack(
-          nextTrack.id,
-          +bitrate!,
-          transcodeTrack
-        );
+        await fetchStreamTrack({
+          pathParams: {
+            trackId: nextTrack.id,
+          },
+          queryParams: {
+            bitrate: +bitrate!,
+            transcodeTrack: transcodeTrack,
+          },
+        });
       }
     };
     handleTrackChange();
@@ -260,7 +282,9 @@ function Player({ tracks }: PlayerProps) {
       </Head>
       <div className={styles.imageBox}>
         <Image
-          src={`${OpenAPI.BASE}/api/repository/albums/${selectedTrack.album?.id}/artwork`}
+          src={`${
+            getConfig().publicRuntimeConfig.apiBaseUrl
+          }/api/repository/albums/${selectedTrack.album?.id}/artwork`}
           withPlaceholder
           width={"70px"}
           height={"70px"}

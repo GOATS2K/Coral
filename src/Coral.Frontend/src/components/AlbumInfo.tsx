@@ -1,16 +1,16 @@
 import React from "react";
-import { AlbumDto } from "../client";
+import { AlbumDto } from "../client/schemas";
 import styles from "../styles/AlbumInfo.module.css";
 import { Image, Text } from "@mantine/core";
-import { OpenAPI } from "../client";
 import {
   getAlbumArtists,
   getAlbumDuration,
   getAlbumGenre,
 } from "../common/album";
+import getConfig from "next/config";
 
 type AlbumInfoProps = {
-  album: AlbumDto;
+  album?: AlbumDto;
 };
 
 export default function AlbumInfo({ album }: AlbumInfoProps) {
@@ -24,7 +24,9 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
         withPlaceholder
         width={200}
         height={200}
-        src={`${OpenAPI.BASE}/api/repository/albums/${album.id}/artwork`}
+        src={`${
+          getConfig().publicRuntimeConfig.apiBaseUrl
+        }/api/repository/albums/${album.id}/artwork`}
       ></Image>
       <div className={styles.metadataWrapper}>
         <div className={styles.metadata}>

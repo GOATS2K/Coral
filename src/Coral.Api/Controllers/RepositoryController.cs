@@ -22,7 +22,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet, HttpHead]
         [Route("tracks/{trackId}/original")]
-        public async Task<ActionResult> GetFileFromLibrary(int trackId)
+        public async Task<ActionResult> FileFromLibrary(int trackId)
         {
             try
             {
@@ -94,12 +94,12 @@ namespace Coral.Api.Controllers
             {
                 return new StreamDto()
                 {
-                    Link = Url.Action("GetFileFromLibrary", "Repository", new
+                    Link = Url.Action("FileFromLibrary", "Repository", new
                     {
                         trackId = trackId
                     }, Request.Scheme)!,
                     TranscodeInfo = null,
-                    ArtworkUrl = Url.Action("GetTrackArtwork",
+                    ArtworkUrl = Url.Action("TrackArtwork",
                         "Repository",
                         new {trackId = trackId},
                         Request.Scheme)
@@ -111,7 +111,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/artwork")]
-        public async Task<ActionResult> GetTrackArtwork(int trackId)
+        public async Task<ActionResult> TrackArtwork(int trackId)
         {
             var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
             if (artworkPath == null)
@@ -125,7 +125,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/{albumId}/artwork")]
-        public async Task<ActionResult> GetAlbumArtwork(int albumId)
+        public async Task<ActionResult> AlbumArtwork(int albumId)
         {
             var artworkPath = await _libraryService.GetArtworkForAlbum(albumId);
             if (artworkPath == null)
@@ -139,7 +139,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks")]
-        public async IAsyncEnumerable<TrackDto> GetTracks()
+        public async IAsyncEnumerable<TrackDto> Tracks()
         {
             await foreach (var track in _libraryService.GetTracks())
             {
@@ -149,7 +149,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums")]
-        public async IAsyncEnumerable<AlbumDto> GetAlbums()
+        public async IAsyncEnumerable<AlbumDto> Albums()
         {
             await foreach (var album in _libraryService.GetAlbums())
             {
@@ -159,7 +159,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/{albumId}")]
-        public async Task<ActionResult<AlbumDto>> GetAlbum(int albumId)
+        public async Task<ActionResult<AlbumDto>> Album(int albumId)
         {
             var album = await _libraryService.GetAlbum(albumId);
             if (album == null)

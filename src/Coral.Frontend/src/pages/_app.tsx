@@ -1,16 +1,12 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { MantineProvider } from "@mantine/core";
-import { OpenAPI } from "../client";
 import "../styles/global.css";
-import getConfig from "next/config";
-
-if (process.env.NODE_ENV === "development") {
-  OpenAPI.BASE = getConfig()["publicRuntimeConfig"]["openApiBaseUrl"];
-}
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
+  const queryClient = new QueryClient();
 
   return (
     <>
@@ -23,16 +19,18 @@ export default function App(props: AppProps) {
       </Head>
 
       <div>
-        <MantineProvider
-          withGlobalStyles
-          withNormalizeCSS
-          theme={{
-            /** Put your mantine theme override here */
-            colorScheme: "dark",
-          }}
-        >
-          <Component {...pageProps} />
-        </MantineProvider>
+        <QueryClientProvider client={queryClient}>
+          <MantineProvider
+            withGlobalStyles
+            withNormalizeCSS
+            theme={{
+              /** Put your mantine theme override here */
+              colorScheme: "dark",
+            }}
+          >
+            <Component {...pageProps} />
+          </MantineProvider>
+        </QueryClientProvider>
       </div>
     </>
   );

@@ -14,7 +14,7 @@
   div .attributes {
     flex-direction: column;
   }
-  
+
   div .attribute:before {
     content: "";
   }

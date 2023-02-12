@@ -74,7 +74,6 @@ export const ShakaPlayer = forwardRef(
         console.log(ev);
       });
 
-      console.log("Configured player!", player.getConfiguration());
       setPlayer(player);
 
       return () => {

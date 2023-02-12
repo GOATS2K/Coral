@@ -2,6 +2,7 @@ import React from "react";
 import AlbumListItem from "./AlbumListItem";
 import styles from "../styles/AlbumList.module.css";
 import { SimpleAlbumDto } from "../client/schemas";
+import { Title } from "@mantine/core";
 
 export type AlbumListProps = {
   albums?: SimpleAlbumDto[];
@@ -14,5 +15,12 @@ export default function AlbumList({ albums }: AlbumListProps) {
   let albumItems = albums.map((album) => {
     return <AlbumListItem album={album}></AlbumListItem>;
   });
-  return <div className={styles.wrapper}>{albumItems}</div>;
+  return (
+    <div className={styles.wrapper}>
+      <Title order={1} className={styles.title}>
+        Albums
+      </Title>
+      <div className={styles.listWrapper}>{albumItems}</div>
+    </div>
+  );
 }

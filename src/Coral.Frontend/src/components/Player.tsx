@@ -10,7 +10,6 @@ import {
   Loader,
 } from "@mantine/core";
 import React, { useState } from "react";
-import { TrackDto } from "../client/schemas";
 import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
@@ -23,41 +22,94 @@ import styles from "../styles/Player.module.css";
 import { formatSecondsToMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
-import axios from "axios";
 import Head from "next/head";
 import getConfig from "next/config";
-import { fetchStreamTrack, useStreamTrack } from "../client/components";
-type PlayerProps = {
-  tracks?: TrackDto[];
-};
+import { fetchStreamTrack } from "../client/components";
 
-function Player({ tracks }: PlayerProps) {
-  if (tracks == null) {
-    return <p>Unable to load tracks.</p>;
-  }
-
-  const theme = useMantineTheme();
-  const playerBackground =
-    theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
-
+function Player() {
   const playState = usePlayerStore((state: PlayerState) => state.playState);
+  const tracks = usePlayerStore((state: PlayerState) => state.tracks);
+  const selectedTrack = usePlayerStore(
+    (state: PlayerState) => state.selectedTrack
+  );
+  const playerPosition = usePlayerStore((state) =>
+    state.getIndexOfSelectedTrack()
+  );
 
+  // TODO: refactor these state calls to use a reducer at some point
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
   const [mimeType, setMimeType] = useState<string | undefined>();
 
   const [secondsPlayed, setSecondsPlayed] = useState(0);
-  const [playerPosition, setPlayerPosition] = useState(0);
   const [buffering, setBuffering] = useState(false);
-
-  const selectedTrack = usePlayerStore(
-    (state: PlayerState) => state.selectedTrack
-  );
 
   const setPlayState = (value: boolean) =>
     usePlayerStore.setState({ playState: value });
 
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
+
+  React.useEffect(() => {
+    console.log("Calling track change hook.");
+    const handleTrackChange = async () => {
+      if (tracks.length == 0) {
+        return;
+      }
+
+      if (!playState) {
+        setStreamTrack({} as StreamDto);
+        setPlayState(true);
+      }
+
+      const data = await fetchStreamTrack({
+        pathParams: {
+          trackId: selectedTrack.id,
+        },
+        queryParams: {
+          bitrate: +bitrate!,
+          transcodeTrack: transcodeTrack,
+        },
+      });
+
+      // let streamTrack = await RepositoryService.streamTrack(
+      //   track.id,
+      //   // parse as int and claim value is not null
+      //   +bitrate!,
+      //   transcodeTrack
+      // );
+      let resp = await fetch(data.link, { method: "HEAD" });
+      // because Shaka doesn't automatically detect the correct content-type
+      // we need to set it ourselves
+      let contentType = resp.headers.get("content-type");
+      setMimeType(contentType!);
+      setStreamTrack(data!);
+
+      // preload next track for faster skipping
+      if (transcodeTrack && tracks.length > playerPosition + 1) {
+        let nextTrack = tracks[playerPosition + 1];
+        await fetchStreamTrack({
+          pathParams: {
+            trackId: nextTrack.id,
+          },
+          queryParams: {
+            bitrate: +bitrate!,
+            transcodeTrack: transcodeTrack,
+          },
+        });
+      }
+    };
+    handleTrackChange();
+  }, [tracks, playerPosition, transcodeTrack, bitrate]);
+
+  const playerRef = React.useRef<ShakaPlayerRef>(null);
+
+  if (tracks == null || tracks.length === 0) {
+    return <div></div>;
+  }
+
+  const theme = useMantineTheme();
+  const playerBackground =
+    theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
 
   const titleText =
     selectedTrack.artist != null
@@ -170,87 +222,13 @@ function Player({ tracks }: PlayerProps) {
     }
   };
 
-  React.useEffect(() => {
-    let currentTrackIndex = tracks?.indexOf(selectedTrack);
-    // selectedTrack was modifed by the player controls
-    if (currentTrackIndex === playerPosition) {
-      return;
-    }
-
-    if (currentTrackIndex < 0) {
-      // the track array hasn't fully loaded yet
-      return;
-    }
-    // selectedTrack was modified by the playlist
-    setPlayerPosition(currentTrackIndex);
-  }, [selectedTrack]);
-
-  React.useEffect(() => {
-    const handleTrackChange = async () => {
-      if (playerPosition !== 0 && !playState) {
-        setStreamTrack({} as StreamDto);
-        setPlayState(true);
-      }
-
-      let track = tracks[playerPosition];
-      usePlayerStore.setState({ selectedTrack: track });
-
-      const data = await fetchStreamTrack({
-        pathParams: {
-          trackId: track.id,
-        },
-        queryParams: {
-          bitrate: +bitrate!,
-          transcodeTrack: transcodeTrack,
-        },
-      });
-
-      // let streamTrack = await RepositoryService.streamTrack(
-      //   track.id,
-      //   // parse as int and claim value is not null
-      //   +bitrate!,
-      //   transcodeTrack
-      // );
-      let resp = await fetch(data.link, { method: "HEAD" });
-      // because Shaka doesn't automatically detect the correct content-type
-      // we need to set it ourselves
-      let contentType = resp.headers.get("content-type");
-      setMimeType(contentType!);
-      setStreamTrack(data!);
-
-      // preload next track for faster skipping
-      if (transcodeTrack && tracks.length > playerPosition + 1) {
-        let nextTrack = tracks[playerPosition + 1];
-        await fetchStreamTrack({
-          pathParams: {
-            trackId: nextTrack.id,
-          },
-          queryParams: {
-            bitrate: +bitrate!,
-            transcodeTrack: transcodeTrack,
-          },
-        });
-      }
-    };
-    handleTrackChange();
-  }, [tracks, playerPosition, transcodeTrack, bitrate]);
-
   const nextTrack = () => {
-    if (playerPosition !== tracks.length - 1) {
-      setPlayerPosition(playerPosition + 1);
-    } else {
-      // stop playing when we've reached the end
-      setPlayState(false);
-    }
+    usePlayerStore.getState().nextTrack();
   };
 
   const prevTrack = () => {
-    if (playerPosition !== 0) {
-      setPlayerPosition(playerPosition - 1);
-    }
+    usePlayerStore.getState().prevTrack();
   };
-
-  const playerRef = React.useRef<ShakaPlayerRef>(null);
   const buttonSize = 32;
   const strokeSize = 1.2;
 
@@ -276,6 +254,7 @@ function Player({ tracks }: PlayerProps) {
     <div
       className={styles.wrapper}
       style={{
+        display: tracks != null ? "flex" : "none",
         background: playerBackground,
       }}
     >
@@ -376,7 +355,6 @@ function Player({ tracks }: PlayerProps) {
               Transcode audio
             </Menu.Item>
             <Menu.Item
-              disabled={!transcodeTrack}
               rightSection={
                 <Select
                   style={{

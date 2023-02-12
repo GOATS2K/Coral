@@ -1,6 +1,14 @@
-.wrapper {
+.listWrapper {
   display: flex;
   flex-wrap: wrap;
+}
+
+.wrapper {
+  padding: 2em;
+}
+
+.title {
+  margin-bottom: 0.5em;
 }
 
 .image:hover {
@@ -8,7 +16,8 @@
 }
 
 .item {
-  padding: 1em;
+  padding-right: 1em;
+  padding-bottom: 1em;
 }
 
 .link {

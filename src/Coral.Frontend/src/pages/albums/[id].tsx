@@ -4,16 +4,16 @@ import dynamic from "next/dynamic";
 import Playlist from "../../components/Playlist";
 import AlbumInfo from "../../components/AlbumInfo";
 import { useAlbum } from "../../client/components";
-import { Center, Loader } from "@mantine/core";
+import { CenteredLoader } from "../../common/ui";
+import { Initializer, PlayerInitializationSource } from "../../store";
 
 export default function Album() {
-  const Player = dynamic(() => import("../../components/Player"), {
-    ssr: false,
-  });
-
   const router = useRouter();
-
   const [albumId, setAlbumId] = useState(1);
+  const initializer = {
+    id: albumId,
+    source: PlayerInitializationSource.Album,
+  } as Initializer;
 
   React.useEffect(() => {
     if (!router.isReady) return;
@@ -27,16 +27,8 @@ export default function Album() {
     },
   });
 
-  React.useEffect(() => {
-    console.log({ data, isLoading, error });
-  }, [data, isLoading, error]);
-
   if (isLoading) {
-    return (
-      <Center style={{ height: "100vh" }}>
-        <Loader></Loader>
-      </Center>
-    );
+    return CenteredLoader();
   }
 
   if (error) {
@@ -47,8 +39,7 @@ export default function Album() {
   return (
     <div>
       <AlbumInfo album={data}></AlbumInfo>
-      <Playlist tracks={data?.tracks}></Playlist>
-      <Player tracks={data?.tracks}></Player>
+      <Playlist tracks={data?.tracks} initializer={initializer}></Playlist>
     </div>
   );
 }

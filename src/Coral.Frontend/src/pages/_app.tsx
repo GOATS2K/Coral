@@ -3,6 +3,7 @@ import Head from "next/head";
 import { MantineProvider } from "@mantine/core";
 import "../styles/global.css";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import Layout from "../components/Layout";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
@@ -28,7 +29,9 @@ export default function App(props: AppProps) {
               colorScheme: "dark",
             }}
           >
-            <Component {...pageProps} />
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
           </MantineProvider>
         </QueryClientProvider>
       </div>

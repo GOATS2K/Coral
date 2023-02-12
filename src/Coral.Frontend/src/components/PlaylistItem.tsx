@@ -8,14 +8,20 @@ import { usePlayerStore } from "../store";
 
 type PlaylistItemProps = {
   track: TrackDto;
+  onPlayback: () => void;
 };
 
-export function PlaylistItem({ track }: PlaylistItemProps) {
+export function PlaylistItem({ track, onPlayback }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const playState = usePlayerStore((state) => state.playState);
-  const setSelectedTrack = (track: TrackDto) =>
+
+  const setSelectedTrack = (track: TrackDto) => {
+    // set the selected track
     usePlayerStore.setState({ selectedTrack: track });
+    onPlayback();
+  };
+
   const theme = useMantineTheme();
   const playButton = (
     <UnstyledButton onClick={() => setSelectedTrack(track)}>
@@ -30,7 +36,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
     </UnstyledButton>
   );
   const trackNumber = <Text fz="lg">{track.trackNumber}</Text>;
-  const discEmoji = (
+  const spinningDisc = (
     <Text fz="lg" className={styles.spinningDisc}>
       <IconDisc strokeWidth={1.3} size={24}></IconDisc>
     </Text>
@@ -51,7 +57,7 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       onMouseLeave={() => setTrackHover(false)}
       onDoubleClick={() => setSelectedTrack(track)}
       style={
-        nowPlayingTrack.id === track.id
+        nowPlayingTrack?.id === track.id
           ? {
               color: theme.colors.blue[4],
             }
@@ -59,13 +65,13 @@ export function PlaylistItem({ track }: PlaylistItemProps) {
       }
     >
       <div className={styles.trackNumber}>
-        {nowPlayingTrack.id !== track.id && trackHover
+        {nowPlayingTrack?.id !== track.id && trackHover
           ? // show play button if track is hovered over
             // and it is not playing the current selected track
             playButton
           : // show the disc emoji for the currently playing track
-          nowPlayingTrack.id === track.id && playState
-          ? discEmoji
+          nowPlayingTrack?.id === track.id && playState
+          ? spinningDisc
           : // show track if not hovered or currently playing
             trackNumber}
       </div>

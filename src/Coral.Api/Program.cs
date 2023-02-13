@@ -5,6 +5,7 @@ using Coral.Dto.Profiles;
 using Coral.Encoders;
 using Coral.Services;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
@@ -107,7 +108,7 @@ app.MapFallbackToFile("index.html");
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-await db.Database.EnsureCreatedAsync();
+await db.Database.MigrateAsync();
 
 var indexerService = scope.ServiceProvider.GetRequiredService<IIndexerService>();
 var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");

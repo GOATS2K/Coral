@@ -9,7 +9,7 @@ public class Track
 
     public string Title { get; set; } = null!;
     public Artist Artist { get; set; } = null!;
-    public Album? Album { get; set; }
+    public Album Album { get; set; } = null!;
     public Genre? Genre { get; set; }
 
     public string? Comment { get; set; }

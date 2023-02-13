@@ -69,7 +69,7 @@ namespace Coral.Services
             var existingJob = _transcodingJobs.FirstOrDefault(x => x.Request.SourceTrack.Id == requestData.SourceTrack.Id && x.Request.Bitrate == requestData.Bitrate);
             if (existingJob != null)
             {
-                await WaitForFile(Path.Combine(existingJob.OutputDirectory, existingJob?.FinalOutputFile));
+                await WaitForFile(Path.Combine(existingJob.OutputDirectory, existingJob.FinalOutputFile));
                 return existingJob;
             }
 
@@ -115,7 +115,7 @@ namespace Coral.Services
             jobCommand.ExecuteAsync();
             #pragma warning restore CS4014
 
-            await WaitForFile(Path.Combine(job.OutputDirectory, job?.FinalOutputFile), () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
+            await WaitForFile(Path.Combine(job.OutputDirectory, job.FinalOutputFile), () => CheckForTranscoderFailure(transcodingErrorStream, pipeErrorStream));
             return job;
         }
 

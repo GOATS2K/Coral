@@ -14,7 +14,7 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
   const baseUrl = getConfig().publicRuntimeConfig.apiBaseUrl;
   return (
     <div className={styles.item}>
-      <Link href={`/albums/${album.id}`}>
+      <Link href={`/albums/${album.id}`} key={album.id.toString()}>
         <Image
           className={styles.image}
           withPlaceholder

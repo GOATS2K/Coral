@@ -27,6 +27,7 @@ import getConfig from "next/config";
 import { fetchStreamTrack } from "../client/components";
 
 function Player() {
+  const playerRef = React.useRef<ShakaPlayerRef>(null);
   const playState = usePlayerStore((state: PlayerState) => state.playState);
   const tracks = usePlayerStore((state: PlayerState) => state.tracks);
   const selectedTrack = usePlayerStore(
@@ -50,7 +51,6 @@ function Player() {
   const [bitrate, setBitrate] = useState<string | null>("192");
 
   React.useEffect(() => {
-    console.log("Calling track change hook.");
     const handleTrackChange = async () => {
       if (tracks.length == 0) {
         return;
@@ -101,8 +101,6 @@ function Player() {
     handleTrackChange();
   }, [tracks, playerPosition, transcodeTrack, bitrate]);
 
-  const playerRef = React.useRef<ShakaPlayerRef>(null);
-
   if (tracks == null || tracks.length === 0) {
     return <div></div>;
   }
@@ -110,11 +108,6 @@ function Player() {
   const theme = useMantineTheme();
   const playerBackground =
     theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
-
-  const titleText =
-    selectedTrack.artist != null
-      ? `${selectedTrack.artist.name} - ${selectedTrack.title} | Coral`
-      : "Coral";
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
@@ -162,12 +155,15 @@ function Player() {
       }
 
       navigator.mediaSession.metadata = metadata;
+      navigator.mediaSession.playbackState = "playing";
       updatePositionState(playerRef.current?.audioRef()?.currentTime);
 
       navigator.mediaSession.setActionHandler("play", () => {
+        navigator.mediaSession.playbackState = "playing";
         setPlayState(true);
       });
       navigator.mediaSession.setActionHandler("pause", () => {
+        navigator.mediaSession.playbackState = "paused";
         setPlayState(false);
       });
       navigator.mediaSession.setActionHandler("previoustrack", () => {
@@ -258,9 +254,6 @@ function Player() {
         background: playerBackground,
       }}
     >
-      <Head>
-        <title>{titleText}</title>
-      </Head>
       <div className={styles.imageBox}>
         <Image
           src={`${

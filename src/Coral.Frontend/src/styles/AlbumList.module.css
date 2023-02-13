@@ -16,8 +16,12 @@
 }
 
 .item {
-  padding-right: 1em;
-  padding-bottom: 1em;
+  margin-right: 1em;
+  margin-bottom: 1em;
+  /* size of album art */
+  max-width: 200px;
+  /* exclude padding from max-width calculation */
+  box-sizing: content-box;
 }
 
 .link {

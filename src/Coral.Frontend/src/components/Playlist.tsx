@@ -29,7 +29,11 @@ export default function Playlist({ tracks, initializer }: PlaylistProps) {
     .sort((a, b) => a.trackNumber - b.trackNumber)
     .map((track) => {
       return (
-        <PlaylistItem track={track} onPlayback={onPlayback}></PlaylistItem>
+        <PlaylistItem
+          track={track}
+          key={track.id}
+          onPlayback={onPlayback}
+        ></PlaylistItem>
       );
     });
 

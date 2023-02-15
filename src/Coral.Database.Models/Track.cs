@@ -18,4 +18,11 @@ public class Track
 
     public DateTime DateIndexed { get; set; }
     public DateTime DateModified { get; set; }
+    public List<Keyword> Keywords { get; set; } = null!;
+
+    public override string ToString()
+    {
+        var releaseYear = Album.ReleaseYear != null ? $"({Album.ReleaseYear})" : "";
+        return $"{Artist.Name} - {Title} - {Album.Name} {releaseYear}";
+    }
 }

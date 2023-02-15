@@ -89,6 +89,7 @@ public class TestDatabase : IDisposable
             ReleaseYear = 2021,
             TrackTotal = 8,
             DiscTotal = 1,
+            CoverFilePath = "nice album art"
         });
 
         Context.Tracks.Add(Believe = new Track()
@@ -102,6 +103,7 @@ public class TestDatabase : IDisposable
             Title = "Believe",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
 
         Context.Tracks.Add(BlankPages = new Track()
@@ -115,6 +117,7 @@ public class TestDatabase : IDisposable
             Title = "Blank Pages",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
 
         Context.Tracks.Add(LilSouljah = new Track()
@@ -128,6 +131,7 @@ public class TestDatabase : IDisposable
             Title = "Lil Souljah (feat. Slay)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Zusterliefde = new Track()
         {
@@ -140,6 +144,7 @@ public class TestDatabase : IDisposable
             Title = "Zusterliefde",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(GimmeASec = new Track()
         {
@@ -152,6 +157,7 @@ public class TestDatabase : IDisposable
             Title = "Gimme a Sec (feat. Danny Sanchez)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(OldTimesSake = new Track()
         {
@@ -164,6 +170,7 @@ public class TestDatabase : IDisposable
             Title = "Old Times' Sake",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Starlight = new Track()
         {
@@ -176,6 +183,7 @@ public class TestDatabase : IDisposable
             Title = "Starlight (feat. Fox)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Yasukuni = new Track()
         {
@@ -188,6 +196,7 @@ public class TestDatabase : IDisposable
             Title = "Yasukuni",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Combo = new Track()
         {
@@ -200,6 +209,7 @@ public class TestDatabase : IDisposable
             Title = "Combo (feat. Satl)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(DownForWhatever = new Track()
         {
@@ -212,6 +222,7 @@ public class TestDatabase : IDisposable
             Title = "Down For Whatever (Jubei Remix)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
         });
 
         Context.SaveChanges();

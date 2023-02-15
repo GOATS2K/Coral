@@ -1,4 +1,5 @@
 ﻿using Coral.Configuration;
+using Coral.Database.Configurations;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ public class CoralDbContext : DbContext
     public DbSet<Artist> Artists { get; set; } = null!;
     public DbSet<Album> Albums { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
+    public DbSet<Keyword> Keywords { get; set; } = null!;
     private string DbPath { get; }
 
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
@@ -28,5 +30,10 @@ public class CoralDbContext : DbContext
         {
             options.UseSqlite($"Data Source={DbPath}");
         }
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordIndexConfiguration).Assembly);
     }
 }

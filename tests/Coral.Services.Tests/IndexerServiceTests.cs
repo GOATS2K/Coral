@@ -13,8 +13,8 @@ public class IndexerServiceTests
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
-        _indexerService = new IndexerService(testDatabase.Context);
         _testDatabase = testDatabase.Context;
+        _indexerService = new IndexerService(testDatabase.Context);
     }
 
     [Fact]

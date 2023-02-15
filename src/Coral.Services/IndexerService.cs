@@ -225,7 +225,6 @@ public class IndexerService : IIndexerService
         // we also use supplemental metadata. 
         var albumQuery = _context.Albums
             .Include(a => a.Artists)
-            .Include(a => a.Genres)
             .Include(a => a.Tracks)
             .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal && a.TrackTotal == atlTrack.TrackTotal);
         var indexedAlbum = albumQuery.FirstOrDefault();

@@ -6,7 +6,6 @@ public class Album
     public string Name { get; set; } = null!;
 
     public List<Artist> Artists { get; set; } = null!;
-    public List<Genre>? Genres { get; set; } = null!;
     public List<Track> Tracks { get; set; } = null!;
 
     public int? ReleaseYear { get; set; }

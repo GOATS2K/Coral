@@ -3,9 +3,11 @@ using AutoMapper.EntityFrameworkCore;
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
+using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +25,14 @@ namespace Coral.Services
     public class SearchService : ISearchService
     {
         private readonly IMapper _mapper;
+        private readonly ILogger<SearchService> _logger;
         private readonly CoralDbContext _context;
 
-        public SearchService(IMapper mapper, CoralDbContext context)
+        public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger)
         {
             _mapper = mapper;
             _context = context;
+            _logger = logger;
         }
 
         private ExpressionStarter<Keyword> GenerateSearchQueryForKeywords(List<string> keywords)
@@ -45,6 +49,7 @@ namespace Coral.Services
 
         public async Task InsertKeywordsForTrack(Track track)
         {
+            _logger.LogInformation("Inserting keywords for {track}", track.ToString());
             var keywords = ProcessInputString(track.ToString());
             // check for existing keywords
             var existingKeywords = await _context.Keywords.Where(k => keywords.Contains(k.Value)).ToListAsync();
@@ -100,8 +105,8 @@ namespace Coral.Services
 
             return new SearchResult()
             {
-                Albums = tracks.Select(t => t.Album).Distinct().ToList(),
-                Artists = tracks.Select(t => t.Artist).Distinct().ToList(),
+                Albums = tracks.Select(t => t.Album).Distinct(new SimpleAlbumDtoComparer()).ToList(),
+                Artists = tracks.Select(t => t.Artist).Distinct(new SimpleArtistDtoComparer()).ToList(),
                 Tracks = tracks
             };
         }

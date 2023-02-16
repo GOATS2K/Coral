@@ -1,24 +1,29 @@
 ﻿using Coral.Database;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Coral.Services;
 
 public interface IIndexerService
 {
-    public void ReadDirectory(string directory);
+    public Task ReadDirectory(string directory);
 }
 
 public class IndexerService : IIndexerService
 {
     private readonly CoralDbContext _context;
+    private readonly ISearchService _searchService;
+    private readonly ILogger<IndexerService> _logger;
     private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac" };
     private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
     private static readonly string[] ImageFileNames = { "cover", "artwork", "folder", "front" };
 
-    public IndexerService(CoralDbContext context)
+    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger)
     {
         _context = context;
+        _searchService = searchService;
+        _logger = logger;
     }
 
     private bool ContentDirectoryNeedsRescan(DirectoryInfo contentDirectory)
@@ -44,7 +49,7 @@ public class IndexerService : IIndexerService
         }
     }
 
-    public void ReadDirectory(string directory)
+    public async Task ReadDirectory(string directory)
     {
         var contentDirectory = new DirectoryInfo(directory);
         if (!contentDirectory.Exists)
@@ -73,17 +78,19 @@ public class IndexerService : IIndexerService
 
             if (folderIsAlbum)
             {
-                IndexAlbum(analyzedTracks);
+                _logger.LogInformation("Indexing {path} as album.", directoryGroup.Key);
+                await IndexAlbum(analyzedTracks);
             }
             else
             {
-                IndexSingleFiles(analyzedTracks);
+                _logger.LogInformation("Indexing {path} as single files.", directoryGroup.Key);
+                await IndexSingleFiles(analyzedTracks);
             }
-            _context.SaveChanges();
+            _logger.LogInformation("Completed indexing of {path}, saving changes...", directoryGroup.Key);
         }
     }
 
-    private void IndexSingleFiles(List<ATL.Track> tracks)
+    private async Task IndexSingleFiles(List<ATL.Track> tracks)
     {
         foreach (var atlTrack in tracks)
         {
@@ -93,17 +100,11 @@ public class IndexerService : IIndexerService
                 indexedArtist
             }, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
-            IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
-            
-            // When writing albums with no album tag, we default back to using their parent directory.
-            
-            // This means that in order not create duplicate albums, we have to save changes for every track
-            // so the albums are persisted.
-            _context.SaveChanges();
+            await IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
         }
     }
 
-    private void IndexAlbum(List<ATL.Track> tracks)
+    private async Task IndexAlbum(List<ATL.Track> tracks)
     {
         // verify that the collection is not empty
         if (!tracks.Any())
@@ -144,11 +145,11 @@ public class IndexerService : IIndexerService
         {
             var targetArtist = createdArtists.Single(a => a.Name == trackToIndex.Artist);
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
-            IndexFile(targetArtist, indexedAlbum, targetGenre, trackToIndex);
+            await IndexFile(targetArtist, indexedAlbum, targetGenre, trackToIndex);
         }
     }
 
-    private void IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
+    private async Task IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
@@ -168,9 +169,12 @@ public class IndexerService : IIndexerService
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
             DurationInSeconds = atlTrack.Duration,
-            FilePath = atlTrack.Path
+            FilePath = atlTrack.Path,
+            Keywords = new List<Keyword>()
         };
+        _logger.LogInformation("Indexing track: {trackPath}", atlTrack.Path);
         _context.Tracks.Add(indexedTrack);
+        await _searchService.InsertKeywordsForTrack(indexedTrack);
     }
 
     private Genre? GetGenre(string? genreName)
@@ -220,7 +224,7 @@ public class IndexerService : IIndexerService
 
     private Album GetAlbum(List<Artist> artists, ATL.Track atlTrack)
     {
-        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : Directory.GetParent(atlTrack.Path).Name;
+        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : Directory.GetParent(atlTrack.Path)?.Name;
         // Albums can have the same name, so in order to differentiate between them
         // we also use supplemental metadata. 
         var albumQuery = _context.Albums

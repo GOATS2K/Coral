@@ -13,8 +13,9 @@ public class IndexerServiceTests
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
+        var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context);
         _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context);
+        _indexerService = new IndexerService(testDatabase.Context, searchService);
     }
 
     [Fact]
@@ -32,7 +33,7 @@ public class IndexerServiceTests
         // arrange
 
         // act
-        _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
+        await _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
         var jupiter = await _testDatabase.Artists.FirstAsync(a => a.Name == "Jupiter");
@@ -51,7 +52,7 @@ public class IndexerServiceTests
         // arrange
 
         // act
-        _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
+        await _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
 
         // assert
         var jupiterArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Jupiter");
@@ -76,7 +77,7 @@ public class IndexerServiceTests
         var directoryName = new DirectoryInfo(TestDataRepository.MarsMissingMetadata).Name;
 
         // act
-        _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);
+        await _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);
 
         // assert
         var marsArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
@@ -86,7 +87,7 @@ public class IndexerServiceTests
         var albumList = await _testDatabase.Albums.Where(a => a.Name == directoryName).ToListAsync();
 
         // ensure only one album was created for both tracks
-        Assert.Equal(1, albumList.Count());
+        Assert.Single(albumList);
         // ensure the album has both tracks
         var album = albumList.Single();
         Assert.Equal(2, album.Tracks.Count());

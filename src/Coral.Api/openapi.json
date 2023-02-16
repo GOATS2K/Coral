@@ -5,10 +5,62 @@
     "version": "v1"
   },
   "paths": {
-    "/api/Repository/tracks/{trackId}/original": {
+    "/api/Library/scan": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "RunIndexer",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Library/search": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "Search",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Library/tracks/{trackId}/original": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "FileFromLibrary",
         "parameters": [
@@ -30,7 +82,7 @@
       },
       "head": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "FileFromLibrary",
         "parameters": [
@@ -51,10 +103,10 @@
         }
       }
     },
-    "/api/Repository/tracks/{trackId}/transcode": {
+    "/api/Library/tracks/{trackId}/transcode": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "TranscodeTrack",
         "parameters": [
@@ -100,10 +152,10 @@
         }
       }
     },
-    "/api/Repository/tracks/{trackId}/stream": {
+    "/api/Library/tracks/{trackId}/stream": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "StreamTrack",
         "parameters": [
@@ -158,10 +210,10 @@
         }
       }
     },
-    "/api/Repository/tracks/{trackId}/artwork": {
+    "/api/Library/tracks/{trackId}/artwork": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "TrackArtwork",
         "parameters": [
@@ -182,10 +234,10 @@
         }
       }
     },
-    "/api/Repository/albums/{albumId}/artwork": {
+    "/api/Library/albums/{albumId}/artwork": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "AlbumArtwork",
         "parameters": [
@@ -206,10 +258,10 @@
         }
       }
     },
-    "/api/Repository/tracks": {
+    "/api/Library/tracks": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "Tracks",
         "responses": {
@@ -245,10 +297,10 @@
         }
       }
     },
-    "/api/Repository/albums": {
+    "/api/Library/albums": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "Albums",
         "responses": {
@@ -284,10 +336,10 @@
         }
       }
     },
-    "/api/Repository/albums/{albumId}": {
+    "/api/Library/albums/{albumId}": {
       "get": {
         "tags": [
-          "Repository"
+          "Library"
         ],
         "operationId": "Album",
         "parameters": [
@@ -417,6 +469,35 @@
           "Opus"
         ],
         "type": "string"
+      },
+      "SearchResult": {
+        "required": [
+          "albums",
+          "artists",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleArtistDto"
+            }
+          },
+          "albums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "SimpleAlbumDto": {
         "required": [

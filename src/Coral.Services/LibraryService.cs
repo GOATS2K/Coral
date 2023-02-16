@@ -13,7 +13,6 @@ namespace Coral.Services
 {
     public interface ILibraryService
     {
-        public Task<SearchResult> Search(string query);
         public Task<TrackStream> GetStreamForTrack(int trackId);
         public Task<Track?> GetTrack(int trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
@@ -105,35 +104,6 @@ namespace Coral.Services
             return await _context.Albums
                 .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(a => a.Id == albumId);
-        }
-
-        public async Task<SearchResult> Search(string query)
-        {
-            // % is a wildcard
-            var tracks = await _context.Tracks
-                .Where(t => EF.Functions.Like(t.Title, $"%{query}%"))
-                .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var albums = await _context.Albums
-                .Where(a => EF.Functions.Like(a.Name, $"%{query}%"))
-                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var artists = await _context.Artists
-                .Where(a => EF.Functions.Like(a.Name, $"%{query}%"))
-                .ProjectTo<SimpleArtistDto>(_mapper.ConfigurationProvider)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return new SearchResult()
-            {
-                Tracks = tracks,
-                Artists = artists,
-                Albums = albums,
-            };
         }
     }
 }

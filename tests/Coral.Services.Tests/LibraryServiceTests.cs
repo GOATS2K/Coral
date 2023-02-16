@@ -74,48 +74,5 @@ namespace Coral.Services.Tests
             // assert
             Assert.NotNull(artwork);
         }
-
-        // I'd love to use [Theory] here, but I'm lazy and I want to use my test objects
-        [Fact]
-        public async Task Search_FullTrackName_FindsTrack()
-        {
-            // arrange
-            var trackToFind = _testDatabase.OldTimesSake;
-            var query = "old times' sake";
-            // act
-            var result = await _libraryService.Search(query);
-            // assert
-            Assert.Single(result.Tracks);
-            var searchResult = result.Tracks.Single();
-            Assert.Equal(trackToFind.Title, searchResult.Title);
-        }
-
-        [Fact]
-        public async Task Search_IncompleteTrackName_FindsTrack()
-        {
-            // arrange
-            var trackToFind = _testDatabase.OldTimesSake;
-            var query = "old time";
-            // act
-            var result = await _libraryService.Search(query);
-            // assert
-            Assert.Single(result.Tracks);
-            var searchResult = result.Tracks.Single();
-            Assert.Equal(trackToFind.Title, searchResult.Title);
-        }
-
-        [Fact]
-        public async Task Search_IncompleteArtistName_FindsArtist()
-        {
-            // arrange
-            var artistToFind = _testDatabase.Tatora;
-            var query = "tat";
-            // act
-            var result = await _libraryService.Search(query);
-            // assert
-            Assert.Single(result.Artists);
-            var searchResult = result.Artists.Single();
-            Assert.Equal(artistToFind.Name, searchResult.Name);
-        }
     }
 }

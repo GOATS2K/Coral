@@ -16,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
 builder.Services.AddAutoMapper(opt =>
@@ -109,15 +110,4 @@ using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 await db.Database.MigrateAsync();
-
-var indexerService = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
-if (!string.IsNullOrEmpty(contentDirectory))
-{
-    indexerService.ReadDirectory(contentDirectory);
-    app.Run();
-}
-else
-{
-    logger.LogCritical("CORAL_CONTENT_DIRECTORY has not been set.");   
-}
+app.Run();

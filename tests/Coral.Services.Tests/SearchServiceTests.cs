@@ -60,13 +60,13 @@ namespace Coral.Services.Tests
             var result = await _searchService.Search(query);
 
             // assert
-            Assert.Single(result);
-            var searchResult = result.Single();
+            Assert.Single(result.Tracks);
+            var searchResult = result.Tracks.Single();
             Assert.Equal(trackToFind.Title, searchResult.Title);
         }
 
         [Fact]
-        public async Task Search_ALittleWhileLonger_FindsAllTracks()
+        public async Task Search_ALittleWhileLonger_FindsAlbum()
         {
             // arrange
             foreach (var track in _testDatabase.ALittleWhileLonger.Tracks)
@@ -77,7 +77,8 @@ namespace Coral.Services.Tests
             // act
             var result = await _searchService.Search(query);
             // assert
-            Assert.Equal(_testDatabase.ALittleWhileLonger.Tracks.Count(), result.Count());
+            var album = result.Albums.Single();
+            Assert.Equal(_testDatabase.ALittleWhileLonger.Id, album.Id);
         }
     }
 }

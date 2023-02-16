@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
@@ -8,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ namespace Coral.Services
     public interface ISearchService
     {
         public Task InsertKeywordsForTrack(Track track);
-        public Task<List<Track>> Search(string query);
+        public Task<SearchResult> Search(string query);
     }
     public class SearchService : ISearchService
     {
@@ -36,6 +36,8 @@ namespace Coral.Services
             var predicate = PredicateBuilder.New<Keyword>();
             foreach (var keyword in keywords)
             {
+                // I chose to only set the wildcard on the end of the keyword
+                // for performance reasons - benefiting from indexing done by the database
                 predicate = predicate.Or(k => EF.Functions.Like(k.Value, $"{keyword}%"));
             }
             return predicate;
@@ -74,36 +76,34 @@ namespace Coral.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<Track>> Search(string query)
+        public async Task<SearchResult> Search(string query)
         {
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
-            // here we'll get a keyword match for every part of the string
-            var results = await _context.Keywords
+            var trackIds = await _context.Keywords
                 .Where(GenerateSearchQueryForKeywords(keywords))
-                .Include(k => k.Tracks)
+                .Select(k => k.Tracks)
+                .SelectMany(t => t)
+                .Select(t => t.Id)
                 .ToListAsync();
-            // get list of tracks
-            var tracks = results.Select(k => k.Tracks).ToList();
-            // if there's just one list of tracks, return as-is
-            if (tracks.Count == 1)
-            {
-                return tracks[0];
-            }
 
-            // find the track in common in all the queries
-            IEnumerable<Track> tracklist = new List<Track>();
-            for (var i = 0; i < tracks.Count; i++)
-            {
-                if (i + 1 == tracks.Count)
-                {
-                    break;
-                }
-                var nextList = tracks[i + 1];
-                tracklist = tracks[i].Intersect(nextList);
-            }
+            var idGroups = trackIds.GroupBy(t => t);
+            // get only the IDs matching the query
+            var idsMatchingQuery = idGroups.Where(g => g.Count() == keywords.Count()).Select(g => g.Key);
             
-            return tracklist.ToList();
+            // fetch tracks matching query
+            var tracks = await _context.Tracks
+                .Where(t => idsMatchingQuery.Contains(t.Id))
+                .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+
+            return new SearchResult()
+            {
+                Albums = tracks.Select(t => t.Album).Distinct().ToList(),
+                Artists = tracks.Select(t => t.Artist).Distinct().ToList(),
+                Tracks = tracks
+            };
         }
 
         private List<string> ProcessInputString(string inputString)

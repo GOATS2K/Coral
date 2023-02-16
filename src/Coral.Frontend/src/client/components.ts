@@ -9,6 +9,85 @@ import type * as Fetcher from "./fetcher";
 import { fetch } from "./fetcher";
 import type * as Schemas from "./schemas";
 
+export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
+
+export type RunIndexerVariables = Context["fetcherOptions"];
+
+export const fetchRunIndexer = (
+  variables: RunIndexerVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, RunIndexerError, undefined, {}, {}, {}>({
+    url: "/api/Library/scan",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useRunIndexer = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      RunIndexerError,
+      RunIndexerVariables
+    >,
+    "mutationFn"
+  >
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RunIndexerError,
+    RunIndexerVariables
+  >(
+    (variables: RunIndexerVariables) =>
+      fetchRunIndexer({ ...fetcherOptions, ...variables }),
+    options
+  );
+};
+
+export type SearchQueryParams = {
+  query?: string;
+};
+
+export type SearchError = Fetcher.ErrorWrapper<undefined>;
+
+export type SearchVariables = {
+  queryParams?: SearchQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
+  fetch<
+    Schemas.SearchResult,
+    SearchError,
+    undefined,
+    {},
+    SearchQueryParams,
+    {}
+  >({ url: "/api/Library/search", method: "post", ...variables, signal });
+
+export const useSearch = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.SearchResult,
+      SearchError,
+      SearchVariables
+    >,
+    "mutationFn"
+  >
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.SearchResult,
+    SearchError,
+    SearchVariables
+  >(
+    (variables: SearchVariables) =>
+      fetchSearch({ ...fetcherOptions, ...variables }),
+    options
+  );
+};
+
 export type FileFromLibraryPathParams = {
   /**
    * @format int32
@@ -34,7 +113,7 @@ export const fetchFileFromLibrary = (
     {},
     FileFromLibraryPathParams
   >({
-    url: "/api/Repository/tracks/{trackId}/original",
+    url: "/api/Library/tracks/{trackId}/original",
     method: "get",
     ...variables,
     signal,
@@ -50,7 +129,7 @@ export const useFileFromLibrary = <TData = undefined>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, FileFromLibraryError, TData>(
     queryKeyFn({
-      path: "/api/Repository/tracks/{trackId}/original",
+      path: "/api/Library/tracks/{trackId}/original",
       operationId: "fileFromLibrary",
       variables,
     }),
@@ -96,7 +175,7 @@ export const fetchTranscodeTrack = (
     TranscodeTrackQueryParams,
     TranscodeTrackPathParams
   >({
-    url: "/api/Repository/tracks/{trackId}/transcode",
+    url: "/api/Library/tracks/{trackId}/transcode",
     method: "get",
     ...variables,
     signal,
@@ -112,7 +191,7 @@ export const useTranscodeTrack = <TData = Schemas.StreamDto>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.StreamDto, TranscodeTrackError, TData>(
     queryKeyFn({
-      path: "/api/Repository/tracks/{trackId}/transcode",
+      path: "/api/Library/tracks/{trackId}/transcode",
       operationId: "transcodeTrack",
       variables,
     }),
@@ -163,7 +242,7 @@ export const fetchStreamTrack = (
     StreamTrackQueryParams,
     StreamTrackPathParams
   >({
-    url: "/api/Repository/tracks/{trackId}/stream",
+    url: "/api/Library/tracks/{trackId}/stream",
     method: "get",
     ...variables,
     signal,
@@ -179,7 +258,7 @@ export const useStreamTrack = <TData = Schemas.StreamDto>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.StreamDto, StreamTrackError, TData>(
     queryKeyFn({
-      path: "/api/Repository/tracks/{trackId}/stream",
+      path: "/api/Library/tracks/{trackId}/stream",
       operationId: "streamTrack",
       variables,
     }),
@@ -217,7 +296,7 @@ export const fetchTrackArtwork = (
     {},
     TrackArtworkPathParams
   >({
-    url: "/api/Repository/tracks/{trackId}/artwork",
+    url: "/api/Library/tracks/{trackId}/artwork",
     method: "get",
     ...variables,
     signal,
@@ -233,7 +312,7 @@ export const useTrackArtwork = <TData = undefined>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, TrackArtworkError, TData>(
     queryKeyFn({
-      path: "/api/Repository/tracks/{trackId}/artwork",
+      path: "/api/Library/tracks/{trackId}/artwork",
       operationId: "trackArtwork",
       variables,
     }),
@@ -271,7 +350,7 @@ export const fetchAlbumArtwork = (
     {},
     AlbumArtworkPathParams
   >({
-    url: "/api/Repository/albums/{albumId}/artwork",
+    url: "/api/Library/albums/{albumId}/artwork",
     method: "get",
     ...variables,
     signal,
@@ -287,7 +366,7 @@ export const useAlbumArtwork = <TData = undefined>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, AlbumArtworkError, TData>(
     queryKeyFn({
-      path: "/api/Repository/albums/{albumId}/artwork",
+      path: "/api/Library/albums/{albumId}/artwork",
       operationId: "albumArtwork",
       variables,
     }),
@@ -308,7 +387,7 @@ export type TracksVariables = Context["fetcherOptions"];
 
 export const fetchTracks = (variables: TracksVariables, signal?: AbortSignal) =>
   fetch<TracksResponse, TracksError, undefined, {}, {}, {}>({
-    url: "/api/Repository/tracks",
+    url: "/api/Library/tracks",
     method: "get",
     ...variables,
     signal,
@@ -324,7 +403,7 @@ export const useTracks = <TData = TracksResponse>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<TracksResponse, TracksError, TData>(
     queryKeyFn({
-      path: "/api/Repository/tracks",
+      path: "/api/Library/tracks",
       operationId: "tracks",
       variables,
     }),
@@ -344,7 +423,7 @@ export type AlbumsVariables = Context["fetcherOptions"];
 
 export const fetchAlbums = (variables: AlbumsVariables, signal?: AbortSignal) =>
   fetch<AlbumsResponse, AlbumsError, undefined, {}, {}, {}>({
-    url: "/api/Repository/albums",
+    url: "/api/Library/albums",
     method: "get",
     ...variables,
     signal,
@@ -360,7 +439,7 @@ export const useAlbums = <TData = AlbumsResponse>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<AlbumsResponse, AlbumsError, TData>(
     queryKeyFn({
-      path: "/api/Repository/albums",
+      path: "/api/Library/albums",
       operationId: "albums",
       variables,
     }),
@@ -387,7 +466,7 @@ export type AlbumVariables = {
 
 export const fetchAlbum = (variables: AlbumVariables, signal?: AbortSignal) =>
   fetch<Schemas.AlbumDto, AlbumError, undefined, {}, {}, AlbumPathParams>({
-    url: "/api/Repository/albums/{albumId}",
+    url: "/api/Library/albums/{albumId}",
     method: "get",
     ...variables,
     signal,
@@ -403,7 +482,7 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.AlbumDto, AlbumError, TData>(
     queryKeyFn({
-      path: "/api/Repository/albums/{albumId}",
+      path: "/api/Library/albums/{albumId}",
       operationId: "album",
       variables,
     }),
@@ -417,42 +496,42 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
 
 export type QueryOperation =
   | {
-      path: "/api/Repository/tracks/{trackId}/original";
+      path: "/api/Library/tracks/{trackId}/original";
       operationId: "fileFromLibrary";
       variables: FileFromLibraryVariables;
     }
   | {
-      path: "/api/Repository/tracks/{trackId}/transcode";
+      path: "/api/Library/tracks/{trackId}/transcode";
       operationId: "transcodeTrack";
       variables: TranscodeTrackVariables;
     }
   | {
-      path: "/api/Repository/tracks/{trackId}/stream";
+      path: "/api/Library/tracks/{trackId}/stream";
       operationId: "streamTrack";
       variables: StreamTrackVariables;
     }
   | {
-      path: "/api/Repository/tracks/{trackId}/artwork";
+      path: "/api/Library/tracks/{trackId}/artwork";
       operationId: "trackArtwork";
       variables: TrackArtworkVariables;
     }
   | {
-      path: "/api/Repository/albums/{albumId}/artwork";
+      path: "/api/Library/albums/{albumId}/artwork";
       operationId: "albumArtwork";
       variables: AlbumArtworkVariables;
     }
   | {
-      path: "/api/Repository/tracks";
+      path: "/api/Library/tracks";
       operationId: "tracks";
       variables: TracksVariables;
     }
   | {
-      path: "/api/Repository/albums";
+      path: "/api/Library/albums";
       operationId: "albums";
       variables: AlbumsVariables;
     }
   | {
-      path: "/api/Repository/albums/{albumId}";
+      path: "/api/Library/albums/{albumId}";
       operationId: "album";
       variables: AlbumVariables;
     };

@@ -20,7 +20,7 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
           withPlaceholder
           width={200}
           height={200}
-          src={`${baseUrl}/api/repository/albums/${album.id}/artwork`}
+          src={`${baseUrl}/api/library/albums/${album.id}/artwork`}
         ></Image>
       </Link>
       <div>

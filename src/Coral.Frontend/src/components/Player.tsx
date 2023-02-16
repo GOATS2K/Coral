@@ -138,7 +138,7 @@ function Player() {
           {
             src: `${
               getConfig().publicRuntimeConfig.apiBaseUrl
-            }/api/repository/albums/${selectedTrack.album?.id}/artwork`,
+            }/api/library/albums/${selectedTrack.album?.id}/artwork`,
           },
         ];
       }
@@ -258,7 +258,7 @@ function Player() {
         <Image
           src={`${
             getConfig().publicRuntimeConfig.apiBaseUrl
-          }/api/repository/albums/${selectedTrack.album?.id}/artwork`}
+          }/api/library/albums/${selectedTrack.album?.id}/artwork`}
           withPlaceholder
           width={"70px"}
           height={"70px"}

@@ -37,6 +37,12 @@ export type GenreDto = {
 
 export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus";
 
+export type SearchResult = {
+  artists: SimpleArtistDto[];
+  albums: SimpleAlbumDto[];
+  tracks: TrackDto[];
+};
+
 export type SimpleAlbumDto = {
   /**
    * @format int32

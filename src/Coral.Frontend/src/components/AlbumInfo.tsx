@@ -26,7 +26,7 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
         height={200}
         src={`${
           getConfig().publicRuntimeConfig.apiBaseUrl
-        }/api/repository/albums/${album.id}/artwork`}
+        }/api/library/albums/${album.id}/artwork`}
       ></Image>
       <div className={styles.metadataWrapper}>
         <div className={styles.metadata}>

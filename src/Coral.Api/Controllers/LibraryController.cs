@@ -9,15 +9,43 @@ namespace Coral.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RepositoryController : ControllerBase
+    public class LibraryController : ControllerBase
     {
         private readonly ILibraryService _libraryService;
         private readonly ITranscoderService _transcoderService;
+        private readonly ISearchService _searchService;
+        private readonly IIndexerService _indexerService;
 
-        public RepositoryController(ILibraryService libraryService, ITranscoderService transcoderService)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
+            _searchService = searchService;
+            _indexerService = indexerService;
+        }
+
+        [HttpPost]
+        [Route("scan")]
+        public async Task<ActionResult> RunIndexer()
+        {
+            var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
+            if (!string.IsNullOrEmpty(contentDirectory))
+            {
+                await _indexerService.ReadDirectory(contentDirectory);
+                return Ok();
+            }
+            else
+            {
+                return BadRequest(new { Message = "CORAL_CONTENT_DIRECTORY has not been set." });
+            }
+        }
+
+        [HttpPost]
+        [Route("search")]
+        public async Task<ActionResult<SearchResult>> Search([FromQuery] string query)
+        {
+            var searchResult = await _searchService.Search(query);
+            return Ok(searchResult);
         }
 
         [HttpGet, HttpHead]
@@ -76,7 +104,7 @@ namespace Coral.Api.Controllers
             {
                 // generate this url programmatically
                 streamData.ArtworkUrl = Url.Action("GetTrackArtwork",
-                    "Repository",
+                    "LIbrary",
                     new {trackId = trackId},
                     Request.Scheme);
             }
@@ -94,13 +122,13 @@ namespace Coral.Api.Controllers
             {
                 return new StreamDto()
                 {
-                    Link = Url.Action("FileFromLibrary", "Repository", new
+                    Link = Url.Action("FileFromLibrary", "Library", new
                     {
                         trackId = trackId
                     }, Request.Scheme)!,
                     TranscodeInfo = null,
                     ArtworkUrl = Url.Action("TrackArtwork",
-                        "Repository",
+                        "Library",
                         new {trackId = trackId},
                         Request.Scheme)
                 };

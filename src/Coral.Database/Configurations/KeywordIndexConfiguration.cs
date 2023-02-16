@@ -9,6 +9,7 @@ namespace Coral.Database.Configurations
         public void Configure(EntityTypeBuilder<Keyword> builder)
         {
             builder.Property(p => p.Value).IsRequired();
+            builder.HasIndex(p => p.Value).IsUnique();
         }
     }
 }

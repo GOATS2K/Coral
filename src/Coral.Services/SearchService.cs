@@ -3,6 +3,7 @@ using AutoMapper.EntityFrameworkCore;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
+using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,16 @@ namespace Coral.Services
             _context = context;
         }
 
+        private ExpressionStarter<Keyword> GenerateSearchQueryForKeywords(List<string> keywords)
+        {
+            var predicate = PredicateBuilder.New<Keyword>();
+            foreach (var keyword in keywords)
+            {
+                predicate = predicate.Or(k => EF.Functions.Like(k.Value, $"{keyword}%"));
+            }
+            return predicate;
+        }
+
         public async Task InsertKeywordsForTrack(Track track)
         {
             var keywords = ProcessInputString(track.ToString());
@@ -37,6 +48,7 @@ namespace Coral.Services
             var existingKeywords = await _context.Keywords.Where(k => keywords.Contains(k.Value)).ToListAsync();
             var missingKeywordsOnTrack = existingKeywords.Where(k => !track.Keywords.Contains(k)).ToList();
             
+            // in the event we've indexed all the keywords present on a track before
             if (existingKeywords.Count() == keywords.Count() && missingKeywordsOnTrack.Count() == 0)
             {
                 return;
@@ -47,7 +59,7 @@ namespace Coral.Services
                 // if existing keyword is not on track, add to track
                 track.Keywords.Add(missingKeyword);
 
-                // remove keyword from list
+                // remove keyword from list of incoming keywords
                 keywords.Remove(missingKeyword.Value);
             }
 
@@ -67,7 +79,8 @@ namespace Coral.Services
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
             // here we'll get a keyword match for every part of the string
-            var results = await _context.Keywords.Where(k => keywords.Contains(k.Value))
+            var results = await _context.Keywords
+                .Where(GenerateSearchQueryForKeywords(keywords))
                 .Include(k => k.Tracks)
                 .ToListAsync();
             // get list of tracks

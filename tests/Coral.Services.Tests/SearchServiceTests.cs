@@ -39,28 +39,13 @@ namespace Coral.Services.Tests
             Assert.NotEmpty(starlightKeyword.Tracks);
         }
 
-
-        [Fact]
-        public async Task Search_TrackName_FindsTrack()
-        {
-            // arrange
-            var trackToFind = _testDatabase.Starlight;
-            await _searchService.InsertKeywordsForTrack(trackToFind);
-            var query = "starlight";
-            // act
-            var result = await _searchService.Search(query);
-
-            // assert
-            Assert.Single(result);
-            var searchResult = result.Single();
-            Assert.Equal(trackToFind.Title, searchResult.Title);
-        }
-
         [Theory]
         [InlineData("lenzman starlight")]
         [InlineData("starlight lenzman")]
         [InlineData("starlight a little while longer")]
         [InlineData("starlight")]
+        [InlineData("star")]
+        [InlineData("lenz star")]
         public async Task Search_Starlight_FindsTrack(string query)
         {
             // arrange

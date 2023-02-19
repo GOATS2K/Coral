@@ -25,7 +25,7 @@
 		<ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
 	</ItemGroup>
 
-	<Target Name="EnsureNodeEnv" BeforeTargets="Build">
+	<Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug'">
 		<!-- Ensure pnpm is installed -->
 		<Exec Command="pnpm --version" ContinueOnError="true">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />

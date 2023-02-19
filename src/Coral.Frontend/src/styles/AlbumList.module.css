@@ -4,22 +4,46 @@
 }
 
 .wrapper {
-  padding: 2em;
+  padding-left: 2em;
+  padding-top: 2em;
 }
 
 .title {
   margin-bottom: 0.5em;
 }
 
-.image:hover {
-  filter: brightness(75%);
+.imageContainer {
+  position: relative;
+}
+
+.playButtonOnImage {
+  position: absolute;
+  z-index: 1;
+  /* because the bottom of the container goes beyond the image itself
+  this is how we center the play button (I'm no CSS wizard) :( */
+  top: 33%;
+  left: 33%;
+}
+
+.circle {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.playButton {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  transform: translate(50%, -50%)
 }
 
 .item {
-  margin-right: 1em;
-  margin-bottom: 1em;
+  margin-right: 1.5em;
+  margin-bottom: 1.5em;
   /* size of album art */
-  max-width: 200px;
+  max-width: 150px;
   /* exclude padding from max-width calculation */
   box-sizing: content-box;
 }

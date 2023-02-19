@@ -33,6 +33,7 @@
     "dev": "next dev",
     "build": "next build && next export",
     "start": "next start",
+    "lint": "next lint",
     "generate-client": "openapi-codegen gen client",
     "format": "prettier --write src"
   },
@@ -56,6 +57,10 @@
     "@openapi-codegen/typescript": "^6.1.0",
     "@testing-library/dom": "^8.20.0",
     "eslint": "^8.33.0",
+    "eslint-config-next": "13.1.6",
+    "eslint-plugin-next": "^0.0.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "form-data": "~4.0.0",
     "openapi-typescript-codegen": "^0.23.0",
     "prettier": "^2.8.3"

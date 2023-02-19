@@ -60,6 +60,7 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
       <div className={styles.imageContainer}>
         <Link href={`/albums/${album.id}`} key={album.id.toString()}>
           <Image
+            alt={`Album cover of ${album.name}`}
             className={styles.image}
             style={imageStyle}
             withPlaceholder

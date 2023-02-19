@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Slider,
   Text,
@@ -39,6 +40,8 @@ function Player() {
   const playerPosition = usePlayerStore((state) =>
     state.getIndexOfSelectedTrack()
   );
+
+  const theme = useMantineTheme();
 
   // TODO: refactor these state calls to use a reducer at some point
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
@@ -119,8 +122,6 @@ function Player() {
   if (tracks == null || tracks.length === 0) {
     return <div></div>;
   }
-
-  const theme = useMantineTheme();
   const playerBackground =
     theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
 
@@ -271,6 +272,7 @@ function Player() {
     >
       <div className={styles.imageBox}>
         <Image
+          alt={`Album cover of ${selectedTrack.album.name}`}
           src={`${
             getConfig().publicRuntimeConfig.apiBaseUrl
           }/api/library/albums/${selectedTrack.album?.id}/artwork`}

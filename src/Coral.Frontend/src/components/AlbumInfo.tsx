@@ -21,6 +21,7 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
   return (
     <div className={styles.wrapper}>
       <Image
+        alt={`Album cover of ${album.name}}`}
         withPlaceholder
         width={250}
         height={250}

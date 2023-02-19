@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { forwardRef } from "react";
 import { Player, polyfill } from "shaka-player";
 
@@ -125,3 +126,5 @@ export const ShakaPlayer = forwardRef(
     return <audio ref={playerRef}></audio>;
   }
 );
+
+ShakaPlayer.displayName = "ShakaPlayer";

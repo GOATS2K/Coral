@@ -13,7 +13,7 @@ export default function AlbumList({ albums }: AlbumListProps) {
     return <p>No albums available.</p>;
   }
   let albumItems = albums.map((album) => {
-    return <AlbumListItem album={album}></AlbumListItem>;
+    return <AlbumListItem album={album} key={album.id}></AlbumListItem>;
   });
   return (
     <div className={styles.wrapper}>

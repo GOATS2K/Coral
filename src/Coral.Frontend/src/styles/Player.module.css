@@ -7,6 +7,7 @@
   margin-top: 0.25em;
   width: 100%;
   padding: 1rem;
+  z-index: 100;
 }
 
 .imageBox {

@@ -14,15 +14,14 @@
 
 .imageContainer {
   position: relative;
+  display: flex;
+  justify-content: center;
 }
 
 .playButtonOnImage {
   position: absolute;
   z-index: 1;
-  /* because the bottom of the container goes beyond the image itself
-  this is how we center the play button (I'm no CSS wizard) :( */
-  top: 33%;
-  left: 33%;
+  align-self: center;
 }
 
 .circle {

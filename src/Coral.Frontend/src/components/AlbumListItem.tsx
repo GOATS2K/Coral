@@ -28,6 +28,7 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
   const baseUrl = getConfig().publicRuntimeConfig.apiBaseUrl;
   const theme = useMantineTheme();
   const [onHover, setOnHover] = useState(false);
+  const [playButtonOnHover, setPlayButtonOnHover] = useState(false);
   const onPlayClick = async (albumToFetch: SimpleAlbumDto) => {
     // get album
     let album = await fetchAlbum({
@@ -47,6 +48,9 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
     });
   };
   const imageStyle = onHover ? { filter: "brightness(35%)" } : {};
+  const playButtonStyle = playButtonOnHover
+    ? { backgroundColor: theme.colors.blue[9] }
+    : { backgroundColor: theme.colors.blue[5] };
   return (
     <div
       className={styles.item}
@@ -69,7 +73,9 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
             <UnstyledButton onClick={() => onPlayClick(album)}>
               <div
                 className={styles.circle}
-                style={{ backgroundColor: theme.colors.blue[7] }}
+                style={playButtonStyle}
+                onMouseEnter={() => setPlayButtonOnHover(true)}
+                onMouseLeave={() => setPlayButtonOnHover(false)}
               >
                 <IconPlayerPlay className={styles.playButton}></IconPlayerPlay>
               </div>

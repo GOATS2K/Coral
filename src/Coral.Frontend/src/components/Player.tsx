@@ -19,7 +19,7 @@ import {
 } from "@tabler/icons";
 import { StreamDto } from "../client/schemas";
 import styles from "../styles/Player.module.css";
-import { formatSecondsToMinutes } from "../utils";
+import { formatSecondsToMinutes, formatSecondsToSingleMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
 import Head from "next/head";
@@ -288,7 +288,7 @@ function Player() {
         </div>
         <div className={styles.playerSeekbar}>
           <Text mr={16} fz={"sm"}>
-            {formatSecondsToMinutes(secondsPlayed)}
+            {formatSecondsToSingleMinutes(secondsPlayed)}
           </Text>
           <Slider
             className={styles.slider}
@@ -300,10 +300,10 @@ function Player() {
               setSecondsPlayed(value);
               updatePositionState(value);
             }}
-            label={(value: number) => formatSecondsToMinutes(value)}
+            label={(value: number) => formatSecondsToSingleMinutes(value)}
           ></Slider>
           <Text ml={16} fz={"sm"}>
-            {formatSecondsToMinutes(selectedTrack.durationInSeconds!)}
+            {formatSecondsToSingleMinutes(selectedTrack.durationInSeconds!)}
           </Text>
         </div>
       </div>

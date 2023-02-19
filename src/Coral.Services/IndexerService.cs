@@ -87,7 +87,7 @@ public class IndexerService : IIndexerService
                 try
                 {
                     await IndexAlbum(analyzedTracks);
-                } catch (ArgumentException ex)
+                } catch (ArgumentException)
                 {
                     _logger.LogError("Path contained tracks from another album, switching indexing method.");
                     await IndexSingleFiles(analyzedTracks);

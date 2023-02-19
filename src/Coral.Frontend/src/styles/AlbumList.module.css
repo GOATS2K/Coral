@@ -29,13 +29,16 @@
   width: 50px;
   border-radius: 50%;
   position: relative;
+  display: flex;
+  justify-content: center;
+
 }
 
 .playButton {
   position: absolute;
   z-index: 1;
-  top: 50%;
-  transform: translate(50%, -50%)
+  align-self: center;
+  color: white;
 }
 
 .item {

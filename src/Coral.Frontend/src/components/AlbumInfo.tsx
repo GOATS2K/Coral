@@ -22,8 +22,8 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
     <div className={styles.wrapper}>
       <Image
         withPlaceholder
-        width={200}
-        height={200}
+        width={250}
+        height={250}
         src={`${
           getConfig().publicRuntimeConfig.apiBaseUrl
         }/api/library/albums/${album.id}/artwork`}

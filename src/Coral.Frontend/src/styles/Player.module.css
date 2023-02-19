@@ -42,8 +42,23 @@
 }
 
 .slider {
-  flex: 1;
+  position: absolute;
+  width: 100%;
+  top: 33%;
   align-self: center;
+}
+
+.progressBar {
+  position: absolute;
+  width: 100%;
+  top: 40%;
+  z-index: 1;
+  opacity: 30%;
+}
+
+.sliderWrapper {
+  position: relative;
+  width: 100%;
 }
 
 .settings {

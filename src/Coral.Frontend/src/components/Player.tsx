@@ -9,6 +9,7 @@ import {
   Select,
   Loader,
   Anchor,
+  Progress,
 } from "@mantine/core";
 import React, { useState } from "react";
 import {
@@ -20,10 +21,9 @@ import {
 } from "@tabler/icons";
 import { StreamDto } from "../client/schemas";
 import styles from "../styles/Player.module.css";
-import { formatSecondsToMinutes, formatSecondsToSingleMinutes } from "../utils";
+import { formatSecondsToSingleMinutes } from "../utils";
 import { PlayerState, usePlayerStore } from "../store";
 import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
-import Head from "next/head";
 import getConfig from "next/config";
 import { fetchStreamTrack } from "../client/components";
 import Link from "next/link";
@@ -46,12 +46,14 @@ function Player() {
 
   const [secondsPlayed, setSecondsPlayed] = useState(0);
   const [buffering, setBuffering] = useState(false);
+  const [bufferLength, setBufferLength] = useState(0);
 
   const setPlayState = (value: boolean) =>
     usePlayerStore.setState({ playState: value });
 
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
+  const buffered = playerRef.current?.player()?.getBufferedInfo();
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
@@ -103,6 +105,16 @@ function Player() {
     };
     handleTrackChange();
   }, [tracks, playerPosition, transcodeTrack, bitrate]);
+
+  React.useEffect(() => {
+    let lastBuffer = buffered?.total.at(-1)?.end;
+    if (lastBuffer != null) {
+      let bufferPercentage =
+        (lastBuffer / selectedTrack.durationInSeconds) * 100;
+      console.log("Buffer percentage: ", bufferPercentage);
+      setBufferLength(bufferPercentage);
+    }
+  }, [buffered?.total]);
 
   if (tracks == null || tracks.length === 0) {
     return <div></div>;
@@ -295,18 +307,25 @@ function Player() {
           <Text mr={16} fz={"sm"}>
             {formatSecondsToSingleMinutes(secondsPlayed)}
           </Text>
-          <Slider
-            className={styles.slider}
-            size={4}
-            value={secondsPlayed}
-            max={selectedTrack.durationInSeconds}
-            onChange={(value: number) => {
-              playerRef.current!.audioRef()!.currentTime = value;
-              setSecondsPlayed(value);
-              updatePositionState(value);
-            }}
-            label={(value: number) => formatSecondsToSingleMinutes(value)}
-          ></Slider>
+          <div className={styles.sliderWrapper}>
+            <Progress
+              size={4}
+              className={styles.progressBar}
+              value={bufferLength}
+            ></Progress>
+            <Slider
+              className={styles.slider}
+              size={4}
+              value={secondsPlayed}
+              max={selectedTrack.durationInSeconds}
+              onChange={(value: number) => {
+                playerRef.current!.audioRef()!.currentTime = value;
+                setSecondsPlayed(value);
+                updatePositionState(value);
+              }}
+              label={(value: number) => formatSecondsToSingleMinutes(value)}
+            ></Slider>
+          </div>
           <Text ml={16} fz={"sm"}>
             {formatSecondsToSingleMinutes(selectedTrack.durationInSeconds!)}
           </Text>

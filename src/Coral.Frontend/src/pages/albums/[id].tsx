@@ -1,6 +1,4 @@
-import React, { useState } from "react";
 import { useRouter } from "next/router";
-import dynamic from "next/dynamic";
 import Playlist from "../../components/Playlist";
 import AlbumInfo from "../../components/AlbumInfo";
 import { useAlbum } from "../../client/components";

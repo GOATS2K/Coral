@@ -67,11 +67,11 @@ export const ShakaPlayer = forwardRef(
       });
 
       player.addEventListener("stalldetected", (ev: any) => {
-        console.log("Stall detected!", ev);
+        console.error("Stall detected!", ev);
       });
 
       player.addEventListener("error", (ev: any) => {
-        console.log(ev);
+        console.error("Shaka ran into an error:", ev);
       });
 
       setPlayer(player);

@@ -2,3 +2,8 @@ html {
   --player-height: 100px;
   --album-info-height: 225px;
 }
+
+.link {
+  text-decoration: none;
+  color: inherit;
+}

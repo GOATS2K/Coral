@@ -8,6 +8,7 @@ import {
   Switch,
   Select,
   Loader,
+  Anchor,
 } from "@mantine/core";
 import React, { useState } from "react";
 import {
@@ -25,11 +26,13 @@ import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
 import Head from "next/head";
 import getConfig from "next/config";
 import { fetchStreamTrack } from "../client/components";
+import Link from "next/link";
 
 function Player() {
   const playerRef = React.useRef<ShakaPlayerRef>(null);
   const playState = usePlayerStore((state: PlayerState) => state.playState);
   const tracks = usePlayerStore((state: PlayerState) => state.tracks);
+  const initializer = usePlayerStore((state: PlayerState) => state.initializer);
   const selectedTrack = usePlayerStore(
     (state: PlayerState) => state.selectedTrack
   );
@@ -265,9 +268,11 @@ function Player() {
         ></Image>
       </div>
       <div className={styles.imageText}>
-        <Text fz="sm" fw={700} lineClamp={2}>
-          {selectedTrack.title}
-        </Text>
+        <Link className="link" href={`${initializer.source}/${initializer.id}`}>
+          <Anchor className="link" fz="sm" fw={700} lineClamp={2}>
+            {selectedTrack.title}
+          </Anchor>
+        </Link>
         <Text fz="xs">{selectedTrack.artist?.name}</Text>
       </div>
       <div className={styles.playerWrapper}>

@@ -15,17 +15,15 @@ export default function Album() {
     source: PlayerInitializationSource.Album,
   } as Initializer;
 
-  React.useEffect(() => {
-    if (!router.isReady) return;
-    let { id } = router.query;
-    setAlbumId(+id!);
-  }, [router.isReady]);
-
   const { data, isLoading, error } = useAlbum({
     pathParams: {
-      albumId: albumId,
+      albumId: +router.query.id!,
     },
   });
+
+  if (isNaN(Number(router.query.id))) {
+    return <div>You have given an invalid album ID.</div>;
+  }
 
   if (isLoading) {
     return CenteredLoader();
@@ -37,7 +35,7 @@ export default function Album() {
   }
 
   return (
-    <div>
+    <div key={data?.id}>
       <AlbumInfo album={data}></AlbumInfo>
       <Playlist tracks={data?.tracks} initializer={initializer}></Playlist>
     </div>

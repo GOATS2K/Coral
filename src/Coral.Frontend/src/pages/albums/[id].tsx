@@ -9,9 +9,8 @@ import { Initializer, PlayerInitializationSource } from "../../store";
 
 export default function Album() {
   const router = useRouter();
-  const [albumId, setAlbumId] = useState(1);
   const initializer = {
-    id: albumId,
+    id: isNaN(Number(router.query.id)) ? 1 : Number(router.query.id),
     source: PlayerInitializationSource.Album,
   } as Initializer;
 

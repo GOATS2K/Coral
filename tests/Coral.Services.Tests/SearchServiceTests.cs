@@ -1,5 +1,8 @@
-﻿using Coral.TestProviders;
+﻿using Castle.Core.Logging;
+using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using SQLitePCL;
 using System;
 using System.Collections.Generic;
@@ -19,7 +22,8 @@ namespace Coral.Services.Tests
         {
             var testDatabase = new TestDatabase();
             _testDatabase = testDatabase;
-            _searchService = new SearchService(testDatabase.Mapper, testDatabase.Context);
+            var logger = Substitute.For<ILogger<SearchService>>();
+            _searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, logger);
         }
 
         [Fact]

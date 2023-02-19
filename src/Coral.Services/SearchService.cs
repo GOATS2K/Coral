@@ -42,21 +42,28 @@ namespace Coral.Services
             {
                 // I chose to only set the wildcard on the end of the keyword
                 // for performance reasons - benefiting from indexing done by the database
-                predicate = predicate.Or(k => EF.Functions.Like(k.Value, $"{keyword}%"));
+                predicate = predicate
+                    .Or(k => EF.Functions.Like(k.Value, $"{keyword}%"));
             }
             return predicate;
         }
 
         public async Task InsertKeywordsForTrack(Track track)
         {
-            _logger.LogInformation("Inserting keywords for {track}", track.ToString());
             var keywords = ProcessInputString(track.ToString());
             // check for existing keywords
-            var existingKeywords = await _context.Keywords.Where(k => keywords.Contains(k.Value)).ToListAsync();
-            var missingKeywordsOnTrack = existingKeywords.Where(k => !track.Keywords.Contains(k)).ToList();
-            
+            var existingKeywords = await _context
+                .Keywords
+                .Where(k => keywords.Contains(k.Value))
+                .ToListAsync();
+
+            var missingKeywordsOnTrack = existingKeywords
+                .Where(k => !track.Keywords.Contains(k))
+                .ToList();
+
             // in the event we've indexed all the keywords present on a track before
-            if (existingKeywords.Count() == keywords.Count() && missingKeywordsOnTrack.Count() == 0)
+            if (existingKeywords.Count() == keywords.Count() 
+                && missingKeywordsOnTrack.Count() == 0)
             {
                 return;
             }
@@ -94,8 +101,10 @@ namespace Coral.Services
 
             var idGroups = trackIds.GroupBy(t => t);
             // get only the IDs matching the query
-            var idsMatchingQuery = idGroups.Where(g => g.Count() == keywords.Count()).Select(g => g.Key);
-            
+            var idsMatchingQuery = idGroups
+                .Where(g => g.Count() == keywords.Count())
+                .Select(g => g.Key);
+
             // fetch tracks matching query
             var tracks = await _context.Tracks
                 .Where(t => idsMatchingQuery.Contains(t.Id))
@@ -105,8 +114,12 @@ namespace Coral.Services
 
             return new SearchResult()
             {
-                Albums = tracks.Select(t => t.Album).Distinct(new SimpleAlbumDtoComparer()).ToList(),
-                Artists = tracks.Select(t => t.Artist).Distinct(new SimpleArtistDtoComparer()).ToList(),
+                Albums = tracks.Select(t => t.Album)
+                .Distinct(new SimpleAlbumDtoComparer())
+                .ToList(),
+                Artists = tracks.Select(t => t.Artist)
+                .Distinct(new SimpleArtistDtoComparer())
+                .ToList(),
                 Tracks = tracks
             };
         }

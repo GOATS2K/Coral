@@ -67,6 +67,11 @@ public class IndexerService : IIndexerService
         foreach (var directoryGroup in directoryGroups)
         {
             var tracksInDirectory = directoryGroup.ToList();
+            if (!tracksInDirectory.Any())
+            {
+                _logger.LogWarning("Skipping empty directory {directory}", directoryGroup.Key);
+                continue;
+            }
 
             // we generally shouldn't be introducing side-effects in linq
             // but it's a lot prettier this way ;_;
@@ -79,7 +84,15 @@ public class IndexerService : IIndexerService
             if (folderIsAlbum)
             {
                 _logger.LogInformation("Indexing {path} as album.", directoryGroup.Key);
-                await IndexAlbum(analyzedTracks);
+                try
+                {
+                    await IndexAlbum(analyzedTracks);
+                } catch (ArgumentException ex)
+                {
+                    _logger.LogError("Path contained tracks from another album, switching indexing method.");
+                    await IndexSingleFiles(analyzedTracks);
+
+                }
             }
             else
             {
@@ -109,7 +122,7 @@ public class IndexerService : IIndexerService
         // verify that the collection is not empty
         if (!tracks.Any())
         {
-            throw new ArgumentException("The track collection cannot be empty.");
+            throw new ArgumentOutOfRangeException("The track collection cannot be empty.");
         }
 
         // verify that we in fact have an album

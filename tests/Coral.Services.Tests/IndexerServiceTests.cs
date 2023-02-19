@@ -1,6 +1,8 @@
 using Coral.Database;
 using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using Xunit;
 
 namespace Coral.Services.Tests;
@@ -13,9 +15,11 @@ public class IndexerServiceTests
     public IndexerServiceTests()
     {
         var testDatabase = new TestDatabase();
-        var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context);
+        var searchLogger = Substitute.For<ILogger<SearchService>>();
+        var indexerLogger = Substitute.For<ILogger<IndexerService>>();
+        var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger);
         _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context, searchService);
+        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger);
     }
 
     [Fact]

@@ -20,13 +20,13 @@ import {
   IconPlayerPause,
   IconSettings,
 } from "@tabler/icons";
-import { StreamDto } from "../client/schemas";
-import styles from "../styles/Player.module.css";
-import { formatSecondsToSingleMinutes } from "../utils";
-import { PlayerState, usePlayerStore } from "../store";
-import { ShakaPlayer, ShakaPlayerRef } from "../components/ShakaPlayer";
+import { StreamDto } from "../../client/schemas";
+import styles from "../../styles/Player.module.css";
+import { formatSecondsToSingleMinutes } from "../../utils";
+import { PlayerState, usePlayerStore } from "../../store";
+import { ShakaPlayer, ShakaPlayerRef } from "./ShakaPlayer";
 import getConfig from "next/config";
-import { fetchStreamTrack } from "../client/components";
+import { fetchStreamTrack } from "../../client/components";
 import Link from "next/link";
 
 function Player() {

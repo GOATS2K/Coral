@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
-import Playlist from "../../components/Playlist";
-import AlbumInfo from "../../components/AlbumInfo";
+import Playlist from "../../components/playlist/Playlist";
+import AlbumInfo from "../../components/album/AlbumInfo";
 import { useAlbum } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
 import { Initializer, PlayerInitializationSource } from "../../store";

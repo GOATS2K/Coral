@@ -6,19 +6,18 @@ import {
   UnstyledButton,
   useMantineTheme,
 } from "@mantine/core";
-import { SimpleAlbumDto } from "../client/schemas";
-import styles from "../styles/AlbumList.module.css";
-import { getAlbumArtists } from "../common/album";
+import { SimpleAlbumDto } from "../../client/schemas";
+import styles from "../../styles/AlbumList.module.css";
+import { getAlbumArtists } from "../../common/album";
 import getConfig from "next/config";
 import Link from "next/link";
 import { IconPlayerPlay } from "@tabler/icons";
-import { fetchAlbum } from "../client/components";
-import Album from "../pages/albums/[id]";
+import { fetchAlbum } from "../../client/components";
 import {
   Initializer,
   PlayerInitializationSource,
   usePlayerStore,
-} from "../store";
+} from "../../store";
 
 type AlbumListItemProps = {
   album: SimpleAlbumDto;

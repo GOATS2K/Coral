@@ -6,7 +6,7 @@ type LayoutProps = {
   children: React.ReactNode;
 };
 
-const Player = dynamic(() => import("../components/Player"), {
+const Player = dynamic(() => import("./player/Player"), {
   ssr: false,
 });
 

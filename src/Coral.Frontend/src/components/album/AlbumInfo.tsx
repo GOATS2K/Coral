@@ -1,12 +1,12 @@
 import React from "react";
-import { AlbumDto } from "../client/schemas";
-import styles from "../styles/AlbumInfo.module.css";
+import { AlbumDto } from "../../client/schemas";
+import styles from "../../styles/AlbumInfo.module.css";
 import { Image, Text } from "@mantine/core";
 import {
   getAlbumArtists,
   getAlbumDuration,
   getAlbumGenre,
-} from "../common/album";
+} from "../../common/album";
 import getConfig from "next/config";
 
 type AlbumInfoProps = {

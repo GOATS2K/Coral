@@ -1,10 +1,10 @@
 import { IconPlayerPlay, IconDisc, IconVinyl } from "@tabler/icons";
-import { TrackDto } from "../client/schemas";
-import styles from "../styles/PlaylistItem.module.css";
+import { TrackDto } from "../../client/schemas";
+import styles from "../../styles/PlaylistItem.module.css";
 import { Text, UnstyledButton, useMantineTheme } from "@mantine/core";
-import { formatSecondsToSingleMinutes } from "../utils";
+import { formatSecondsToSingleMinutes } from "../../utils";
 import { useState } from "react";
-import { usePlayerStore } from "../store";
+import { usePlayerStore } from "../../store";
 
 type PlaylistItemProps = {
   track: TrackDto;

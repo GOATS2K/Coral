@@ -1,7 +1,7 @@
 import React from "react";
 import AlbumListItem from "./AlbumListItem";
-import styles from "../styles/AlbumList.module.css";
-import { SimpleAlbumDto } from "../client/schemas";
+import styles from "../../styles/AlbumList.module.css";
+import { SimpleAlbumDto } from "../../client/schemas";
 import { Title } from "@mantine/core";
 
 export type AlbumListProps = {

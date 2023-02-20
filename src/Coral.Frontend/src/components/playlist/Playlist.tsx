@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { TrackDto } from "../client/schemas";
-import { Initializer, usePlayerStore } from "../store";
-import styles from "../styles/Playlist.module.css";
+import { TrackDto } from "../../client/schemas";
+import { Initializer, usePlayerStore } from "../../store";
+import styles from "../../styles/Playlist.module.css";
 import { PlaylistItem } from "./PlaylistItem";
 
 type PlaylistProps = {

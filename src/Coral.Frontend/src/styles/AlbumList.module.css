@@ -1,11 +1,12 @@
 .listWrapper {
   display: flex;
   flex-wrap: wrap;
+  gap: 1em;
 }
 
 .wrapper {
-  padding-left: 2em;
-  padding-top: 2em;
+  padding-left: 1em;
+  padding-top: 1em;
 }
 
 .title {
@@ -42,10 +43,6 @@
 }
 
 .item {
-  margin-right: 1.5em;
-  margin-bottom: 1.5em;
-  /* size of album art */
-  max-width: 150px;
   /* exclude padding from max-width calculation */
   box-sizing: content-box;
 }

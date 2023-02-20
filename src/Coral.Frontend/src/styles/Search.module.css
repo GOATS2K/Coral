@@ -1,0 +1,32 @@
+.artistWrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: auto;
+  gap: 1em;
+}
+
+.artistComponentWrapper {
+  margin-bottom: 1em;
+}
+
+.artistItem {
+  max-width: 100px;
+  box-sizing: content-box;
+}
+
+.title {
+  margin-bottom: 0.5em;
+}
+
+.albumWrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: auto;
+}
+
+.albumGrid {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 0.5em;
+  overflow: auto;
+}

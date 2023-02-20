@@ -64,27 +64,27 @@ export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
     {},
     SearchQueryParams,
     {}
-  >({ url: "/api/Library/search", method: "post", ...variables, signal });
+  >({ url: "/api/Library/search", method: "get", ...variables, signal });
 
-export const useSearch = (
+export const useSearch = <TData = Schemas.SearchResult>(
+  variables: SearchVariables,
   options?: Omit<
-    reactQuery.UseMutationOptions<
-      Schemas.SearchResult,
-      SearchError,
-      SearchVariables
-    >,
-    "mutationFn"
+    reactQuery.UseQueryOptions<Schemas.SearchResult, SearchError, TData>,
+    "queryKey" | "queryFn"
   >
 ) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    Schemas.SearchResult,
-    SearchError,
-    SearchVariables
-  >(
-    (variables: SearchVariables) =>
-      fetchSearch({ ...fetcherOptions, ...variables }),
-    options
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<Schemas.SearchResult, SearchError, TData>(
+    queryKeyFn({
+      path: "/api/Library/search",
+      operationId: "search",
+      variables,
+    }),
+    ({ signal }) => fetchSearch({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
   );
 };
 
@@ -495,6 +495,11 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
 };
 
 export type QueryOperation =
+  | {
+      path: "/api/Library/search";
+      operationId: "search";
+      variables: SearchVariables;
+    }
   | {
       path: "/api/Library/tracks/{trackId}/original";
       operationId: "fileFromLibrary";

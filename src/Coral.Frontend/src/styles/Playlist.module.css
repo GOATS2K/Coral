@@ -1,4 +1,3 @@
 .wrapper {
-  overflow: auto;
-  margin-bottom: var(--player-height);
+  overflow: auto; 
 }

@@ -1,6 +1,6 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, useMantineTheme } from "@mantine/core";
 import "../styles/global.css";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";

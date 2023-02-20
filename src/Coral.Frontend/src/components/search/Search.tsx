@@ -7,12 +7,24 @@ import AlbumList from "./AlbumList";
 import ArtistList from "./ArtistList";
 import TrackList from "./TrackList";
 import styles from "../../styles/Search.module.css";
+import { SearchResult } from "../../client/schemas";
 
 type SearchProps = {
   searchString: string;
 };
 
 export default function Search({ searchString }: SearchProps) {
+  const lastResult = useSearchStore((state) => state.result);
+  const searchPage = (inc?: SearchResult) => {
+    return (
+      <div>
+        <ArtistList artists={inc?.artists}></ArtistList>
+        <AlbumList albums={inc?.albums}></AlbumList>
+        <TrackList tracks={inc?.tracks}></TrackList>
+      </div>
+    );
+  };
+
   const { data, isLoading, error } = useSearch({
     queryParams: {
       query: searchString,
@@ -20,11 +32,13 @@ export default function Search({ searchString }: SearchProps) {
   });
 
   useEffect(() => {
-    useSearchStore.setState({ query: searchString, result: data });
+    if (searchString != "") {
+      useSearchStore.setState({ query: searchString, result: data });
+    }
   }, [searchString, data]);
 
-  if (searchString == "") {
-    return <div>Search away!</div>;
+  if (searchString == "" && lastResult != null) {
+    return searchPage(lastResult);
   }
 
   if (isLoading) {
@@ -35,11 +49,5 @@ export default function Search({ searchString }: SearchProps) {
     return <div>Something went wrong trying to search...</div>;
   }
 
-  return (
-    <div>
-      <ArtistList artists={data?.artists}></ArtistList>
-      <AlbumList albums={data?.albums}></AlbumList>
-      <TrackList tracks={data?.tracks}></TrackList>
-    </div>
-  );
+  return searchPage(data);
 }

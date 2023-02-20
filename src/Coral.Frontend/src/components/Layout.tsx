@@ -1,7 +1,8 @@
-import { useMantineTheme } from "@mantine/core";
+import { Text, useMantineTheme } from "@mantine/core";
 import dynamic from "next/dynamic";
 import Head from "next/head";
 import { usePlayerStore } from "../store";
+import styles from "../styles/Layout.module.css";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -35,11 +36,19 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className={"wrapper"}>
-      <Head>
-        <title>{titleText}</title>
-      </Head>
-      {children}
+    <div className={styles.layout}>
+      <div className={styles.wrapperWithSidebar}>
+        <div className={styles.sidebar}>
+          <Text>Example</Text>
+          <Text>Example</Text>
+        </div>
+        <div className={styles.contentWrapper}>
+          <Head>
+            <title>{titleText}</title>
+          </Head>
+          {children}
+        </div>
+      </div>
       <Player></Player>
     </div>
   );

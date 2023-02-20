@@ -40,7 +40,7 @@ namespace Coral.Api.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpGet]
         [Route("search")]
         public async Task<ActionResult<SearchResult>> Search([FromQuery] string query)
         {

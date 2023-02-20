@@ -3,6 +3,7 @@ import { StreamDto, TrackDto } from "./client/schemas";
 
 export enum PlayerInitializationSource {
   Album = "/albums",
+  Search = "/search"
 }
 
 export interface Initializer {

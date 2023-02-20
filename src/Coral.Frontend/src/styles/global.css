@@ -3,7 +3,27 @@ html {
   --album-info-height: 225px;
 }
 
+.wrapper {
+  padding: 1em;
+  margin-bottom: var(--player-height);
+}
+
 .link {
   text-decoration: none;
   color: inherit;
+}
+
+::-webkit-scrollbar {
+  height: 0.75em;
+}
+
+::-webkit-scrollbar-track:hover {
+  background: var(--accent-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  width: 12px;
+  border-radius: 4px;
+  background-clip: padding-box;
 }

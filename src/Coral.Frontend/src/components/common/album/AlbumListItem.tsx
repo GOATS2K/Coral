@@ -6,24 +6,28 @@ import {
   UnstyledButton,
   useMantineTheme,
 } from "@mantine/core";
-import { SimpleAlbumDto } from "../../client/schemas";
-import styles from "../../styles/AlbumList.module.css";
-import { getAlbumArtists } from "../../common/album";
+import { SimpleAlbumDto } from "../../../client/schemas";
+import styles from "../../../styles/AlbumList.module.css";
+import { getAlbumArtists } from "../../../common/album";
 import getConfig from "next/config";
 import Link from "next/link";
 import { IconPlayerPlay } from "@tabler/icons";
-import { fetchAlbum } from "../../client/components";
+import { fetchAlbum } from "../../../client/components";
 import {
   Initializer,
   PlayerInitializationSource,
   usePlayerStore,
-} from "../../store";
+} from "../../../store";
 
 type AlbumListItemProps = {
   album: SimpleAlbumDto;
+  artworkSize: number;
 };
 
-export default function AlbumListItem({ album }: AlbumListItemProps) {
+export default function AlbumListItem({
+  album,
+  artworkSize,
+}: AlbumListItemProps) {
   const baseUrl = getConfig().publicRuntimeConfig.apiBaseUrl;
   const theme = useMantineTheme();
   const [onHover, setOnHover] = useState(false);
@@ -53,6 +57,7 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
   return (
     <div
       className={styles.item}
+      style={{ maxWidth: `${artworkSize}px` }}
       onMouseEnter={() => setOnHover(true)}
       onMouseLeave={() => setOnHover(false)}
     >
@@ -63,8 +68,8 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
             className={styles.image}
             style={imageStyle}
             withPlaceholder
-            width={150}
-            height={150}
+            width={artworkSize}
+            height={artworkSize}
             src={`${baseUrl}/api/library/albums/${album.id}/artwork`}
           ></Image>
         </Link>
@@ -88,14 +93,14 @@ export default function AlbumListItem({ album }: AlbumListItemProps) {
           <Anchor
             className={styles.link}
             component="a"
-            lineClamp={2}
+            lineClamp={1}
             fz={"md"}
             fw={"bold"}
           >
             {album.name}
           </Anchor>
         </Link>
-        <Text lineClamp={2} fz={"sm"} fw={"light"}>
+        <Text lineClamp={1} fz={"sm"} fw={"light"}>
           {getAlbumArtists(album)}
         </Text>
       </div>

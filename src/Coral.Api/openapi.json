@@ -19,7 +19,7 @@
       }
     },
     "/api/Library/search": {
-      "post": {
+      "get": {
         "tags": [
           "Library"
         ],

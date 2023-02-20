@@ -1,0 +1,25 @@
+import { Title } from "@mantine/core";
+import React from "react";
+import { TrackDto } from "../../client/schemas";
+import { Initializer, PlayerInitializationSource } from "../../store";
+import styles from "../../styles/Search.module.css";
+import Playlist from "../playlist/Playlist";
+
+type TrackListProps = {
+  tracks?: TrackDto[];
+};
+
+export default function TrackList({ tracks }: TrackListProps) {
+  const initializer = {
+    id: 1,
+    source: PlayerInitializationSource.Search,
+  } as Initializer;
+  return (
+    <div>
+      <Title order={1} className={styles.title}>
+        Tracks
+      </Title>
+      <Playlist initializer={initializer} tracks={tracks}></Playlist>
+    </div>
+  );
+}

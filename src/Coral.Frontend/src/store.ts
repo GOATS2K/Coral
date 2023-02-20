@@ -1,5 +1,6 @@
+import { stringify } from "querystring";
 import { create } from "zustand";
-import { StreamDto, TrackDto } from "./client/schemas";
+import { SearchResult, TrackDto } from "./client/schemas";
 
 export enum PlayerInitializationSource {
   Album = "/albums",
@@ -20,6 +21,11 @@ export interface PlayerState {
   getIndexOfSelectedTrack: () => number;
   nextTrack: () => void;
   prevTrack: () => void;
+}
+
+export interface SearchState {
+  query: string,
+  result: SearchResult
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -52,4 +58,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       }));
     }
   },
+}));
+
+export const useSearchStore = create<SearchState>()(() => ({
+  query: "",
+  result: {} as SearchResult
 }));

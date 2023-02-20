@@ -1,0 +1,23 @@
+.wrapperWithSidebar {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.layout { 
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+.contentWrapper {
+  padding: 1em;
+  overflow: auto;
+  flex: 1;
+}
+
+.sidebar {
+  position: sticky;
+  box-sizing: content-box;
+  min-width: 32ch;
+  background-color: var(--accent-background);
+}

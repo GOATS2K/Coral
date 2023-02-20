@@ -14,6 +14,7 @@ export default function SearchPage() {
         value={searchString}
         variant="filled"
         size={"md"}
+        style={{ marginBottom: "1em" }}
         onChange={(event) => setSearchString(event.currentTarget.value)}
       ></TextInput>
       <Search searchString={debounced}></Search>

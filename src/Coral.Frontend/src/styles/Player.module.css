@@ -1,11 +1,6 @@
 .wrapper {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
-  position: fixed;
-  bottom: 0;
-  margin-top: 0.25em;
-  width: 100%;
   padding: 1rem;
   z-index: 100;
 }

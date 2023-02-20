@@ -3,11 +3,6 @@ html {
   --album-info-height: 225px;
 }
 
-.wrapper {
-  padding: 1em;
-  margin-bottom: var(--player-height);
-}
-
 .link {
   text-decoration: none;
   color: inherit;

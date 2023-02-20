@@ -14,7 +14,7 @@ export default function ArtistList({ artists }: ArtistListProps) {
   ));
   return (
     <div className={styles.artistComponentWrapper}>
-      <Title order={1} className={styles.title}>
+      <Title order={3} className={styles.title}>
         Artists
       </Title>
       <div className={styles.artistWrapper}>{artistList}</div>

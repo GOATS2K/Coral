@@ -1,26 +1,22 @@
-import React from "react";
-import { useSearch } from "../../client/components";
-import { CenteredLoader } from "../../common/ui";
-import AlbumList from "../../components/search/AlbumList";
-import ArtistList from "../../components/search/ArtistList";
-import TrackList from "../../components/search/TrackList";
+import { TextInput } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
+import React, { useState } from "react";
+import Search from "../../components/search/Search";
 
-export default function Search() {
-  const { data, isLoading, error } = useSearch({
-    queryParams: {
-      query: "satl",
-    },
-  });
-
-  if (isLoading) {
-    return <CenteredLoader></CenteredLoader>;
-  }
+export default function SearchPage() {
+  const [searchString, setSearchString] = useState("");
+  const [debounced] = useDebouncedValue(searchString, 250);
 
   return (
     <div>
-      <ArtistList artists={data?.artists}></ArtistList>
-      <AlbumList albums={data?.albums}></AlbumList>
-      <TrackList tracks={data?.tracks}></TrackList>
+      <TextInput
+        placeholder={"Search..."}
+        value={searchString}
+        variant="filled"
+        size={"md"}
+        onChange={(event) => setSearchString(event.currentTarget.value)}
+      ></TextInput>
+      <Search searchString={debounced}></Search>
     </div>
   );
 }

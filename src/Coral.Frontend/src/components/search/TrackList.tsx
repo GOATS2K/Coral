@@ -16,7 +16,7 @@ export default function TrackList({ tracks }: TrackListProps) {
   } as Initializer;
   return (
     <div>
-      <Title order={1} className={styles.title}>
+      <Title order={3} className={styles.title}>
         Tracks
       </Title>
       <Playlist initializer={initializer} tracks={tracks}></Playlist>

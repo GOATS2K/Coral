@@ -17,6 +17,7 @@ builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IIndexerService, IndexerService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IArtworkService, ArtworkService>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
 builder.Services.AddAutoMapper(opt =>

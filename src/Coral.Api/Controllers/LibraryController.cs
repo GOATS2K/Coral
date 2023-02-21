@@ -103,8 +103,8 @@ namespace Coral.Api.Controllers
             if (!string.IsNullOrEmpty(artworkPath))
             {
                 // generate this url programmatically
-                streamData.ArtworkUrl = Url.Action("GetTrackArtwork",
-                    "LIbrary",
+                streamData.ArtworkUrl = Url.Action("TrackArtwork",
+                    "Library",
                     new {trackId = trackId},
                     Request.Scheme);
             }

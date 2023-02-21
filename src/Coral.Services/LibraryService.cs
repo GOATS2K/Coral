@@ -101,9 +101,17 @@ namespace Coral.Services
 
         public async Task<AlbumDto?> GetAlbum(int albumId)
         {
-            return await _context.Albums
+            var album = await _context.Albums
                 .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(a => a.Id == albumId);
+            
+            if (album == null)
+            {
+                return null;
+            }
+
+            album.Tracks = album.Tracks.OrderBy(a => a.TrackNumber).ToList();
+            return album;
         }
     }
 }

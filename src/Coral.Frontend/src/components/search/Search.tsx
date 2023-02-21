@@ -1,4 +1,4 @@
-import { TextInput, Title } from "@mantine/core";
+import { Text, TextInput, Title } from "@mantine/core";
 import React, { useEffect, useState } from "react";
 import { useSearch } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
@@ -37,7 +37,11 @@ export default function Search({ searchString }: SearchProps) {
     }
   }, [searchString, data]);
 
-  if (searchString == "" && lastResult != null) {
+  if (searchString == "" && lastResult.tracks == null) {
+    return <Text>What are you looking for?</Text>;
+  }
+
+  if (searchString == "" && lastResult.tracks != null) {
     return searchPage(lastResult);
   }
 

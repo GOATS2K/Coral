@@ -1,4 +1,4 @@
-import { Button } from "@mantine/core";
+import { Button, Title } from "@mantine/core";
 import { IconAlbum, IconSearch, IconVinyl } from "@tabler/icons";
 import Link from "next/link";
 import React from "react";
@@ -14,6 +14,7 @@ export default function Sidebar() {
     <Link href={link.link} className={"link"} key={link.name}>
       <Button
         fullWidth
+        size={"md"}
         key={link.name}
         variant={"subtle"}
         leftIcon={link.icon}
@@ -28,5 +29,12 @@ export default function Sidebar() {
     </Link>
   ));
 
-  return <div className={styles.sidebar}>{buttons}</div>;
+  return (
+    <div className={styles.sidebar}>
+      <Title order={1} style={{ textAlign: "center" }} mb={"sm"}>
+        Coral
+      </Title>
+      {buttons}
+    </div>
+  );
 }

@@ -14,16 +14,18 @@ public class IndexerService : IIndexerService
 {
     private readonly CoralDbContext _context;
     private readonly ISearchService _searchService;
+    private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
     private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac" };
     private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
     private static readonly string[] ImageFileNames = { "cover", "artwork", "folder", "front" };
 
-    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger)
+    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
+        _artworkService = artworkService;
     }
 
     private bool ContentDirectoryNeedsRescan(DirectoryInfo contentDirectory)
@@ -91,7 +93,6 @@ public class IndexerService : IIndexerService
                 {
                     _logger.LogError("Path contained tracks from another album, switching indexing method.");
                     await IndexSingleFiles(analyzedTracks);
-
                 }
             }
             else
@@ -161,13 +162,19 @@ public class IndexerService : IIndexerService
             await IndexFile(targetArtist, indexedAlbum, targetGenre, trackToIndex);
         }
     }
-
+    
     private async Task IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
         {
             return;
+        }
+
+        if (!indexedAlbum.Artworks.Any())
+        {
+            var albumArtwork = await GetAlbumArtwork(atlTrack);
+            if (albumArtwork != null) await _artworkService.ProcessArtwork(indexedAlbum, albumArtwork);
         }
 
         indexedTrack = new Track()
@@ -223,7 +230,7 @@ public class IndexerService : IIndexerService
         return indexedArtist;
     }
 
-    private string? GetAlbumArtwork(ATL.Track atlTrack)
+    private async Task<string?> GetAlbumArtwork(ATL.Track atlTrack)
     {
         // get artwork from file parent folder
         var albumDirectory = new DirectoryInfo(atlTrack.Path)
@@ -232,7 +239,7 @@ public class IndexerService : IIndexerService
         var artwork = albumDirectory?.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
             .FirstOrDefault(f => ImageFileFormats.Contains(Path.GetExtension(f.FullName)));
 
-        return artwork?.FullName;
+        return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
 
     private Album GetAlbum(List<Artist> artists, ATL.Track atlTrack)
@@ -247,17 +254,7 @@ public class IndexerService : IIndexerService
         var indexedAlbum = albumQuery.FirstOrDefault();
         if (indexedAlbum == null)
         {
-            indexedAlbum = new Album()
-            {
-                Artists = artists,
-                Name = albumName!,
-                ReleaseYear = atlTrack.Year,
-                DiscTotal = atlTrack.DiscTotal,
-                TrackTotal = atlTrack.TrackTotal,
-                DateIndexed = DateTime.UtcNow,
-                CoverFilePath = GetAlbumArtwork(atlTrack)
-            };
-            _context.Albums.Add(indexedAlbum);
+            indexedAlbum = CreateAlbum(artists, atlTrack, albumName);
         }
 
         if (!indexedAlbum.Artists
@@ -269,5 +266,23 @@ public class IndexerService : IIndexerService
             _context.Albums.Update(indexedAlbum);
         }
         return indexedAlbum;
+    }
+
+    private Album CreateAlbum(List<Artist> artists, ATL.Track atlTrack, string? albumName)
+    {
+        
+        var album = new Album()
+        {
+            Artists = artists,
+            Name = albumName!,
+            ReleaseYear = atlTrack.Year,
+            DiscTotal = atlTrack.DiscTotal,
+            TrackTotal = atlTrack.TrackTotal,
+            DateIndexed = DateTime.UtcNow,
+            Artworks = new List<Artwork>()
+        };
+        
+        _context.Albums.Add(album);
+        return album;
     }
 }

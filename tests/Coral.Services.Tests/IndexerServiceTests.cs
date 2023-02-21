@@ -1,13 +1,18 @@
+using System.Net.Mime;
+using Coral.Configuration;
 using Coral.Database;
+using Coral.Database.Models;
 using Coral.TestProviders;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using SQLitePCL;
 using Xunit;
 
 namespace Coral.Services.Tests;
 
-public class IndexerServiceTests
+public class IndexerServiceTests : IDisposable
 {
     private readonly IIndexerService _indexerService;
     private readonly CoralDbContext _testDatabase;
@@ -17,9 +22,30 @@ public class IndexerServiceTests
         var testDatabase = new TestDatabase();
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
+        var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>(); 
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger);
+        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper, httpContextAccessor);
+
         _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger);
+        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService);
+    }
+    public void Dispose()
+    {
+        var indexedArtwork = _testDatabase.Artworks
+            .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
+            || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
+            .Select(a => a.Path);
+        
+        foreach (var artworkPath in indexedArtwork)
+        {
+            var directory = new DirectoryInfo(artworkPath).Parent;
+            File.Delete(artworkPath);
+            if (!directory!.GetFiles().Any())
+            {
+                directory.Delete();
+            }
+        }
     }
 
     [Fact]
@@ -51,6 +77,24 @@ public class IndexerServiceTests
     }
 
     [Fact]
+    public async Task ReadDirectory_NeptuneDiscovery_IndexesEmbeddedArtwork()
+    {
+        // arrange
+        
+        // act
+        await _indexerService.ReadDirectory(TestDataRepository.NeptuneDiscovery);
+
+        // assert
+        var album = await _testDatabase.Albums.FirstOrDefaultAsync(a => a.Name == "Discovery");
+        Assert.NotNull(album);
+        
+        var originalArtwork = album.Artworks.FirstOrDefault(a => a.Size == ArtworkSize.Original);
+        Assert.Equal(480, originalArtwork?.Height);
+        Assert.Equal(480, originalArtwork?.Width);
+        Assert.Equal(3, album.Artworks.Count);
+    }
+
+    [Fact]
     public async Task ReadDirectory_JupiterMoons_CreatesValidMetadata()
     {
         // arrange
@@ -64,8 +108,7 @@ public class IndexerServiceTests
 
         Assert.NotNull(jupiterArtist);
         Assert.NotNull(moonsAlbum);
-
-        Assert.NotNull(moonsAlbum.CoverFilePath);
+        
         Assert.Equal(3, moonsAlbum.Tracks.Count);
 
         var metisTrack = moonsAlbum.Tracks.Single(t => t.Title == "Metis");
@@ -95,8 +138,6 @@ public class IndexerServiceTests
         // ensure the album has both tracks
         var album = albumList.Single();
         Assert.Equal(2, album.Tracks.Count());
-        
-
 
         Assert.NotNull(albumList);
         Assert.NotNull(marsArtist);
@@ -104,12 +145,12 @@ public class IndexerServiceTests
     }
 
     [Fact]
-    public void ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
+    public async Task ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
     {
         // arrange
 
         // act
-        _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
+        await _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
 
         // assert
         var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");

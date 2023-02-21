@@ -9,6 +9,109 @@ import type * as Fetcher from "./fetcher";
 import { fetch } from "./fetcher";
 import type * as Schemas from "./schemas";
 
+export type ArtworkFromIdPathParams = {
+  /**
+   * @format int32
+   */
+  artworkId: number;
+};
+
+export type ArtworkFromIdError = Fetcher.ErrorWrapper<undefined>;
+
+export type ArtworkFromIdVariables = {
+  pathParams: ArtworkFromIdPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchArtworkFromId = (
+  variables: ArtworkFromIdVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    undefined,
+    ArtworkFromIdError,
+    undefined,
+    {},
+    {},
+    ArtworkFromIdPathParams
+  >({ url: "/api/Artwork/{artworkId}", method: "get", ...variables, signal });
+
+export const useArtworkFromId = <TData = undefined>(
+  variables: ArtworkFromIdVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, ArtworkFromIdError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, ArtworkFromIdError, TData>(
+    queryKeyFn({
+      path: "/api/Artwork/{artworkId}",
+      operationId: "artworkFromId",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchArtworkFromId({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type AlbumArtworkPathParams = {
+  /**
+   * @format int32
+   */
+  albumId: number;
+};
+
+export type AlbumArtworkError = Fetcher.ErrorWrapper<undefined>;
+
+export type AlbumArtworkVariables = {
+  pathParams: AlbumArtworkPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchAlbumArtwork = (
+  variables: AlbumArtworkVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    Schemas.ArtworkDto,
+    AlbumArtworkError,
+    undefined,
+    {},
+    {},
+    AlbumArtworkPathParams
+  >({
+    url: "/api/Artwork/albums/{albumId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
+  variables: AlbumArtworkVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.ArtworkDto, AlbumArtworkError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<Schemas.ArtworkDto, AlbumArtworkError, TData>(
+    queryKeyFn({
+      path: "/api/Artwork/albums/{albumId}",
+      operationId: "albumArtwork",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchAlbumArtwork({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -271,114 +374,6 @@ export const useStreamTrack = <TData = Schemas.StreamDto>(
   );
 };
 
-export type TrackArtworkPathParams = {
-  /**
-   * @format int32
-   */
-  trackId: number;
-};
-
-export type TrackArtworkError = Fetcher.ErrorWrapper<undefined>;
-
-export type TrackArtworkVariables = {
-  pathParams: TrackArtworkPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchTrackArtwork = (
-  variables: TrackArtworkVariables,
-  signal?: AbortSignal
-) =>
-  fetch<
-    undefined,
-    TrackArtworkError,
-    undefined,
-    {},
-    {},
-    TrackArtworkPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/artwork",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useTrackArtwork = <TData = undefined>(
-  variables: TrackArtworkVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, TrackArtworkError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, TrackArtworkError, TData>(
-    queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/artwork",
-      operationId: "trackArtwork",
-      variables,
-    }),
-    ({ signal }) =>
-      fetchTrackArtwork({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
-export type AlbumArtworkPathParams = {
-  /**
-   * @format int32
-   */
-  albumId: number;
-};
-
-export type AlbumArtworkError = Fetcher.ErrorWrapper<undefined>;
-
-export type AlbumArtworkVariables = {
-  pathParams: AlbumArtworkPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchAlbumArtwork = (
-  variables: AlbumArtworkVariables,
-  signal?: AbortSignal
-) =>
-  fetch<
-    undefined,
-    AlbumArtworkError,
-    undefined,
-    {},
-    {},
-    AlbumArtworkPathParams
-  >({
-    url: "/api/Library/albums/{albumId}/artwork",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useAlbumArtwork = <TData = undefined>(
-  variables: AlbumArtworkVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, AlbumArtworkError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, AlbumArtworkError, TData>(
-    queryKeyFn({
-      path: "/api/Library/albums/{albumId}/artwork",
-      operationId: "albumArtwork",
-      variables,
-    }),
-    ({ signal }) =>
-      fetchAlbumArtwork({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
 export type TracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type TracksResponse = Schemas.TrackDto[];
@@ -496,6 +491,16 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
 
 export type QueryOperation =
   | {
+      path: "/api/Artwork/{artworkId}";
+      operationId: "artworkFromId";
+      variables: ArtworkFromIdVariables;
+    }
+  | {
+      path: "/api/Artwork/albums/{albumId}";
+      operationId: "albumArtwork";
+      variables: AlbumArtworkVariables;
+    }
+  | {
       path: "/api/Library/search";
       operationId: "search";
       variables: SearchVariables;
@@ -514,16 +519,6 @@ export type QueryOperation =
       path: "/api/Library/tracks/{trackId}/stream";
       operationId: "streamTrack";
       variables: StreamTrackVariables;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/artwork";
-      operationId: "trackArtwork";
-      variables: TrackArtworkVariables;
-    }
-  | {
-      path: "/api/Library/albums/{albumId}/artwork";
-      operationId: "albumArtwork";
-      variables: AlbumArtworkVariables;
     }
   | {
       path: "/api/Library/tracks";

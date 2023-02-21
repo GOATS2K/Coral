@@ -7,6 +7,7 @@ namespace Coral.Database;
 
 public class CoralDbContext : DbContext
 {
+    public DbSet<Artwork> Artworks { get; set; }
     public DbSet<Track> Tracks { get; set; } = null!;
     public DbSet<Artist> Artists { get; set; } = null!;
     public DbSet<Album> Albums { get; set; } = null!;

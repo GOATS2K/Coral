@@ -8,12 +8,24 @@ import {
   getAlbumGenre,
 } from "../../common/album";
 import getConfig from "next/config";
+import { useAlbumArtwork } from "../../client/components";
 
 type AlbumInfoProps = {
   album?: AlbumDto;
 };
 
 export default function AlbumInfo({ album }: AlbumInfoProps) {
+  const { data } = useAlbumArtwork(
+    {
+      pathParams: {
+        albumId: album != null ? album.id : 0,
+      },
+    },
+    {
+      enabled: album != null,
+    }
+  );
+
   if (album == null) {
     return <Text fz={32}>Cannot get album info...</Text>;
   }
@@ -25,9 +37,7 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
         withPlaceholder
         width={250}
         height={250}
-        src={`${
-          getConfig().publicRuntimeConfig.apiBaseUrl
-        }/api/library/albums/${album.id}/artwork`}
+        src={data?.medium}
       ></Image>
       <div className={styles.metadataWrapper}>
         <div className={styles.metadata}>

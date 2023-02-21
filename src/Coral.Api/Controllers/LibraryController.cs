@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Services;
@@ -85,8 +86,7 @@ namespace Coral.Api.Controllers
                 opt.Bitrate = bitrate;
                 opt.RequestType = TranscodeRequestType.HLS;
             });
-
-            var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
+            
             var streamData = new StreamDto()
             {
                 // this will require some baseurl modifications via the web server
@@ -99,15 +99,6 @@ namespace Coral.Api.Controllers
                     Format = OutputFormat.AAC
                 }
             };
-
-            if (!string.IsNullOrEmpty(artworkPath))
-            {
-                // generate this url programmatically
-                streamData.ArtworkUrl = Url.Action("GetTrackArtwork",
-                    "LIbrary",
-                    new {trackId = trackId},
-                    Request.Scheme);
-            }
 
             return streamData;
         }
@@ -127,42 +118,10 @@ namespace Coral.Api.Controllers
                         trackId = trackId
                     }, Request.Scheme)!,
                     TranscodeInfo = null,
-                    ArtworkUrl = Url.Action("TrackArtwork",
-                        "Library",
-                        new {trackId = trackId},
-                        Request.Scheme)
                 };
             }
 
             return RedirectToAction("TranscodeTrack", new {trackId = trackId, bitrate = bitrate});
-        }
-
-        [HttpGet]
-        [Route("tracks/{trackId}/artwork")]
-        public async Task<ActionResult> TrackArtwork(int trackId)
-        {
-            var artworkPath = await _libraryService.GetArtworkForTrack(trackId);
-            if (artworkPath == null)
-            {
-                return NotFound();
-            }
-
-            return new PhysicalFileResult(artworkPath,
-                MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
-        }
-
-        [HttpGet]
-        [Route("albums/{albumId}/artwork")]
-        public async Task<ActionResult> AlbumArtwork(int albumId)
-        {
-            var artworkPath = await _libraryService.GetArtworkForAlbum(albumId);
-            if (artworkPath == null)
-            {
-                return NotFound();
-            }
-
-            return new PhysicalFileResult(artworkPath,
-                MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
         }
 
         [HttpGet]

@@ -5,6 +5,7 @@ using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
+using Coral.Services.Models;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

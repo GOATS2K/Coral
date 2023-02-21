@@ -446,6 +446,66 @@ export const useAlbums = <TData = AlbumsResponse>(
   );
 };
 
+export type PaginatedAlbumsQueryParams = {
+  /**
+   * @format int32
+   * @default 10
+   */
+  limit?: number;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+};
+
+export type PaginatedAlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type PaginatedAlbumsVariables = {
+  queryParams?: PaginatedAlbumsQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchPaginatedAlbums = (
+  variables: PaginatedAlbumsVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    undefined,
+    PaginatedAlbumsError,
+    undefined,
+    {},
+    PaginatedAlbumsQueryParams,
+    {}
+  >({
+    url: "/api/Library/albums/paginated",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const usePaginatedAlbums = <TData = undefined>(
+  variables: PaginatedAlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, PaginatedAlbumsError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, PaginatedAlbumsError, TData>(
+    queryKeyFn({
+      path: "/api/Library/albums/paginated",
+      operationId: "paginatedAlbums",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchPaginatedAlbums({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type AlbumPathParams = {
   /**
    * @format int32
@@ -529,6 +589,11 @@ export type QueryOperation =
       path: "/api/Library/albums";
       operationId: "albums";
       variables: AlbumsVariables;
+    }
+  | {
+      path: "/api/Library/albums/paginated";
+      operationId: "paginatedAlbums";
+      variables: PaginatedAlbumsVariables;
     }
   | {
       path: "/api/Library/albums/{albumId}";

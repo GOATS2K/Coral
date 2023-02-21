@@ -4,8 +4,8 @@ using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
-using Coral.Services.HelperModels;
 using Coral.Services.Helpers;
+using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
 using Track = Coral.Database.Models.Track;
 
@@ -21,6 +21,7 @@ namespace Coral.Services
         public Task<string?> GetArtworkForTrack(int trackId);
         public Task<string?> GetArtworkForAlbum(int albumId);
         public Task<AlbumDto?> GetAlbum(int albumId);
+        public Task<PaginatedData<List<SimpleAlbumDto>>> GetPaginatedAlbums(int offset = 0, int limit = 10);
     }
 
     public class LibraryService : ILibraryService
@@ -32,6 +33,27 @@ namespace Coral.Services
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<PaginatedData<List<SimpleAlbumDto>>> GetPaginatedAlbums(int offset = 0, int limit = 10)
+        {
+            var totalAlbumCount = await _context.Albums.CountAsync();
+            var query = _context.Albums
+                .Skip(offset)
+                .Take(limit);
+            var availableRecords = totalAlbumCount - (offset + limit);
+            var querySize = await query.CountAsync();
+            var data = await query
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PaginatedData<List<SimpleAlbumDto>>()
+            {
+                AvailableRecords = availableRecords,
+                ResultCount = querySize,
+                TotalRecords = totalAlbumCount,
+                Data = data
+            };
         }
 
         public async Task<Track?> GetTrack(int trackId)

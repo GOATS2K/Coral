@@ -8,5 +8,4 @@ public record AlbumDto
     public List<TrackDto> Tracks { get; set; } = null!;
     public List<GenreDto> Genres { get; set; } = null!;
     public int ReleaseYear { get; set; }
-    public bool CoverPresent { get; set; } = false;
 }

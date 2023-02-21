@@ -25,11 +25,14 @@ export default function Search({ searchString }: SearchProps) {
     );
   };
 
-  const { data, isLoading, error } = useSearch({
-    queryParams: {
-      query: searchString,
+  const { data, isLoading, error } = useSearch(
+    {
+      queryParams: {
+        query: searchString,
+      },
     },
-  });
+    { enabled: searchString != "" }
+  );
 
   useEffect(() => {
     if (searchString != "") {

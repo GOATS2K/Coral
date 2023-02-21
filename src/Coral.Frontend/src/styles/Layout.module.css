@@ -2,6 +2,7 @@
   display: flex;
   flex-wrap: nowrap;
   overflow: hidden;
+  height: 100dvh;
 }
 
 .layout { 
@@ -17,7 +18,10 @@
 
 .sidebar {
   position: sticky;
-  box-sizing: content-box;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   min-width: 32ch;
+  padding: 2em;
   background-color: var(--accent-background);
 }

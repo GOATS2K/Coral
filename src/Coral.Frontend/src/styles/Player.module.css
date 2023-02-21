@@ -1,13 +1,12 @@
 .wrapper {
   display: flex;
-  flex-direction: row;
   padding: 1rem;
   z-index: 100;
 }
 
 .imageBox {
   max-width: 70px;
-  margin-right: 8px;
+  margin-right: 0.5em;
 }
 
 .imageText {

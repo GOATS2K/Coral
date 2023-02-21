@@ -1,6 +1,7 @@
 import { Text, useMantineTheme } from "@mantine/core";
 import dynamic from "next/dynamic";
 import Head from "next/head";
+import { useEffect } from "react";
 import { usePlayerStore } from "../store";
 import styles from "../styles/Layout.module.css";
 import Sidebar from "./navigation/Sidebar";
@@ -29,12 +30,12 @@ export default function Layout({ children }: LayoutProps) {
   const accentBackground =
     theme.colorScheme === "dark" ? theme.colors.gray[9] : theme.colors.gray[4];
 
-  if (typeof window !== "undefined") {
+  useEffect(() => {
     let root = document.documentElement;
     root.style.setProperty("--app-background", appBackground);
     root.style.setProperty("--accent", accentColor);
     root.style.setProperty("--accent-background", accentBackground);
-  }
+  });
 
   return (
     <div className={styles.layout}>

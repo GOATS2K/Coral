@@ -26,7 +26,7 @@ import { formatSecondsToSingleMinutes } from "../../utils";
 import { PlayerState, usePlayerStore } from "../../store";
 import { ShakaPlayer, ShakaPlayerRef } from "./ShakaPlayer";
 import getConfig from "next/config";
-import { fetchStreamTrack } from "../../client/components";
+import { fetchStreamTrack, useAlbumArtwork } from "../../client/components";
 import Link from "next/link";
 
 function Player() {
@@ -39,6 +39,16 @@ function Player() {
   );
   const playerPosition = usePlayerStore((state) =>
     state.getIndexOfSelectedTrack()
+  );
+  const { data: albumArtwork } = useAlbumArtwork(
+    {
+      pathParams: {
+        albumId: selectedTrack.album != null ? selectedTrack.album.id : 0,
+      },
+    },
+    {
+      enabled: selectedTrack.album != null,
+    }
   );
 
   const theme = useMantineTheme();
@@ -152,9 +162,7 @@ function Player() {
       if (streamTrack.artworkUrl != null) {
         metadata["artwork"] = [
           {
-            src: `${
-              getConfig().publicRuntimeConfig.apiBaseUrl
-            }/api/library/albums/${selectedTrack.album?.id}/artwork`,
+            src: albumArtwork?.medium ?? "",
           },
         ];
       }
@@ -273,9 +281,7 @@ function Player() {
       <div className={styles.imageBox}>
         <Image
           alt={`Album cover of ${selectedTrack.album.name}`}
-          src={`${
-            getConfig().publicRuntimeConfig.apiBaseUrl
-          }/api/library/albums/${selectedTrack.album?.id}/artwork`}
+          src={albumArtwork?.small}
           withPlaceholder
           width={"70px"}
           height={"70px"}

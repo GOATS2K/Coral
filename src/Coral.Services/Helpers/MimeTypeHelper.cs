@@ -14,7 +14,7 @@ public static class MimeTypeHelper
             ".mp3" => "audio/mpeg",
             ".m4a" => "audio/mp4",
             ".wav" => "audio/wav",
-            ".jpg" => "image/jpg",
+            ".jpg" => "image/jpeg",
             ".png" => "image/png",
             _ => "application/octet-stream"
         };

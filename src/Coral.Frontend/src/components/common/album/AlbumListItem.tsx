@@ -12,7 +12,7 @@ import { getAlbumArtists } from "../../../common/album";
 import getConfig from "next/config";
 import Link from "next/link";
 import { IconPlayerPlay } from "@tabler/icons";
-import { fetchAlbum } from "../../../client/components";
+import { fetchAlbum, useAlbumArtwork } from "../../../client/components";
 import {
   Initializer,
   PlayerInitializationSource,
@@ -28,7 +28,16 @@ export default function AlbumListItem({
   album,
   artworkSize,
 }: AlbumListItemProps) {
-  const baseUrl = getConfig().publicRuntimeConfig.apiBaseUrl;
+  const { data } = useAlbumArtwork(
+    {
+      pathParams: {
+        albumId: album != null ? album.id : 0,
+      },
+    },
+    {
+      enabled: album != null,
+    }
+  );
   const theme = useMantineTheme();
   const [onHover, setOnHover] = useState(false);
   const [playButtonOnHover, setPlayButtonOnHover] = useState(false);
@@ -70,7 +79,7 @@ export default function AlbumListItem({
             withPlaceholder
             width={artworkSize}
             height={artworkSize}
-            src={`${baseUrl}/api/library/albums/${album.id}/artwork`}
+            src={data?.medium}
           ></Image>
         </Link>
         <div className={styles.playButtonOnImage}>

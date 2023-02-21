@@ -3,6 +3,7 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.TestProviders;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -22,8 +23,9 @@ public class IndexerServiceTests : IDisposable
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>(); 
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger);
-        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger);
+        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper, httpContextAccessor);
 
         _testDatabase = testDatabase.Context;
         _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService);
@@ -39,7 +41,7 @@ public class IndexerServiceTests : IDisposable
         {
             var directory = new DirectoryInfo(artworkPath).Parent;
             File.Delete(artworkPath);
-            if (!directory.GetFiles().Any())
+            if (!directory!.GetFiles().Any())
             {
                 directory.Delete();
             }

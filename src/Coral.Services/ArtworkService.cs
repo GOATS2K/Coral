@@ -1,6 +1,11 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
+using Coral.Dto.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Metadata;
@@ -13,19 +18,63 @@ public interface IArtworkService
 {
     public Task ProcessArtwork(Album album, string artworkPath);
     public Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
+    public Task<ArtworkDto?> GetArtworkForAlbum(int albumId);
+    public Task<string?> GetArtworkPath(int artworkId);
 }
 
 public class ArtworkService : IArtworkService
 {
     private readonly CoralDbContext _context;
     private readonly ILogger<ArtworkService> _logger;
+    private readonly IMapper _mapper;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     
-    public ArtworkService(CoralDbContext context, ILogger<ArtworkService> logger)
+    public ArtworkService(CoralDbContext context, ILogger<ArtworkService> logger, IMapper mapper, IHttpContextAccessor httpContext)
     {
         _context = context;
         _logger = logger;
+        _mapper = mapper;
+        _httpContextAccessor = httpContext;
     }
-    
+
+    public async Task<string?> GetPathForOriginalAlbumArtwork(int albumId)
+    {
+        return await _context.Artworks
+            .Where(a => a.Album.Id == albumId && a.Size == ArtworkSize.Original)
+            .Select(a => a.Path)
+            .FirstOrDefaultAsync();
+    }
+    private string CreateLinkForArtwork(List<Artwork> artworkList, ArtworkSize requestedSize)
+    {
+        var requestedArtwork = artworkList.FirstOrDefault(a => a.Size == requestedSize);
+        if (requestedArtwork == null) return "";
+        var scheme = _httpContextAccessor.HttpContext.Request.Scheme;
+        var host = _httpContextAccessor.HttpContext.Request.Host;
+        return $"{scheme}://{host}/api/artwork/{requestedArtwork.Id}";
+    }
+
+    public async Task<ArtworkDto?> GetArtworkForAlbum(int albumId)
+    {
+        var artworkList = await _context.Albums.Where(a => a.Id == albumId)
+            .Select(a => a.Artworks)
+            .FirstOrDefaultAsync();
+        if (artworkList == null) return null;
+        return new ArtworkDto()
+        {
+            Small = CreateLinkForArtwork(artworkList, ArtworkSize.Small),
+            Medium = CreateLinkForArtwork(artworkList, ArtworkSize.Medium),
+            Original = CreateLinkForArtwork(artworkList, ArtworkSize.Original)
+        };
+    }
+
+    public async Task<string?> GetArtworkPath(int artworkId)
+    {
+        return await _context.Artworks
+            .Where(a => a.Id == artworkId)
+            .Select(a => a.Path)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<string?> ExtractEmbeddedArtwork(ATL.Track track)
     {
         var outputDir = ApplicationConfiguration.ExtractedArtwork;

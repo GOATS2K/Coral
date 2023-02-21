@@ -5,6 +5,71 @@
     "version": "v1"
   },
   "paths": {
+    "/api/Artwork/{artworkId}": {
+      "get": {
+        "tags": [
+          "Artwork"
+        ],
+        "operationId": "ArtworkFromId",
+        "parameters": [
+          {
+            "name": "artworkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Artwork/albums/{albumId}": {
+      "get": {
+        "tags": [
+          "Artwork"
+        ],
+        "operationId": "AlbumArtwork",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtworkDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtworkDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtworkDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Library/scan": {
       "post": {
         "tags": [
@@ -210,54 +275,6 @@
         }
       }
     },
-    "/api/Library/tracks/{trackId}/artwork": {
-      "get": {
-        "tags": [
-          "Library"
-        ],
-        "operationId": "TrackArtwork",
-        "parameters": [
-          {
-            "name": "trackId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/Library/albums/{albumId}/artwork": {
-      "get": {
-        "tags": [
-          "Library"
-        ],
-        "operationId": "AlbumArtwork",
-        "parameters": [
-          {
-            "name": "albumId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
     "/api/Library/tracks": {
       "get": {
         "tags": [
@@ -439,6 +456,26 @@
             "format": "int32"
           },
           "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ArtworkDto": {
+        "required": [
+          "medium",
+          "original",
+          "small"
+        ],
+        "type": "object",
+        "properties": {
+          "small": {
+            "type": "string"
+          },
+          "medium": {
+            "type": "string"
+          },
+          "original": {
             "type": "string"
           }
         },

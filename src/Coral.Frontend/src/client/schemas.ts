@@ -27,6 +27,12 @@ export type ArtistDto = {
   name: string;
 };
 
+export type ArtworkDto = {
+  small: string;
+  medium: string;
+  original: string;
+};
+
 export type GenreDto = {
   /**
    * @format int32

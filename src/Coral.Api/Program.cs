@@ -20,6 +20,7 @@ builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IArtworkService, ArtworkService>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {
     opt.AddMaps(typeof(TrackProfile));
@@ -78,11 +79,7 @@ contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
-// setup file provider for hls
 Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
-var fileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory);
-var hlsRoute = "/hls";
-
 // serve HLS
 app.UseStaticFiles(new StaticFileOptions()
 {
@@ -91,8 +88,8 @@ app.UseStaticFiles(new StaticFileOptions()
         // HLS chunks should not be cached.
         ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store");
     },
-    FileProvider = fileProvider,
-    RequestPath = hlsRoute,
+    FileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory),
+    RequestPath = "/hls",
     ServeUnknownFileTypes = true,
     ContentTypeProvider = contentTypeProvider,
 });

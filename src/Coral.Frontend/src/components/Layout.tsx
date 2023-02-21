@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import Head from "next/head";
 import { usePlayerStore } from "../store";
 import styles from "../styles/Layout.module.css";
+import Sidebar from "./navigation/Sidebar";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -24,9 +25,9 @@ export default function Layout({ children }: LayoutProps) {
   const appBackground =
     theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
   const accentColor =
-    theme.colorScheme === "dark" ? theme.colors.gray[7] : theme.colors.gray[8];
+    theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[7];
   const accentBackground =
-    theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[6];
+    theme.colorScheme === "dark" ? theme.colors.gray[9] : theme.colors.gray[4];
 
   if (typeof window !== "undefined") {
     let root = document.documentElement;
@@ -38,10 +39,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className={styles.layout}>
       <div className={styles.wrapperWithSidebar}>
-        <div className={styles.sidebar}>
-          <Text>Example</Text>
-          <Text>Example</Text>
-        </div>
+        <Sidebar></Sidebar>
         <div className={styles.contentWrapper}>
           <Head>
             <title>{titleText}</title>

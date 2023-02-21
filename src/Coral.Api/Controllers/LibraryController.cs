@@ -4,6 +4,7 @@ using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Services;
 using Coral.Services.Helpers;
+using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
@@ -142,6 +143,14 @@ namespace Coral.Api.Controllers
             {
                 yield return album;
             }
+        }
+
+        [HttpGet]
+        [Route("albums/paginated")]
+        public async Task<ActionResult> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        {
+            var result = await _libraryService.GetPaginatedAlbums(offset, limit);
+            return Ok(result);
         }
 
         [HttpGet]

@@ -1,4 +1,4 @@
-namespace Coral.Services.HelperModels;
+namespace Coral.Services.Models;
 
 public record TrackStream
 {

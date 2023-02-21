@@ -11,8 +11,9 @@ public class Album
     public int? ReleaseYear { get; set; }
     public int? DiscTotal { get; set; }
     public int? TrackTotal { get; set; }
-
     public string? CoverFilePath { get; set; }
+
+    public List<Artwork> Artworks { get; set; } = null!;
 
     public DateTime DateIndexed { get; set; }
     public DateTime DateModified { get; set; }

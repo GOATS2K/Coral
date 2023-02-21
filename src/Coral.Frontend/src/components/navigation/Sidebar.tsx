@@ -1,3 +1,4 @@
+import { ThemeContext } from "@emotion/react";
 import { Button, Title } from "@mantine/core";
 import { IconAlbum, IconSearch, IconVinyl } from "@tabler/icons";
 import Link from "next/link";
@@ -19,6 +20,9 @@ export default function Sidebar() {
         variant={"subtle"}
         leftIcon={link.icon}
         styles={(theme) => ({
+          root: {
+            marginBottom: theme.spacing.xs,
+          },
           inner: {
             justifyContent: "flex-start",
           },

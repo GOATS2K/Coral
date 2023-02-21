@@ -23,6 +23,6 @@
   box-sizing: border-box;
   min-width: 26ch;
   padding: 1em;
-  border-right: 2px solid var(--accent);
-  background-color: var(--accent-background);
+  border-right: 4px solid var(--accent-background);
+  background-color: var(--app-background);
 }

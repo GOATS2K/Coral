@@ -11,9 +11,9 @@ import type * as Schemas from "./schemas";
 
 export type ArtworkFromIdPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  artworkId: number;
+  artworkId: string;
 };
 
 export type ArtworkFromIdError = Fetcher.ErrorWrapper<undefined>;
@@ -60,9 +60,9 @@ export const useArtworkFromId = <TData = undefined>(
 
 export type AlbumArtworkPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  albumId: number;
+  albumId: string;
 };
 
 export type AlbumArtworkError = Fetcher.ErrorWrapper<undefined>;
@@ -193,9 +193,9 @@ export const useSearch = <TData = Schemas.SearchResult>(
 
 export type FileFromLibraryPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type FileFromLibraryError = Fetcher.ErrorWrapper<undefined>;
@@ -247,9 +247,9 @@ export const useFileFromLibrary = <TData = undefined>(
 
 export type TranscodeTrackPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type TranscodeTrackQueryParams = {
@@ -309,9 +309,9 @@ export const useTranscodeTrack = <TData = Schemas.StreamDto>(
 
 export type StreamTrackPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type StreamTrackQueryParams = {
@@ -516,9 +516,9 @@ export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedData>(
 
 export type AlbumPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  albumId: number;
+  albumId: string;
 };
 
 export type AlbumError = Fetcher.ErrorWrapper<undefined>;

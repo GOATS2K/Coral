@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const theme = useMantineTheme();
   const appBackground =
-    theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
+    theme.colorScheme === "dark" ? theme.colors.dark[8] : theme.white;
   const accentColor =
     theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[7];
   const accentBackground =

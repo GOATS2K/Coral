@@ -54,7 +54,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet, HttpHead]
         [Route("tracks/{trackId}/original")]
-        public async Task<ActionResult> FileFromLibrary(int trackId)
+        public async Task<ActionResult> FileFromLibrary(Guid trackId)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/transcode")]
-        public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId, int bitrate)
+        public async Task<ActionResult<StreamDto>> TranscodeTrack(Guid trackId, int bitrate)
         {
             var dbTrack = await _libraryService.GetTrack(trackId);
             if (dbTrack == null)
@@ -108,7 +108,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/stream")]
-        public ActionResult<StreamDto> StreamTrack(int trackId,
+        public ActionResult<StreamDto> StreamTrack(Guid trackId,
             [FromQuery] int bitrate = 192,
             [FromQuery] bool transcodeTrack = true)
         {
@@ -157,7 +157,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/{albumId}")]
-        public async Task<ActionResult<AlbumDto>> Album(int albumId)
+        public async Task<ActionResult<AlbumDto>> Album(Guid albumId)
         {
             var album = await _libraryService.GetAlbum(albumId);
             if (album == null)

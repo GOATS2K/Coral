@@ -2,6 +2,7 @@
 using Coral.Database.Configurations;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Coral.Database;
 
@@ -14,6 +15,7 @@ public class CoralDbContext : DbContext
     public DbSet<Genre> Genres { get; set; } = null!;
     public DbSet<Keyword> Keywords { get; set; } = null!;
     private string DbPath { get; }
+
 
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
         : base(options)
@@ -35,6 +37,6 @@ public class CoralDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordIndexConfiguration).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordConfiguration).Assembly);
     }
 }

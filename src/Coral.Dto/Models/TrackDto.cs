@@ -2,7 +2,7 @@
 
 public record TrackDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public string Title { get; init; } = null!;
     public int DurationInSeconds { get; set; }
     public string? Comment { get; set; }

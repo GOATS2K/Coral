@@ -11,7 +11,7 @@ type TrackListProps = {
 
 export default function TrackList({ tracks }: TrackListProps) {
   const initializer = {
-    id: 1,
+    id: "",
     source: PlayerInitializationSource.Search,
   } as Initializer;
   return (

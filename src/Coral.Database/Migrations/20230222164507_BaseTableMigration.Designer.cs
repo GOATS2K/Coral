@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    [Migration("20230216170622_KeywordMigration2")]
-    partial class KeywordMigration2
+    [Migration("20230222164507_BaseTableMigration")]
+    partial class BaseTableMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,11 +22,11 @@ namespace Coral.Database.Migrations
 
             modelBuilder.Entity("AlbumArtist", b =>
                 {
-                    b.Property<int>("AlbumsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AlbumsId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ArtistsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ArtistsId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("AlbumsId", "ArtistsId");
 
@@ -35,19 +35,49 @@ namespace Coral.Database.Migrations
                     b.ToTable("AlbumArtist");
                 });
 
-            modelBuilder.Entity("Coral.Database.Models.Album", b =>
+            modelBuilder.Entity("Coral.Database.Models.BaseTable", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CoverFilePath")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(new DateTime(2023, 2, 22, 16, 45, 7, 356, DateTimeKind.Utc).AddTicks(6415));
 
                     b.Property<DateTime>("DateModified")
+                        .ValueGeneratedOnUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(new DateTime(2023, 2, 22, 16, 45, 7, 356, DateTimeKind.Utc).AddTicks(6088));
+
+                    b.HasKey("Id");
+
+                    b.ToTable((string)null);
+
+                    b.UseTpcMappingStrategy();
+                });
+
+            modelBuilder.Entity("KeywordTrack", b =>
+                {
+                    b.Property<Guid>("KeywordsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TracksId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("KeywordsId", "TracksId");
+
+                    b.HasIndex("TracksId");
+
+                    b.ToTable("KeywordTrack");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Album", b =>
+                {
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
+
+                    b.Property<string>("CoverFilePath")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("DiscTotal")
@@ -63,83 +93,80 @@ namespace Coral.Database.Migrations
                     b.Property<int?>("TrackTotal")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
-
                     b.ToTable("Albums");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Artist", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
 
                     b.ToTable("Artists");
                 });
 
-            modelBuilder.Entity("Coral.Database.Models.Genre", b =>
+            modelBuilder.Entity("Coral.Database.Models.Artwork", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
+
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Height")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("DateIndexed")
+                    b.Property<string>("Path")
+                        .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
+
+                    b.HasIndex("AlbumId");
+
+                    b.ToTable("Artworks");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Genre", b =>
+                {
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
 
                     b.ToTable("Genres");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Keyword", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
 
                     b.Property<string>("Value")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
-
                     b.HasIndex("Value");
 
-                    b.ToTable("Keywords");
+                    b.ToTable("Keyword", (string)null);
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.HasBaseType("Coral.Database.Models.BaseTable");
 
-                    b.Property<int>("AlbumId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Comment")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("DiscNumber")
@@ -152,8 +179,8 @@ namespace Coral.Database.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("GenreId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("GenreId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -162,8 +189,6 @@ namespace Coral.Database.Migrations
                     b.Property<int?>("TrackNumber")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
-
                     b.HasIndex("AlbumId");
 
                     b.HasIndex("ArtistId");
@@ -171,21 +196,6 @@ namespace Coral.Database.Migrations
                     b.HasIndex("GenreId");
 
                     b.ToTable("Tracks");
-                });
-
-            modelBuilder.Entity("KeywordTrack", b =>
-                {
-                    b.Property<int>("KeywordsId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TracksId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("KeywordsId", "TracksId");
-
-                    b.HasIndex("TracksId");
-
-                    b.ToTable("KeywordTrack");
                 });
 
             modelBuilder.Entity("AlbumArtist", b =>
@@ -201,6 +211,32 @@ namespace Coral.Database.Migrations
                         .HasForeignKey("ArtistsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("KeywordTrack", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Keyword", null)
+                        .WithMany()
+                        .HasForeignKey("KeywordsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Coral.Database.Models.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TracksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Artwork", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Album", "Album")
+                        .WithMany("Artworks")
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
@@ -228,23 +264,10 @@ namespace Coral.Database.Migrations
                     b.Navigation("Genre");
                 });
 
-            modelBuilder.Entity("KeywordTrack", b =>
-                {
-                    b.HasOne("Coral.Database.Models.Keyword", null)
-                        .WithMany()
-                        .HasForeignKey("KeywordsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Coral.Database.Models.Track", null)
-                        .WithMany()
-                        .HasForeignKey("TracksId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Coral.Database.Models.Album", b =>
                 {
+                    b.Navigation("Artworks");
+
                     b.Navigation("Tracks");
                 });
 

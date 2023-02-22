@@ -13,14 +13,14 @@ namespace Coral.Services
 {
     public interface ILibraryService
     {
-        public Task<TrackStream> GetStreamForTrack(int trackId);
-        public Task<Track?> GetTrack(int trackId);
+        public Task<TrackStream> GetStreamForTrack(Guid trackId);
+        public Task<Track?> GetTrack(Guid trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
         public Task<List<ArtistDto>> GetArtist(string artistName);
         public IAsyncEnumerable<SimpleAlbumDto> GetAlbums();
-        public Task<string?> GetArtworkForTrack(int trackId);
-        public Task<string?> GetArtworkForAlbum(int albumId);
-        public Task<AlbumDto?> GetAlbum(int albumId);
+        public Task<string?> GetArtworkForTrack(Guid trackId);
+        public Task<string?> GetArtworkForAlbum(Guid albumId);
+        public Task<AlbumDto?> GetAlbum(Guid albumId);
     }
 
     public class LibraryService : ILibraryService
@@ -34,12 +34,12 @@ namespace Coral.Services
             _mapper = mapper;
         }
 
-        public async Task<Track?> GetTrack(int trackId)
+        public async Task<Track?> GetTrack(Guid trackId)
         {
             return await _context.Tracks.FindAsync(trackId);
         }
         
-        public async Task<TrackStream> GetStreamForTrack(int trackId)
+        public async Task<TrackStream> GetStreamForTrack(Guid trackId)
         {
             var track = await _context.Tracks.FindAsync(trackId);
             if (track == null)
@@ -84,7 +84,7 @@ namespace Coral.Services
                 .ToListAsync();
         }
 
-        public async Task<string?> GetArtworkForTrack(int trackId)
+        public async Task<string?> GetArtworkForTrack(Guid trackId)
         {
             var track = await _context.Tracks.Include(t => t.Album)
                 .FirstOrDefaultAsync(t => t.Id == trackId);
@@ -92,14 +92,14 @@ namespace Coral.Services
             return track?.Album?.CoverFilePath;
         }
 
-        public async Task<string?> GetArtworkForAlbum(int albumId)
+        public async Task<string?> GetArtworkForAlbum(Guid albumId)
         {
             var album = await _context.Albums
                 .FirstOrDefaultAsync(a => a.Id == albumId);
             return album?.CoverFilePath;
         }
 
-        public async Task<AlbumDto?> GetAlbum(int albumId)
+        public async Task<AlbumDto?> GetAlbum(Guid albumId)
         {
             var album = await _context.Albums
                 .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)

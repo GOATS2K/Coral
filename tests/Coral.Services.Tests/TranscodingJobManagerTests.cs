@@ -18,16 +18,16 @@ namespace Coral.Services.Tests
         private readonly IEncoderFactory _encoderFactory;
         public Track TestTrack { get; } = new Track()
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             Artist = new Artist()
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Name = "Test Artist 1",
                 DateIndexed = DateTime.UtcNow
             },
             Album = new Album()
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Name = "Test Album 1",
                 DateIndexed = DateTime.UtcNow
             },

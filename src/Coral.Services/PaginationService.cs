@@ -38,6 +38,7 @@ namespace Coral.Services
             var contextSet = _context.Set<TSourceType>();
             var totalItemCount = await contextSet.CountAsync();
             var query = contextSet
+                .OrderBy(i => i.Id)
                 .Skip(offset)
                 .Take(limit);
             var availableRecords = Math.Max(0, totalItemCount - (offset + limit));

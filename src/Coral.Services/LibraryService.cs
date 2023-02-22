@@ -41,7 +41,7 @@ namespace Coral.Services
             var query = _context.Albums
                 .Skip(offset)
                 .Take(limit);
-            var availableRecords = totalAlbumCount - (offset + limit);
+            var availableRecords = Math.Max(0, totalAlbumCount - (offset + limit));
             var querySize = await query.CountAsync();
             var data = await query
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)

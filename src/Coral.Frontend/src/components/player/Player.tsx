@@ -124,7 +124,6 @@ function Player() {
     if (lastBuffer != null) {
       let bufferPercentage =
         (lastBuffer / selectedTrack.durationInSeconds) * 100;
-      console.log("Buffer percentage: ", bufferPercentage);
       setBufferLength(bufferPercentage);
     }
   }, [buffered?.total]);

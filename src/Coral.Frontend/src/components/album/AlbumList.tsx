@@ -21,12 +21,5 @@ export default function AlbumList({ albums }: AlbumListProps) {
       ></AlbumListItem>
     );
   });
-  return (
-    <div className={styles.wrapper}>
-      <Title order={1} className={styles.title}>
-        Albums
-      </Title>
-      <div className={styles.listWrapper}>{albumItems}</div>
-    </div>
-  );
+  return <div className={styles.listWrapper}>{albumItems}</div>;
 }

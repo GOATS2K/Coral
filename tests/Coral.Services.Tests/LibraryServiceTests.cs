@@ -3,6 +3,7 @@ using Coral.Database;
 using Coral.TestProviders;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,21 @@ namespace Coral.Services.Tests
             var testDatabase = new TestDatabase();
             _testDatabase = testDatabase;
             _libraryService = new LibraryService(testDatabase.Context, testDatabase.Mapper);
+        }
+
+        [Fact]
+        public async Task GetPaginatedAlbums_OneLimitZeroSkip_GetsASingleAlbum()
+        {
+            // arrange
+            var take = 1;
+            var skip = 0;
+            // act
+            var results = await _libraryService.GetPaginatedAlbums(skip, take);
+            // assert
+            Assert.Single(results.Data);
+            Assert.Equal(_testDatabase.Context.Albums.Count(), results.TotalRecords);
+            Assert.Equal(results.Data.Count(), results.ResultCount);
+            Assert.NotEqual(0, results.AvailableRecords);
         }
 
         [Fact]

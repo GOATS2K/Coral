@@ -147,7 +147,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/paginated")]
-        public async Task<ActionResult> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedData<List<SimpleAlbumDto>>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
         {
             var result = await _libraryService.GetPaginatedAlbums(offset, limit);
             return Ok(result);

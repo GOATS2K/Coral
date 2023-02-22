@@ -2,11 +2,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1em;
-}
-
-.wrapper {
-  padding-left: 1em;
-  padding-top: 1em;
+  flex-grow: 1;
+  /* prevent vertical growth of flex elements */
+  align-content: flex-start;
 }
 
 .title {
@@ -50,4 +48,16 @@
 .link {
   text-decoration: none;
   color: inherit;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1em;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }

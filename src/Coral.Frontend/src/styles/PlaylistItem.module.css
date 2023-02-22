@@ -1,6 +1,6 @@
 .gridContainer {
   display: grid;
-  grid-template-columns: [trackNumber] 48px [mediaInfo] 1fr [duration] 48px;
+  grid-template-columns: [trackNumber] 56px [mediaInfo] 1fr [duration] 48px;
   margin: 8px 0 8px;
   padding: 0.15rem;
   border: 1px solid transparent;
@@ -17,6 +17,9 @@
 .trackNumber {
   grid-area: trackNumber;
   margin: auto;
+  overflow: hidden;
+  max-width: 40px;
+  max-height: 40px;
 }
 
 .info {
@@ -35,6 +38,7 @@
   /* ensure the disc takes up as little space as it can */
   display: flex;
   animation: spin 1s infinite linear;
+  justify-content: center;
 }
 
 @keyframes spin {

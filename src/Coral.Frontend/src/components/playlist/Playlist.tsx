@@ -7,9 +7,14 @@ import { PlaylistItem } from "./PlaylistItem";
 type PlaylistProps = {
   tracks?: TrackDto[];
   initializer: Initializer;
+  displayArtwork?: boolean;
 };
 
-export default function Playlist({ tracks, initializer }: PlaylistProps) {
+export default function Playlist({
+  tracks,
+  initializer,
+  displayArtwork = false,
+}: PlaylistProps) {
   if (tracks == null) {
     return <p>No tracks in playlist</p>;
   }
@@ -33,6 +38,7 @@ export default function Playlist({ tracks, initializer }: PlaylistProps) {
           track={track}
           key={track.id}
           onPlayback={onPlayback}
+          displayArtwork={displayArtwork}
         ></PlaylistItem>
       );
     });

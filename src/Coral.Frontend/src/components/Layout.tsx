@@ -39,14 +39,12 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className={styles.layout}>
+      <Head>
+        <title>{titleText}</title>
+      </Head>
       <div className={styles.wrapperWithSidebar}>
         <Sidebar></Sidebar>
-        <div className={styles.contentWrapper}>
-          <Head>
-            <title>{titleText}</title>
-          </Head>
-          {children}
-        </div>
+        <div className={styles.contentWrapper}>{children}</div>
       </div>
       <Player></Player>
     </div>

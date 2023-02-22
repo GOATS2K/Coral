@@ -74,7 +74,6 @@ export function PlaylistItem({
     <div
       className={styles.gridContainer}
       key={track.id.toString()}
-      tabIndex={track.id}
       id={track.id.toString()}
       onKeyDown={(event) => {
         if (event.key === "Enter") {

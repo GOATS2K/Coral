@@ -13,6 +13,8 @@ namespace Coral.Database.Configurations
     {
         public void Configure(EntityTypeBuilder<BaseTable> builder)
         {
+            builder.UseTpcMappingStrategy();
+
             builder.Property(b => b.DateModified)
                 .HasDefaultValue(DateTime.UtcNow)
                 .ValueGeneratedOnUpdate();

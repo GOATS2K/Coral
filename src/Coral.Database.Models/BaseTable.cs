@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Coral.Database.Models
 {
-    public class BaseTable
+    public abstract class BaseTable
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime DateIndexed { get; set; }
         public DateTime DateModified { get; set; }
     }

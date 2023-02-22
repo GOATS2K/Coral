@@ -43,7 +43,7 @@ function Player() {
   const { data: albumArtwork } = useAlbumArtwork(
     {
       pathParams: {
-        albumId: selectedTrack.album != null ? selectedTrack.album.id : 0,
+        albumId: selectedTrack.album != null ? selectedTrack.album.id : "",
       },
     },
     {
@@ -117,7 +117,7 @@ function Player() {
       }
     };
     handleTrackChange();
-  }, [tracks, playerPosition, transcodeTrack, bitrate]);
+  }, [tracks, selectedTrack, playerPosition, transcodeTrack, bitrate]);
 
   React.useEffect(() => {
     let lastBuffer = buffered?.total.at(-1)?.end;
@@ -131,8 +131,6 @@ function Player() {
   if (tracks == null || tracks.length === 0) {
     return <div></div>;
   }
-  const playerBackground =
-    theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white;
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
@@ -274,7 +272,6 @@ function Player() {
       className={styles.wrapper}
       style={{
         display: tracks != null ? "flex" : "none",
-        background: playerBackground,
       }}
     >
       <div className={styles.imageBox}>

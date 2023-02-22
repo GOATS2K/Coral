@@ -4,23 +4,21 @@ import AlbumInfo from "../../components/album/AlbumInfo";
 import { useAlbum } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
 import { Initializer, PlayerInitializationSource } from "../../store";
+import { isStringObject } from "util/types";
+import { IconRouter } from "@tabler/icons";
 
 export default function Album() {
   const router = useRouter();
   const initializer = {
-    id: isNaN(Number(router.query.id)) ? 1 : Number(router.query.id),
+    id: router.query.id,
     source: PlayerInitializationSource.Album,
   } as Initializer;
 
   const { data, isLoading, error } = useAlbum({
     pathParams: {
-      albumId: +router.query.id!,
+      albumId: typeof router.query.id === "string" ? router.query.id : "",
     },
   });
-
-  if (isNaN(Number(router.query.id))) {
-    return <div>You have given an invalid album ID.</div>;
-  }
 
   if (isLoading) {
     return CenteredLoader();

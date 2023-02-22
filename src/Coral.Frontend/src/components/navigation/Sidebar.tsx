@@ -35,9 +35,9 @@ export default function Sidebar() {
 
   return (
     <div className={styles.sidebar}>
-      <Title order={1} style={{ textAlign: "center" }} mb={"sm"}>
+      {/* <Title order={1} style={{ textAlign: "center" }} mb={"sm"}>
         Coral
-      </Title>
+      </Title> */}
       {buttons}
     </div>
   );

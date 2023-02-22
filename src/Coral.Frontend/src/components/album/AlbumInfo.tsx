@@ -18,7 +18,7 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
   const { data } = useAlbumArtwork(
     {
       pathParams: {
-        albumId: album != null ? album.id : 0,
+        albumId: album != null ? album.id : "",
       },
     },
     {

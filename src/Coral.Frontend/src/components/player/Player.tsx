@@ -19,6 +19,7 @@ import {
   IconPlayerPlay,
   IconPlayerPause,
   IconSettings,
+  IconVolume2,
 } from "@tabler/icons";
 import { StreamDto } from "../../client/schemas";
 import styles from "../../styles/Player.module.css";
@@ -51,8 +52,6 @@ function Player() {
     }
   );
 
-  const theme = useMantineTheme();
-
   // TODO: refactor these state calls to use a reducer at some point
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
   const [mimeType, setMimeType] = useState<string | undefined>();
@@ -67,6 +66,12 @@ function Player() {
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
   const buffered = playerRef.current?.player()?.getBufferedInfo();
+
+  const [volume, setVolume] = useState(100);
+
+  React.useEffect(() => {
+    playerRef.current!.audioRef().volume = volume / 100;
+  }, [volume]);
 
   React.useEffect(() => {
     const handleTrackChange = async () => {
@@ -249,6 +254,8 @@ function Player() {
   const buttonSize = 32;
   const strokeSize = 1.2;
 
+  const settingsIconSize = 24;
+
   const playButton = (
     <UnstyledButton onClick={() => setPlayState(!playState)}>
       {playState ? (
@@ -359,7 +366,7 @@ function Player() {
         <Menu shadow="md" width={200} closeOnItemClick={false}>
           <Menu.Target>
             <UnstyledButton>
-              <IconSettings></IconSettings>
+              <IconSettings size={settingsIconSize}></IconSettings>
             </UnstyledButton>
           </Menu.Target>
 
@@ -393,6 +400,16 @@ function Player() {
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
+        <div className={styles.volumeWrapper}>
+          <IconVolume2 size={settingsIconSize}></IconVolume2>
+          <Slider
+            className={styles.volumeSlider}
+            size={4}
+            value={volume}
+            onChange={setVolume}
+            max={100}
+          ></Slider>
+        </div>
       </div>
     </div>
   );

@@ -25,8 +25,9 @@ export default function Album() {
   }
 
   if (error) {
-    console.error(error);
-    return <div>Something went wrong loading the album...</div>;
+    return (
+      <div>An error occurred. You may have entered an invalid album ID.</div>
+    );
   }
 
   return (

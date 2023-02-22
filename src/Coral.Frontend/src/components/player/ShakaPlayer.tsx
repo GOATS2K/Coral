@@ -3,8 +3,8 @@ import React, { forwardRef } from "react";
 import { Player, polyfill } from "shaka-player";
 
 export type ShakaPlayerRef = {
-  player: () => Player | undefined;
-  audioRef: () => HTMLMediaElement | null;
+  player: () => Player;
+  audioRef: () => HTMLMediaElement;
 };
 
 export type ShakaPlayerProps = {

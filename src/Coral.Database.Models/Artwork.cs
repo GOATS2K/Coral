@@ -7,9 +7,8 @@ public enum ArtworkSize
     Small, Medium, Original
 }
 
-public class Artwork
+public class Artwork : BaseTable
 {
-    public int Id { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }
     public ArtworkSize Size { get; set; }

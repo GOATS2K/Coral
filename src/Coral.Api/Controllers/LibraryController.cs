@@ -17,13 +17,15 @@ namespace Coral.Api.Controllers
         private readonly ITranscoderService _transcoderService;
         private readonly ISearchService _searchService;
         private readonly IIndexerService _indexerService;
+        private readonly IPaginationService _paginationService;
 
-        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
             _searchService = searchService;
             _indexerService = indexerService;
+            _paginationService = paginationService;
         }
 
         [HttpPost]
@@ -147,9 +149,9 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/paginated")]
-        public async Task<ActionResult<PaginatedData<List<SimpleAlbumDto>>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedData<SimpleAlbumDto>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
         {
-            var result = await _libraryService.GetPaginatedAlbums(offset, limit);
+            var result = await _paginationService.PaginateQuery<Album, SimpleAlbumDto>(offset, limit);
             return Ok(result);
         }
 

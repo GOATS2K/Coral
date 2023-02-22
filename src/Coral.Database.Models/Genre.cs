@@ -1,9 +1,7 @@
 namespace Coral.Database.Models;
 
-public class Genre
+public class Genre : BaseTable
 {
-    public int Id { get; set; }
     public string Name { get; set; } = null!;
     public List<Track> Tracks { get; set; } = null!;
-    public DateTime DateIndexed { get; set; }
 }

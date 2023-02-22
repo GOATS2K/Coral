@@ -62,7 +62,7 @@ export type SimpleAlbumDto = {
   coverPresent: boolean;
 };
 
-export type SimpleAlbumDtoListPaginatedData = {
+export type SimpleAlbumDtoPaginatedData = {
   /**
    * @format int32
    */

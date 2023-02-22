@@ -470,7 +470,7 @@ export const fetchPaginatedAlbums = (
   signal?: AbortSignal
 ) =>
   fetch<
-    undefined,
+    Schemas.SimpleAlbumDtoListPaginatedData,
     PaginatedAlbumsError,
     undefined,
     {},
@@ -483,15 +483,25 @@ export const fetchPaginatedAlbums = (
     signal,
   });
 
-export const usePaginatedAlbums = <TData = undefined>(
+export const usePaginatedAlbums = <
+  TData = Schemas.SimpleAlbumDtoListPaginatedData
+>(
   variables: PaginatedAlbumsVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<undefined, PaginatedAlbumsError, TData>,
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleAlbumDtoListPaginatedData,
+      PaginatedAlbumsError,
+      TData
+    >,
     "queryKey" | "queryFn"
   >
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, PaginatedAlbumsError, TData>(
+  return reactQuery.useQuery<
+    Schemas.SimpleAlbumDtoListPaginatedData,
+    PaginatedAlbumsError,
+    TData
+  >(
     queryKeyFn({
       path: "/api/Library/albums/paginated",
       operationId: "paginatedAlbums",

@@ -16,7 +16,6 @@ export type AlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  coverPresent: boolean;
 };
 
 export type ArtistDto = {
@@ -61,6 +60,22 @@ export type SimpleAlbumDto = {
    */
   releaseYear: number;
   coverPresent: boolean;
+};
+
+export type SimpleAlbumDtoListPaginatedData = {
+  /**
+   * @format int32
+   */
+  availableRecords: number;
+  /**
+   * @format int32
+   */
+  totalRecords: number;
+  /**
+   * @format int32
+   */
+  resultCount: number;
+  data: SimpleAlbumDto[];
 };
 
 export type SimpleArtistDto = {

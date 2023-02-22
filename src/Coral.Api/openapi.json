@@ -381,7 +381,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleAlbumDtoListPaginatedData"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleAlbumDtoListPaginatedData"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleAlbumDtoListPaginatedData"
+                }
+              }
+            }
           }
         }
       }
@@ -433,7 +450,6 @@
       "AlbumDto": {
         "required": [
           "artists",
-          "coverPresent",
           "genres",
           "id",
           "name",
@@ -470,9 +486,6 @@
           "releaseYear": {
             "type": "integer",
             "format": "int32"
-          },
-          "coverPresent": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -598,6 +611,36 @@
           },
           "coverPresent": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimpleAlbumDtoListPaginatedData": {
+        "required": [
+          "availableRecords",
+          "data",
+          "resultCount",
+          "totalRecords"
+        ],
+        "type": "object",
+        "properties": {
+          "availableRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resultCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
           }
         },
         "additionalProperties": false

@@ -24,21 +24,6 @@ namespace Coral.Services.Tests
         }
 
         [Fact]
-        public async Task GetPaginatedAlbums_OneLimitZeroSkip_GetsASingleAlbum()
-        {
-            // arrange
-            var take = 1;
-            var skip = 0;
-            // act
-            var results = await _libraryService.GetPaginatedAlbums(skip, take);
-            // assert
-            Assert.Single(results.Data);
-            Assert.Equal(_testDatabase.Context.Albums.Count(), results.TotalRecords);
-            Assert.Equal(results.Data.Count(), results.ResultCount);
-            Assert.NotEqual(0, results.AvailableRecords);
-        }
-
-        [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()
         {
             // arrange

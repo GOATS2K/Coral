@@ -12,6 +12,6 @@ namespace Coral.Services.Models
         public int AvailableRecords { get; init; }
         public int TotalRecords { get; init; }
         public int ResultCount { get; init; }
-        public TType Data { get; init; } = null!;
+        public List<TType> Data { get; init; } = null!;
     }
 }

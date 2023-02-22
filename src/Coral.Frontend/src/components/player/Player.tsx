@@ -159,10 +159,10 @@ function Player() {
         album: selectedTrack.album?.name,
       });
 
-      if (streamTrack.artworkUrl != null) {
+      if (albumArtwork?.medium != null) {
         metadata["artwork"] = [
           {
-            src: albumArtwork?.medium ?? "",
+            src: albumArtwork?.medium,
           },
         ];
       }

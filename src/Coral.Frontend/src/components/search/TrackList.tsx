@@ -19,7 +19,11 @@ export default function TrackList({ tracks }: TrackListProps) {
       <Title order={3} className={styles.title}>
         Tracks
       </Title>
-      <Playlist initializer={initializer} tracks={tracks}></Playlist>
+      <Playlist
+        displayArtwork
+        initializer={initializer}
+        tracks={tracks}
+      ></Playlist>
     </div>
   );
 }

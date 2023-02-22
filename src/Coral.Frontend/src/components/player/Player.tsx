@@ -70,7 +70,9 @@ function Player() {
   const [volume, setVolume] = useState(100);
 
   React.useEffect(() => {
-    playerRef.current!.audioRef().volume = volume / 100;
+    if (playerRef.current) {
+      playerRef.current!.audioRef().volume = volume / 100;
+    }
   }, [volume]);
 
   React.useEffect(() => {
@@ -365,7 +367,7 @@ function Player() {
       <div className={styles.settings}>
         <Menu shadow="md" width={200} closeOnItemClick={false}>
           <Menu.Target>
-            <UnstyledButton>
+            <UnstyledButton style={{ marginTop: "4px" }}>
               <IconSettings size={settingsIconSize}></IconSettings>
             </UnstyledButton>
           </Menu.Target>

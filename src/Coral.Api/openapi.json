@@ -507,6 +507,30 @@
         },
         "additionalProperties": false
       },
+      "ArtistOnTrackDto": {
+        "required": [
+          "artist",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "artist": {
+            "$ref": "#/components/schemas/SimpleArtistDto"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArtistRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ArtistRole": {
+        "enum": [
+          "Main",
+          "Guest",
+          "Remixer"
+        ],
+        "type": "string"
+      },
       "ArtworkDto": {
         "required": [
           "medium",
@@ -684,7 +708,7 @@
       "TrackDto": {
         "required": [
           "album",
-          "artist",
+          "artists",
           "discNumber",
           "durationInSeconds",
           "id",
@@ -716,8 +740,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "artist": {
-            "$ref": "#/components/schemas/SimpleArtistDto"
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistOnTrackDto"
+            }
           },
           "album": {
             "$ref": "#/components/schemas/SimpleAlbumDto"

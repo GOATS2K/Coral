@@ -113,12 +113,15 @@ namespace Coral.Services
                 .ToListAsync();
 
 
+            var artists = tracks.Select(a => a.Artists)
+                .SelectMany(a => a)
+                .Select(a => a.Artist);
             return new SearchResult()
             {
                 Albums = tracks.Select(t => t.Album)
                 .Distinct(new SimpleAlbumDtoComparer())
                 .ToList(),
-                Artists = tracks.Select(t => t.Artist)
+                Artists = artists
                 .Distinct(new SimpleArtistDtoComparer())
                 .ToList(),
                 Tracks = tracks

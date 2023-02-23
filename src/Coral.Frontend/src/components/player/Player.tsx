@@ -38,6 +38,7 @@ function Player() {
   const selectedTrack = usePlayerStore(
     (state: PlayerState) => state.selectedTrack
   );
+  const selectedTrackArtist = usePlayerStore((state) => state.getMainArtists());
   const playerPosition = usePlayerStore((state) =>
     state.getIndexOfSelectedTrack()
   );
@@ -159,7 +160,7 @@ function Player() {
     if ("mediaSession" in navigator) {
       let metadata = new MediaMetadata({
         title: selectedTrack.title,
-        artist: selectedTrack.artist?.name,
+        artist: selectedTrackArtist,
         album: selectedTrack.album?.name,
       });
 
@@ -298,7 +299,7 @@ function Player() {
             {selectedTrack.title}
           </Anchor>
         </Link>
-        <Text fz="xs">{selectedTrack.artist?.name}</Text>
+        <Text fz="xs">{selectedTrackArtist}</Text>
       </div>
       <div className={styles.playerWrapper}>
         <div className={styles.playerButtons}>

@@ -26,6 +26,13 @@ export type ArtistDto = {
   name: string;
 };
 
+export type ArtistOnTrackDto = {
+  artist: SimpleArtistDto;
+  role: ArtistRole;
+};
+
+export type ArtistRole = "Main" | "Guest" | "Remixer";
+
 export type ArtworkDto = {
   small: string;
   medium: string;
@@ -111,7 +118,7 @@ export type TrackDto = {
    * @format int32
    */
   discNumber: number;
-  artist: SimpleArtistDto;
+  artists: ArtistOnTrackDto[];
   album: SimpleAlbumDto;
   genre?: GenreDto;
 };

@@ -103,12 +103,11 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
 
         // assert
-        var jupiterArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Jupiter");
-        var moonsAlbum = jupiterArtist?.Albums.FirstOrDefault();
-
-        Assert.NotNull(jupiterArtist);
+        var jupiter = _testDatabase.Artists.Where(a => a.Name == "Jupiter").ToList();
+        var moonsAlbum = _testDatabase.Albums.FirstOrDefault(a => a.Name == "Moons");
         Assert.NotNull(moonsAlbum);
-        
+
+        Assert.Single(jupiter);
         Assert.Equal(3, moonsAlbum.Tracks.Count);
 
         var metisTrack = moonsAlbum.Tracks.Single(t => t.Title == "Metis");
@@ -159,6 +158,23 @@ public class IndexerServiceTests : IDisposable
         Assert.NotNull(ringsAlbum);
         Assert.NotNull(saturn);
         Assert.NotNull(neptune);
+    }
+
+    [Fact]
+    public async Task ReadDirectory_NeptuneSaturnRings_CreatesTwoArtistsForLastTrack()
+    {
+        // arrange
+
+        // act
+        await _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
+
+        // assert
+        var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");
+        var track = ringsAlbum.Tracks.First(t => t.Title == "We Got Rings");
+        
+        Assert.NotNull(ringsAlbum);
+        Assert.NotNull(track);
+        Assert.Equal(2, track.Artists.Count());
     }
 
     [Fact]

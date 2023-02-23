@@ -1,6 +1,6 @@
-import { stringify } from "querystring";
 import { create } from "zustand";
 import { SearchResult, TrackDto } from "./client/schemas";
+import { getTrackArtists } from "./common/album";
 
 export enum PlayerInitializationSource {
   Album = "/albums",
@@ -18,6 +18,7 @@ export interface PlayerState {
   // currentStream: StreamDto;
   initializer: Initializer;
   selectedTrack: TrackDto;
+  getMainArtists: () => string;
   getIndexOfSelectedTrack: () => number;
   nextTrack: () => void;
   prevTrack: () => void;
@@ -34,6 +35,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   tracks: [] as TrackDto[],
   // currentStream: {} as StreamDto,
   initializer: {} as Initializer,
+  getMainArtists: () => {
+    if (get().selectedTrack.artists == null) {
+      return "";
+    }
+    return getTrackArtists(get().selectedTrack);
+  },
   getIndexOfSelectedTrack: () => {
     return get().tracks.indexOf(get().selectedTrack);
   },

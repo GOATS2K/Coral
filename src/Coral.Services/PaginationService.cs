@@ -18,6 +18,10 @@ namespace Coral.Services
         public Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class;
+
+        public Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+            where TSourceType : BaseTable
+            where TDtoType : class;
     }
 
     public class PaginationService : IPaginationService
@@ -29,6 +33,40 @@ namespace Coral.Services
         {
             _mapper = mapper;
             _context = context;
+        }
+
+        public DbSet<TType> GenerateQueryableForSource<TType>()
+            where TType : BaseTable
+
+        {
+            return _context.Set<TType>();
+        }
+
+        public async Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+            where TSourceType : BaseTable
+            where TDtoType : class
+        {
+            var dbSet = _context.Set<TSourceType>();
+            var contextSet = sourceQuery(dbSet);
+            var totalItemCount = await contextSet.CountAsync();
+            var query = contextSet
+                .OrderBy(i => i.Id)
+                .Skip(offset)
+                .Take(limit);
+
+            var availableRecords = Math.Max(0, totalItemCount - (offset + limit));
+            var querySize = await query.CountAsync();
+            var data = await query
+                .ProjectTo<TDtoType>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PaginatedData<TDtoType>()
+            {
+                AvailableRecords = availableRecords,
+                ResultCount = querySize,
+                TotalRecords = totalItemCount,
+                Data = data
+            };
         }
 
         public async Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)

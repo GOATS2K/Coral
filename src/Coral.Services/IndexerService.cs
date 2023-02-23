@@ -249,11 +249,11 @@ public class IndexerService : IIndexerService
         var featuringMatch = Regex.Match(title, featuringRegex);
         var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
 
-        // would be nice to support artist - title [artist2 remix] as well
-        // but it's a more uncommon scenario
-        var remixerRegex = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)";
-        var remixerMatch = Regex.Match(title, remixerRegex, RegexOptions.IgnoreCase);
-        var parsedRemixers = remixerMatch.Groups.Values.LastOrDefault()?.Value;
+        // supports both (artist remix) and [artist remix]
+        var remixerRegex = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)|\[([^[\[\]]*)(?: Edit| Remix| VIP| Bootleg)\]";
+        var remixerMatch = Regex.Match(title, remixerRegex, RegexOptions.IgnoreCase).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
+        // first group is parenthesis, second is brackets
+        var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
         var guestArtists = CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest);
         var mainArtists = CreateArtistsForRole(SplitArtist(artist), ArtistRole.Main);

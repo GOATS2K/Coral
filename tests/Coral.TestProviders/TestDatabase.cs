@@ -94,7 +94,14 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(Believe = new Track()
         {
-            Artist = Tatora,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Tatora,
+                    Role = ArtistRole.Main
+                }
+            },
             Album = BelieveBlankPagesSingle,
             DateIndexed = currentTime,
             DurationInSeconds = 269,
@@ -108,7 +115,14 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(BlankPages = new Track()
         {
-            Artist = Tatora,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Tatora,
+                    Role = ArtistRole.Main
+                }
+            },
             Album = BelieveBlankPagesSingle,
             DateIndexed = currentTime,
             DurationInSeconds = 243,
@@ -122,7 +136,22 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(LilSouljah = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Lenzman,
+                    Role = ArtistRole.Main
+                },
+                new ArtistOnTrack()
+                {
+                    Artist = new Artist(){
+                        Name = "Slay"
+                    },
+                    Role = ArtistRole.Guest
+                },
+
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 254,
@@ -135,7 +164,14 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Zusterliefde = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Lenzman,
+                    Role = ArtistRole.Main
+                },
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 303,
@@ -148,7 +184,22 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(GimmeASec = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Lenzman,
+                    Role = ArtistRole.Main
+                },
+                new ArtistOnTrack()
+                {
+                    Artist = new Artist(){
+                        Name = "Danny Sanchez"
+                    },
+                    Role = ArtistRole.Guest
+                },
+
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 272,
@@ -161,7 +212,10 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(OldTimesSake = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main }, 
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 319,
@@ -174,7 +228,11 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Starlight = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistOnTrack() { Artist = new Artist() { Name = "Fox" }, Role = ArtistRole.Guest },
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 272,
@@ -187,7 +245,14 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Yasukuni = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack()
+                {
+                    Artist = Lenzman,
+                    Role = ArtistRole.Main
+                },
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 307,
@@ -200,7 +265,11 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Combo = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistOnTrack() { Artist = new Artist() { Name = "Satl" }, Role = ArtistRole.Guest },
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 303,
@@ -213,7 +282,11 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(DownForWhatever = new Track()
         {
-            Artist = Lenzman,
+            Artists = new List<ArtistOnTrack>()
+            {
+                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistOnTrack() { Artist = new Artist() { Name = "Jubei" }, Role = ArtistRole.Remixer },
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 330,

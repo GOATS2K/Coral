@@ -160,4 +160,28 @@ public class IndexerServiceTests : IDisposable
         Assert.NotNull(saturn);
         Assert.NotNull(neptune);
     }
+
+    [Fact]
+    public async Task ReadDirectory_MarsWhoDiscoveredMe_ParsesArtistsCorrectly()
+    {
+        // arrange
+
+        // act
+        await _indexerService.ReadDirectory(TestDataRepository.MarsWhoDiscoveredMe);
+
+        // assert
+        var album = await _testDatabase.Albums.FirstAsync(a => a.Name == "Who Discovered Me?");
+        var track = album.Tracks.First();
+
+        Assert.NotNull(track);
+        Assert.Equal(3, track.Artists.Count);
+
+        var mars = track.Artists.First(a => a.Artist.Name == "Mars");
+        var copernicus = track.Artists.First(a => a.Artist.Name == "Copernicus");
+        var nasa = track.Artists.First(a => a.Artist.Name == "NASA");
+
+        Assert.Equal(ArtistRole.Main, mars.Role);
+        Assert.Equal(ArtistRole.Guest, copernicus.Role);
+        Assert.Equal(ArtistRole.Remixer, nasa.Role);
+    }
 }

@@ -19,11 +19,15 @@ namespace Coral.Services.Tests
         public Track TestTrack { get; } = new Track()
         {
             Id = Guid.NewGuid(),
-            Artist = new Artist()
+            Artists = new List<ArtistOnTrack>()
             {
-                Id = Guid.NewGuid(),
-                Name = "Test Artist 1",
-                DateIndexed = DateTime.UtcNow
+                new ArtistOnTrack()
+                {
+                    Artist = new Artist(){
+                        Name = "Test Artist"
+                    },
+                    Role = ArtistRole.Main
+                },
             },
             Album = new Album()
             {

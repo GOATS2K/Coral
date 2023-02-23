@@ -19,6 +19,9 @@
         // multi-artist album
         public static readonly string NeptuneSaturnRings = GetTestFolder("Neptune & Saturn - Rings - 2022 - FLAC");
 
+        // artist parser test - has both guest artist and remixer
+        public static readonly string MarsWhoDiscoveredMe = GetTestFolder("Mars - Who Discovered Me - 2023 - FLAC");
+
         public static string GetTestFolder(string folderName)
         {
             return Path.Join(ContentDirectory, folderName);

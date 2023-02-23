@@ -101,7 +101,7 @@ public class IndexerService : IIndexerService
                 _logger.LogInformation("Indexing {path} as single files.", directoryGroup.Key);
                 await IndexSingleFiles(analyzedTracks);
             }
-            _logger.LogInformation("Completed indexing of {path}, saving changes...", directoryGroup.Key);
+            _logger.LogInformation("Completed indexing of {path}", directoryGroup.Key);
         }
     }
 
@@ -125,20 +125,20 @@ public class IndexerService : IIndexerService
         }
 
         // verify that we in fact have an album
-        if (tracks.Select(t => t.Album).Distinct().Count() == 1)
+        if (tracks.Select(t => t.Album).Distinct().Count() > 1)
         {
             throw new ArgumentException("The tracks are not from the same album.");
         }
 
-        // get all artists from tracks
-        var distinctArtists = tracks.Select(t => t.Artist).Distinct();
         var distinctGenres = tracks.Select(t => t.Genre).Distinct();
-        var createdArtists = new List<Artist>();
         var createdGenres = new List<Genre>();
-
-        foreach (var artist in distinctArtists)
+        
+        // parse all artists
+        var artistForTracks = new Dictionary<ATL.Track, List<ArtistOnTrack>>();
+        foreach (var track in tracks)
         {
-            createdArtists.Add(GetArtist(artist));
+            var artists = ParseArtists(track.Artist, track.Title);
+            artistForTracks.Add(track, artists);
         }
 
         foreach (var genre in distinctGenres)
@@ -152,13 +152,12 @@ public class IndexerService : IIndexerService
         }
 
         // most attributes are going to be the same in an album
-        var indexedAlbum = GetAlbum(createdArtists, tracks.First());
+        var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
+        var indexedAlbum = GetAlbum(distinctArtists.Select(a => a.Artist).ToList(), tracks.First());
         foreach (var trackToIndex in tracks)
         {
-
-            var trackArtists = ParseArtists(trackToIndex.Artist, trackToIndex.Title);
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
-            await IndexFile(trackArtists, indexedAlbum, targetGenre, trackToIndex);
+            await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
         }
     }
     
@@ -222,6 +221,8 @@ public class IndexerService : IIndexerService
                 Name = artistName,
             };
             _context.Artists.Add(indexedArtist);
+            _logger.LogInformation("Creating new artist: {artist}", artistName);
+            _context.SaveChanges();
         }
         return indexedArtist;
     }
@@ -229,13 +230,13 @@ public class IndexerService : IIndexerService
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        var split = artistName.Split(new char[] { ',', '&', ';'});
-        return split.Distinct().ToList();
+        var split = artistName.Split(new char[] { ',', '&', ';', 'x'});
+        return split.Select(s => s.Trim()).Distinct().ToList();
     }
 
     private List<ArtistOnTrack> CreateArtistsForRole(List<string> artists, ArtistRole role)
     {
-        return artists.Select(a => GetArtist(a))
+        return artists.Select(a => GetArtist(a.Trim()))
             .Select(artist => new ArtistOnTrack()
             {
                 Artist = artist,
@@ -255,9 +256,9 @@ public class IndexerService : IIndexerService
         // first group is parenthesis, second is brackets
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
-        var guestArtists = CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest);
+        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistOnTrack>();
+        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistOnTrack>();
         var mainArtists = CreateArtistsForRole(SplitArtist(artist), ArtistRole.Main);
-        var remixers = CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer);
 
         var artistList = new List<ArtistOnTrack>();
         artistList.AddRange(guestArtists);

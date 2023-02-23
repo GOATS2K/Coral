@@ -214,8 +214,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistOnTrack>()
             {
-                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main }, 
-            },
+                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main }, },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 319,

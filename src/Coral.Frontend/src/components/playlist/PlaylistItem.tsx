@@ -6,6 +6,7 @@ import { formatSecondsToSingleMinutes } from "../../utils";
 import { useState } from "react";
 import { usePlayerStore } from "../../store";
 import { useAlbumArtwork } from "../../client/components";
+import { getAlbumArtists, getTrackArtists } from "../../common/album";
 
 type PlaylistItemProps = {
   track: TrackDto;
@@ -21,7 +22,7 @@ export function PlaylistItem({
   const [trackHover, setTrackHover] = useState(false);
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const playState = usePlayerStore((state) => state.playState);
-
+  const trackArtist = getTrackArtists(track);
   const { data: artwork } = useAlbumArtwork(
     {
       pathParams: {
@@ -106,7 +107,7 @@ export function PlaylistItem({
         <Text fz="sm" fw={500}>
           {track.title}
         </Text>
-        <Text fz="xs">{track.artist.name}</Text>
+        <Text fz="xs">{trackArtist}</Text>
       </div>
       <div className={styles.duration}>
         <Text fz="xs">

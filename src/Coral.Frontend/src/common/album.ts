@@ -1,4 +1,4 @@
-import { AlbumDto, SimpleAlbumDto } from "../client/schemas";
+import { AlbumDto, SimpleAlbumDto, TrackDto } from "../client/schemas";
 import { formatSecondsToDateString } from "../utils";
 
 export const getAlbumArtists = (album: AlbumDto | SimpleAlbumDto) => {
@@ -7,6 +7,17 @@ export const getAlbumArtists = (album: AlbumDto | SimpleAlbumDto) => {
   }
   return album.artists?.map((a) => a.name).join(", ");
 };
+
+export const getTrackArtists = (track: TrackDto) => {
+    let combinationCharacter = " & ";
+    if (track.artists?.length > 2) {
+      combinationCharacter = ", "
+    }
+    const mainArtists = track.artists.filter(a => a.role == "Main")
+    .map(a => a.artist.name);
+    const artistString = mainArtists.join(combinationCharacter);
+    return artistString;
+}
 
 export const getAlbumGenre = (album: AlbumDto) => {
   let uniqueGenres = Array.from(

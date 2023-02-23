@@ -18,7 +18,7 @@ public class Track : BaseTable
 
     public override string ToString()
     {
-        var artistString = String.Join(", ", Artists.Select(a => a.Artist.Name));
+        var artistString = string.Join(", ", Artists.Select(a => a.Artist.Name));
         var releaseYear = Album.ReleaseYear != null ? $"({Album.ReleaseYear})" : "";
         return $"{artistString} - {Title} - {Album.Name} {releaseYear}";
     }

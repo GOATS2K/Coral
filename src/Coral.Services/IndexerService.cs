@@ -2,6 +2,7 @@
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 namespace Coral.Services;
 
@@ -108,13 +109,10 @@ public class IndexerService : IIndexerService
     {
         foreach (var atlTrack in tracks)
         {
-            var indexedArtist = GetArtist(atlTrack.Artist);
-            var indexedAlbum = GetAlbum(new List<Artist>()
-            {
-                indexedArtist
-            }, atlTrack);
+            var artists = ParseArtists(atlTrack.Artist, atlTrack.Title);
+            var indexedAlbum = GetAlbum(artists.Select(a => a.Artist).ToList(), atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
-            await IndexFile(indexedArtist, indexedAlbum, indexedGenre, atlTrack);
+            await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack);
         }
     }
 
@@ -127,7 +125,7 @@ public class IndexerService : IIndexerService
         }
 
         // verify that we in fact have an album
-        if (tracks.Select(t => t.Album).Distinct().Count() > 1)
+        if (tracks.Select(t => t.Album).Distinct().Count() == 1)
         {
             throw new ArgumentException("The tracks are not from the same album.");
         }
@@ -157,13 +155,14 @@ public class IndexerService : IIndexerService
         var indexedAlbum = GetAlbum(createdArtists, tracks.First());
         foreach (var trackToIndex in tracks)
         {
-            var targetArtist = createdArtists.Single(a => a.Name == trackToIndex.Artist);
+
+            var trackArtists = ParseArtists(trackToIndex.Artist, trackToIndex.Title);
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
-            await IndexFile(targetArtist, indexedAlbum, targetGenre, trackToIndex);
+            await IndexFile(trackArtists, indexedAlbum, targetGenre, trackToIndex);
         }
     }
     
-    private async Task IndexFile(Artist indexedArtist, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
+    private async Task IndexFile(List<ArtistOnTrack> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
@@ -180,11 +179,10 @@ public class IndexerService : IIndexerService
         indexedTrack = new Track()
         {
             Album = indexedAlbum,
-            Artist = indexedArtist,
+            Artists = artists,
             Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path),
             Comment = atlTrack.Comment,
             Genre = indexedGenre,
-            DateIndexed = DateTime.UtcNow,
             DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
@@ -206,7 +204,6 @@ public class IndexerService : IIndexerService
             indexedGenre = new Genre()
             {
                 Name = genreName,
-                DateIndexed = DateTime.UtcNow
             };
             _context.Genres.Add(indexedGenre);
         }
@@ -223,11 +220,51 @@ public class IndexerService : IIndexerService
             indexedArtist = new Artist()
             {
                 Name = artistName,
-                DateIndexed = DateTime.UtcNow
             };
             _context.Artists.Add(indexedArtist);
         }
         return indexedArtist;
+    }
+
+    private List<string> SplitArtist(string? artistName)
+    {
+        if (artistName == null) return new List<string>();
+        var split = artistName.Split(new char[] { ',', '&', ';'});
+        return split.Distinct().ToList();
+    }
+
+    private List<ArtistOnTrack> CreateArtistsForRole(List<string> artists, ArtistRole role)
+    {
+        return artists.Select(a => GetArtist(a))
+            .Select(artist => new ArtistOnTrack()
+            {
+                Artist = artist,
+                Role = role
+            }).ToList();
+    }
+
+    private List<ArtistOnTrack> ParseArtists(string artist, string title)
+    {
+        var featuringRegex = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
+        var featuringMatch = Regex.Match(title, featuringRegex);
+        var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
+
+        // would be nice to support artist - title [artist2 remix] as well
+        // but it's a more uncommon scenario
+        var remixerRegex = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)";
+        var remixerMatch = Regex.Match(title, remixerRegex, RegexOptions.IgnoreCase);
+        var parsedRemixers = remixerMatch.Groups.Values.LastOrDefault()?.Value;
+
+        var guestArtists = CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest);
+        var mainArtists = CreateArtistsForRole(SplitArtist(artist), ArtistRole.Main);
+        var remixers = CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer);
+
+        var artistList = new List<ArtistOnTrack>();
+        artistList.AddRange(guestArtists);
+        artistList.AddRange(mainArtists);
+        artistList.AddRange(remixers);
+
+        return artistList;
     }
 
     private async Task<string?> GetAlbumArtwork(ATL.Track atlTrack)

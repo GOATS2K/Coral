@@ -7,7 +7,7 @@ public class Track : BaseTable
     public int DurationInSeconds { get; set; }
 
     public string Title { get; set; } = null!;
-    public Artist Artist { get; set; } = null!;
+    public List<ArtistOnTrack> Artists { get; set; } = null!;
     public Album Album { get; set; } = null!;
     public Genre? Genre { get; set; }
 
@@ -18,7 +18,8 @@ public class Track : BaseTable
 
     public override string ToString()
     {
+        var artistString = String.Join(", ", Artists.Select(a => a.Artist.Name));
         var releaseYear = Album.ReleaseYear != null ? $"({Album.ReleaseYear})" : "";
-        return $"{Artist.Name} - {Title} - {Album.Name} {releaseYear}";
+        return $"{artistString} - {Title} - {Album.Name} {releaseYear}";
     }
 }

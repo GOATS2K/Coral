@@ -20,6 +20,12 @@ public class TestDatabase : IDisposable
     public Genre DrumAndBass;
 
     public Artist Lenzman;
+    public Artist Slay;
+    public Artist DannySanchez;
+    public Artist Fox;
+    public Artist Satl;
+    public Artist Jubei;
+
     public Album ALittleWhileLonger;
     public Track LilSouljah;
     public Track Zusterliefde;
@@ -65,6 +71,42 @@ public class TestDatabase : IDisposable
             Albums = new List<Album>()
         });
 
+        Context.Artists.Add(Slay = new Artist()
+        {
+            Name = "Slay",
+            DateIndexed = currentTime,
+            Albums = new List<Album>()
+        });
+
+        Context.Artists.Add(DannySanchez = new Artist()
+        {
+            Name = "Danny Sanchez",
+            DateIndexed = currentTime,
+            Albums = new List<Album>()
+        });
+
+        Context.Artists.Add(Fox = new Artist()
+        {
+            Name = "Fox",
+            DateIndexed = currentTime,
+            Albums = new List<Album>()
+        });
+
+        Context.Artists.Add(Satl = new Artist()
+        {
+            Name = "Satl",
+            DateIndexed = currentTime,
+            Albums = new List<Album>()
+        });
+
+        Context.Artists.Add(Jubei = new Artist()
+        {
+            Name = "Jubei",
+            DateIndexed = currentTime,
+            Albums = new List<Album>()
+        });
+
+
         Context.Genres.Add(DrumAndBass = new Genre()
         {
             Name = "Drum & Bass",
@@ -83,7 +125,7 @@ public class TestDatabase : IDisposable
 
         Context.Albums.Add(ALittleWhileLonger = new Album()
         {
-            Artists = new List<Artist>() { Lenzman },
+            Artists = new List<Artist>() { Lenzman, Slay, DannySanchez, Fox, Satl, Jubei },
             DateIndexed = currentTime,
             Name = "A Little While Longer",
             ReleaseYear = 2021,
@@ -145,9 +187,7 @@ public class TestDatabase : IDisposable
                 },
                 new ArtistOnTrack()
                 {
-                    Artist = new Artist(){
-                        Name = "Slay"
-                    },
+                    Artist = Slay,
                     Role = ArtistRole.Guest
                 },
 
@@ -193,9 +233,7 @@ public class TestDatabase : IDisposable
                 },
                 new ArtistOnTrack()
                 {
-                    Artist = new Artist(){
-                        Name = "Danny Sanchez"
-                    },
+                    Artist = DannySanchez,
                     Role = ArtistRole.Guest
                 },
 
@@ -230,7 +268,7 @@ public class TestDatabase : IDisposable
             Artists = new List<ArtistOnTrack>()
             {
                 new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = new Artist() { Name = "Fox" }, Role = ArtistRole.Guest },
+                new ArtistOnTrack() { Artist = Fox, Role = ArtistRole.Guest },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -267,7 +305,7 @@ public class TestDatabase : IDisposable
             Artists = new List<ArtistOnTrack>()
             {
                 new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = new Artist() { Name = "Satl" }, Role = ArtistRole.Guest },
+                new ArtistOnTrack() { Artist = Satl, Role = ArtistRole.Guest },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -284,7 +322,7 @@ public class TestDatabase : IDisposable
             Artists = new List<ArtistOnTrack>()
             {
                 new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = new Artist() { Name = "Jubei" }, Role = ArtistRole.Remixer },
+                new ArtistOnTrack() { Artist = Jubei, Role = ArtistRole.Remixer },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,

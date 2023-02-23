@@ -10,7 +10,7 @@ using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
-var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<CoralDbContext>();

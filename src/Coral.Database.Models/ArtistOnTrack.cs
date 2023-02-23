@@ -15,5 +15,6 @@ namespace Coral.Database.Models
     {
         public ArtistRole Role { get; set; }
         public Artist Artist { get; set; } = null!;
+        public Track Track { get; set; } = null!;
     }
 }

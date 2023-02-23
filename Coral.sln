@@ -23,7 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Encoders.Tests", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.TestProviders", "tests\Coral.TestProviders\Coral.TestProviders.csproj", "{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Configuration", "src\Coral.Configuration\Coral.Configuration.csproj", "{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Configuration", "src\Coral.Configuration\Coral.Configuration.csproj", "{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Dto.Tests", "tests\Coral.Dto.Tests\Coral.Dto.Tests.csproj", "{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +73,10 @@ Global
 		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,6 +85,7 @@ Global
 		{EF328A5B-EC8D-4C04-A364-1106ED0B450A} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
 		{06BD902C-38FF-438E-860E-5B62B4210F9D} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
 		{3FEC4AF9-FF3F-4EBA-9719-8AE0280EECD1} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
+		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0} = {77EC9A57-2FA4-413D-B521-7C54FA6E8A69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C1EA6E10-ED2D-4CAE-B2EE-E10813275C71}

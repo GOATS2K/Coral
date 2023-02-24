@@ -19,9 +19,9 @@ namespace Coral.Services.Tests
         public Track TestTrack { get; } = new Track()
         {
             Id = Guid.NewGuid(),
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = new Artist(){
                         Name = "Test Artist"

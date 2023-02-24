@@ -7,7 +7,7 @@ public class Track : BaseTable
     public int DurationInSeconds { get; set; }
 
     public string Title { get; set; } = null!;
-    public List<ArtistOnTrack> Artists { get; set; } = null!;
+    public List<ArtistWithRole> Artists { get; set; } = null!;
     public Album Album { get; set; } = null!;
     public Genre? Genre { get; set; }
 

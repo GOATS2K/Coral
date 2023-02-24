@@ -19,7 +19,7 @@ namespace Coral.Services
             where TSourceType : BaseTable
             where TDtoType : class;
 
-        public Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+        public Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class;
     }
@@ -35,14 +35,7 @@ namespace Coral.Services
             _context = context;
         }
 
-        public DbSet<TType> GenerateQueryableForSource<TType>()
-            where TType : BaseTable
-
-        {
-            return _context.Set<TType>();
-        }
-
-        public async Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+        public async Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class
         {

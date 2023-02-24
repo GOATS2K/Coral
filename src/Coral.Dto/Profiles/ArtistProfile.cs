@@ -10,6 +10,6 @@ public class ArtistProfile : Profile
     {
         CreateMap<Artist, ArtistDto>();
         CreateMap<Artist, SimpleArtistDto>();
-        CreateMap<ArtistOnTrack, ArtistOnTrackDto>();
+        CreateMap<ArtistWithRole, ArtistOnTrackDto>();
     }
 }

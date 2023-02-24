@@ -136,9 +136,9 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(Believe = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Tatora,
                     Role = ArtistRole.Main
@@ -157,9 +157,9 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(BlankPages = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Tatora,
                     Role = ArtistRole.Main
@@ -178,14 +178,14 @@ public class TestDatabase : IDisposable
 
         Context.Tracks.Add(LilSouljah = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Lenzman,
                     Role = ArtistRole.Main
                 },
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Slay,
                     Role = ArtistRole.Guest
@@ -204,9 +204,9 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Zusterliefde = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Lenzman,
                     Role = ArtistRole.Main
@@ -224,14 +224,14 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(GimmeASec = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Lenzman,
                     Role = ArtistRole.Main
                 },
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = DannySanchez,
                     Role = ArtistRole.Guest
@@ -250,9 +250,9 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(OldTimesSake = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main }, },
+                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main }, },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 319,
@@ -265,10 +265,10 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Starlight = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = Fox, Role = ArtistRole.Guest },
+                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistWithRole() { Artist = Fox, Role = ArtistRole.Guest },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -282,9 +282,9 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Yasukuni = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack()
+                new ArtistWithRole()
                 {
                     Artist = Lenzman,
                     Role = ArtistRole.Main
@@ -302,10 +302,10 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(Combo = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = Satl, Role = ArtistRole.Guest },
+                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistWithRole() { Artist = Satl, Role = ArtistRole.Guest },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -319,10 +319,10 @@ public class TestDatabase : IDisposable
         });
         Context.Tracks.Add(DownForWhatever = new Track()
         {
-            Artists = new List<ArtistOnTrack>()
+            Artists = new List<ArtistWithRole>()
             {
-                new ArtistOnTrack() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistOnTrack() { Artist = Jubei, Role = ArtistRole.Remixer },
+                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
+                new ArtistWithRole() { Artist = Jubei, Role = ArtistRole.Remixer },
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,

@@ -31,7 +31,7 @@ namespace Coral.Services.Tests
             var skip = 0;
 
             // act
-            var results = await _paginationService.PaginateQueryable<Track, TrackDto>(query =>
+            var results = await _paginationService.PaginateQuery<Track, TrackDto>(query =>
             {
                 return query.Where(t => t.Artists.Any(t => t.Artist.Name == _testDatabase.Lenzman.Name));
             }, skip, take);

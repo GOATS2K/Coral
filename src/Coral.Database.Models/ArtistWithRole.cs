@@ -11,7 +11,7 @@ namespace Coral.Database.Models
         Main, Guest, Remixer
     }
 
-    public class ArtistOnTrack : BaseTable
+    public class ArtistWithRole : BaseTable
     {
         public ArtistRole Role { get; set; }
         public Artist Artist { get; set; } = null!;

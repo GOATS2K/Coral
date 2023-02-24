@@ -134,7 +134,7 @@ public class IndexerService : IIndexerService
         var createdGenres = new List<Genre>();
         
         // parse all artists
-        var artistForTracks = new Dictionary<ATL.Track, List<ArtistOnTrack>>();
+        var artistForTracks = new Dictionary<ATL.Track, List<ArtistWithRole>>();
         foreach (var track in tracks)
         {
             var artists = ParseArtists(track.Artist, track.Title);
@@ -161,7 +161,7 @@ public class IndexerService : IIndexerService
         }
     }
     
-    private async Task IndexFile(List<ArtistOnTrack> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
+    private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
         if (indexedTrack != null)
@@ -234,17 +234,17 @@ public class IndexerService : IIndexerService
         return split.Select(s => s.Trim()).Distinct().ToList();
     }
 
-    private List<ArtistOnTrack> CreateArtistsForRole(List<string> artists, ArtistRole role)
+    private List<ArtistWithRole> CreateArtistsForRole(List<string> artists, ArtistRole role)
     {
         return artists.Select(a => GetArtist(a.Trim()))
-            .Select(artist => new ArtistOnTrack()
+            .Select(artist => new ArtistWithRole()
             {
                 Artist = artist,
                 Role = role
             }).ToList();
     }
 
-    private List<ArtistOnTrack> ParseArtists(string artist, string title)
+    private List<ArtistWithRole> ParseArtists(string artist, string title)
     {
         var featuringRegex = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
         var featuringMatch = Regex.Match(title, featuringRegex);
@@ -256,11 +256,11 @@ public class IndexerService : IIndexerService
         // first group is parenthesis, second is brackets
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
-        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistOnTrack>();
-        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistOnTrack>();
+        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
+        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
         var mainArtists = CreateArtistsForRole(SplitArtist(artist), ArtistRole.Main);
 
-        var artistList = new List<ArtistOnTrack>();
+        var artistList = new List<ArtistWithRole>();
         artistList.AddRange(guestArtists);
         artistList.AddRange(mainArtists);
         artistList.AddRange(remixers);

@@ -14,7 +14,7 @@ export const getTrackArtists = (track: TrackDto) => {
       combinationCharacter = ", "
     }
     const mainArtists = track.artists.filter(a => a.role == "Main")
-    .map(a => a.artist.name);
+    .map(a => a.name);
     const artistString = mainArtists.join(combinationCharacter);
     return artistString;
 }

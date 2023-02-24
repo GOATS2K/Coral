@@ -20,11 +20,17 @@ public class TestDatabase : IDisposable
     public Genre DrumAndBass;
 
     public Artist Lenzman;
+    public ArtistWithRole LenzmanAsMain;
     public Artist Slay;
+    public ArtistWithRole SlayAsGuest;
     public Artist DannySanchez;
+    public ArtistWithRole DannySanchezAsGuest;
     public Artist Fox;
+    public ArtistWithRole FoxAsGuest;
     public Artist Satl;
+    public ArtistWithRole SatlAsGuest;
     public Artist Jubei;
+    public ArtistWithRole JubeiAsRemixer;
 
     public Album ALittleWhileLonger;
     public Track LilSouljah;
@@ -71,11 +77,23 @@ public class TestDatabase : IDisposable
             Albums = new List<Album>()
         });
 
+        Context.ArtistsWithRoles.Add(LenzmanAsMain = new ArtistWithRole()
+        {
+            Role = ArtistRole.Main,
+            Artist = Lenzman
+        });
+
         Context.Artists.Add(Slay = new Artist()
         {
             Name = "Slay",
             DateIndexed = currentTime,
             Albums = new List<Album>()
+        });
+        
+        Context.ArtistsWithRoles.Add(SlayAsGuest = new ArtistWithRole()
+        {
+            Role = ArtistRole.Guest,
+            Artist = Slay
         });
 
         Context.Artists.Add(DannySanchez = new Artist()
@@ -85,11 +103,23 @@ public class TestDatabase : IDisposable
             Albums = new List<Album>()
         });
 
+        Context.ArtistsWithRoles.Add(DannySanchezAsGuest = new ArtistWithRole()
+        {
+            Role = ArtistRole.Guest,
+            Artist = DannySanchez
+        });
+
         Context.Artists.Add(Fox = new Artist()
         {
             Name = "Fox",
             DateIndexed = currentTime,
             Albums = new List<Album>()
+        });
+
+        Context.ArtistsWithRoles.Add(FoxAsGuest = new ArtistWithRole()
+        {
+            Role = ArtistRole.Guest,
+            Artist = Fox
         });
 
         Context.Artists.Add(Satl = new Artist()
@@ -99,6 +129,12 @@ public class TestDatabase : IDisposable
             Albums = new List<Album>()
         });
 
+        Context.ArtistsWithRoles.Add(SatlAsGuest = new ArtistWithRole()
+        {
+            Role = ArtistRole.Guest,
+            Artist = Satl,
+        });
+
         Context.Artists.Add(Jubei = new Artist()
         {
             Name = "Jubei",
@@ -106,6 +142,11 @@ public class TestDatabase : IDisposable
             Albums = new List<Album>()
         });
 
+        Context.ArtistsWithRoles.Add(JubeiAsRemixer = new ArtistWithRole()
+        {
+            Role = ArtistRole.Remixer,
+            Artist = Jubei
+        });
 
         Context.Genres.Add(DrumAndBass = new Genre()
         {
@@ -116,6 +157,7 @@ public class TestDatabase : IDisposable
         Context.Albums.Add(BelieveBlankPagesSingle = new Album()
         {
             Artists = new List<Artist>() { Tatora },
+            ArtistsWithRoles = new List<ArtistWithRole>(),
             DateIndexed = currentTime,
             Name = "Believe / Blank Pages",
             ReleaseYear = 2020,
@@ -126,6 +168,10 @@ public class TestDatabase : IDisposable
         Context.Albums.Add(ALittleWhileLonger = new Album()
         {
             Artists = new List<Artist>() { Lenzman, Slay, DannySanchez, Fox, Satl, Jubei },
+            ArtistsWithRoles = new List<ArtistWithRole>()
+            {
+                LenzmanAsMain, SlayAsGuest, DannySanchezAsGuest, FoxAsGuest, SatlAsGuest, JubeiAsRemixer
+            },
             DateIndexed = currentTime,
             Name = "A Little While Longer",
             ReleaseYear = 2021,
@@ -180,16 +226,8 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole()
-                {
-                    Artist = Lenzman,
-                    Role = ArtistRole.Main
-                },
-                new ArtistWithRole()
-                {
-                    Artist = Slay,
-                    Role = ArtistRole.Guest
-                },
+                LenzmanAsMain,
+                SlayAsGuest
 
             },
             Album = ALittleWhileLonger,
@@ -206,11 +244,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole()
-                {
-                    Artist = Lenzman,
-                    Role = ArtistRole.Main
-                },
+                LenzmanAsMain
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -226,16 +260,8 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole()
-                {
-                    Artist = Lenzman,
-                    Role = ArtistRole.Main
-                },
-                new ArtistWithRole()
-                {
-                    Artist = DannySanchez,
-                    Role = ArtistRole.Guest
-                },
+                LenzmanAsMain,
+                DannySanchezAsGuest
 
             },
             Album = ALittleWhileLonger,
@@ -252,7 +278,8 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main }, },
+                LenzmanAsMain
+            },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
             DurationInSeconds = 319,
@@ -267,8 +294,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistWithRole() { Artist = Fox, Role = ArtistRole.Guest },
+                LenzmanAsMain, FoxAsGuest
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -284,11 +310,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole()
-                {
-                    Artist = Lenzman,
-                    Role = ArtistRole.Main
-                },
+                LenzmanAsMain
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -304,8 +326,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistWithRole() { Artist = Satl, Role = ArtistRole.Guest },
+                LenzmanAsMain, SatlAsGuest
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,
@@ -321,8 +342,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-                new ArtistWithRole() { Artist = Lenzman, Role = ArtistRole.Main },
-                new ArtistWithRole() { Artist = Jubei, Role = ArtistRole.Remixer },
+                LenzmanAsMain, JubeiAsRemixer
             },
             Album = ALittleWhileLonger,
             DateIndexed = currentTime,

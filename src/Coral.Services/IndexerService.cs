@@ -230,8 +230,9 @@ public class IndexerService : IIndexerService
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        var split = artistName.Split(new char[] { ',', '&', ';', 'x'});
-        return split.Select(s => s.Trim()).Distinct().ToList();
+        string[] splitChars = { ",", "&", ";", " x " };
+        var split = artistName.Split(splitChars, StringSplitOptions.TrimEntries);
+        return split.Distinct().ToList();
     }
 
     private List<ArtistWithRole> GetArtistWithRole(List<string> artists, ArtistRole role)

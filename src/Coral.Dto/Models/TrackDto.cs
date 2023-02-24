@@ -8,7 +8,7 @@ public record TrackDto
     public string? Comment { get; set; }
     public int TrackNumber { get; set; }
     public int DiscNumber { get; set; }
-    public List<ArtistOnTrackDto> Artists { get; set; } = null!;
+    public List<ArtistWithRoleDto> Artists { get; set; } = null!;
     public SimpleAlbumDto Album { get; init; } = null!;
     public GenreDto? Genre { get; init; }
 

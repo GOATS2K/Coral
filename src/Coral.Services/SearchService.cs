@@ -114,8 +114,7 @@ namespace Coral.Services
 
 
             var artists = tracks.Select(a => a.Artists)
-                .SelectMany(a => a)
-                .Select(a => a.Artist);
+                .SelectMany(a => a);
             return new SearchResult()
             {
                 Albums = tracks.Select(t => t.Album)

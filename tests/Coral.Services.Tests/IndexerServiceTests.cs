@@ -153,8 +153,8 @@ public class IndexerServiceTests : IDisposable
 
         // assert
         var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");
-        var saturn = ringsAlbum.Artists.First(a => a.Name == "Saturn");
-        var neptune = ringsAlbum.Artists.First(a => a.Name == "Neptune");
+        var saturn = ringsAlbum.Artists.First(a => a.Artist.Name == "Saturn");
+        var neptune = ringsAlbum.Artists.First(a => a.Artist.Name == "Neptune");
         Assert.NotNull(ringsAlbum);
         Assert.NotNull(saturn);
         Assert.NotNull(neptune);

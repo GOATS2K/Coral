@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace Coral.Dto.Models
 {
-    public class ArtistOnTrackDto
+    public record ArtistWithRoleDto : SimpleArtistDto
     {
-        public SimpleArtistDto Artist { get; set; } = null!;
         public ArtistRole Role { get; set; }
     }
 }

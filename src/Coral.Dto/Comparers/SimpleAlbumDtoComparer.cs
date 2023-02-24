@@ -19,14 +19,13 @@ namespace Coral.Dto.Comparers
                 && x?.Name == y?.Name
                 // lazy
                 && x?.Artists.Count() == y?.Artists.Count()
-                && x?.ReleaseYear == y?.ReleaseYear
-                && x?.CoverPresent == y?.CoverPresent) return true;
+                && x?.ReleaseYear == y?.ReleaseYear) return true;
             return false;
         }
 
         public int GetHashCode([DisallowNull] SimpleAlbumDto obj)
         {
-            return $"{obj.Id}{obj.Name}{obj.Artists.Count()}{obj.ReleaseYear}{obj.CoverPresent}".GetHashCode();
+            return $"{obj.Id}{obj.Name}{obj.Artists.Count()}{obj.ReleaseYear}".GetHashCode();
         }
     }
 }

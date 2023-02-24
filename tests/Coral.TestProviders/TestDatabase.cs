@@ -67,14 +67,12 @@ public class TestDatabase : IDisposable
         {
             Name = "Tatora",
             DateIndexed = currentTime,
-            Albums = new List<Album>()
         });
 
         Context.Artists.Add(Lenzman = new Artist()
         {
             Name = "Lenzman",
             DateIndexed = currentTime,
-            Albums = new List<Album>()
         });
 
         Context.ArtistsWithRoles.Add(LenzmanAsMain = new ArtistWithRole()
@@ -86,8 +84,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Slay = new Artist()
         {
             Name = "Slay",
-            DateIndexed = currentTime,
-            Albums = new List<Album>()
+            DateIndexed = currentTime 
         });
         
         Context.ArtistsWithRoles.Add(SlayAsGuest = new ArtistWithRole()
@@ -100,7 +97,6 @@ public class TestDatabase : IDisposable
         {
             Name = "Danny Sanchez",
             DateIndexed = currentTime,
-            Albums = new List<Album>()
         });
 
         Context.ArtistsWithRoles.Add(DannySanchezAsGuest = new ArtistWithRole()
@@ -112,8 +108,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Fox = new Artist()
         {
             Name = "Fox",
-            DateIndexed = currentTime,
-            Albums = new List<Album>()
+            DateIndexed = currentTime
         });
 
         Context.ArtistsWithRoles.Add(FoxAsGuest = new ArtistWithRole()
@@ -125,8 +120,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Satl = new Artist()
         {
             Name = "Satl",
-            DateIndexed = currentTime,
-            Albums = new List<Album>()
+            DateIndexed = currentTime
         });
 
         Context.ArtistsWithRoles.Add(SatlAsGuest = new ArtistWithRole()
@@ -138,8 +132,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Jubei = new Artist()
         {
             Name = "Jubei",
-            DateIndexed = currentTime,
-            Albums = new List<Album>()
+            DateIndexed = currentTime
         });
 
         Context.ArtistsWithRoles.Add(JubeiAsRemixer = new ArtistWithRole()

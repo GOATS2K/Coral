@@ -66,8 +66,8 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _testDatabase.Artists.FirstAsync(a => a.Name == "Jupiter");
-        var neptune = await _testDatabase.Artists.FirstAsync(a => a.Name == "Neptune");
+        var jupiter = await _testDatabase.ArtistsWithRoles.FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
+        var neptune = await _testDatabase.ArtistsWithRoles.FirstAsync(a => a.Artist.Name == "Neptune" && a.Role == ArtistRole.Main);
 
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);

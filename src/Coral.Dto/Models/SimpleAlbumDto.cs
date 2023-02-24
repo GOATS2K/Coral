@@ -11,7 +11,7 @@ namespace Coral.Dto.Models
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
-        public List<SimpleArtistDto> Artists { get; set; } = null!;
+        public IEnumerable<SimpleArtistDto> Artists { get; set; } = null!;
         public AlbumType? Type { get; set; }
         public int ReleaseYear { get; set; }
     }

@@ -16,7 +16,7 @@ namespace Coral.Services
         public Task<TrackStream> GetStreamForTrack(Guid trackId);
         public Task<Track?> GetTrack(Guid trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
-        public Task<List<SimpleArtistDto>> GetArtist(string artistName);
+        public Task<ArtistDto?> GetArtist(Guid artistId);
         public IAsyncEnumerable<SimpleAlbumDto> GetAlbums();
         public Task<string?> GetArtworkForTrack(Guid trackId);
         public Task<string?> GetArtworkForAlbum(Guid albumId);
@@ -38,7 +38,7 @@ namespace Coral.Services
         {
             return await _context.Tracks.FindAsync(trackId);
         }
-        
+
         public async Task<TrackStream> GetStreamForTrack(Guid trackId)
         {
             var track = await _context.Tracks.FindAsync(trackId);
@@ -75,13 +75,49 @@ namespace Coral.Services
                 .AsAsyncEnumerable();
         }
 
-        public async Task<List<SimpleArtistDto>> GetArtist(string artistName)
+        public async Task<ArtistDto?> GetArtist(Guid artistId)
         {
-            return await _context
-                .Artists
-                .Where(a => a.Name == artistName)
+            //return await _context
+            //    .Artists
+            //    .Where(a => a.Id == artistId)
+            //    .ProjectTo<ArtistDto>(_mapper.ConfigurationProvider)
+            //    .FirstOrDefaultAsync();
+
+            var artist = await _context.Artists.Where(a => a.Id == artistId)
                 .ProjectTo<SimpleArtistDto>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (artist == null) return null;
+
+            var mainReleases = await _context.Albums
+                .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type != AlbumType.Compilation)
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            var featured = await _context.Albums
+                .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Guest))
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            var remixer = await _context.Albums
+                .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Remixer))
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            var compilations = await _context.Albums
+                .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type == AlbumType.Compilation)
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new ArtistDto()
+            {
+                Id = artist.Id,
+                Name = artist.Name,
+                FeaturedIn = featured,
+                InCompilation = compilations,
+                Releases = mainReleases,
+                RemixerIn = remixer
+            };
         }
 
         public async Task<string?> GetArtworkForTrack(Guid trackId)
@@ -104,7 +140,7 @@ namespace Coral.Services
             var album = await _context.Albums
                 .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(a => a.Id == albumId);
-            
+
             if (album == null)
             {
                 return null;

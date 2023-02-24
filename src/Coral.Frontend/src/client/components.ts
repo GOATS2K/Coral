@@ -514,6 +514,76 @@ export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedData>(
   );
 };
 
+export type PaginatedArtistsQueryParams = {
+  /**
+   * @format int32
+   * @default 10
+   */
+  limit?: number;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+};
+
+export type PaginatedArtistsError = Fetcher.ErrorWrapper<undefined>;
+
+export type PaginatedArtistsVariables = {
+  queryParams?: PaginatedArtistsQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchPaginatedArtists = (
+  variables: PaginatedArtistsVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    Schemas.SimpleArtistDtoPaginatedData,
+    PaginatedArtistsError,
+    undefined,
+    {},
+    PaginatedArtistsQueryParams,
+    {}
+  >({
+    url: "/api/Library/artists/paginated",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const usePaginatedArtists = <
+  TData = Schemas.SimpleArtistDtoPaginatedData
+>(
+  variables: PaginatedArtistsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleArtistDtoPaginatedData,
+      PaginatedArtistsError,
+      TData
+    >,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.SimpleArtistDtoPaginatedData,
+    PaginatedArtistsError,
+    TData
+  >(
+    queryKeyFn({
+      path: "/api/Library/artists/paginated",
+      operationId: "paginatedArtists",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchPaginatedArtists({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type AlbumPathParams = {
   /**
    * @format uuid
@@ -550,6 +620,49 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
       variables,
     }),
     ({ signal }) => fetchAlbum({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type ArtistPathParams = {
+  /**
+   * @format uuid
+   */
+  artistId: string;
+};
+
+export type ArtistError = Fetcher.ErrorWrapper<undefined>;
+
+export type ArtistVariables = {
+  pathParams: ArtistPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchArtist = (variables: ArtistVariables, signal?: AbortSignal) =>
+  fetch<Schemas.ArtistDto, ArtistError, undefined, {}, {}, ArtistPathParams>({
+    url: "/api/Library/artists/{artistId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useArtist = <TData = Schemas.ArtistDto>(
+  variables: ArtistVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<Schemas.ArtistDto, ArtistError, TData>(
+    queryKeyFn({
+      path: "/api/Library/artists/{artistId}",
+      operationId: "artist",
+      variables,
+    }),
+    ({ signal }) => fetchArtist({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
@@ -604,7 +717,17 @@ export type QueryOperation =
       variables: PaginatedAlbumsVariables;
     }
   | {
+      path: "/api/Library/artists/paginated";
+      operationId: "paginatedArtists";
+      variables: PaginatedArtistsVariables;
+    }
+  | {
       path: "/api/Library/albums/{albumId}";
       operationId: "album";
       variables: AlbumVariables;
+    }
+  | {
+      path: "/api/Library/artists/{artistId}";
+      operationId: "artist";
+      variables: ArtistVariables;
     };

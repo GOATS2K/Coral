@@ -165,6 +165,7 @@ public class TestDatabase : IDisposable
             },
             DateIndexed = currentTime,
             Name = "A Little While Longer",
+            Type = AlbumType.MiniAlbum,
             ReleaseYear = 2021,
             TrackTotal = 8,
             DiscTotal = 1,

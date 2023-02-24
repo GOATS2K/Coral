@@ -9,6 +9,7 @@ export type AlbumDto = {
    */
   id: string;
   name: string;
+  type?: AlbumType;
   artists: SimpleArtistDto[];
   tracks: TrackDto[];
   genres: GenreDto[];
@@ -16,6 +17,20 @@ export type AlbumDto = {
    * @format int32
    */
   releaseYear: number;
+};
+
+export type AlbumType = "Single" | "EP" | "MiniAlbum" | "Album" | "Compilation";
+
+export type ArtistDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  name: string;
+  releases: SimpleAlbumDto[];
+  featuredIn: SimpleAlbumDto[];
+  remixerIn: SimpleAlbumDto[];
+  inCompilation: SimpleAlbumDto[];
 };
 
 export type ArtistRole = "Main" | "Guest" | "Remixer";
@@ -58,6 +73,7 @@ export type SimpleAlbumDto = {
   id: string;
   name: string;
   artists: SimpleArtistDto[];
+  type?: AlbumType;
   /**
    * @format int32
    */
@@ -86,6 +102,22 @@ export type SimpleArtistDto = {
    */
   id: string;
   name: string;
+};
+
+export type SimpleArtistDtoPaginatedData = {
+  /**
+   * @format int32
+   */
+  availableRecords: number;
+  /**
+   * @format int32
+   */
+  totalRecords: number;
+  /**
+   * @format int32
+   */
+  resultCount: number;
+  data: SimpleArtistDto[];
 };
 
 export type StreamDto = {

@@ -156,6 +156,14 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("artists/paginated")]
+        public async Task<ActionResult<PaginatedData<SimpleArtistDto>>> PaginatedArtists([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        {
+            var result = await _paginationService.PaginateQuery<Artist, SimpleArtistDto>(offset, limit);
+            return Ok(result);
+        }
+
+        [HttpGet]
         [Route("albums/{albumId}")]
         public async Task<ActionResult<AlbumDto>> Album(Guid albumId)
         {
@@ -166,6 +174,14 @@ namespace Coral.Api.Controllers
             }
 
             return album;
+        }
+
+        [HttpGet]
+        [Route("artists/{artistId}")]
+        public async Task<ActionResult<ArtistDto>> Artist(Guid artistId)
+        {
+            var artist = await _libraryService.GetArtist(artistId);
+            return artist != null ? Ok(artist) : NotFound();
         }
     }
 }

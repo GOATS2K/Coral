@@ -403,6 +403,56 @@
         }
       }
     },
+    "/api/Library/artists/paginated": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "PaginatedArtists",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Library/albums/{albumId}": {
       "get": {
         "tags": [
@@ -443,6 +493,47 @@
           }
         }
       }
+    },
+    "/api/Library/artists/{artistId}": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "Artist",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtistDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtistDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtistDto"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -465,6 +556,9 @@
           "name": {
             "type": "string"
           },
+          "type": {
+            "$ref": "#/components/schemas/AlbumType"
+          },
           "artists": {
             "type": "array",
             "items": {
@@ -486,6 +580,61 @@
           "releaseYear": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlbumType": {
+        "enum": [
+          "Single",
+          "EP",
+          "MiniAlbum",
+          "Album",
+          "Compilation"
+        ],
+        "type": "string"
+      },
+      "ArtistDto": {
+        "required": [
+          "featuredIn",
+          "id",
+          "inCompilation",
+          "name",
+          "releases",
+          "remixerIn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
+          },
+          "featuredIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
+          },
+          "remixerIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
+          },
+          "inCompilation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleAlbumDto"
+            }
           }
         },
         "additionalProperties": false
@@ -616,6 +765,9 @@
               "$ref": "#/components/schemas/SimpleArtistDto"
             }
           },
+          "type": {
+            "$ref": "#/components/schemas/AlbumType"
+          },
           "releaseYear": {
             "type": "integer",
             "format": "int32"
@@ -666,6 +818,36 @@
           },
           "name": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimpleArtistDtoPaginatedData": {
+        "required": [
+          "availableRecords",
+          "data",
+          "resultCount",
+          "totalRecords"
+        ],
+        "type": "object",
+        "properties": {
+          "availableRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resultCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleArtistDto"
+            }
           }
         },
         "additionalProperties": false

@@ -1,5 +1,6 @@
 ﻿using Coral.Database;
 using Coral.Database.Models;
+using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
@@ -153,7 +154,10 @@ public class IndexerService : IIndexerService
 
         // most attributes are going to be the same in an album
         var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
+
+        var albumType = AlbumTypeHelper.GetAlbumType(distinctArtists.Where(a => a.Role == ArtistRole.Main).Count(), tracks.Count());
         var indexedAlbum = GetAlbum(distinctArtists, tracks.First());
+        indexedAlbum.Type = albumType;
         foreach (var trackToIndex in tracks)
         {
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);

@@ -45,6 +45,19 @@ namespace Coral.Dto.Tests
         }
 
         [Fact]
+        public void AlbumDto_AlbumWithoutType_CalculatesAndSetsType()
+        {
+            // arrange
+            var album = _testDatabase.ALittleWhileLonger;
+
+            // act
+            var result = _mapper.Map<AlbumDto>(album);
+
+            // assert
+            Assert.Equal(AlbumType.MiniAlbum, result.Type);
+        }
+
+        [Fact]
         public void AlbumDto_AlbumWithMultipleArtistRoles_SetsMainContributingArtistsAsAlbumArtists()
         {
             // arrange

@@ -6,6 +6,7 @@ import { usePlayerStore } from "../store";
 import styles from "../styles/Layout.module.css";
 import Sidebar from "./navigation/Sidebar";
 import { ArtistRole } from "../client/schemas";
+import { getTrackArtists } from "../common/album";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -20,9 +21,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const titleText =
     selectedTrack.artists != null
-      ? `${selectedTrack.artists
-          .filter((a) => a.role === "Main")
-          .join(", ")} - ${selectedTrack.title} | Coral`
+      ? `${getTrackArtists(selectedTrack)} - ${selectedTrack.title} | Coral`
       : "Coral";
 
   const theme = useMantineTheme();

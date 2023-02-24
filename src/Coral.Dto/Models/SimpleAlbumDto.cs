@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Coral.Database.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ namespace Coral.Dto.Models
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public List<SimpleArtistDto> Artists { get; set; } = null!;
+        public AlbumType? Type { get; set; }
         public int ReleaseYear { get; set; }
     }
 }

@@ -1,14 +1,14 @@
-import { ThemeContext } from "@emotion/react";
 import { Button, Title } from "@mantine/core";
-import { IconAlbum, IconSearch, IconVinyl } from "@tabler/icons";
+import { IconSearch, IconUsers, IconVinyl } from "@tabler/icons";
 import Link from "next/link";
 import React from "react";
 import styles from "../../styles/Layout.module.css";
 
 export default function Sidebar() {
   const links = [
-    { icon: <IconVinyl />, name: "Albums", link: "/albums" },
     { icon: <IconSearch />, name: "Search", link: "/search" },
+    { icon: <IconUsers />, name: "Artists", link: "/artists" },
+    { icon: <IconVinyl />, name: "Albums", link: "/albums" },
   ];
 
   const buttons = links.map((link) => (

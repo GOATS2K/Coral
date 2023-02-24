@@ -8,6 +8,31 @@ html {
   color: inherit;
 }
 
+@media screen and (max-width: 800px) {
+  div .attributes {
+    flex-direction: column;
+  }
+
+  div .attribute:before {
+    content: "";
+  }
+}
+
+.attributes {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.attribute:first-child::before {
+  content: "";
+}
+
+.attribute:before {
+  content: " • ";
+}
+
 ::-webkit-scrollbar {
   height: 0.75em;
 }

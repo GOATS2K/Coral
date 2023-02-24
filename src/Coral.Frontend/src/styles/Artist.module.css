@@ -1,0 +1,11 @@
+.heroWrapper {
+  padding: 2em;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: var(--app-background);
+}
+
+.heroImage {
+  margin-right: 1em;
+}

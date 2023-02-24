@@ -46,17 +46,17 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
           </Text>
           <Text fz={20}>{getAlbumArtists(album)}</Text>
         </div>
-        <div className={styles.attributes}>
-          <Text c={"dimmed"} fz={16} className={styles.attribute}>
+        <div className={"attributes"}>
+          <Text c={"dimmed"} fz={16} className={"attribute"}>
             {album.releaseYear}
           </Text>
-          <Text c={"dimmed"} fz={16} className={styles.attribute}>
+          <Text c={"dimmed"} fz={16} className={"attribute"}>
             {album.tracks?.length} tracks
           </Text>
-          <Text c={"dimmed"} fz={16} className={styles.attribute}>
+          <Text c={"dimmed"} fz={16} className={"attribute"}>
             {getAlbumDuration(album)}
           </Text>
-          <Text c={"dimmed"} fz={16} className={styles.attribute}>
+          <Text c={"dimmed"} fz={16} className={"attribute"}>
             {getAlbumGenre(album)}
           </Text>
         </div>

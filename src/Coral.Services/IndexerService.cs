@@ -111,6 +111,8 @@ public class IndexerService : IIndexerService
         {
             var artists = ParseArtists(atlTrack.Artist, atlTrack.Title);
             var indexedAlbum = GetAlbum(artists.Select(a => a.Artist).ToList(), atlTrack);
+            // set artists with roles on album
+            indexedAlbum.ArtistsWithRoles.AddRange(artists);
             var indexedGenre = GetGenre(atlTrack.Genre);
             await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack);
         }
@@ -156,6 +158,7 @@ public class IndexerService : IIndexerService
         var indexedAlbum = GetAlbum(distinctArtists.Select(a => a.Artist).ToList(), tracks.First());
         foreach (var trackToIndex in tracks)
         {
+            indexedAlbum.ArtistsWithRoles.AddRange(artistForTracks[trackToIndex]);
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
             await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
         }
@@ -234,14 +237,25 @@ public class IndexerService : IIndexerService
         return split.Select(s => s.Trim()).Distinct().ToList();
     }
 
-    private List<ArtistWithRole> CreateArtistsForRole(List<string> artists, ArtistRole role)
+    private List<ArtistWithRole> GetArtistWithRole(List<string> artists, ArtistRole role)
     {
-        return artists.Select(a => GetArtist(a.Trim()))
-            .Select(artist => new ArtistWithRole()
+        var artistsWithRoles = new List<ArtistWithRole>();
+        foreach (var artist in artists)
+        {
+            var indexedArtist = GetArtist(artist.Trim());
+            var artistWithRole = _context.ArtistsWithRoles.FirstOrDefault(a => a.ArtistId == indexedArtist.Id && a.Role == role);
+            if (artistWithRole == null)
             {
-                Artist = artist,
-                Role = role
-            }).ToList();
+                artistWithRole = new ArtistWithRole()
+                {
+                    Artist = indexedArtist,
+                    Role = role
+                };
+            }
+            artistsWithRoles.Add(artistWithRole);
+        }
+
+        return artistsWithRoles;
     }
 
     private List<ArtistWithRole> ParseArtists(string artist, string title)
@@ -256,9 +270,9 @@ public class IndexerService : IIndexerService
         // first group is parenthesis, second is brackets
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
-        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
-        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? CreateArtistsForRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
-        var mainArtists = CreateArtistsForRole(SplitArtist(artist), ArtistRole.Main);
+        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
+        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
+        var mainArtists = GetArtistWithRole(SplitArtist(artist), ArtistRole.Main);
 
         var artistList = new List<ArtistWithRole>();
         artistList.AddRange(guestArtists);
@@ -312,6 +326,7 @@ public class IndexerService : IIndexerService
         var album = new Album()
         {
             Artists = artists,
+            ArtistsWithRoles = new List<ArtistWithRole>(),
             Name = albumName!,
             ReleaseYear = atlTrack.Year,
             DiscTotal = atlTrack.DiscTotal,

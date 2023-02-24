@@ -9,28 +9,3 @@
   flex-direction: column;
   margin-left: 1em;
 }
-
-@media screen and (max-width: 600px) {
-  div .attributes {
-    flex-direction: column;
-  }
-
-  div .attribute:before {
-    content: "";
-  }
-}
-
-.attributes {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.attribute:first-child::before {
-  content: "";
-}
-
-.attribute:before {
-  content: " • ";
-}

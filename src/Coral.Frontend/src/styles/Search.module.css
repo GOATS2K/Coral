@@ -1,3 +1,7 @@
+.wrapper {
+  padding: 1em;
+}
+
 .artistWrapper {
   display: flex;
   flex-wrap: nowrap;

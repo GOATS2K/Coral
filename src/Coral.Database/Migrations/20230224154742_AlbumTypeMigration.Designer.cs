@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230224154742_AlbumTypeMigration")]
+    partial class AlbumTypeMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.2");
@@ -56,12 +59,12 @@ namespace Coral.Database.Migrations
                     b.Property<DateTime>("DateIndexed")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(2023, 2, 24, 16, 33, 43, 99, DateTimeKind.Utc).AddTicks(4269));
+                        .HasDefaultValue(new DateTime(2023, 2, 24, 15, 47, 42, 212, DateTimeKind.Utc).AddTicks(6087));
 
                     b.Property<DateTime>("DateModified")
                         .ValueGeneratedOnUpdate()
                         .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(2023, 2, 24, 16, 33, 43, 99, DateTimeKind.Utc).AddTicks(4000));
+                        .HasDefaultValue(new DateTime(2023, 2, 24, 15, 47, 42, 212, DateTimeKind.Utc).AddTicks(5806));
 
                     b.HasKey("Id");
 
@@ -107,8 +110,6 @@ namespace Coral.Database.Migrations
 
                     b.Property<int?>("Type")
                         .HasColumnType("INTEGER");
-
-                    b.HasIndex("Type");
 
                     b.ToTable("Albums");
                 });

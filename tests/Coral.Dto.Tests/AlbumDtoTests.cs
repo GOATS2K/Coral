@@ -45,7 +45,7 @@ namespace Coral.Dto.Tests
         }
 
         [Fact]
-        public void AlbumDto_AlbumWithoutType_CalculatesAndSetsType()
+        public void AlbumDto_AlbumWithType_SetsType()
         {
             // arrange
             var album = _testDatabase.ALittleWhileLonger;

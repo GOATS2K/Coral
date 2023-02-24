@@ -9,7 +9,7 @@ export type AlbumDto = {
    */
   id: string;
   name: string;
-  artists: ArtistDto[];
+  artists: SimpleArtistDto[];
   tracks: TrackDto[];
   genres: GenreDto[];
   /**
@@ -18,20 +18,16 @@ export type AlbumDto = {
   releaseYear: number;
 };
 
-export type ArtistDto = {
+export type ArtistRole = "Main" | "Guest" | "Remixer";
+
+export type ArtistWithRoleDto = {
   /**
    * @format uuid
    */
   id: string;
   name: string;
-};
-
-export type ArtistOnTrackDto = {
-  artist: SimpleArtistDto;
   role: ArtistRole;
 };
-
-export type ArtistRole = "Main" | "Guest" | "Remixer";
 
 export type ArtworkDto = {
   small: string;
@@ -66,7 +62,6 @@ export type SimpleAlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  coverPresent: boolean;
 };
 
 export type SimpleAlbumDtoPaginatedData = {
@@ -118,7 +113,7 @@ export type TrackDto = {
    * @format int32
    */
   discNumber: number;
-  artists: ArtistOnTrackDto[];
+  artists: ArtistWithRoleDto[];
   album: SimpleAlbumDto;
   genre?: GenreDto;
 };

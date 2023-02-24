@@ -34,12 +34,11 @@ namespace Coral.Dto.Tests
             foreach (var track in result.Tracks)
             {
                 var databaseTrack = album.Tracks.Single(t => t.Id == track.Id);
-                Assert.Equal(databaseTrack.Id, track.Id);
+                Assert.Equal(databaseTrack.Title, track.Title);
                 foreach (var artist in track.Artists)
                 {
                     // artist on TrackDto should use Artist ID, not ArtistOnTrack ID
-                    var databaseArtist = databaseTrack.Artists.Single(a => a.Artist.Id == artist.Artist.Id);
-                    Assert.Equal(databaseArtist.Artist.Id, artist.Artist.Id);
+                    var databaseArtist = databaseTrack.Artists.Single(a => a.ArtistId == artist.Id);
                     Assert.Equal(databaseArtist.Role, artist.Role);
                 }
             }

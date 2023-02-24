@@ -8,8 +8,12 @@ public class ArtistProfile : Profile
 {
     public ArtistProfile()
     {
-        CreateMap<Artist, ArtistDto>();
-        CreateMap<Artist, SimpleArtistDto>();
-        CreateMap<ArtistWithRole, ArtistOnTrackDto>();
+        CreateMap<ArtistWithRole, ArtistWithRoleDto>()
+            .ForMember(des => des.Id, opt => opt.MapFrom(src => src.ArtistId))
+            .ForMember(des => des.Name, opt => opt.MapFrom(src => src.Artist.Name));
+            
+        CreateMap<ArtistWithRole, SimpleArtistDto>()
+            .ForMember(des => des.Id, opt => opt.MapFrom(src => src.ArtistId))
+            .ForMember(des => des.Name, opt => opt.MapFrom(src => src.Artist.Name));
     }
 }

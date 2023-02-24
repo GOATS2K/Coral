@@ -156,8 +156,7 @@ public class TestDatabase : IDisposable
 
         Context.Albums.Add(BelieveBlankPagesSingle = new Album()
         {
-            Artists = new List<Artist>() { Tatora },
-            ArtistsWithRoles = new List<ArtistWithRole>(),
+            Artists = new List<ArtistWithRole>(),
             DateIndexed = currentTime,
             Name = "Believe / Blank Pages",
             ReleaseYear = 2020,
@@ -167,8 +166,7 @@ public class TestDatabase : IDisposable
 
         Context.Albums.Add(ALittleWhileLonger = new Album()
         {
-            Artists = new List<Artist>() { Lenzman, Slay, DannySanchez, Fox, Satl, Jubei },
-            ArtistsWithRoles = new List<ArtistWithRole>()
+            Artists = new List<ArtistWithRole>()
             {
                 LenzmanAsMain, SlayAsGuest, DannySanchezAsGuest, FoxAsGuest, SatlAsGuest, JubeiAsRemixer
             },

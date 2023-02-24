@@ -3,9 +3,7 @@ namespace Coral.Database.Models;
 public class Album : BaseTable
 {
     public string Name { get; set; } = null!;
-
-    public List<Artist> Artists { get; set; } = null!;
-    public List<ArtistWithRole> ArtistsWithRoles { get; set; } = null!;
+    public List<ArtistWithRole> Artists { get; set; } = null!;
     public List<Track> Tracks { get; set; } = null!;
 
     public int? ReleaseYear { get; set; }

@@ -110,9 +110,7 @@ public class IndexerService : IIndexerService
         foreach (var atlTrack in tracks)
         {
             var artists = ParseArtists(atlTrack.Artist, atlTrack.Title);
-            var indexedAlbum = GetAlbum(artists.Select(a => a.Artist).ToList(), atlTrack);
-            // set artists with roles on album
-            indexedAlbum.ArtistsWithRoles.AddRange(artists);
+            var indexedAlbum = GetAlbum(artists, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
             await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack);
         }
@@ -155,10 +153,9 @@ public class IndexerService : IIndexerService
 
         // most attributes are going to be the same in an album
         var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
-        var indexedAlbum = GetAlbum(distinctArtists.Select(a => a.Artist).ToList(), tracks.First());
+        var indexedAlbum = GetAlbum(distinctArtists, tracks.First());
         foreach (var trackToIndex in tracks)
         {
-            indexedAlbum.ArtistsWithRoles.AddRange(artistForTracks[trackToIndex]);
             var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
             await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
         }
@@ -294,7 +291,7 @@ public class IndexerService : IIndexerService
         return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
 
-    private Album GetAlbum(List<Artist> artists, ATL.Track atlTrack)
+    private Album GetAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack)
     {
         var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : Directory.GetParent(atlTrack.Path)?.Name;
         // Albums can have the same name, so in order to differentiate between them
@@ -310,8 +307,9 @@ public class IndexerService : IIndexerService
         }
 
         if (!indexedAlbum.Artists
-                .OrderBy(a => a.Name)
-                .SequenceEqual(artists.OrderBy(a => a.Name)))
+                .Select(a => a.ArtistId)
+                .Order()
+                .SequenceEqual(artists.Select(a => a.ArtistId).Order()))
         {
             var missingArtists = artists.Where(a => !indexedAlbum.Artists.Contains(a));
             indexedAlbum.Artists.AddRange(missingArtists);
@@ -320,13 +318,12 @@ public class IndexerService : IIndexerService
         return indexedAlbum;
     }
 
-    private Album CreateAlbum(List<Artist> artists, ATL.Track atlTrack, string? albumName)
+    private Album CreateAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack, string? albumName)
     {
         
         var album = new Album()
         {
-            Artists = artists,
-            ArtistsWithRoles = new List<ArtistWithRole>(),
+            Artists = new List<ArtistWithRole>(),
             Name = albumName!,
             ReleaseYear = atlTrack.Year,
             DiscTotal = atlTrack.DiscTotal,
@@ -336,6 +333,7 @@ public class IndexerService : IIndexerService
         };
         
         _context.Albums.Add(album);
+        album.Artists.AddRange(artists);
         return album;
     }
 }

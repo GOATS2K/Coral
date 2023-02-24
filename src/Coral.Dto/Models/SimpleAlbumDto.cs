@@ -12,6 +12,5 @@ namespace Coral.Dto.Models
         public string Name { get; set; } = null!;
         public List<SimpleArtistDto> Artists { get; set; } = null!;
         public int ReleaseYear { get; set; }
-        public bool CoverPresent { get; set; }
     }
 }

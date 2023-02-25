@@ -4,7 +4,7 @@ import { CenteredLoader } from "../../common/ui";
 import Artist from "../../components/artist/Artist";
 
 export default function ArtistById() {
-  const artistId = "3283d220-87c6-47af-9666-577f8a0f948a";
+  const artistId = "44fb2fbf-ce89-4b8d-847c-7818d4fb554d";
   const { data, isLoading, error } = useArtist({
     pathParams: {
       artistId: artistId,

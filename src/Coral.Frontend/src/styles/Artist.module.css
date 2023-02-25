@@ -1,18 +1,17 @@
-.heroWrapper {
+.bannerWrapper {
   padding: 3em 2em 3em 2em;
   display: flex;
   flex-direction: row;
   align-items: center;
-  flex: 1;
   backdrop-filter: blur(100px) brightness(75%);
 }
 
-.heroBackground {
+.bannerBackground {
   background-repeat: no-repeat;
   background-size: cover;
   background-position: 50%;
 }
 
-.heroImage {
+.bannerImage {
   margin-right: 1em;
 }

@@ -5,24 +5,24 @@ import styles from "../../styles/Artist.module.css";
 import { FastAverageColor, FastAverageColorResult } from "fast-average-color";
 import { ThemeContext } from "@emotion/react";
 
-type ArtistHeroProps = {
+type ArtistBannerProps = {
   artist?: ArtistDto;
 };
 
-export default function ArtistHero({ artist }: ArtistHeroProps) {
+export default function ArtistBanner({ artist }: ArtistBannerProps) {
   const avatar =
     "https://localhost:7031/api/artwork/170e820b-3d2c-43be-8328-dcfa4df49fc5";
 
   return (
     <div
-      className={styles.heroBackground}
+      className={styles.bannerBackground}
       style={{
         backgroundImage: `url(${avatar})`,
       }}
     >
-      <div className={styles.heroWrapper}>
+      <div className={styles.bannerWrapper}>
         <Image
-          className={styles.heroImage}
+          className={styles.bannerImage}
           src={avatar}
           alt={""}
           height={150}
@@ -31,7 +31,7 @@ export default function ArtistHero({ artist }: ArtistHeroProps) {
           withPlaceholder
         ></Image>
         <div>
-          <Title className={styles.heroTitle} color={"white"} order={1}>
+          <Title className={styles.bannerTitle} color={"white"} order={1}>
             {artist?.name}
           </Title>
           <div className="attributes">

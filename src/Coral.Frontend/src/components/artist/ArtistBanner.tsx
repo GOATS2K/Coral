@@ -4,15 +4,13 @@ import { ArtistDto } from "../../client/schemas";
 import styles from "../../styles/Artist.module.css";
 import { FastAverageColor, FastAverageColorResult } from "fast-average-color";
 import { ThemeContext } from "@emotion/react";
+import { useAlbumArtwork } from "../../client/components";
 
 type ArtistBannerProps = {
   artist?: ArtistDto;
 };
 
 export default function ArtistBanner({ artist }: ArtistBannerProps) {
-  const avatar =
-    "https://localhost:7031/api/artwork/170e820b-3d2c-43be-8328-dcfa4df49fc5";
-
   const mainReleaseCount = artist?.releases.length;
   const featuredInCount = artist?.featuredIn.length;
   const remixerInCount = artist?.remixerIn.length;
@@ -23,23 +21,41 @@ export default function ArtistBanner({ artist }: ArtistBannerProps) {
     Number(featuredInCount) +
     Number(remixerInCount) +
     Number(compilationCount);
+
+  const releaseWithArtwork = artist?.releases.find(
+    (a) => a.hasArtwork === true
+  )?.id;
+
+  const { data } = useAlbumArtwork(
+    {
+      pathParams: {
+        albumId: releaseWithArtwork != null ? releaseWithArtwork : "",
+      },
+    },
+    {
+      enabled: releaseWithArtwork != null,
+    }
+  );
+
   return (
     <div
       className={styles.bannerBackground}
       style={{
-        backgroundImage: `url(${avatar})`,
+        backgroundImage: `url(${data?.original})`,
       }}
     >
       <div className={styles.bannerWrapper}>
-        <Image
-          className={styles.bannerImage}
-          src={avatar}
-          alt={""}
-          height={150}
-          width={150}
-          radius={100}
-          withPlaceholder
-        ></Image>
+        {releaseWithArtwork && (
+          <Image
+            className={styles.bannerImage}
+            src={data?.original}
+            alt={""}
+            height={150}
+            width={150}
+            radius={100}
+            withPlaceholder
+          ></Image>
+        )}
         <div>
           <Title className={styles.bannerTitle} color={"white"} order={1}>
             {artist?.name}

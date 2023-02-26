@@ -29,6 +29,7 @@ import { ShakaPlayer, ShakaPlayerRef } from "./ShakaPlayer";
 import getConfig from "next/config";
 import { fetchStreamTrack, useAlbumArtwork } from "../../client/components";
 import Link from "next/link";
+import { getLinksForArtist } from "../../common/links";
 
 function Player() {
   const playerRef = React.useRef<ShakaPlayerRef>(null);
@@ -299,7 +300,7 @@ function Player() {
             {selectedTrack.title}
           </Anchor>
         </Link>
-        <Text fz="xs">{selectedTrackArtist}</Text>
+        {getLinksForArtist(selectedTrack)}
       </div>
       <div className={styles.playerWrapper}>
         <div className={styles.playerButtons}>

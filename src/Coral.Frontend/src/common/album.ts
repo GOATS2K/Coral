@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AlbumDto, SimpleAlbumDto, TrackDto } from "../client/schemas";
 import { formatSecondsToDateString } from "../utils";
 

@@ -8,6 +8,22 @@ html {
   color: inherit;
 }
 
+.wrappedLinks {
+  display: flex;
+}
+
+.wrappedPlayerArtist:first-child::before {
+  content: "";
+}
+
+.wrappedPlayerArtist:before {
+  content: ", ";
+}
+
+
+
+
+
 @media screen and (max-width: 800px) {
   div .attributes {
     flex-direction: column;

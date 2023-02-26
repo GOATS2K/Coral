@@ -13,6 +13,16 @@ export default function ArtistBanner({ artist }: ArtistBannerProps) {
   const avatar =
     "https://localhost:7031/api/artwork/170e820b-3d2c-43be-8328-dcfa4df49fc5";
 
+  const mainReleaseCount = artist?.releases.length;
+  const featuredInCount = artist?.featuredIn.length;
+  const remixerInCount = artist?.remixerIn.length;
+  const compilationCount = artist?.inCompilation.length;
+
+  const totalReleaseCount =
+    Number(mainReleaseCount) +
+    Number(featuredInCount) +
+    Number(remixerInCount) +
+    Number(compilationCount);
   return (
     <div
       className={styles.bannerBackground}
@@ -35,9 +45,7 @@ export default function ArtistBanner({ artist }: ArtistBannerProps) {
             {artist?.name}
           </Title>
           <div className="attributes">
-            <Text className="attribute">
-              {artist?.releases.length} releases
-            </Text>
+            <Text className="attribute">{totalReleaseCount} releases</Text>
           </div>
         </div>
       </div>

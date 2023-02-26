@@ -15,3 +15,17 @@
 .bannerImage {
   margin-right: 1em;
 }
+
+.pageWrapper {
+  padding: 1em;
+}
+
+.albumWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  flex-grow: 1;
+  /* prevent vertical growth of flex elements */
+  align-content: flex-start;
+  margin-bottom: 2em;
+}

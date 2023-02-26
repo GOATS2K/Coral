@@ -31,34 +31,39 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
   }
 
   return (
-    <div className={styles.wrapper}>
-      <Image
-        alt={`Album cover of ${album.name}}`}
-        withPlaceholder
-        width={250}
-        height={250}
-        src={data?.medium}
-      ></Image>
-      <div className={styles.metadataWrapper}>
-        <div className={styles.metadata}>
-          <Text fw={700} fz={32}>
-            {album.name}
-          </Text>
-          <Text fz={20}>{getAlbumArtists(album)}</Text>
-        </div>
-        <div className={"attributes"}>
-          <Text c={"dimmed"} fz={16} className={"attribute"}>
-            {album.releaseYear}
-          </Text>
-          <Text c={"dimmed"} fz={16} className={"attribute"}>
-            {album.tracks?.length} tracks
-          </Text>
-          <Text c={"dimmed"} fz={16} className={"attribute"}>
-            {getAlbumDuration(album)}
-          </Text>
-          <Text c={"dimmed"} fz={16} className={"attribute"}>
-            {getAlbumGenre(album)}
-          </Text>
+    <div
+      className={styles.background}
+      style={{ backgroundImage: `url(${data?.original})` }}
+    >
+      <div className={styles.wrapper}>
+        <Image
+          alt={`Album cover of ${album.name}}`}
+          withPlaceholder
+          width={250}
+          height={250}
+          src={data?.medium}
+        ></Image>
+        <div className={styles.metadataWrapper}>
+          <div className={styles.metadata}>
+            <Text fw={700} color={"white"} fz={32}>
+              {album.name}
+            </Text>
+            <Text fz={20}>{getAlbumArtists(album)}</Text>
+          </div>
+          <div className={"attributes"}>
+            <Text c={"dimmed"} fz={16} className={"attribute"}>
+              {album.releaseYear}
+            </Text>
+            <Text c={"dimmed"} fz={16} className={"attribute"}>
+              {album.tracks?.length} tracks
+            </Text>
+            <Text c={"dimmed"} fz={16} className={"attribute"}>
+              {getAlbumDuration(album)}
+            </Text>
+            <Text c={"dimmed"} fz={16} className={"attribute"}>
+              {getAlbumGenre(album)}
+            </Text>
+          </div>
         </div>
       </div>
     </div>

@@ -542,6 +542,7 @@
         "required": [
           "artists",
           "genres",
+          "hasArtwork",
           "id",
           "name",
           "releaseYear",
@@ -556,14 +557,21 @@
           "name": {
             "type": "string"
           },
-          "type": {
-            "$ref": "#/components/schemas/AlbumType"
-          },
           "artists": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SimpleArtistDto"
             }
+          },
+          "type": {
+            "$ref": "#/components/schemas/AlbumType"
+          },
+          "releaseYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasArtwork": {
+            "type": "boolean"
           },
           "tracks": {
             "type": "array",
@@ -576,10 +584,6 @@
             "items": {
               "$ref": "#/components/schemas/GenreDto"
             }
-          },
-          "releaseYear": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -746,6 +750,7 @@
       "SimpleAlbumDto": {
         "required": [
           "artists",
+          "hasArtwork",
           "id",
           "name",
           "releaseYear"
@@ -771,6 +776,9 @@
           "releaseYear": {
             "type": "integer",
             "format": "int32"
+          },
+          "hasArtwork": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

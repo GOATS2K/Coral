@@ -9,14 +9,15 @@ export type AlbumDto = {
    */
   id: string;
   name: string;
-  type?: AlbumType;
   artists: SimpleArtistDto[];
-  tracks: TrackDto[];
-  genres: GenreDto[];
+  type?: AlbumType;
   /**
    * @format int32
    */
   releaseYear: number;
+  hasArtwork: boolean;
+  tracks: TrackDto[];
+  genres: GenreDto[];
 };
 
 export type AlbumType = "Single" | "EP" | "MiniAlbum" | "Album" | "Compilation";
@@ -78,6 +79,7 @@ export type SimpleAlbumDto = {
    * @format int32
    */
   releaseYear: number;
+  hasArtwork: boolean;
 };
 
 export type SimpleAlbumDtoPaginatedData = {

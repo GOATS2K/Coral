@@ -1,4 +1,5 @@
-import { Image, Text } from "@mantine/core";
+import { Anchor, Image, Text } from "@mantine/core";
+import Link from "next/link";
 import React from "react";
 import { SimpleArtistDto } from "../../client/schemas";
 import styles from "../../styles/Search.module.css";
@@ -10,16 +11,24 @@ type ArtistSearchItemProps = {
 export default function ArtistSearchItem({ artist }: ArtistSearchItemProps) {
   return (
     <div className={styles.artistItem}>
-      <Image
-        withPlaceholder
-        alt={""}
-        width={100}
-        height={100}
-        radius={100}
-      ></Image>
-      <Text lineClamp={2} fw={"bold"} fz={"sm"} style={{ textAlign: "center" }}>
-        {artist.name}
-      </Text>
+      <Link href={`/artists/${artist.id}`} className="link">
+        <Image
+          withPlaceholder
+          alt={""}
+          width={100}
+          height={100}
+          radius={100}
+        ></Image>
+        <Anchor
+          className="link"
+          lineClamp={2}
+          fw={"bold"}
+          fz={"sm"}
+          style={{ textAlign: "center" }}
+        >
+          {artist.name}
+        </Anchor>
+      </Link>
     </div>
   );
 }

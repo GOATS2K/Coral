@@ -3,7 +3,7 @@
   flex-direction: row;
   padding: 2em;
   margin-bottom: 0.75em;
-  backdrop-filter: brightness(40%) blur(100px);
+  backdrop-filter: brightness(40%) blur(40px);
 }
 
 .background {

@@ -3,6 +3,7 @@
   padding: 1rem;
   z-index: 100;
   background: var(--app-background);
+  overflow: hidden;
 }
 
 .imageBox {

@@ -1,5 +1,5 @@
 import React from "react";
-import { ArtistDto } from "../../client/schemas";
+import { ArtistDto, SimpleAlbumDto } from "../../client/schemas";
 import AlbumList from "./AlbumList";
 import ArtistBanner from "./ArtistBanner";
 import styles from "../../styles/Artist.module.css";
@@ -14,6 +14,8 @@ export default function Artist({ artist }: ArtistProps) {
   const eps = artist?.releases.filter((a) => a.type === "EP");
   const albums = artist?.releases.filter((a) => a.type === "Album");
   const miniAlbums = artist?.releases.filter((a) => a.type === "MiniAlbum");
+  const untagged = artist?.releases.filter((a) => a.type == null);
+
   return (
     <div>
       <ArtistBanner artist={artist}></ArtistBanner>
@@ -42,11 +44,14 @@ export default function Artist({ artist }: ArtistProps) {
             title={"Remixer In"}
           ></AlbumList>
         )}
-        {artist?.inCompilation.length != 0 && (
+        {artist?.inCompilation?.length != 0 && (
           <AlbumList
             albums={artist?.inCompilation}
             title={"Appears In"}
           ></AlbumList>
+        )}
+        {untagged?.length != 0 && (
+          <AlbumList albums={untagged} title={"Unknown Type"}></AlbumList>
         )}
       </div>
     </div>

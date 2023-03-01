@@ -13,6 +13,7 @@ specifiers:
   '@openapi-codegen/cli': ^2.0.0
   '@openapi-codegen/typescript': ^6.1.0
   '@tabler/icons': ^1.119.0
+  '@tabler/icons-react': ^2.6.0
   '@tanstack/react-query': ^4.24.4
   '@testing-library/dom': ^8.20.0
   '@testing-library/jest-dom': ^5.16.5
@@ -50,6 +51,7 @@ dependencies:
   '@mantine/next': 5.10.1_knfl6ps6qqqwpiywkokbtml6se
   '@mantine/notifications': 5.10.1_ynz4r3bmi75slbqnmaycv7w7wa
   '@tabler/icons': 1.119.0_biqbaboplfbrettd7655fr4n2y
+  '@tabler/icons-react': 2.6.0_react@18.2.0
   '@tanstack/react-query': 4.24.4_biqbaboplfbrettd7655fr4n2y
   '@testing-library/jest-dom': 5.16.5
   '@testing-library/react': 13.4.0_biqbaboplfbrettd7655fr4n2y
@@ -1146,6 +1148,16 @@ packages:
       defer-to-connect: 2.0.1
     dev: true
 
+  /@tabler/icons-react/2.6.0_react@18.2.0:
+    resolution: {integrity: sha512-0JncH0yPC1zXtSHhsAqqCuQQFglQk1zNDdHoTubpKNUbwJGhP8ET2LvidhoJgVQnMjC0bhpvkJp450klvZjQVg==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@tabler/icons': 2.6.0
+      prop-types: 15.8.1
+      react: 18.2.0
+    dev: false
+
   /@tabler/icons/1.119.0_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-Fk3Qq4w2SXcTjc/n1cuL5bccPkylrOMo7cYpQIf/yw6zP76LQV9dtLcHQUjFiUnaYuswR645CnURIhlafyAh9g==}
     peerDependencies:
@@ -1159,6 +1171,10 @@ packages:
     dependencies:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
+    dev: false
+
+  /@tabler/icons/2.6.0:
+    resolution: {integrity: sha512-rflJyQSsu2iV6QgrA7ZdGaikSTdIVpXlem0jBIcx18OKg0ZJmLojmrhNo7DpOW7bCT4Hr2r6jcpq8uSYrinqZw==}
     dev: false
 
   /@tanstack/query-core/4.24.4:

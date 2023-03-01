@@ -1,4 +1,4 @@
-import { IconPlayerPlay, IconDisc, IconVinyl } from "@tabler/icons";
+import { IconPlayerPlay, IconDisc, IconVinyl } from "@tabler/icons-react";
 import { TrackDto } from "../../client/schemas";
 import styles from "../../styles/PlaylistItem.module.css";
 import { Text, UnstyledButton, useMantineTheme, Image } from "@mantine/core";

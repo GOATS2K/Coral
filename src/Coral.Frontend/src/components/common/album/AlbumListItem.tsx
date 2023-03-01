@@ -11,7 +11,7 @@ import styles from "../../../styles/AlbumList.module.css";
 import { getAlbumArtists } from "../../../common/album";
 import getConfig from "next/config";
 import Link from "next/link";
-import { IconPlayerPlay } from "@tabler/icons";
+import { IconPlayerPlay } from "@tabler/icons-react";
 import { fetchAlbum, useAlbumArtwork } from "../../../client/components";
 import {
   Initializer,

@@ -20,7 +20,7 @@ import {
   IconPlayerPause,
   IconSettings,
   IconVolume2,
-} from "@tabler/icons";
+} from "@tabler/icons-react";
 import { StreamDto } from "../../client/schemas";
 import styles from "../../styles/Player.module.css";
 import { formatSecondsToSingleMinutes } from "../../utils";

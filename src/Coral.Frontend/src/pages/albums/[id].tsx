@@ -5,7 +5,7 @@ import { useAlbum } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
 import { Initializer, PlayerInitializationSource } from "../../store";
 import { isStringObject } from "util/types";
-import { IconRouter } from "@tabler/icons";
+import { IconRouter } from "@tabler/icons-react";
 
 export default function Album() {
   const router = useRouter();

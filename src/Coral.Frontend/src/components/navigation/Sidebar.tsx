@@ -1,5 +1,6 @@
 import { Button, Title } from "@mantine/core";
-import { IconSearch, IconUsers, IconVinyl } from "@tabler/icons";
+import { IconSearch, IconUsers, IconVinyl } from "@tabler/icons-react";
+import { IconSparkles } from "@tabler/icons-react";
 import Link from "next/link";
 import React from "react";
 import styles from "../../styles/Layout.module.css";
@@ -9,6 +10,7 @@ export default function Sidebar() {
     { icon: <IconSearch />, name: "Search", link: "/search" },
     { icon: <IconUsers />, name: "Artists", link: "/artists" },
     { icon: <IconVinyl />, name: "Albums", link: "/albums" },
+    { icon: <IconSparkles />, name: "Showcase", link: "/showcase" },
   ];
 
   const buttons = links.map((link) => (

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Coral.PluginBase;
 
 namespace Coral.Api
 {
@@ -31,8 +32,13 @@ namespace Coral.Api
                         serviceCollection.AddScoped(interfaceType, implementingType);
                     }
                 }
-                // load controller
-                serviceCollection.AddMvc().AddApplicationPart(assembly).AddControllersAsServices();
+                
+                // check if plugin has any API controllers
+                if (exportedTypes.Any(t => t.IsSubclassOf(typeof(PluginController))))
+                {
+                    // load controller
+                    serviceCollection.AddMvc().AddApplicationPart(assembly).AddControllersAsServices();   
+                }
             }
         }
     }

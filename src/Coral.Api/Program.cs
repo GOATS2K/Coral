@@ -3,7 +3,6 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
-using Coral.PluginHost;
 using Coral.Services;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +30,7 @@ builder.Services.AddAutoMapper(opt =>
 builder.Services.AddControllers();
 
 // load plugins
-var pluginHost = new PluginHost();
+var pluginHost = new PluginLoader();
 var assemblies = pluginHost.LoadPluginAssemblies();
 builder.Services.AddPlugins(assemblies);
 

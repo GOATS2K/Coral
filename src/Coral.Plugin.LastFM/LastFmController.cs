@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Coral.PluginBase;
 
 namespace Coral.Plugin.LastFM
 {
-    [Route("api/plugin/[controller]")]
-    [ApiController]
-    public class LastFmController : ControllerBase
+    public class LastFmController : PluginController
     {
         private readonly ILastFmService _lastFmService;
 

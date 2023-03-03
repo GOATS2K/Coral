@@ -4,9 +4,9 @@ using Coral.PluginBase;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Coral.PluginHost
+namespace Coral.Api
 {
-    public class PluginHost : AssemblyLoadContext
+    public class PluginLoader : AssemblyLoadContext
     {
         public IEnumerable<Assembly> LoadPluginAssemblies()
         {
@@ -20,7 +20,7 @@ namespace Coral.PluginHost
                 {
                     throw new ApplicationException("Coral.PluginBase assembly detected. " +
                                                         $"Please delete the assembly at: {assembly.Location}" +
-                                                        $" to ensure plug-ins can load.");
+                                                        " to ensure plug-ins can load.");
                 }
                 
                 var types = assembly.GetTypes();
@@ -30,7 +30,8 @@ namespace Coral.PluginHost
                 var pluginCount = types.Count(t => typeof(IPlugin).IsAssignableFrom(t));
                 if (pluginCount > 1)
                 {
-                    throw new ConstraintException("Cannot load assembly with more than 1 plugin.");
+                    throw new ConstraintException("Cannot load assembly with more than 1 plugin." +
+                                                  " Please separate your plugins into multiple assemblies");
                 }
                 
                 if (pluginCount != 0)

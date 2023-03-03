@@ -10,14 +10,20 @@ namespace Coral.Api
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddPlugins(this IServiceCollection serviceCollection, IEnumerable<Assembly> assemblies)
+        public static void AddPlugins(this IServiceCollection serviceCollection, IEnumerable<Assembly> assemblies)
         {
             foreach (var assembly in assemblies)
             {
                 var exportedTypes = assembly.GetExportedTypes();
-                // locate types inherting from interfaces and inject pair
+                // locate types inheriting from interfaces and inject pair
                 var interfaces = exportedTypes.Where(a => a.IsInterface);
-                var pairs = interfaces.ToDictionary(key => key, value => exportedTypes.Where(a => a.IsClass && !a.IsAbstract && a.GetInterfaces().Contains(value)));
+                var pairs = interfaces.ToDictionary(key => key,
+                    value => exportedTypes
+                        .Where(a => a.IsClass 
+                                    && !a.IsAbstract 
+                                    && a.GetInterfaces()
+                                        .Contains(value)));
+                
                 foreach (var (interfaceType, types) in pairs)
                 {
                     foreach (var implementingType in types)
@@ -28,7 +34,6 @@ namespace Coral.Api
                 // load controller
                 serviceCollection.AddMvc().AddApplicationPart(assembly).AddControllersAsServices();
             }
-            return serviceCollection;
         }
     }
 }

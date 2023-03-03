@@ -1,6 +1,6 @@
-﻿using Coral.Configuration;
+﻿using System.Data;
+using Coral.Configuration;
 using Coral.PluginBase;
-using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -11,16 +11,31 @@ namespace Coral.PluginHost
         public IEnumerable<Assembly> LoadPluginAssemblies()
         {
             var assembliesToLoad = Directory.GetFiles(ApplicationConfiguration.Plugins, "*.dll");
-            var assemblies = assembliesToLoad.Select(a => LoadFromAssemblyPath(a));
+            var assemblies = assembliesToLoad.Select(LoadFromAssemblyPath);
             foreach (var assembly in assemblies)
             {
-                var types = assembly.GetTypes();
-                foreach (var type in types)
+                // if PluginBase is present,
+                // the plugins won't load, so raise exception
+                if (assembly.GetName().FullName.StartsWith("Coral.PluginBase"))
                 {
-                    if (typeof(IPlugin).IsAssignableFrom(type))
-                    {
-                        yield return assembly;
-                    }
+                    throw new ApplicationException("Coral.PluginBase assembly detected. " +
+                                                        $"Please delete the assembly at: {assembly.Location}" +
+                                                        $" to ensure plug-ins can load.");
+                }
+                
+                var types = assembly.GetTypes();
+                
+                // if assembly has more than 1 plugin,
+                // throw exception about poor design.
+                var pluginCount = types.Count(t => typeof(IPlugin).IsAssignableFrom(t));
+                if (pluginCount > 1)
+                {
+                    throw new ConstraintException("Cannot load assembly with more than 1 plugin.");
+                }
+                
+                if (pluginCount != 0)
+                {
+                    yield return assembly;
                 }
             }
         }

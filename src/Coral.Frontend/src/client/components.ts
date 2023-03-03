@@ -112,36 +112,6 @@ export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
   );
 };
 
-export type TestError = Fetcher.ErrorWrapper<undefined>;
-
-export type TestVariables = Context["fetcherOptions"];
-
-export const fetchTest = (variables: TestVariables, signal?: AbortSignal) =>
-  fetch<undefined, TestError, undefined, {}, {}, {}>({
-    url: "/api/plugin/LastFm",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useTest = <TData = undefined>(
-  variables: TestVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, TestError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, TestError, TData>(
-    queryKeyFn({ path: "/api/plugin/LastFm", operationId: "test", variables }),
-    ({ signal }) => fetchTest({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -710,11 +680,6 @@ export type QueryOperation =
       path: "/api/Artwork/albums/{albumId}";
       operationId: "albumArtwork";
       variables: AlbumArtworkVariables;
-    }
-  | {
-      path: "/api/plugin/LastFm";
-      operationId: "test";
-      variables: TestVariables;
     }
   | {
       path: "/api/Library/search";

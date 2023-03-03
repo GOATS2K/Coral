@@ -70,19 +70,6 @@
         }
       }
     },
-    "/api/plugin/LastFm": {
-      "get": {
-        "tags": [
-          "LastFm"
-        ],
-        "operationId": "Test",
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
     "/api/Library/scan": {
       "post": {
         "tags": [

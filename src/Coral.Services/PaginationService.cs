@@ -40,26 +40,8 @@ namespace Coral.Services
             where TDtoType : class
         {
             var dbSet = _context.Set<TSourceType>();
-            var contextSet = sourceQuery(dbSet);
-            var totalItemCount = await contextSet.CountAsync();
-            var query = contextSet
-                .OrderBy(i => i.Id)
-                .Skip(offset)
-                .Take(limit);
-
-            var availableRecords = Math.Max(0, totalItemCount - (offset + limit));
-            var querySize = await query.CountAsync();
-            var data = await query
-                .ProjectTo<TDtoType>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return new PaginatedData<TDtoType>()
-            {
-                AvailableRecords = availableRecords,
-                ResultCount = querySize,
-                TotalRecords = totalItemCount,
-                Data = data
-            };
+            var queryable = sourceQuery(dbSet);
+            return await PaginateQueryable<TSourceType, TDtoType>(queryable, offset, limit);
         }
 
         public async Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
@@ -67,8 +49,15 @@ namespace Coral.Services
             where TDtoType : class
         {
             var contextSet = _context.Set<TSourceType>();
-            var totalItemCount = await contextSet.CountAsync();
-            var query = contextSet
+            return await PaginateQueryable<TSourceType, TDtoType>(contextSet, offset, limit);
+        }
+
+        private async Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(IQueryable<TSourceType> queryable, int offset = 0, int limit = 10)
+            where TSourceType : BaseTable
+            where TDtoType : class
+        {
+            var totalItemCount = await queryable.CountAsync();
+            var query = queryable
                 .OrderBy(i => i.Id)
                 .Skip(offset)
                 .Take(limit);
@@ -85,6 +74,6 @@ namespace Coral.Services
                 TotalRecords = totalItemCount,
                 Data = data
             };
-        }
+        } 
     }
 }

@@ -8,6 +8,14 @@ namespace Coral.Api
 {
     public class PluginLoader : AssemblyLoadContext
     {
+        private readonly ILogger<PluginLoader> _logger;
+
+        public PluginLoader()
+        {
+            var loggerFactory = LoggerFactory.Create(opt => opt.AddConsole());
+            _logger = loggerFactory.CreateLogger<PluginLoader>();
+        }
+
         public IEnumerable<Assembly> LoadPluginAssemblies()
         {
             var assembliesToLoad = Directory.GetFiles(ApplicationConfiguration.Plugins, "*.dll");
@@ -36,6 +44,10 @@ namespace Coral.Api
                 
                 if (pluginCount != 0)
                 {
+                    var pluginType = types.Single(t => typeof(IPlugin).IsAssignableFrom(t));
+                    var plugin = Activator.CreateInstance(pluginType) as IPlugin;
+                    if (plugin != null)
+                        _logger.LogInformation("Loaded plugin: {name} - {description}", plugin.Name, plugin.Description);
                     yield return assembly;
                 }
             }

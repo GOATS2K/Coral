@@ -30,8 +30,8 @@ builder.Services.AddAutoMapper(opt =>
 builder.Services.AddControllers();
 
 // load plugins
-var pluginHost = new PluginLoader();
-var assemblies = pluginHost.LoadPluginAssemblies();
+var pluginLoader = new PluginLoader();
+var assemblies = pluginLoader.LoadPluginAssemblies();
 builder.Services.AddPlugins(assemblies);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -113,6 +113,5 @@ app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
-var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 await db.Database.MigrateAsync();
 app.Run();

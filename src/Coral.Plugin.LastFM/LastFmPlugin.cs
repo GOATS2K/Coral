@@ -1,4 +1,5 @@
 ﻿using Coral.PluginBase;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Coral.Plugin.LastFM
 {
@@ -7,5 +8,10 @@ namespace Coral.Plugin.LastFM
         public string Name => "Last.fm";
 
         public string Description => "A simple track scrobbler.";
+
+        public void ConfigureServices(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddScoped<ILastFmService, LastFmService>();
+        }
     }
 }

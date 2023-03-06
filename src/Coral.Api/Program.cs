@@ -19,6 +19,7 @@ builder.Services.AddScoped<IIndexerService, IndexerService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IArtworkService, ArtworkService>();
 builder.Services.AddScoped<IPaginationService, PaginationService>();
+builder.Services.AddSingleton<IPluginContext, PluginContext>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
 builder.Services.AddHttpContextAccessor();
@@ -28,12 +29,6 @@ builder.Services.AddAutoMapper(opt =>
 });
 
 builder.Services.AddControllers();
-
-// load plugins
-var pluginLoader = new PluginLoader();
-var assemblies = pluginLoader.LoadPluginAssemblies();
-builder.Services.AddPlugins(assemblies);
-
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(conf =>
@@ -113,5 +108,7 @@ app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+var pc = scope.ServiceProvider.GetRequiredService<IPluginContext>();
+pc.LoadAssemblies();
 await db.Database.MigrateAsync();
 app.Run();

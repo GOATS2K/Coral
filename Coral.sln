@@ -27,9 +27,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Configuration", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Dto.Tests", "tests\Coral.Dto.Tests\Coral.Dto.Tests.csproj", "{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.PluginBase", "src\Coral.PluginBase\Coral.PluginBase.csproj", "{1F37196D-99DB-4C17-B598-AAD337606DAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginBase", "src\Coral.PluginBase\Coral.PluginBase.csproj", "{1F37196D-99DB-4C17-B598-AAD337606DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Plugin.LastFM", "src\Coral.Plugin.LastFM\Coral.Plugin.LastFM.csproj", "{6AD003D4-E65E-4C69-A507-133DAF523FFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Plugin.LastFM", "src\Coral.Plugin.LastFM\Coral.Plugin.LastFM.csproj", "{6AD003D4-E65E-4C69-A507-133DAF523FFF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginHost", "src\Coral.PluginHost\Coral.PluginHost.csproj", "{9BCC4141-72C8-4CB1-9569-F8514688DAF2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -89,6 +91,10 @@ Global
 		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

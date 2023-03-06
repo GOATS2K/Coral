@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Coral.PluginBase;
+using Coral.PluginHost;
 
 namespace Coral.Plugin.LastFM
 {
@@ -12,9 +13,9 @@ namespace Coral.Plugin.LastFM
     {
         private readonly ILastFmService _lastFmService;
 
-        public LastFmController(ILastFmService lastFmService)
+        public LastFmController(IServiceProxy serviceProxy)
         {
-            _lastFmService = lastFmService;
+            _lastFmService = serviceProxy.GetService<ILastFmService>();
         }
 
         [HttpGet]

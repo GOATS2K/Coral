@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Coral.PluginHost;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
@@ -16,10 +17,11 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
-        [Route("dynamic/{pluginName}/{route}")]
-        public ActionResult RunPluginRoute(string pluginName, string route)
+        [Route("load")]
+        public ActionResult LoadAllPlugins()
         {
-            return _pluginContext.LoadRoute(pluginName, route);
+            _pluginContext.LoadAssemblies();
+            return Ok();
         }
 
         [HttpGet]

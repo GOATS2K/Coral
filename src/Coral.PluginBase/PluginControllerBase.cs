@@ -4,6 +4,6 @@ namespace Coral.PluginBase;
 
 [ApiController]
 [Route("api/plugin/[controller]")]
-public class PluginController : ControllerBase
+public class PluginBaseController : ControllerBase
 {
 }

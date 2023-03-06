@@ -75,6 +75,16 @@ namespace Coral.PluginHost
             }
         }
 
+        private IServiceCollection ConfigureServiceProviderForPlugin(IPlugin plugin)
+        {
+            // set up servicecollection
+            var serviceCollection = new ServiceCollection();
+            // run ConfigureServices with new service collection        
+            plugin.ConfigureServices(serviceCollection);
+            serviceCollection.AddLogging(opt => opt.AddConsole());
+            return serviceCollection;
+        }
+
         public void LoadAssemblies()
         {
             // load plugin via PluginLoader
@@ -88,12 +98,6 @@ namespace Coral.PluginHost
                     continue;
                 }
 
-                // set up servicecollection
-                var serviceCollection = new ServiceCollection();
-                // run ConfigureServices with new service collection        
-                loadedPlugin.Value.Plugin.ConfigureServices(serviceCollection);
-                // build ServiceProvider for plugin
-
                 var storedPlugin = new LoadedPlugin()
                 {
                     LoadedAssembly = loadedPlugin.Value.Assembly,
@@ -101,7 +105,8 @@ namespace Coral.PluginHost
                     PluginLoader = pluginLoader
                 };
 
-                // register controller with main application
+                var serviceCollection = ConfigureServiceProviderForPlugin(storedPlugin.Plugin);
+                
                 // get controller from plugin
                 var controller = loadedPlugin.Value.Assembly.GetTypes().SingleOrDefault(t => t.IsSubclassOf(typeof(PluginBaseController)));
                 if (controller == null)
@@ -109,13 +114,12 @@ namespace Coral.PluginHost
                     return;
                 }
                 // load controller assembly
-                // serviceCollection.AddScoped(controller);
+                // build service provider for assembly
                 var serviceProvider = serviceCollection.BuildServiceProvider();
                 // load assembly into MVC and notify of change
                 _applicationPartManager.ApplicationParts.Add(new AssemblyPart(storedPlugin.LoadedAssembly));
                 _actionDescriptorChangeProvider.TokenSource.Cancel();
-                // create instance of controller
-                // storedPlugin.PluginController = (PluginBaseController)serviceProvider.GetRequiredService(controller);
+
                 _loadedPlugins.TryAdd(storedPlugin, serviceProvider);
             }
         }

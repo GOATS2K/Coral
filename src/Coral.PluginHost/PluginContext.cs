@@ -2,19 +2,21 @@
 using Coral.PluginBase;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
-using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace Coral.Api
+namespace Coral.PluginHost
 {
     public interface IPluginContext
     {
         public void UnloadAll();
         public void UnloadPlugin(LoadedPlugin plugin);
         public void LoadAssemblies();
-        public string LoadedParts();
-        public ActionResult? LoadRoute(string controllerName, string? routeName);
+        public ServiceProvider? GetServiceProviderForPlugin(IPlugin plugin);
+        public TType GetService<TType>()
+            where TType : class;
     }
 
     public class PluginContext : IPluginContext
@@ -22,41 +24,29 @@ namespace Coral.Api
         private readonly ConcurrentDictionary<LoadedPlugin, ServiceProvider> _loadedPlugins = new();
         private readonly ILogger<PluginContext> _logger;
         private readonly ApplicationPartManager _applicationPartManager;
+        private readonly MyActionDescriptorChangeProvider _actionDescriptorChangeProvider;
 
 
-        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger)
+        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger, MyActionDescriptorChangeProvider actionDescriptorChangeProvider)
         {
             _applicationPartManager = applicationPartManager;
             _logger = logger;
+            _actionDescriptorChangeProvider = actionDescriptorChangeProvider;
         }
 
-        public ActionResult? LoadRoute(string controllerName, string? routeName)
+        public TType GetService<TType>()
+            where TType : class
         {
-            var targetPlugin = _loadedPlugins.Keys.Where(k => k.PluginController.GetType().Name.ToLower().StartsWith(controllerName.ToLower())).FirstOrDefault();
-            if (targetPlugin == null) { return null; }
-            var controller = targetPlugin.PluginController;
-            // use reflection to get route attribute with name
-            var targetMethod = controller.GetType()
-                .GetMethods()
-                .SelectMany(m => m.GetCustomAttributes<RouteAttribute>(), (MethodInfo method, RouteAttribute attribute) =>
-                {
-                    if (attribute.Template.ToLower().Equals(routeName.ToLower()))
-                    {
-                        return method;
-                    }
-                    return null;
-                })
-                .SingleOrDefault();
-            if (targetMethod == null) { return null; }
-            return (ActionResult)targetMethod.Invoke(controller, new object[0]);
+            var targetPlugin = _loadedPlugins.Keys.Where(k => k.LoadedAssembly.GetExportedTypes().Any(x => x == typeof(TType))).FirstOrDefault();
+            ArgumentNullException.ThrowIfNull(targetPlugin);
+            var serviceProvider = _loadedPlugins[targetPlugin];
+            return serviceProvider.GetRequiredService<TType>();
         }
 
-        public string LoadedParts()
+        public ServiceProvider? GetServiceProviderForPlugin(IPlugin plugin)
         {
-            var controllerFeature = new ControllerFeature();
-            _applicationPartManager.PopulateFeature(controllerFeature);
-            var loadedParts = controllerFeature.Controllers.Select(s => s.Name);
-            return string.Join(", ", loadedParts);
+            var targetPlugin = _loadedPlugins.Keys.First(p => p.Plugin.Name == plugin.Name);
+            return _loadedPlugins[targetPlugin];
         }
 
         public void UnloadAll()
@@ -65,7 +55,6 @@ namespace Coral.Api
             {
                 UnloadPlugin(plugin);
             }
-            _logger.LogInformation("Unloading all plugin controllers.");
         }
 
         public void UnloadPlugin(LoadedPlugin plugin)
@@ -76,6 +65,14 @@ namespace Coral.Api
 
             _loadedPlugins.Remove(plugin, out _);
             plugin.PluginLoader.Unload();
+
+            var applicationPartToRemove = _applicationPartManager.ApplicationParts.FirstOrDefault(a => a.Name == plugin.LoadedAssembly.GetName().Name);
+            if (applicationPartToRemove != null)
+            {
+                _applicationPartManager.ApplicationParts.Remove(applicationPartToRemove);
+                _logger.LogInformation("Unloading plugin controller.");
+                _actionDescriptorChangeProvider.TokenSource.Cancel();
+            }
         }
 
         public void LoadAssemblies()
@@ -112,9 +109,13 @@ namespace Coral.Api
                     return;
                 }
                 // load controller assembly
-                serviceCollection.AddScoped(controller);
+                // serviceCollection.AddScoped(controller);
                 var serviceProvider = serviceCollection.BuildServiceProvider();
-                storedPlugin.PluginController = (PluginBaseController)serviceProvider.GetRequiredService(controller);
+                // load assembly into MVC and notify of change
+                _applicationPartManager.ApplicationParts.Add(new AssemblyPart(storedPlugin.LoadedAssembly));
+                _actionDescriptorChangeProvider.TokenSource.Cancel();
+                // create instance of controller
+                // storedPlugin.PluginController = (PluginBaseController)serviceProvider.GetRequiredService(controller);
                 _loadedPlugins.TryAdd(storedPlugin, serviceProvider);
             }
         }

@@ -3,7 +3,9 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
+using Coral.PluginHost;
 using Coral.Services;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -20,8 +22,12 @@ builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IArtworkService, ArtworkService>();
 builder.Services.AddScoped<IPaginationService, PaginationService>();
 builder.Services.AddSingleton<IPluginContext, PluginContext>();
+builder.Services.AddSingleton<IServiceProxy, ServiceProxy>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
+builder.Services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
+builder.Services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
+builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {
@@ -108,7 +114,5 @@ app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
-var pc = scope.ServiceProvider.GetRequiredService<IPluginContext>();
-pc.LoadAssemblies();
 await db.Database.MigrateAsync();
 app.Run();

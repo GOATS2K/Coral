@@ -112,6 +112,74 @@ export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
   );
 };
 
+export type SomethingNewError = Fetcher.ErrorWrapper<undefined>;
+
+export type SomethingNewVariables = Context["fetcherOptions"];
+
+export const fetchSomethingNew = (
+  variables: SomethingNewVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, SomethingNewError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm/guid",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useSomethingNew = <TData = undefined>(
+  variables: SomethingNewVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, SomethingNewError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, SomethingNewError, TData>(
+    queryKeyFn({
+      path: "/api/plugin/LastFm/guid",
+      operationId: "somethingNew",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type TestError = Fetcher.ErrorWrapper<undefined>;
+
+export type TestVariables = Context["fetcherOptions"];
+
+export const fetchTest = (variables: TestVariables, signal?: AbortSignal) =>
+  fetch<undefined, TestError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useTest = <TData = undefined>(
+  variables: TestVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, TestError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, TestError, TData>(
+    queryKeyFn({ path: "/api/plugin/LastFm", operationId: "test", variables }),
+    ({ signal }) => fetchTest({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -670,6 +738,82 @@ export const useArtist = <TData = Schemas.ArtistDto>(
   );
 };
 
+export type LoadAllPluginsError = Fetcher.ErrorWrapper<undefined>;
+
+export type LoadAllPluginsVariables = Context["fetcherOptions"];
+
+export const fetchLoadAllPlugins = (
+  variables: LoadAllPluginsVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, LoadAllPluginsError, undefined, {}, {}, {}>({
+    url: "/api/Plugin/load",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useLoadAllPlugins = <TData = undefined>(
+  variables: LoadAllPluginsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, LoadAllPluginsError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, LoadAllPluginsError, TData>(
+    queryKeyFn({
+      path: "/api/Plugin/load",
+      operationId: "loadAllPlugins",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchLoadAllPlugins({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type UnloadPluginsError = Fetcher.ErrorWrapper<undefined>;
+
+export type UnloadPluginsVariables = Context["fetcherOptions"];
+
+export const fetchUnloadPlugins = (
+  variables: UnloadPluginsVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, UnloadPluginsError, undefined, {}, {}, {}>({
+    url: "/api/Plugin/unload",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useUnloadPlugins = <TData = undefined>(
+  variables: UnloadPluginsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, UnloadPluginsError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, UnloadPluginsError, TData>(
+    queryKeyFn({
+      path: "/api/Plugin/unload",
+      operationId: "unloadPlugins",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchUnloadPlugins({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type QueryOperation =
   | {
       path: "/api/Artwork/{artworkId}";
@@ -680,6 +824,16 @@ export type QueryOperation =
       path: "/api/Artwork/albums/{albumId}";
       operationId: "albumArtwork";
       variables: AlbumArtworkVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm/guid";
+      operationId: "somethingNew";
+      variables: SomethingNewVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm";
+      operationId: "test";
+      variables: TestVariables;
     }
   | {
       path: "/api/Library/search";
@@ -730,4 +884,14 @@ export type QueryOperation =
       path: "/api/Library/artists/{artistId}";
       operationId: "artist";
       variables: ArtistVariables;
+    }
+  | {
+      path: "/api/Plugin/load";
+      operationId: "loadAllPlugins";
+      variables: LoadAllPluginsVariables;
+    }
+  | {
+      path: "/api/Plugin/unload";
+      operationId: "unloadPlugins";
+      variables: UnloadPluginsVariables;
     };

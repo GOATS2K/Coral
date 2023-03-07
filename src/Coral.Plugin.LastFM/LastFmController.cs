@@ -19,6 +19,22 @@ namespace Coral.Plugin.LastFM
         }
 
         [HttpGet]
+        [Route("authorize")]
+        public ActionResult AuthorizeUser()
+        {
+            var apiKey = _lastFmService.GetApiKey();
+            return Redirect($"https://last.fm/api/auth?api_key={apiKey}&cb={Request.Scheme}://{Request.Host}/api/plugin/lastfm/setToken");
+        }
+
+        [HttpGet]
+        [Route("setToken")]
+        public ActionResult SetUserToken([FromQuery] string token)
+        {
+            _lastFmService.SetUserToken(token);
+            return Ok();
+        }
+
+        [HttpGet]
         [Route("guid")]
         public ActionResult SomethingNew()
         {

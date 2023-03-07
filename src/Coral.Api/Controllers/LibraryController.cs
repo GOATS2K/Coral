@@ -19,24 +19,16 @@ namespace Coral.Api.Controllers
         private readonly ISearchService _searchService;
         private readonly IIndexerService _indexerService;
         private readonly IPaginationService _paginationService;
-        private readonly TrackPlaybackEventEmitter _eventEmitter;
+        private readonly IPlaybackService _playbackService;
 
-        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService, TrackPlaybackEventEmitter eventEmitter)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService, TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
             _searchService = searchService;
             _indexerService = indexerService;
             _paginationService = paginationService;
-            _eventEmitter = eventEmitter;
-        }
-
-        [HttpGet]
-        [Route("event")]
-        public ActionResult EmitPlaybackEvent()
-        {
-            _eventEmitter.EmitEvent();
-            return Ok();
+            _playbackService = playbackService;
         }
 
         [HttpPost]
@@ -61,6 +53,19 @@ namespace Coral.Api.Controllers
         {
             var searchResult = await _searchService.Search(query);
             return Ok(searchResult);
+        }
+
+        [HttpGet]
+        [Route("tracks/{trackId}/logPlayback")]
+        public async Task<IActionResult> LogPlayback(Guid trackId)
+        {
+            var track = await _libraryService.GetTrackDto(trackId);
+            if (track != null)
+            {
+                _playbackService.RegisterPlayback(track);
+                return Ok();
+            }
+            return NotFound();
         }
 
         [HttpGet, HttpHead]

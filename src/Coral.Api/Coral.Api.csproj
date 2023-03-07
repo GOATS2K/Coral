@@ -53,4 +53,10 @@
 			</ResolvedFileToPublish>
 		</ItemGroup>
 	</Target>
+
+	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent">
+		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
+		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
+		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
+	</Target>
 </Project>

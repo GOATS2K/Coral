@@ -46,7 +46,7 @@ namespace Coral.Plugin.LastFM
 
         private string GenerateRequestSignature(RestRequest request)
         {
-            var queryParams = request.Parameters.Where(a => a.Type == ParameterType.QueryString).OrderBy(o => o.Name).ToList();
+            var queryParams = request.Parameters.Where(a => a.Type == ParameterType.GetOrPost).OrderBy(o => o.Name).ToList();
             var queryString = string.Join("", queryParams.Select(q => $"{q.Name}{q.Value}")) + _configuration.SharedSecret;
             var md5 = MD5.Create();
             var checksumBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(queryString));
@@ -74,18 +74,18 @@ namespace Coral.Plugin.LastFM
         private RestRequest GenerateRequest(string method)
         {
             return new RestRequest()
-                .AddQueryParameter("api_key", _configuration.ApiKey)
-                .AddQueryParameter("format", "json")
-                .AddQueryParameter("method", method)
-                .AddQueryParameter("sk", _session?.Key);
+                .AddParameter("api_key", _configuration.ApiKey)
+                .AddParameter("method", method)
+                .AddParameter("sk", _session?.Key);
+                
         }
 
         public bool CheckSession()
         {
-            var response = _client.Get<UserResponse>(GenerateRequest("user.getInfo"));
+            var response = _client.Get<UserResponse>(GenerateRequest("user.getInfo").AddParameter("format", "json"));
             if (response?.User.Name == _session?.Username)
             {
-                _logger.LogInformation("Welcome back {Username}.", response?.User.Name);
+                _logger.LogInformation("Welcome back, {Username}.", response?.User.Name);
                 return true;
             }
             return false;
@@ -95,15 +95,13 @@ namespace Coral.Plugin.LastFM
         {
             // use token to create session
             var body = new RestRequest()
-                .AddQueryParameter("api_key", _configuration.ApiKey)
-                .AddQueryParameter("method", "auth.getSession")
-                .AddQueryParameter("token", token);
+                .AddParameter("api_key", _configuration.ApiKey)
+                .AddParameter("method", "auth.getSession")
+                .AddParameter("token", token);
             
             var signature = GenerateRequestSignature(body);
-            body.AddQueryParameter("api_sig", signature);
-            body.AddQueryParameter("format", "json");
-
-
+            body.AddParameter("api_sig", signature);
+            
             var response = _client.Get<GetSessionResponse>(body);
             ArgumentNullException.ThrowIfNull(response);
             WriteUserSession(response);
@@ -126,24 +124,26 @@ namespace Coral.Plugin.LastFM
         {
             LoadSession();
 
-            var artistString = string.Join(", ", track.Artists.Select(a => a.Name));
+            var artistString = string.Join(", ", track.Artists.Where(a => a.Role == ArtistRole.Main).Select(a => a.Name));
             // generate request with body instead of query
             var request = GenerateRequest("track.scrobble")
-                .AddBody("artist", artistString)
-                .AddBody("track", track.Title)
-                .AddBody("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+                .AddParameter("artist", artistString)
+                .AddParameter("track", track.Title)
+                .AddParameter("album", track.Album.Name)
+                .AddParameter("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
             var signature = GenerateRequestSignature(request);
             request
-                .AddBody("api_sig", signature);
+                .AddParameter("api_sig", signature)
+                .AddParameter("format", "json");
             
             try
             {
-                var response = _client.Post(request);
-                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", artistString, track.Title);
+                var response = _client.Post<ScrobbleResponse>(request);
+                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", response?.Scrobbles.Scrobble.Artist.Text, response?.Scrobbles.Scrobble.Artist.Text);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError("Something went wrong attempting to scrobble: {ex}", ex);
+                _logger.LogError("Failed to scrobble track with exception: {ex}", ex);
             }
         }
 

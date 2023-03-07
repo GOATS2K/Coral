@@ -112,150 +112,6 @@ export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
   );
 };
 
-export type RegisterEventHandlerError = Fetcher.ErrorWrapper<undefined>;
-
-export type RegisterEventHandlerVariables = Context["fetcherOptions"];
-
-export const fetchRegisterEventHandler = (
-  variables: RegisterEventHandlerVariables,
-  signal?: AbortSignal
-) =>
-  fetch<undefined, RegisterEventHandlerError, undefined, {}, {}, {}>({
-    url: "/api/plugin/LastFm/register",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useRegisterEventHandler = <TData = undefined>(
-  variables: RegisterEventHandlerVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, RegisterEventHandlerError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, RegisterEventHandlerError, TData>(
-    queryKeyFn({
-      path: "/api/plugin/LastFm/register",
-      operationId: "registerEventHandler",
-      variables,
-    }),
-    ({ signal }) =>
-      fetchRegisterEventHandler({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
-export type SomethingNewError = Fetcher.ErrorWrapper<undefined>;
-
-export type SomethingNewVariables = Context["fetcherOptions"];
-
-export const fetchSomethingNew = (
-  variables: SomethingNewVariables,
-  signal?: AbortSignal
-) =>
-  fetch<undefined, SomethingNewError, undefined, {}, {}, {}>({
-    url: "/api/plugin/LastFm/guid",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useSomethingNew = <TData = undefined>(
-  variables: SomethingNewVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, SomethingNewError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, SomethingNewError, TData>(
-    queryKeyFn({
-      path: "/api/plugin/LastFm/guid",
-      operationId: "somethingNew",
-      variables,
-    }),
-    ({ signal }) =>
-      fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
-export type TestError = Fetcher.ErrorWrapper<undefined>;
-
-export type TestVariables = Context["fetcherOptions"];
-
-export const fetchTest = (variables: TestVariables, signal?: AbortSignal) =>
-  fetch<undefined, TestError, undefined, {}, {}, {}>({
-    url: "/api/plugin/LastFm",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useTest = <TData = undefined>(
-  variables: TestVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, TestError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, TestError, TData>(
-    queryKeyFn({ path: "/api/plugin/LastFm", operationId: "test", variables }),
-    ({ signal }) => fetchTest({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
-export type EmitPlaybackEventError = Fetcher.ErrorWrapper<undefined>;
-
-export type EmitPlaybackEventVariables = Context["fetcherOptions"];
-
-export const fetchEmitPlaybackEvent = (
-  variables: EmitPlaybackEventVariables,
-  signal?: AbortSignal
-) =>
-  fetch<undefined, EmitPlaybackEventError, undefined, {}, {}, {}>({
-    url: "/api/Library/event",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useEmitPlaybackEvent = <TData = undefined>(
-  variables: EmitPlaybackEventVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, EmitPlaybackEventError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<undefined, EmitPlaybackEventError, TData>(
-    queryKeyFn({
-      path: "/api/Library/event",
-      operationId: "emitPlaybackEvent",
-      variables,
-    }),
-    ({ signal }) =>
-      fetchEmitPlaybackEvent({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -328,6 +184,53 @@ export const useSearch = <TData = Schemas.SearchResult>(
       variables,
     }),
     ({ signal }) => fetchSearch({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type LogPlaybackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type LogPlaybackError = Fetcher.ErrorWrapper<undefined>;
+
+export type LogPlaybackVariables = {
+  pathParams: LogPlaybackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchLogPlayback = (
+  variables: LogPlaybackVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, LogPlaybackError, undefined, {}, {}, LogPlaybackPathParams>({
+    url: "/api/Library/tracks/{trackId}/logPlayback",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useLogPlayback = <TData = undefined>(
+  variables: LogPlaybackVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, LogPlaybackError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, LogPlaybackError, TData>(
+    queryKeyFn({
+      path: "/api/Library/tracks/{trackId}/logPlayback",
+      operationId: "logPlayback",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchLogPlayback({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
@@ -902,29 +805,14 @@ export type QueryOperation =
       variables: AlbumArtworkVariables;
     }
   | {
-      path: "/api/plugin/LastFm/register";
-      operationId: "registerEventHandler";
-      variables: RegisterEventHandlerVariables;
-    }
-  | {
-      path: "/api/plugin/LastFm/guid";
-      operationId: "somethingNew";
-      variables: SomethingNewVariables;
-    }
-  | {
-      path: "/api/plugin/LastFm";
-      operationId: "test";
-      variables: TestVariables;
-    }
-  | {
-      path: "/api/Library/event";
-      operationId: "emitPlaybackEvent";
-      variables: EmitPlaybackEventVariables;
-    }
-  | {
       path: "/api/Library/search";
       operationId: "search";
       variables: SearchVariables;
+    }
+  | {
+      path: "/api/Library/tracks/{trackId}/logPlayback";
+      operationId: "logPlayback";
+      variables: LogPlaybackVariables;
     }
   | {
       path: "/api/Library/tracks/{trackId}/original";

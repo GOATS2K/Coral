@@ -2,6 +2,7 @@
 using Coral.PluginBase;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
@@ -53,8 +54,9 @@ namespace Coral.PluginHost
 
         public void UnloadAll()
         {
-            foreach (var plugin in _loadedPlugins.Keys)
+            foreach (var (plugin, serviceProvider) in _loadedPlugins)
             {
+                UnregisterEventHandlersOnPlugin(serviceProvider);
                 UnloadPlugin(plugin);
             }
         }
@@ -85,18 +87,37 @@ namespace Coral.PluginHost
             plugin.ConfigureServices(serviceCollection);
             serviceCollection.AddLogging(opt => opt.AddConsole());
             // allow plugins to access host services via proxy
+
+            // it is important to note that the ServiceProxy in the plugin service collection
+            // would normally contain a reference to its own service provider
+
+            // so here we are telling the service collection to create the proxy
+            // using the service provider injected in this class
             serviceCollection.AddScoped<IHostServiceProxy, HostServiceProxy>(_ => new HostServiceProxy(_serviceProvider));
             return serviceCollection;
         }
 
+        public void RegisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
+        {
+            var service = serviceProvider.GetRequiredService<IPluginService>();
+            service.RegisterEventHandlers();
+        }
+
+        public void UnregisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
+        {
+            var service = serviceProvider.GetRequiredService<IPluginService>();
+            service.UnregisterEventHandlers();
+        }
+
+
         public void LoadAssemblies()
         {
             // load plugin via PluginLoader
-            var assembliesToLoad = Directory.GetFiles(ApplicationConfiguration.Plugins, "*.dll");
-            foreach (var assemblyToLoad in assembliesToLoad)
+            var assemblyDirectories = Directory.GetDirectories(ApplicationConfiguration.Plugins);
+            foreach (var assemblyDirectoryToLoad in assemblyDirectories)
             {
                 var pluginLoader = new PluginLoader();
-                var loadedPlugin = pluginLoader.LoadPluginAssembly(assemblyToLoad);
+                var loadedPlugin = pluginLoader.LoadPluginAssemblies(assemblyDirectoryToLoad);
                 if (!loadedPlugin.HasValue)
                 {
                     continue;
@@ -125,8 +146,9 @@ namespace Coral.PluginHost
                 // load assembly into MVC and notify of change
                 _applicationPartManager.ApplicationParts.Add(new AssemblyPart(storedPlugin.LoadedAssembly));
                 _actionDescriptorChangeProvider.TokenSource.Cancel();
-
                 _loadedPlugins.TryAdd(storedPlugin, serviceProvider);
+                // finally, register event handlers
+                RegisterEventHandlersOnPlugin(serviceProvider);
             }
         }
     }

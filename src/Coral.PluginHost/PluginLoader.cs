@@ -16,38 +16,56 @@ namespace Coral.PluginHost
             _logger = loggerFactory.CreateLogger<PluginLoader>();
         }
 
-        public (Assembly Assembly, IPlugin Plugin)? LoadPluginAssembly(string assemblyPath)
+        public (Assembly Assembly, IPlugin Plugin)? LoadPluginAssemblies(string assemblyDirectory)
         {
-            var assembly = LoadFromAssemblyPath(assemblyPath);
-            // if PluginBase is present,
-            // the plugins won't load, so raise exception
-            if (assembly.GetName().FullName.StartsWith("Coral.PluginHost"))
+            (Assembly Assembly, IPlugin Plugin)? assemblyGroup = null;
+            // we need to load the plugins with their dependencies
+            foreach (var assemblyPath in Directory.GetFiles(assemblyDirectory, "*.dll"))
             {
-                _logger.LogWarning("Coral.PluginHost assembly detected, please remove from plugin folder. " +
-                                                    $"Skipping load of: {assembly.Location}" +
-                                                    " to ensure plug-ins can load.");
-                return null;
-            }
+                // if PluginBase is present,
+                // the plugins won't load, so raise exception
+                if (Path.GetFileName(assemblyPath).StartsWith("Coral.PluginHost"))
+                {
+                    _logger.LogWarning("Coral.PluginHost assembly detected, please remove from plugin folder. " +
+                                                        $"Skipping load of: {assemblyPath}" +
+                                                        " to ensure plug-ins can load.");
+                    continue;
+                }
 
-            var types = assembly.GetTypes();
+                var assembly = LoadFromAssemblyPath(assemblyPath);
+                try
+                {
+                    var types = assembly.GetTypes();
+                    // if assembly has more than 1 plugin,
+                    // throw exception about poor design.
+                    var pluginCount = types.Count(t => typeof(IPlugin).IsAssignableFrom(t));
+                    if (pluginCount > 1)
+                    {
+                        throw new ConstraintException("Cannot load assembly with more than 1 plugin." +
+                                                        " Please separate your plugins into multiple assemblies");
+                    }
 
-            // if assembly has more than 1 plugin,
-            // throw exception about poor design.
-            var pluginCount = types.Count(t => typeof(IPlugin).IsAssignableFrom(t));
-            if (pluginCount > 1)
-            {
-                throw new ConstraintException("Cannot load assembly with more than 1 plugin." +
-                                                " Please separate your plugins into multiple assemblies");
-            }
+                    // if assembly has no plugins, continue, it's a needed dependency
+                    if (pluginCount == 0)
+                    {
+                        _logger.LogDebug("Loaded plugin dependency: {assemblyName}", assembly.GetName().Name);
+                        continue;
+                    }
 
-            var pluginType = types.Single(t => typeof(IPlugin).IsAssignableFrom(t));
-            var plugin = Activator.CreateInstance(pluginType) as IPlugin;
-            if (plugin != null)
-            {
-                _logger.LogInformation("Loaded plugin: {name} - {description}", plugin.Name, plugin.Description);
-                return (assembly, plugin);
+                    var pluginType = types.Single(t => typeof(IPlugin).IsAssignableFrom(t));
+                    var plugin = Activator.CreateInstance(pluginType) as IPlugin;
+                    if (plugin != null)
+                    {
+                        _logger.LogInformation("Loaded plugin: {name} - {description}", plugin.Name, plugin.Description);
+                        assemblyGroup = (assembly, plugin);
+                    }
+                }
+                catch (ReflectionTypeLoadException)
+                {
+                    _logger.LogWarning("Exception thrown loading types for assembly: {AssemblyName}", assembly.GetName().Name);
+                }
             }
-            return null;
+            return assemblyGroup;
         }
     }
 }

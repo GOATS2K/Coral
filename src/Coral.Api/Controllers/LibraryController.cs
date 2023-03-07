@@ -2,6 +2,7 @@
 using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
+using Coral.EventHub;
 using Coral.Services;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
@@ -18,14 +19,24 @@ namespace Coral.Api.Controllers
         private readonly ISearchService _searchService;
         private readonly IIndexerService _indexerService;
         private readonly IPaginationService _paginationService;
+        private readonly TrackPlaybackEventEmitter _eventEmitter;
 
-        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService, TrackPlaybackEventEmitter eventEmitter)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
             _searchService = searchService;
             _indexerService = indexerService;
             _paginationService = paginationService;
+            _eventEmitter = eventEmitter;
+        }
+
+        [HttpGet]
+        [Route("event")]
+        public ActionResult EmitPlaybackEvent()
+        {
+            _eventEmitter.EmitEvent();
+            return Ok();
         }
 
         [HttpPost]

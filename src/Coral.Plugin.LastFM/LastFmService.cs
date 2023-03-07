@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Coral.EventHub;
+using Coral.PluginHost;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +16,20 @@ namespace Coral.Plugin.LastFM
     public class LastFmService : ILastFmService
     {
         private readonly ILogger<LastFmService> _logger;
+        private readonly TrackPlaybackEvents _playbackEvents;
 
-        public LastFmService(ILogger<LastFmService> logger)
+        public LastFmService(ILogger<LastFmService> logger, IHostServiceProxy serviceProxy)
         {
             _logger = logger;
+            _playbackEvents = serviceProxy.GetHostService<TrackPlaybackEventEmitter>();
+            _playbackEvents.TrackPlaybackEvent += HandleEvent;
         }
+
+        private void HandleEvent(object? sender, TrackPlaybackEventArgs e)
+        {
+            _logger.LogInformation("Event received in plugin");
+        }
+
 
         public string HelloWorld()
         {

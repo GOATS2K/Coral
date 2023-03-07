@@ -112,6 +112,44 @@ export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
   );
 };
 
+export type RegisterEventHandlerError = Fetcher.ErrorWrapper<undefined>;
+
+export type RegisterEventHandlerVariables = Context["fetcherOptions"];
+
+export const fetchRegisterEventHandler = (
+  variables: RegisterEventHandlerVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, RegisterEventHandlerError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm/register",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useRegisterEventHandler = <TData = undefined>(
+  variables: RegisterEventHandlerVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, RegisterEventHandlerError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, RegisterEventHandlerError, TData>(
+    queryKeyFn({
+      path: "/api/plugin/LastFm/register",
+      operationId: "registerEventHandler",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchRegisterEventHandler({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type SomethingNewError = Fetcher.ErrorWrapper<undefined>;
 
 export type SomethingNewVariables = Context["fetcherOptions"];
@@ -173,6 +211,44 @@ export const useTest = <TData = undefined>(
   return reactQuery.useQuery<undefined, TestError, TData>(
     queryKeyFn({ path: "/api/plugin/LastFm", operationId: "test", variables }),
     ({ signal }) => fetchTest({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type EmitPlaybackEventError = Fetcher.ErrorWrapper<undefined>;
+
+export type EmitPlaybackEventVariables = Context["fetcherOptions"];
+
+export const fetchEmitPlaybackEvent = (
+  variables: EmitPlaybackEventVariables,
+  signal?: AbortSignal
+) =>
+  fetch<undefined, EmitPlaybackEventError, undefined, {}, {}, {}>({
+    url: "/api/Library/event",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useEmitPlaybackEvent = <TData = undefined>(
+  variables: EmitPlaybackEventVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, EmitPlaybackEventError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, EmitPlaybackEventError, TData>(
+    queryKeyFn({
+      path: "/api/Library/event",
+      operationId: "emitPlaybackEvent",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchEmitPlaybackEvent({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
@@ -826,6 +902,11 @@ export type QueryOperation =
       variables: AlbumArtworkVariables;
     }
   | {
+      path: "/api/plugin/LastFm/register";
+      operationId: "registerEventHandler";
+      variables: RegisterEventHandlerVariables;
+    }
+  | {
       path: "/api/plugin/LastFm/guid";
       operationId: "somethingNew";
       variables: SomethingNewVariables;
@@ -834,6 +915,11 @@ export type QueryOperation =
       path: "/api/plugin/LastFm";
       operationId: "test";
       variables: TestVariables;
+    }
+  | {
+      path: "/api/Library/event";
+      operationId: "emitPlaybackEvent";
+      variables: EmitPlaybackEventVariables;
     }
   | {
       path: "/api/Library/search";

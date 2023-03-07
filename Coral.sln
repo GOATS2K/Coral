@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Plugin.LastFM", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginHost", "src\Coral.PluginHost\Coral.PluginHost.csproj", "{9BCC4141-72C8-4CB1-9569-F8514688DAF2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.EventHub", "src\Coral.EventHub\Coral.EventHub.csproj", "{26A107AE-71ED-40C0-B0EF-20702EE8120C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -95,6 +97,10 @@ Global
 		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26A107AE-71ED-40C0-B0EF-20702EE8120C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26A107AE-71ED-40C0-B0EF-20702EE8120C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26A107AE-71ED-40C0-B0EF-20702EE8120C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26A107AE-71ED-40C0-B0EF-20702EE8120C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

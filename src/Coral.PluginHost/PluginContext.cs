@@ -25,13 +25,15 @@ namespace Coral.PluginHost
         private readonly ILogger<PluginContext> _logger;
         private readonly ApplicationPartManager _applicationPartManager;
         private readonly MyActionDescriptorChangeProvider _actionDescriptorChangeProvider;
+        private readonly IServiceProvider _serviceProvider;
 
 
-        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger, MyActionDescriptorChangeProvider actionDescriptorChangeProvider)
+        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger, MyActionDescriptorChangeProvider actionDescriptorChangeProvider, IServiceProvider serviceProvider)
         {
             _applicationPartManager = applicationPartManager;
             _logger = logger;
             _actionDescriptorChangeProvider = actionDescriptorChangeProvider;
+            _serviceProvider = serviceProvider;
         }
 
         public TType GetService<TType>()
@@ -82,6 +84,8 @@ namespace Coral.PluginHost
             // run ConfigureServices with new service collection        
             plugin.ConfigureServices(serviceCollection);
             serviceCollection.AddLogging(opt => opt.AddConsole());
+            // allow plugins to access host services via proxy
+            serviceCollection.AddScoped<IHostServiceProxy, HostServiceProxy>(_ => new HostServiceProxy(_serviceProvider));
             return serviceCollection;
         }
 
@@ -108,6 +112,8 @@ namespace Coral.PluginHost
                 var serviceCollection = ConfigureServiceProviderForPlugin(storedPlugin.Plugin);
                 
                 // get controller from plugin
+                // note that if a plugin has multiple controllers, this will allow them all to load
+                // even if only one of them is a subclass of PluginBaseController
                 var controller = loadedPlugin.Value.Assembly.GetTypes().SingleOrDefault(t => t.IsSubclassOf(typeof(PluginBaseController)));
                 if (controller == null)
                 {

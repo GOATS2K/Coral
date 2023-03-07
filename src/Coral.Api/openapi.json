@@ -70,6 +70,19 @@
         }
       }
     },
+    "/api/plugin/LastFm/register": {
+      "get": {
+        "tags": [
+          "LastFm"
+        ],
+        "operationId": "RegisterEventHandler",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/plugin/LastFm/guid": {
       "get": {
         "tags": [
@@ -89,6 +102,19 @@
           "LastFm"
         ],
         "operationId": "Test",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Library/event": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "EmitPlaybackEvent",
         "responses": {
           "200": {
             "description": "Success"

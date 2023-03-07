@@ -65,7 +65,7 @@ namespace Coral.Plugin.LastFM
                     _logger.LogError("Invalid session, please re-authenticate.");
                 }
             }
-            else
+            else if (_session == null)
             {
                 _logger.LogWarning("No Last.fm session found, please visit /api/plugin/lastfm/authorize");
             }
@@ -120,17 +120,44 @@ namespace Coral.Plugin.LastFM
             File.WriteAllText(_sessionFile, jsonString);
         }
 
-        private void ScrobbleTrack(TrackDto track)
+        private void ScrobbleTrack(TrackDto track, long dateInUnixTime)
         {
             LoadSession();
 
             var artistString = string.Join(", ", track.Artists.Where(a => a.Role == ArtistRole.Main).Select(a => a.Name));
             // generate request with body instead of query
-            var request = GenerateRequest("track.scrobble")
+            var request = GenerateRequest("track.updateNowPlaying")
                 .AddParameter("artist", artistString)
                 .AddParameter("track", track.Title)
                 .AddParameter("album", track.Album.Name)
-                .AddParameter("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+                .AddParameter("timestamp", dateInUnixTime.ToString());
+            var signature = GenerateRequestSignature(request);
+            request
+                .AddParameter("api_sig", signature)
+                .AddParameter("format", "json");
+
+            try
+            {
+                var response = _client.Post<ScrobbleResponse>(request);
+                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", response?.Scrobbles.Scrobble.Artist.Text, response?.Scrobbles.Scrobble.Track.Text);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError("Failed to scrobble track with exception: {ex}", ex);
+            }
+        }
+
+        private void UpdateNowPlaying(TrackDto track)
+        {
+            LoadSession();
+
+            var artistString = string.Join(", ", track.Artists.Where(a => a.Role == ArtistRole.Main).Select(a => a.Name));
+            // generate request with body instead of query
+            var request = GenerateRequest("track.updateNowPlaying")
+                .AddParameter("artist", artistString)
+                .AddParameter("track", track.Title)
+                .AddParameter("album", track.Album.Name)
+                .AddParameter("duration", track.DurationInSeconds);
             var signature = GenerateRequestSignature(request);
             request
                 .AddParameter("api_sig", signature)
@@ -138,8 +165,8 @@ namespace Coral.Plugin.LastFM
             
             try
             {
-                var response = _client.Post<ScrobbleResponse>(request);
-                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", response?.Scrobbles.Scrobble.Artist.Text, response?.Scrobbles.Scrobble.Artist.Text);
+                var response = _client.Post<NowPlayingResponse>(request);
+                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", response?.Nowplaying.Artist.Text, response?.Nowplaying.Track.Text);
             }
             catch (HttpRequestException ex)
             {
@@ -150,7 +177,7 @@ namespace Coral.Plugin.LastFM
         private void Scrobble(object? sender, TrackPlaybackEventArgs e)
         {
             _logger.LogDebug("Scrobble event received!");
-            ScrobbleTrack(e.Track);
+            UpdateNowPlaying(e.Track);
         }
 
 

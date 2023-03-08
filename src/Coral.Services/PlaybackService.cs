@@ -1,5 +1,5 @@
 ﻿using Coral.Dto.Models;
-using Coral.EventHub;
+using Coral.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;

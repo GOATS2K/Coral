@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <ProjectReference Include="..\Coral.EventHub\Coral.EventHub.csproj">
+	  <ProjectReference Include="..\Coral.Events\Coral.Events.csproj">
 		  <PrivateAssets>false</PrivateAssets>
 		  <ExcludeAssets>runtime</ExcludeAssets>
 	  </ProjectReference>

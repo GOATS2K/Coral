@@ -1,7 +1,7 @@
 ﻿using Coral.Configuration;
 using Coral.Database.Models;
 using Coral.Dto.Models;
-using Coral.EventHub;
+using Coral.Events;
 using Coral.Plugin.LastFM.ResponseTypes;
 using Coral.PluginBase;
 using Coral.PluginHost;

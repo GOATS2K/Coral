@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Coral.EventHub
+namespace Coral.Events
 {
     public class TrackPlaybackEventEmitter
     {

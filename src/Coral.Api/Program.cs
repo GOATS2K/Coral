@@ -3,7 +3,7 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
-using Coral.EventHub;
+using Coral.Events;
 using Coral.PluginHost;
 using Coral.Services;
 using Microsoft.AspNetCore.Mvc.Infrastructure;

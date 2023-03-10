@@ -13,6 +13,9 @@ using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
+// before anything else, make sure our config directories are created
+ApplicationConfiguration.EnsureDirectoriesAreCreated();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -91,7 +94,6 @@ contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
-Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
 // serve HLS
 app.UseStaticFiles(new StaticFileOptions()
 {

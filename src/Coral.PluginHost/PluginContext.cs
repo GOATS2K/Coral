@@ -131,7 +131,7 @@ namespace Coral.PluginHost
                 };
 
                 var serviceCollection = ConfigureServiceProviderForPlugin(storedPlugin.Plugin);
-                
+
                 // get controller from plugin
                 // note that if a plugin has multiple controllers, this will allow them all to load
                 // even if only one of them is a subclass of PluginBaseController

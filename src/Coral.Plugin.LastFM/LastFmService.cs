@@ -33,6 +33,7 @@ namespace Coral.Plugin.LastFM
         private readonly RestClient _client;
         private readonly LastFmConfiguration _configuration;
         private LastFmUserSession? _session;
+        private (TrackDto Track, DateTimeOffset Timestamp)? _lastPlayed;
         private readonly string _sessionFile = Path.Join(ApplicationConfiguration.Plugins, "LastFmUser.json");
 
         public LastFmService(ILogger<LastFmService> logger, IHostServiceProxy serviceProxy, IOptions<LastFmConfiguration> options)
@@ -77,7 +78,7 @@ namespace Coral.Plugin.LastFM
                 .AddParameter("api_key", _configuration.ApiKey)
                 .AddParameter("method", method)
                 .AddParameter("sk", _session?.Key);
-                
+
         }
 
         public bool CheckSession()
@@ -98,10 +99,10 @@ namespace Coral.Plugin.LastFM
                 .AddParameter("api_key", _configuration.ApiKey)
                 .AddParameter("method", "auth.getSession")
                 .AddParameter("token", token);
-            
+
             var signature = GenerateRequestSignature(body);
             body.AddParameter("api_sig", signature);
-            
+
             var response = _client.Get<GetSessionResponse>(body);
             ArgumentNullException.ThrowIfNull(response);
             WriteUserSession(response);
@@ -126,7 +127,7 @@ namespace Coral.Plugin.LastFM
 
             var artistString = string.Join(", ", track.Artists.Where(a => a.Role == ArtistRole.Main).Select(a => a.Name));
             // generate request with body instead of query
-            var request = GenerateRequest("track.updateNowPlaying")
+            var request = GenerateRequest("track.scrobble")
                 .AddParameter("artist", artistString)
                 .AddParameter("track", track.Title)
                 .AddParameter("album", track.Album.Name)
@@ -162,15 +163,15 @@ namespace Coral.Plugin.LastFM
             request
                 .AddParameter("api_sig", signature)
                 .AddParameter("format", "json");
-            
+
             try
             {
                 var response = _client.Post<NowPlayingResponse>(request);
-                _logger.LogInformation("Scrobbled track: {Artist} - {Title}", response?.Nowplaying.Artist.Text, response?.Nowplaying.Track.Text);
+                _logger.LogInformation("Now playing track: {Artist} - {Title}", response?.Nowplaying.Artist.Text, response?.Nowplaying.Track.Text);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError("Failed to scrobble track with exception: {ex}", ex);
+                _logger.LogError("Now playing failed: {ex}", ex);
             }
         }
 
@@ -178,6 +179,28 @@ namespace Coral.Plugin.LastFM
         {
             _logger.LogDebug("Scrobble event received!");
             UpdateNowPlaying(e.Track);
+            // if playback duration was less than half the track's duration in seconds,
+            // skip scrobble
+            if (_lastPlayed.HasValue)
+            {
+                var playbackTime = DateTimeOffset.UtcNow - _lastPlayed.Value.Timestamp;
+                _logger.LogInformation("Track played for {PlaybackTime} seconds", playbackTime.TotalSeconds);
+
+                var trackDuration = _lastPlayed.Value.Track.DurationInSeconds;
+                _logger.LogInformation("Track duration: {TrackDuration} seconds", trackDuration);
+                // 4 minutes or half time, whichever comes first
+                var scrobbleRequirement = Math.Min(trackDuration / 2, 240);
+                _logger.LogInformation("Requirement for scrobble: {ScrobbleReqirement} seconds", scrobbleRequirement);
+                if (playbackTime.TotalSeconds > scrobbleRequirement)
+                {
+                    ScrobbleTrack(_lastPlayed.Value.Track, _lastPlayed.Value.Timestamp.ToUnixTimeSeconds());
+                }
+                else
+                {
+                    _logger.LogInformation("Track not played for long enough, skipping scrobble.");
+                }
+            }
+            _lastPlayed = (e.Track, DateTimeOffset.UtcNow);
         }
 
 

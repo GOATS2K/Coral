@@ -33,7 +33,7 @@ builder.Services.AddSingleton<IServiceProxy, ServiceProxy>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
 builder.Services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
-builder.Services.AddSingleton(MyActionDescriptorChangeProvider.Instance)
+builder.Services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
 builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>

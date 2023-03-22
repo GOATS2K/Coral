@@ -24,17 +24,19 @@ namespace Coral.PluginHost
     {
         private readonly ConcurrentDictionary<LoadedPlugin, ServiceProvider> _loadedPlugins = new();
         private readonly ILogger<PluginContext> _logger;
+        private readonly ILogger<PluginLoader> _pluginLoaderLogger;
         private readonly ApplicationPartManager _applicationPartManager;
         private readonly MyActionDescriptorChangeProvider _actionDescriptorChangeProvider;
         private readonly IServiceProvider _serviceProvider;
 
 
-        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger, MyActionDescriptorChangeProvider actionDescriptorChangeProvider, IServiceProvider serviceProvider)
+        public PluginContext(ApplicationPartManager applicationPartManager, ILogger<PluginContext> logger, MyActionDescriptorChangeProvider actionDescriptorChangeProvider, IServiceProvider serviceProvider, ILogger<PluginLoader> pluginLoaderLogger)
         {
             _applicationPartManager = applicationPartManager;
             _logger = logger;
             _actionDescriptorChangeProvider = actionDescriptorChangeProvider;
             _serviceProvider = serviceProvider;
+            _pluginLoaderLogger = pluginLoaderLogger;
         }
 
         public TType GetService<TType>()
@@ -116,7 +118,7 @@ namespace Coral.PluginHost
             var assemblyDirectories = Directory.GetDirectories(ApplicationConfiguration.Plugins);
             foreach (var assemblyDirectoryToLoad in assemblyDirectories)
             {
-                var pluginLoader = new PluginLoader();
+                var pluginLoader = new PluginLoader(_pluginLoaderLogger);
                 var loadedPlugin = pluginLoader.LoadPluginAssemblies(assemblyDirectoryToLoad);
                 if (!loadedPlugin.HasValue)
                 {

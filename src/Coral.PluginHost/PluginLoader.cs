@@ -10,10 +10,9 @@ namespace Coral.PluginHost
     {
         private readonly ILogger<PluginLoader> _logger;
 
-        public PluginLoader() : base(true)
+        public PluginLoader(ILogger<PluginLoader> logger) : base(true)
         {
-            var loggerFactory = LoggerFactory.Create(opt => opt.AddConsole());
-            _logger = loggerFactory.CreateLogger<PluginLoader>();
+            _logger = logger;
         }
 
         public (Assembly Assembly, IPlugin Plugin)? LoadPluginAssemblies(string assemblyDirectory)

@@ -13,9 +13,7 @@ namespace Coral.PluginHost
     public interface IPluginContext
     {
         public void UnloadAll();
-        public void UnloadPlugin(LoadedPlugin plugin);
         public void LoadAssemblies();
-        public ServiceProvider? GetServiceProviderForPlugin(IPlugin plugin);
         public TType GetService<TType>()
             where TType : class;
     }
@@ -37,23 +35,17 @@ namespace Coral.PluginHost
             _actionDescriptorChangeProvider = actionDescriptorChangeProvider;
             _serviceProvider = serviceProvider;
             _pluginLoaderLogger = pluginLoaderLogger;
-        }
+        }   
 
         public TType GetService<TType>()
             where TType : class
         {
-            var targetPlugin = _loadedPlugins.Keys.Where(k => k.LoadedAssembly.GetExportedTypes().Any(x => x == typeof(TType))).FirstOrDefault();
+            var targetPlugin = _loadedPlugins.Keys.FirstOrDefault(k => k.LoadedAssembly.GetExportedTypes().Any(x => x == typeof(TType)));
             ArgumentNullException.ThrowIfNull(targetPlugin);
             var serviceProvider = _loadedPlugins[targetPlugin];
             return serviceProvider.GetRequiredService<TType>();
         }
-
-        public ServiceProvider? GetServiceProviderForPlugin(IPlugin plugin)
-        {
-            var targetPlugin = _loadedPlugins.Keys.First(p => p.Plugin.Name == plugin.Name);
-            return _loadedPlugins[targetPlugin];
-        }
-
+        
         public void UnloadAll()
         {
             foreach (var (plugin, serviceProvider) in _loadedPlugins)
@@ -63,10 +55,8 @@ namespace Coral.PluginHost
             }
         }
 
-        public void UnloadPlugin(LoadedPlugin plugin)
+        private void UnloadPlugin(LoadedPlugin plugin)
         {
-            if (plugin == null) return;
-
             _logger.LogInformation("Unloading plugin: {PluginName}", plugin.Plugin.Name);
 
             _loadedPlugins.Remove(plugin, out _);
@@ -81,7 +71,7 @@ namespace Coral.PluginHost
             }
         }
 
-        private IServiceCollection ConfigureServiceProviderForPlugin(IPlugin plugin)
+        private IServiceCollection ConfigureServiceCollectionForPlugin(IPlugin plugin)
         {
             // set up servicecollection
             var serviceCollection = new ServiceCollection();
@@ -99,13 +89,13 @@ namespace Coral.PluginHost
             return serviceCollection;
         }
 
-        public void RegisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
+        private void RegisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
         {
             var service = serviceProvider.GetRequiredService<IPluginService>();
             service.RegisterEventHandlers();
         }
 
-        public void UnregisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
+        private void UnregisterEventHandlersOnPlugin(IServiceProvider serviceProvider)
         {
             var service = serviceProvider.GetRequiredService<IPluginService>();
             service.UnregisterEventHandlers();
@@ -132,7 +122,7 @@ namespace Coral.PluginHost
                     PluginLoader = pluginLoader
                 };
 
-                var serviceCollection = ConfigureServiceProviderForPlugin(storedPlugin.Plugin);
+                var serviceCollection = ConfigureServiceCollectionForPlugin(storedPlugin.Plugin);
 
                 // get controller from plugin
                 // note that if a plugin has multiple controllers, this will allow them all to load

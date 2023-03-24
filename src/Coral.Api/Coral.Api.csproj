@@ -23,6 +23,8 @@
 		<ProjectReference Include="..\Coral.Database\Coral.Database.csproj" />
 		<ProjectReference Include="..\Coral.Dto\Coral.Dto.csproj" />
 		<ProjectReference Include="..\Coral.Encoders\Coral.Encoders.csproj" />
+		<ProjectReference Include="..\Coral.Events\Coral.Events.csproj" />
+		<ProjectReference Include="..\Coral.PluginHost\Coral.PluginHost.csproj" />
 		<ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
 	</ItemGroup>
 
@@ -51,7 +53,7 @@
 			</ResolvedFileToPublish>
 		</ItemGroup>
 	</Target>
-	
+
 	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
 		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />

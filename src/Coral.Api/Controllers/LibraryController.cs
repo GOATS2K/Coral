@@ -2,6 +2,7 @@
 using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
+using Coral.Events;
 using Coral.Services;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
@@ -18,14 +19,16 @@ namespace Coral.Api.Controllers
         private readonly ISearchService _searchService;
         private readonly IIndexerService _indexerService;
         private readonly IPaginationService _paginationService;
+        private readonly IPlaybackService _playbackService;
 
-        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService, TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
             _searchService = searchService;
             _indexerService = indexerService;
             _paginationService = paginationService;
+            _playbackService = playbackService;
         }
 
         [HttpPost]
@@ -50,6 +53,19 @@ namespace Coral.Api.Controllers
         {
             var searchResult = await _searchService.Search(query);
             return Ok(searchResult);
+        }
+
+        [HttpGet]
+        [Route("tracks/{trackId}/logPlayback")]
+        public async Task<IActionResult> LogPlayback(Guid trackId)
+        {
+            var track = await _libraryService.GetTrackDto(trackId);
+            if (track != null)
+            {
+                _playbackService.RegisterPlayback(track);
+                return Ok();
+            }
+            return NotFound();
         }
 
         [HttpGet, HttpHead]

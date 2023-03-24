@@ -25,7 +25,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.TestProviders", "test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Configuration", "src\Coral.Configuration\Coral.Configuration.csproj", "{F3C2EEDA-B10C-4036-9ADE-EF23BFB5DD0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Dto.Tests", "tests\Coral.Dto.Tests\Coral.Dto.Tests.csproj", "{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Dto.Tests", "tests\Coral.Dto.Tests\Coral.Dto.Tests.csproj", "{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginBase", "src\Coral.PluginBase\Coral.PluginBase.csproj", "{1F37196D-99DB-4C17-B598-AAD337606DAD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Plugin.LastFM", "src\Coral.Plugin.LastFM\Coral.Plugin.LastFM.csproj", "{6AD003D4-E65E-4C69-A507-133DAF523FFF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginHost", "src\Coral.PluginHost\Coral.PluginHost.csproj", "{9BCC4141-72C8-4CB1-9569-F8514688DAF2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Events", "src\Coral.Events\Coral.Events.csproj", "{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +85,22 @@ Global
 		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F7AF207-E3AE-42F5-A1BA-2514ECB2F4F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F37196D-99DB-4C17-B598-AAD337606DAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F37196D-99DB-4C17-B598-AAD337606DAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F37196D-99DB-4C17-B598-AAD337606DAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F37196D-99DB-4C17-B598-AAD337606DAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AD003D4-E65E-4C69-A507-133DAF523FFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BCC4141-72C8-4CB1-9569-F8514688DAF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -27,7 +27,11 @@ import { formatSecondsToSingleMinutes } from "../../utils";
 import { PlayerState, usePlayerStore } from "../../store";
 import { ShakaPlayer, ShakaPlayerRef } from "./ShakaPlayer";
 import getConfig from "next/config";
-import { fetchStreamTrack, useAlbumArtwork } from "../../client/components";
+import {
+  fetchLogPlayback,
+  fetchStreamTrack,
+  useAlbumArtwork,
+} from "../../client/components";
 import Link from "next/link";
 import { getLinksForArtist } from "../../common/links";
 
@@ -110,6 +114,13 @@ function Player() {
       let contentType = resp.headers.get("content-type");
       setMimeType(contentType!);
       setStreamTrack(data!);
+
+      // log playback of track
+      await fetchLogPlayback({
+        pathParams: {
+          trackId: selectedTrack.id,
+        },
+      });
 
       // preload next track for faster skipping
       if (transcodeTrack && tracks.length > playerPosition + 1) {

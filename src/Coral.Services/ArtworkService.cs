@@ -78,7 +78,6 @@ public class ArtworkService : IArtworkService
     public async Task<string?> ExtractEmbeddedArtwork(ATL.Track track)
     {
         var outputDir = ApplicationConfiguration.ExtractedArtwork;
-        Directory.CreateDirectory(outputDir);
         
         var guid = Guid.NewGuid();
         var outputFile = Path.Join(outputDir, $"{guid}.jpg");

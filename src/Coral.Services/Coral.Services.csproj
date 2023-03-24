@@ -18,6 +18,7 @@
 		<ProjectReference Include="..\Coral.Database\Coral.Database.csproj" />
 		<ProjectReference Include="..\Coral.Dto\Coral.Dto.csproj" />
 		<ProjectReference Include="..\Coral.Encoders\Coral.Encoders.csproj" />
+		<ProjectReference Include="..\Coral.Events\Coral.Events.csproj" />
 	</ItemGroup>
 
 </Project>

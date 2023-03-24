@@ -15,6 +15,7 @@ namespace Coral.Services
     {
         public Task<TrackStream> GetStreamForTrack(Guid trackId);
         public Task<Track?> GetTrack(Guid trackId);
+        public Task<TrackDto?> GetTrackDto(Guid trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
         public Task<ArtistDto?> GetArtist(Guid artistId);
         public IAsyncEnumerable<SimpleAlbumDto> GetAlbums();
@@ -37,6 +38,13 @@ namespace Coral.Services
         public async Task<Track?> GetTrack(Guid trackId)
         {
             return await _context.Tracks.FindAsync(trackId);
+        }
+
+        public async Task<TrackDto?> GetTrackDto(Guid trackId)
+        {
+            return await _context.Tracks.Where(t => t.Id == trackId)
+                .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<TrackStream> GetStreamForTrack(Guid trackId)

@@ -3,14 +3,20 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Coral.Encoders;
+using Coral.Events;
+using Coral.PluginHost;
 using Coral.Services;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
-    var builder = WebApplication.CreateBuilder(args);
+// before anything else, make sure our config directories are created
+ApplicationConfiguration.EnsureDirectoriesAreCreated();
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<CoralDbContext>();
@@ -19,15 +25,23 @@ builder.Services.AddScoped<IIndexerService, IndexerService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IArtworkService, ArtworkService>();
 builder.Services.AddScoped<IPaginationService, PaginationService>();
+builder.Services.AddScoped<IPlaybackService, PlaybackService>();
+builder.Services.AddSingleton<IHostServiceProxy, HostServiceProxy>();
+builder.Services.AddSingleton<IPluginContext, PluginContext>();
+builder.Services.AddSingleton<TrackPlaybackEventEmitter>();
+builder.Services.AddSingleton<IServiceProxy, ServiceProxy>();
 builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
 builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
+builder.Services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
+builder.Services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
+builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {
     opt.AddMaps(typeof(TrackProfile));
 });
-builder.Services.AddControllers();
 
+builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(conf =>
@@ -80,7 +94,6 @@ contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
-Directory.CreateDirectory(ApplicationConfiguration.HLSDirectory);
 // serve HLS
 app.UseStaticFiles(new StaticFileOptions()
 {
@@ -107,6 +120,5 @@ app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
-var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 await db.Database.MigrateAsync();
 app.Run();

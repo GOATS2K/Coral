@@ -1,10 +1,7 @@
-import React, { useState } from "react";
-import AlbumListItem from "../common/album/AlbumListItem";
-import styles from "../../styles/Search.module.css";
+import { Title } from "@mantine/core";
 import { SimpleAlbumDto } from "../../client/schemas";
-import { Anchor, Pagination, Title } from "@mantine/core";
-import Link from "next/link";
-import { useSearchStore } from "../../store";
+import styles from "../../styles/Search.module.css";
+import AlbumListItem from "../common/album/AlbumListItem";
 
 export type AlbumListProps = {
   albums?: SimpleAlbumDto[];
@@ -17,14 +14,8 @@ export default function AlbumList({ albums }: AlbumListProps) {
     return <p>No albums available.</p>;
   }
 
-  let albumItems = albums.map((album) => {
-    return (
-      <AlbumListItem
-        album={album}
-        key={album.id}
-        artworkSize={artworkSize}
-      ></AlbumListItem>
-    );
+  const albumItems = albums.map((album) => {
+    return <AlbumListItem album={album} key={album.id} artworkSize={artworkSize} />;
   });
   return (
     <div>

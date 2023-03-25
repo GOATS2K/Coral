@@ -1,52 +1,42 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
+  Anchor,
+  Image,
+  Loader,
+  Menu,
+  Progress,
+  Select,
   Slider,
+  Switch,
   Text,
   UnstyledButton,
-  Image,
-  useMantineTheme,
-  Menu,
-  Switch,
-  Select,
-  Loader,
-  Anchor,
-  Progress,
 } from "@mantine/core";
-import React, { useState } from "react";
 import {
-  IconPlayerSkipForward,
-  IconPlayerSkipBack,
-  IconPlayerPlay,
   IconPlayerPause,
+  IconPlayerPlay,
+  IconPlayerSkipBack,
+  IconPlayerSkipForward,
   IconSettings,
   IconVolume2,
 } from "@tabler/icons-react";
+import Link from "next/link";
+import React, { useState } from "react";
+import { fetchLogPlayback, fetchStreamTrack, useAlbumArtwork } from "../../client/components";
 import { StreamDto } from "../../client/schemas";
+import { getLinksForArtist } from "../../common/links";
+import { PlayerState, usePlayerStore } from "../../store";
 import styles from "../../styles/Player.module.css";
 import { formatSecondsToSingleMinutes } from "../../utils";
-import { PlayerState, usePlayerStore } from "../../store";
 import { ShakaPlayer, ShakaPlayerRef } from "./ShakaPlayer";
-import getConfig from "next/config";
-import {
-  fetchLogPlayback,
-  fetchStreamTrack,
-  useAlbumArtwork,
-} from "../../client/components";
-import Link from "next/link";
-import { getLinksForArtist } from "../../common/links";
 
 function Player() {
   const playerRef = React.useRef<ShakaPlayerRef>(null);
   const playState = usePlayerStore((state: PlayerState) => state.playState);
   const tracks = usePlayerStore((state: PlayerState) => state.tracks);
   const initializer = usePlayerStore((state: PlayerState) => state.initializer);
-  const selectedTrack = usePlayerStore(
-    (state: PlayerState) => state.selectedTrack
-  );
+  const selectedTrack = usePlayerStore((state: PlayerState) => state.selectedTrack);
   const selectedTrackArtist = usePlayerStore((state) => state.getMainArtists());
-  const playerPosition = usePlayerStore((state) =>
-    state.getIndexOfSelectedTrack()
-  );
+  const playerPosition = usePlayerStore((state) => state.getIndexOfSelectedTrack());
   const { data: albumArtwork } = useAlbumArtwork(
     {
       pathParams: {
@@ -66,8 +56,7 @@ function Player() {
   const [buffering, setBuffering] = useState(false);
   const [bufferLength, setBufferLength] = useState(0);
 
-  const setPlayState = (value: boolean) =>
-    usePlayerStore.setState({ playState: value });
+  const setPlayState = (value: boolean) => usePlayerStore.setState({ playState: value });
 
   const [transcodeTrack, setTranscodeTrack] = useState(false);
   const [bitrate, setBitrate] = useState<string | null>("192");
@@ -77,7 +66,7 @@ function Player() {
 
   React.useEffect(() => {
     if (playerRef.current) {
-      playerRef.current!.audioRef().volume = volume / 100;
+      playerRef.current.audioRef().volume = volume / 100;
     }
   }, [volume]);
 
@@ -97,7 +86,7 @@ function Player() {
           trackId: selectedTrack.id,
         },
         queryParams: {
-          bitrate: +bitrate!,
+          bitrate: bitrate != null ? +bitrate : 192,
           transcodeTrack: transcodeTrack,
         },
       });
@@ -108,12 +97,12 @@ function Player() {
       //   +bitrate!,
       //   transcodeTrack
       // );
-      let resp = await fetch(data.link, { method: "HEAD" });
+      const resp = await fetch(data.link, { method: "HEAD" });
       // because Shaka doesn't automatically detect the correct content-type
       // we need to set it ourselves
-      let contentType = resp.headers.get("content-type");
-      setMimeType(contentType!);
-      setStreamTrack(data!);
+      const contentType = resp.headers.get("content-type");
+      setMimeType(contentType != null ? contentType : "octet-type/stream");
+      setStreamTrack(data);
 
       // log playback of track
       await fetchLogPlayback({
@@ -124,13 +113,13 @@ function Player() {
 
       // preload next track for faster skipping
       if (transcodeTrack && tracks.length > playerPosition + 1) {
-        let nextTrack = tracks[playerPosition + 1];
+        const nextTrack = tracks[playerPosition + 1];
         await fetchStreamTrack({
           pathParams: {
             trackId: nextTrack.id,
           },
           queryParams: {
-            bitrate: +bitrate!,
+            bitrate: bitrate != null ? +bitrate : 192,
             transcodeTrack: transcodeTrack,
           },
         });
@@ -140,23 +129,22 @@ function Player() {
   }, [tracks, selectedTrack, playerPosition, transcodeTrack, bitrate]);
 
   React.useEffect(() => {
-    let lastBuffer = buffered?.total.at(-1)?.end;
+    const lastBuffer = buffered?.total.at(-1)?.end;
     if (lastBuffer != null) {
-      let bufferPercentage =
-        (lastBuffer / selectedTrack.durationInSeconds) * 100;
+      const bufferPercentage = (lastBuffer / selectedTrack.durationInSeconds) * 100;
       setBufferLength(bufferPercentage);
     }
   }, [buffered?.total]);
 
   if (tracks == null || tracks.length === 0) {
-    return <div></div>;
+    return <div />;
   }
 
   const updatePositionState = (timestamp?: number) => {
     if (selectedTrack.durationInSeconds == null) {
       return;
     }
-    let state = {
+    const state = {
       position: timestamp,
       duration: selectedTrack.durationInSeconds,
       playbackRate: 1,
@@ -170,7 +158,7 @@ function Player() {
     }
 
     if ("mediaSession" in navigator) {
-      let metadata = new MediaMetadata({
+      const metadata = new MediaMetadata({
         title: selectedTrack.title,
         artist: selectedTrackArtist,
         album: selectedTrack.album?.name,
@@ -186,7 +174,7 @@ function Player() {
 
       // make sure we're not re-setting metadata
       // as that can cause the browser player to stop working
-      let existingMetadata = navigator.mediaSession.metadata;
+      const existingMetadata = navigator.mediaSession.metadata;
       if (
         existingMetadata?.artist == metadata.artist &&
         existingMetadata?.title == metadata.title &&
@@ -248,11 +236,12 @@ function Player() {
       // });
 
       navigator.mediaSession.setActionHandler("seekto", (details) => {
-        if (playerRef.current!.audioRef()?.currentTime == 0) {
+        const audioRef = playerRef.current?.audioRef();
+        if (audioRef != null && audioRef.currentTime == 0) {
           return;
         }
-        if (details.seekTime != null) {
-          playerRef.current!.audioRef()!.currentTime = details.seekTime;
+        if (audioRef != null && details.seekTime != null) {
+          audioRef.currentTime = details.seekTime;
           // updatePositionState(details.seekTime);
         }
       });
@@ -274,15 +263,9 @@ function Player() {
   const playButton = (
     <UnstyledButton onClick={() => setPlayState(!playState)}>
       {playState ? (
-        <IconPlayerPause
-          size={buttonSize}
-          strokeWidth={strokeSize}
-        ></IconPlayerPause>
+        <IconPlayerPause size={buttonSize} strokeWidth={strokeSize} />
       ) : (
-        <IconPlayerPlay
-          size={buttonSize}
-          strokeWidth={strokeSize}
-        ></IconPlayerPlay>
+        <IconPlayerPlay size={buttonSize} strokeWidth={strokeSize} />
       )}
     </UnstyledButton>
   );
@@ -301,9 +284,9 @@ function Player() {
           alt={`Album cover of ${selectedTrack.album.name}`}
           src={albumArtwork?.small}
           withPlaceholder
-          width={"70px"}
-          height={"70px"}
-        ></Image>
+          width="70px"
+          height="70px"
+        />
       </div>
       <div className={styles.imageText}>
         <Link className="link" href={`${initializer.source}/${initializer.id}`}>
@@ -316,44 +299,35 @@ function Player() {
       <div className={styles.playerWrapper}>
         <div className={styles.playerButtons}>
           <UnstyledButton onClick={prevTrack}>
-            <IconPlayerSkipBack
-              size={buttonSize}
-              strokeWidth={strokeSize}
-            ></IconPlayerSkipBack>
+            <IconPlayerSkipBack size={buttonSize} strokeWidth={strokeSize} />
           </UnstyledButton>
           {!buffering || !playState ? playButton : loading}
           <UnstyledButton onClick={nextTrack}>
-            <IconPlayerSkipForward
-              size={buttonSize}
-              strokeWidth={strokeSize}
-            ></IconPlayerSkipForward>
+            <IconPlayerSkipForward size={buttonSize} strokeWidth={strokeSize} />
           </UnstyledButton>
         </div>
         <div className={styles.playerSeekbar}>
-          <Text mr={16} fz={"sm"}>
+          <Text mr={16} fz="sm">
             {formatSecondsToSingleMinutes(secondsPlayed)}
           </Text>
           <div className={styles.sliderWrapper}>
-            <Progress
-              size={4}
-              className={styles.progressBar}
-              value={bufferLength}
-            ></Progress>
+            <Progress size={4} className={styles.progressBar} value={bufferLength} />
             <Slider
               className={styles.slider}
               size={4}
               value={secondsPlayed}
               max={selectedTrack.durationInSeconds}
               onChange={(value: number) => {
-                playerRef.current!.audioRef()!.currentTime = value;
+                if (playerRef.current?.audioRef() != null)
+                  playerRef.current.audioRef().currentTime = value;
                 setSecondsPlayed(value);
                 updatePositionState(value);
               }}
               label={(value: number) => formatSecondsToSingleMinutes(value)}
-            ></Slider>
+            />
           </div>
-          <Text ml={16} fz={"sm"}>
-            {formatSecondsToSingleMinutes(selectedTrack.durationInSeconds!)}
+          <Text ml={16} fz="sm">
+            {formatSecondsToSingleMinutes(selectedTrack.durationInSeconds)}
           </Text>
         </div>
       </div>
@@ -376,12 +350,12 @@ function Player() {
         onBuffer={(value) => {
           setBuffering(value);
         }}
-      ></ShakaPlayer>
+      />
       <div className={styles.settings}>
         <Menu shadow="md" width={200} closeOnItemClick={false}>
           <Menu.Target>
             <UnstyledButton style={{ marginTop: "4px" }}>
-              <IconSettings size={settingsIconSize}></IconSettings>
+              <IconSettings size={settingsIconSize} />
             </UnstyledButton>
           </Menu.Target>
 
@@ -392,7 +366,7 @@ function Player() {
                 <Switch
                   checked={transcodeTrack}
                   onChange={(ev) => setTranscodeTrack(ev.currentTarget.checked)}
-                ></Switch>
+                />
               }
             >
               Transcode audio
@@ -408,7 +382,7 @@ function Player() {
                   data={["128", "192", "256", "320"]}
                   value={bitrate}
                   onChange={setBitrate}
-                ></Select>
+                />
               }
             >
               Bitrate
@@ -416,14 +390,14 @@ function Player() {
           </Menu.Dropdown>
         </Menu>
         <div className={styles.volumeWrapper}>
-          <IconVolume2 size={settingsIconSize}></IconVolume2>
+          <IconVolume2 size={settingsIconSize} />
           <Slider
             className={styles.volumeSlider}
             size={4}
             value={volume}
             onChange={setVolume}
             max={100}
-          ></Slider>
+          />
         </div>
       </div>
     </div>

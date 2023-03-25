@@ -1,8 +1,6 @@
-import { Button, Title } from "@mantine/core";
-import { IconSearch, IconUsers, IconVinyl } from "@tabler/icons-react";
-import { IconSparkles } from "@tabler/icons-react";
+import { Button } from "@mantine/core";
+import { IconSearch, IconSparkles, IconUsers, IconVinyl } from "@tabler/icons-react";
 import Link from "next/link";
-import React from "react";
 import styles from "../../styles/Layout.module.css";
 
 export default function Sidebar() {
@@ -14,12 +12,12 @@ export default function Sidebar() {
   ];
 
   const buttons = links.map((link) => (
-    <Link href={link.link} className={"link"} key={link.name}>
+    <Link href={link.link} className="link" key={link.name}>
       <Button
         fullWidth
-        size={"md"}
+        size="md"
         key={link.name}
-        variant={"subtle"}
+        variant="subtle"
         leftIcon={link.icon}
         styles={(theme) => ({
           root: {

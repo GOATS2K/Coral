@@ -4,7 +4,7 @@ import { getTrackArtists } from "./common/album";
 
 export enum PlayerInitializationSource {
   Album = "/albums",
-  Search = "/search"
+  Search = "/search",
 }
 
 export interface Initializer {
@@ -25,8 +25,8 @@ export interface PlayerState {
 }
 
 export interface SearchState {
-  query: string,
-  result: SearchResult
+  query: string;
+  result: SearchResult;
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -69,5 +69,5 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
 export const useSearchStore = create<SearchState>()(() => ({
   query: "",
-  result: {} as SearchResult
+  result: {} as SearchResult,
 }));

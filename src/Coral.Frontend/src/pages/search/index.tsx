@@ -1,6 +1,6 @@
 import { TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import React, { useState } from "react";
+import { useState } from "react";
 import Search from "../../components/search/Search";
 import styles from "../../styles/Search.module.css";
 
@@ -11,14 +11,14 @@ export default function SearchPage() {
   return (
     <div className={styles.wrapper}>
       <TextInput
-        placeholder={"Search..."}
+        placeholder="Search..."
         value={searchString}
         variant="filled"
-        size={"md"}
+        size="md"
         style={{ marginBottom: "1em" }}
         onChange={(event) => setSearchString(event.currentTarget.value)}
-      ></TextInput>
-      <Search searchString={debounced}></Search>
+      />
+      <Search searchString={debounced} />
     </div>
   );
 }

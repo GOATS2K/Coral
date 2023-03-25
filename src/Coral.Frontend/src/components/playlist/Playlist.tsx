@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { TrackDto } from "../../client/schemas";
 import { Initializer, usePlayerStore } from "../../store";
 import styles from "../../styles/Playlist.module.css";
@@ -10,11 +9,7 @@ type PlaylistProps = {
   displayArtwork?: boolean;
 };
 
-export default function Playlist({
-  tracks,
-  initializer,
-  displayArtwork = false,
-}: PlaylistProps) {
+export default function Playlist({ tracks, initializer, displayArtwork = false }: PlaylistProps) {
   if (tracks == null) {
     return <p>No tracks in playlist</p>;
   }
@@ -22,10 +17,7 @@ export default function Playlist({
   // trigger initiailization check on playback
   const onPlayback = () => {
     const playerInitializer = usePlayerStore.getState().initializer;
-    if (
-      playerInitializer.id != initializer.id ||
-      playerInitializer.source != initializer.source
-    ) {
+    if (playerInitializer.id != initializer.id || playerInitializer.source != initializer.source) {
       usePlayerStore.setState({ tracks: tracks, initializer: initializer });
     }
   };
@@ -39,7 +31,7 @@ export default function Playlist({
           key={track.id}
           onPlayback={onPlayback}
           displayArtwork={displayArtwork}
-        ></PlaylistItem>
+        />
       );
     });
 

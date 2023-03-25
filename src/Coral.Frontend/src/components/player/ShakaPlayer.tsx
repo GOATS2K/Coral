@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { forwardRef } from "react";
-import { Player, polyfill } from "shaka-player";
+import { Player } from "shaka-player";
 
 export type ShakaPlayerRef = {
   player: () => Player;
@@ -19,15 +20,7 @@ export type ShakaPlayerProps = {
 
 export const ShakaPlayer = forwardRef(
   (
-    {
-      source,
-      mimeType,
-      playState,
-      onTimeUpdate,
-      onPlay,
-      onEnd,
-      onBuffer,
-    }: ShakaPlayerProps,
+    { source, mimeType, playState, onTimeUpdate, onPlay, onEnd, onBuffer }: ShakaPlayerProps,
     ref
   ) => {
     const [player, setPlayer] = React.useState<Player>();
@@ -123,7 +116,7 @@ export const ShakaPlayer = forwardRef(
       togglePlayState();
     }, [playState]);
 
-    return <audio ref={playerRef}></audio>;
+    return <audio ref={playerRef} />;
   }
 );
 

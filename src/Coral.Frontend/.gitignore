@@ -30,3 +30,5 @@ yarn-error.log*
 # next
 /.next
 next-env.d.ts 
+
+*.tsbuildinfo

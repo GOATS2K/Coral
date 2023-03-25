@@ -1,17 +1,14 @@
-import React from "react";
-import { SimpleArtistDto } from "../../client/schemas";
-import ArtistSearchItem from "./ArtistSearchItem";
-import styles from "../../styles/Search.module.css";
 import { Title } from "@mantine/core";
+import { SimpleArtistDto } from "../../client/schemas";
+import styles from "../../styles/Search.module.css";
+import ArtistSearchItem from "./ArtistSearchItem";
 
 type ArtistListProps = {
   artists?: SimpleArtistDto[];
 };
 
 export default function ArtistList({ artists }: ArtistListProps) {
-  const artistList = artists?.map((a) => (
-    <ArtistSearchItem artist={a} key={a.id}></ArtistSearchItem>
-  ));
+  const artistList = artists?.map((a) => <ArtistSearchItem artist={a} key={a.id} />);
   return (
     <div className={styles.artistComponentWrapper}>
       <Title order={3} className={styles.title}>

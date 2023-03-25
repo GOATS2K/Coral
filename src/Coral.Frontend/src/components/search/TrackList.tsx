@@ -1,5 +1,4 @@
 import { Title } from "@mantine/core";
-import React from "react";
 import { TrackDto } from "../../client/schemas";
 import { Initializer, PlayerInitializationSource } from "../../store";
 import styles from "../../styles/Search.module.css";
@@ -19,11 +18,7 @@ export default function TrackList({ tracks }: TrackListProps) {
       <Title order={3} className={styles.title}>
         Tracks
       </Title>
-      <Playlist
-        displayArtwork
-        initializer={initializer}
-        tracks={tracks}
-      ></Playlist>
+      <Playlist displayArtwork initializer={initializer} tracks={tracks} />
     </div>
   );
 }

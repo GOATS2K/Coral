@@ -20,10 +20,6 @@ html {
   content: ", ";
 }
 
-
-
-
-
 @media screen and (max-width: 800px) {
   div .attributes {
     flex-direction: column;

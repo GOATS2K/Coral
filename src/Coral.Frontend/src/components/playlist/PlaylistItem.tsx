@@ -1,12 +1,12 @@
-import { IconPlayerPlay, IconDisc, IconVinyl } from "@tabler/icons-react";
-import { TrackDto } from "../../client/schemas";
-import styles from "../../styles/PlaylistItem.module.css";
-import { Text, UnstyledButton, useMantineTheme, Image } from "@mantine/core";
-import { formatSecondsToSingleMinutes } from "../../utils";
+import { Image, Text, UnstyledButton, useMantineTheme } from "@mantine/core";
+import { IconDisc, IconPlayerPlay } from "@tabler/icons-react";
 import { useState } from "react";
-import { usePlayerStore } from "../../store";
 import { useAlbumArtwork } from "../../client/components";
-import { getAlbumArtists, getTrackArtists } from "../../common/album";
+import { TrackDto } from "../../client/schemas";
+import { getTrackArtists } from "../../common/album";
+import { usePlayerStore } from "../../store";
+import styles from "../../styles/PlaylistItem.module.css";
+import { formatSecondsToSingleMinutes } from "../../utils";
 
 type PlaylistItemProps = {
   track: TrackDto;
@@ -14,11 +14,7 @@ type PlaylistItemProps = {
   displayArtwork?: boolean;
 };
 
-export function PlaylistItem({
-  track,
-  onPlayback,
-  displayArtwork = false,
-}: PlaylistItemProps) {
+export function PlaylistItem({ track, onPlayback, displayArtwork = false }: PlaylistItemProps) {
   const [trackHover, setTrackHover] = useState(false);
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const playState = usePlayerStore((state) => state.playState);
@@ -50,24 +46,16 @@ export function PlaylistItem({
           // center element
           marginTop: "4px",
         }}
-      ></IconPlayerPlay>
+      />
     </UnstyledButton>
   );
   const albumArt = (
-    <Image
-      withPlaceholder
-      src={artwork?.small}
-      alt={`Album art of ${track.album}`}
-    ></Image>
+    <Image withPlaceholder src={artwork?.small} alt={`Album art of ${track.album}`} />
   );
-  const defaultLeftSection = displayArtwork ? (
-    albumArt
-  ) : (
-    <Text fz="lg">{track.trackNumber}</Text>
-  );
+  const defaultLeftSection = displayArtwork ? albumArt : <Text fz="lg">{track.trackNumber}</Text>;
   const spinningDisc = (
     <Text fz="lg" className={styles.spinningDisc}>
-      <IconDisc strokeWidth={1.3} size={24}></IconDisc>
+      <IconDisc strokeWidth={1.3} size={24} />
     </Text>
   );
 
@@ -110,9 +98,7 @@ export function PlaylistItem({
         <Text fz="xs">{trackArtist}</Text>
       </div>
       <div className={styles.duration}>
-        <Text fz="xs">
-          {formatSecondsToSingleMinutes(track.durationInSeconds)}
-        </Text>
+        <Text fz="xs">{formatSecondsToSingleMinutes(track.durationInSeconds)}</Text>
       </div>
     </div>
   );

@@ -1,11 +1,9 @@
 import { useRouter } from "next/router";
-import Playlist from "../../components/playlist/Playlist";
-import AlbumInfo from "../../components/album/AlbumInfo";
 import { useAlbum } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
+import AlbumInfo from "../../components/album/AlbumInfo";
+import Playlist from "../../components/playlist/Playlist";
 import { Initializer, PlayerInitializationSource } from "../../store";
-import { isStringObject } from "util/types";
-import { IconRouter } from "@tabler/icons-react";
 
 export default function Album() {
   const router = useRouter();
@@ -25,15 +23,13 @@ export default function Album() {
   }
 
   if (error) {
-    return (
-      <div>An error occurred. You may have entered an invalid album ID.</div>
-    );
+    return <div>An error occurred. You may have entered an invalid album ID.</div>;
   }
 
   return (
     <div key={data?.id}>
-      <AlbumInfo album={data}></AlbumInfo>
-      <Playlist tracks={data?.tracks} initializer={initializer}></Playlist>
+      <AlbumInfo album={data} />
+      <Playlist tracks={data?.tracks} initializer={initializer} />
     </div>
   );
 }

@@ -1,12 +1,11 @@
-import { Text, useMantineTheme } from "@mantine/core";
+import { useMantineTheme } from "@mantine/core";
 import dynamic from "next/dynamic";
 import Head from "next/head";
 import { useEffect } from "react";
+import { getTrackArtists } from "../common/album";
 import { usePlayerStore } from "../store";
 import styles from "../styles/Layout.module.css";
 import Sidebar from "./navigation/Sidebar";
-import { ArtistRole } from "../client/schemas";
-import { getTrackArtists } from "../common/album";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -25,15 +24,13 @@ export default function Layout({ children }: LayoutProps) {
       : "Coral";
 
   const theme = useMantineTheme();
-  const appBackground =
-    theme.colorScheme === "dark" ? theme.colors.dark[8] : theme.white;
-  const accentColor =
-    theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[7];
+  const appBackground = theme.colorScheme === "dark" ? theme.colors.dark[8] : theme.white;
+  const accentColor = theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[7];
   const accentBackground =
     theme.colorScheme === "dark" ? theme.colors.gray[9] : theme.colors.gray[4];
 
   useEffect(() => {
-    let root = document.documentElement;
+    const root = document.documentElement;
     root.style.setProperty("--app-background", appBackground);
     root.style.setProperty("--accent", accentColor);
     root.style.setProperty("--accent-background", accentBackground);
@@ -45,10 +42,10 @@ export default function Layout({ children }: LayoutProps) {
         <title>{titleText}</title>
       </Head>
       <div className={styles.wrapperWithSidebar}>
-        <Sidebar></Sidebar>
+        <Sidebar />
         <div className={styles.contentWrapper}>{children}</div>
       </div>
-      <Player></Player>
+      <Player />
     </div>
   );
 }

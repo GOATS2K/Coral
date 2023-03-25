@@ -7,12 +7,8 @@ export const getLinksForArtist = (track: TrackDto): ReactNode => {
   const links = track.artists.map((a) => {
     if (a.role === "Main") {
       return (
-        <Link
-          key={a.id}
-          className="link wrappedPlayerArtist"
-          href={`/artists/${a.id}`}
-        >
-          <Anchor fz={"sm"} className="link wrappedPlayerArtist">
+        <Link key={a.id} className="link wrappedPlayerArtist" href={`/artists/${a.id}`}>
+          <Anchor fz="sm" className="link wrappedPlayerArtist">
             {a.name}
           </Anchor>
         </Link>

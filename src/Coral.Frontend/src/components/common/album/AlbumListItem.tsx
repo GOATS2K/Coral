@@ -1,33 +1,19 @@
-import React, { useState } from "react";
-import {
-  Anchor,
-  Image,
-  Text,
-  UnstyledButton,
-  useMantineTheme,
-} from "@mantine/core";
-import { SimpleAlbumDto } from "../../../client/schemas";
-import styles from "../../../styles/AlbumList.module.css";
-import { getAlbumArtists } from "../../../common/album";
-import getConfig from "next/config";
-import Link from "next/link";
+import { Anchor, Image, Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { IconPlayerPlay } from "@tabler/icons-react";
+import Link from "next/link";
+import { useState } from "react";
 import { fetchAlbum, useAlbumArtwork } from "../../../client/components";
-import {
-  Initializer,
-  PlayerInitializationSource,
-  usePlayerStore,
-} from "../../../store";
+import { SimpleAlbumDto } from "../../../client/schemas";
+import { getAlbumArtists } from "../../../common/album";
+import { Initializer, PlayerInitializationSource, usePlayerStore } from "../../../store";
+import styles from "../../../styles/AlbumList.module.css";
 
 type AlbumListItemProps = {
   album: SimpleAlbumDto;
   artworkSize: number;
 };
 
-export default function AlbumListItem({
-  album,
-  artworkSize,
-}: AlbumListItemProps) {
+export default function AlbumListItem({ album, artworkSize }: AlbumListItemProps) {
   const { data } = useAlbumArtwork(
     {
       pathParams: {
@@ -43,12 +29,12 @@ export default function AlbumListItem({
   const [playButtonOnHover, setPlayButtonOnHover] = useState(false);
   const onPlayClick = async (albumToFetch: SimpleAlbumDto) => {
     // get album
-    let album = await fetchAlbum({
+    const album = await fetchAlbum({
       pathParams: {
         albumId: albumToFetch.id,
       },
     });
-    let initializer = {
+    const initializer = {
       id: albumToFetch.id,
       source: PlayerInitializationSource.Album,
     } as Initializer;
@@ -80,7 +66,7 @@ export default function AlbumListItem({
             width={artworkSize}
             height={artworkSize}
             src={data?.medium}
-          ></Image>
+          />
         </Link>
         <div className={styles.playButtonOnImage}>
           {onHover && (
@@ -91,7 +77,7 @@ export default function AlbumListItem({
                 onMouseEnter={() => setPlayButtonOnHover(true)}
                 onMouseLeave={() => setPlayButtonOnHover(false)}
               >
-                <IconPlayerPlay className={styles.playButton}></IconPlayerPlay>
+                <IconPlayerPlay className={styles.playButton} />
               </div>
             </UnstyledButton>
           )}
@@ -99,17 +85,11 @@ export default function AlbumListItem({
       </div>
       <div>
         <Link className={styles.link} passHref href={`/albums/${album.id}`}>
-          <Anchor
-            className={styles.link}
-            component="a"
-            lineClamp={1}
-            fz={"md"}
-            fw={"bold"}
-          >
+          <Anchor className={styles.link} component="a" lineClamp={1} fz="md" fw="bold">
             {album.name}
           </Anchor>
         </Link>
-        <Text lineClamp={1} fz={"sm"} fw={"light"}>
+        <Text lineClamp={1} fz="sm" fw="light">
           {getAlbumArtists(album)}
         </Text>
       </div>

@@ -101,7 +101,7 @@ function Player() {
       // because Shaka doesn't automatically detect the correct content-type
       // we need to set it ourselves
       const contentType = resp.headers.get("content-type");
-      setMimeType(contentType != null ? contentType : "octet-type/stream");
+      setMimeType(contentType != null ? contentType : "");
       setStreamTrack(data);
 
       // log playback of track

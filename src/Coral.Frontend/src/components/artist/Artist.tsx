@@ -1,9 +1,7 @@
-import React from "react";
-import { ArtistDto, SimpleAlbumDto } from "../../client/schemas";
+import { ArtistDto } from "../../client/schemas";
+import styles from "../../styles/Artist.module.css";
 import AlbumList from "./AlbumList";
 import ArtistBanner from "./ArtistBanner";
-import styles from "../../styles/Artist.module.css";
-import { Title } from "@mantine/core";
 
 type ArtistProps = {
   artist?: ArtistDto;
@@ -18,41 +16,24 @@ export default function Artist({ artist }: ArtistProps) {
 
   return (
     <div>
-      <ArtistBanner artist={artist}></ArtistBanner>
+      <ArtistBanner artist={artist} />
       <div className={styles.pageWrapper}>
-        {albums?.length != 0 && (
-          <AlbumList albums={albums} title={"Releases"}></AlbumList>
-        )}
-        {miniAlbums?.length != 0 && (
-          <AlbumList albums={miniAlbums} title={"Mini Albums"}></AlbumList>
-        )}
-        {eps?.length != 0 && <AlbumList albums={eps} title={"EPs"}></AlbumList>}
-        {singles?.length != 0 && (
-          <AlbumList albums={singles} title={"Singles"}></AlbumList>
-        )}
+        {albums?.length != 0 && <AlbumList albums={albums} title="Releases" />}
+        {miniAlbums?.length != 0 && <AlbumList albums={miniAlbums} title="Mini Albums" />}
+        {eps?.length != 0 && <AlbumList albums={eps} title="EPs" />}
+        {singles?.length != 0 && <AlbumList albums={singles} title="Singles" />}
 
         {artist?.featuredIn.length != 0 && (
-          <AlbumList
-            albums={artist?.featuredIn}
-            title={"Featured In"}
-          ></AlbumList>
+          <AlbumList albums={artist?.featuredIn} title="Featured In" />
         )}
 
         {artist?.remixerIn.length != 0 && (
-          <AlbumList
-            albums={artist?.remixerIn}
-            title={"Remixer In"}
-          ></AlbumList>
+          <AlbumList albums={artist?.remixerIn} title="Remixer In" />
         )}
         {artist?.inCompilation?.length != 0 && (
-          <AlbumList
-            albums={artist?.inCompilation}
-            title={"Appears In"}
-          ></AlbumList>
+          <AlbumList albums={artist?.inCompilation} title="Appears In" />
         )}
-        {untagged?.length != 0 && (
-          <AlbumList albums={untagged} title={"Unknown Type"}></AlbumList>
-        )}
+        {untagged?.length != 0 && <AlbumList albums={untagged} title="Unknown Type" />}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@
   height: 100dvh;
 }
 
-.layout { 
+.layout {
   display: flex;
   flex-direction: column;
   height: 100dvh;

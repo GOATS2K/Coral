@@ -1,5 +1,5 @@
 import { Pagination, Title } from "@mantine/core";
-import React, { useState } from "react";
+import { useState } from "react";
 import { usePaginatedAlbums } from "../../client/components";
 import { CenteredLoader } from "../../common/ui";
 import AlbumList from "../../components/album/AlbumList";
@@ -10,7 +10,7 @@ export default function Albums() {
   const limit = 50;
   const offset = currentPage * limit;
   // get list of albums
-  const { data, isLoading, error } = usePaginatedAlbums({
+  const { data, isLoading } = usePaginatedAlbums({
     queryParams: {
       limit: limit,
       offset: offset,
@@ -28,14 +28,9 @@ export default function Albums() {
       <Title order={1} className={styles.title}>
         Albums
       </Title>
-      <AlbumList albums={data?.data}></AlbumList>
+      <AlbumList albums={data?.data} />
       <div className={styles.pagination}>
-        <Pagination
-          size={"lg"}
-          total={pages}
-          page={currentPage}
-          onChange={setCurrentPage}
-        ></Pagination>
+        <Pagination size="lg" total={pages} page={currentPage} onChange={setCurrentPage} />
       </div>
     </div>
   );

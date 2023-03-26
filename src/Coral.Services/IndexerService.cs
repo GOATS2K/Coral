@@ -81,21 +81,13 @@ public class IndexerService : IIndexerService
             // but it's a lot prettier this way ;_;
             var analyzedTracks = tracksInDirectory.Select(x => new ATL.Track(x.FullName)).ToList();
             bool folderIsAlbum = analyzedTracks
-                .Where(x => !string.IsNullOrEmpty(x.Album))
                 .Select(x => x.Album)
                 .Distinct().Count() == 1;
 
             if (folderIsAlbum)
             {
                 _logger.LogInformation("Indexing {path} as album.", directoryGroup.Key);
-                try
-                {
-                    await IndexAlbum(analyzedTracks);
-                } catch (ArgumentException)
-                {
-                    _logger.LogError("Path contained tracks from another album, switching indexing method.");
-                    await IndexSingleFiles(analyzedTracks);
-                }
+                await IndexAlbum(analyzedTracks);
             }
             else
             {

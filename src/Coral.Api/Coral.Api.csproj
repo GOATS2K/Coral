@@ -11,6 +11,7 @@
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
 		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
 		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
+		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -8,7 +8,7 @@ import styles from "../../styles/AlbumList.module.css";
 export default function Albums() {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 50;
-  const offset = currentPage * limit;
+  const offset = (currentPage - 1) * limit;
   // get list of albums
   const { data, isLoading } = usePaginatedAlbums({
     queryParams: {
@@ -17,7 +17,7 @@ export default function Albums() {
     },
   });
 
-  const pages = Number(data?.totalRecords) / limit;
+  const pages = Math.ceil(Number(data?.totalRecords) / limit);
 
   if (isLoading) {
     return CenteredLoader();

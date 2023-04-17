@@ -6,6 +6,7 @@ using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using Coral.Services.Models;
+using Diacritics.Extensions;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -129,13 +130,16 @@ namespace Coral.Services
 
         private List<string> ProcessInputString(string inputString)
         {
+            // sanitize string for diacritics first
+            var sanitized = inputString.RemoveDiacritics();
+
             // split by word boundary and alphanumerical values
             // \p{L}    => matches unicode letters / L     Letter
             // \p{Nd}   => matches unicode numbers / Nd    Decimal number
             // +        => one or more of
             // http://www.pcre.org/original/doc/html/pcrepattern.html
             var pattern = @"[\p{L}\p{Nd}]+";
-            var matches = Regex.Matches(inputString, pattern, RegexOptions.IgnoreCase);
+            var matches = Regex.Matches(sanitized, pattern, RegexOptions.IgnoreCase);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

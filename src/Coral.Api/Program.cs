@@ -20,20 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<CoralDbContext>();
-builder.Services.AddScoped<ILibraryService, LibraryService>();
-builder.Services.AddScoped<IIndexerService, IndexerService>();
-builder.Services.AddScoped<ISearchService, SearchService>();
-builder.Services.AddScoped<IArtworkService, ArtworkService>();
-builder.Services.AddScoped<IPaginationService, PaginationService>();
-builder.Services.AddScoped<IPlaybackService, PlaybackService>();
-builder.Services.AddSingleton<IHostServiceProxy, HostServiceProxy>();
-builder.Services.AddSingleton<IPluginContext, PluginContext>();
-builder.Services.AddSingleton<TrackPlaybackEventEmitter>();
-builder.Services.AddSingleton<IServiceProxy, ServiceProxy>();
-builder.Services.AddSingleton<IEncoderFactory, EncoderFactory>();
-builder.Services.AddSingleton<ITranscoderService, TranscoderService>();
-builder.Services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
-builder.Services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
+builder.Services.AddServices();
 builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>

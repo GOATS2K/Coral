@@ -79,23 +79,21 @@ public class IndexerService : IIndexerService
 
             // we generally shouldn't be introducing side-effects in linq
             // but it's a lot prettier this way ;_;
-            var analyzedTracks = tracksInDirectory.Select(x => new ATL.Track(x.FullName)).ToList();
+            var analyzedTracks = tracksInDirectory
+                .Select(x => new ATL.Track(x.FullName))
+                // skip zero-length files
+                .Where(x => x.DurationMs > 0)
+                .ToList();
+
             bool folderIsAlbum = analyzedTracks
-                .Where(x => !string.IsNullOrEmpty(x.Album))
                 .Select(x => x.Album)
                 .Distinct().Count() == 1;
+
 
             if (folderIsAlbum)
             {
                 _logger.LogInformation("Indexing {path} as album.", directoryGroup.Key);
-                try
-                {
-                    await IndexAlbum(analyzedTracks);
-                } catch (ArgumentException)
-                {
-                    _logger.LogError("Path contained tracks from another album, switching indexing method.");
-                    await IndexSingleFiles(analyzedTracks);
-                }
+                await IndexAlbum(analyzedTracks);
             }
             else
             {
@@ -133,7 +131,7 @@ public class IndexerService : IIndexerService
 
         var distinctGenres = tracks.Select(t => t.Genre).Distinct();
         var createdGenres = new List<Genre>();
-        
+
         // parse all artists
         var artistForTracks = new Dictionary<ATL.Track, List<ArtistWithRole>>();
         foreach (var track in tracks)
@@ -164,7 +162,7 @@ public class IndexerService : IIndexerService
             await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
         }
     }
-    
+
     private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
     {
         var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
@@ -173,10 +171,24 @@ public class IndexerService : IIndexerService
             return;
         }
 
+        // this can happen if the scan process is interrupted
+        // and then resumed again
+        if (indexedAlbum.Artworks == null)
+        {
+            indexedAlbum.Artworks = new List<Artwork>();
+        }
+
         if (!indexedAlbum.Artworks.Any())
         {
-            var albumArtwork = await GetAlbumArtwork(atlTrack);
-            if (albumArtwork != null) await _artworkService.ProcessArtwork(indexedAlbum, albumArtwork);
+            try
+            {
+                var albumArtwork = await GetAlbumArtwork(atlTrack);
+                if (albumArtwork != null) await _artworkService.ProcessArtwork(indexedAlbum, albumArtwork);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to get artwork for track: {Track} due to the following exception: {Exception}", atlTrack.Path, ex.ToString());
+            }
         }
 
         indexedTrack = new Track()
@@ -325,7 +337,7 @@ public class IndexerService : IIndexerService
 
     private Album CreateAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack, string? albumName)
     {
-        
+
         var album = new Album()
         {
             Artists = new List<ArtistWithRole>(),
@@ -336,7 +348,7 @@ public class IndexerService : IIndexerService
             DateIndexed = DateTime.UtcNow,
             Artworks = new List<Artwork>()
         };
-        
+
         _context.Albums.Add(album);
         album.Artists.AddRange(artists);
         return album;

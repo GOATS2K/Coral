@@ -13,12 +13,14 @@ public class TestDatabase : IDisposable
     public IMapper Mapper;
     private readonly IServiceProvider _serviceProvider;
 
+    // a simple single with 2 tracks and a single artist
     public Artist Tatora;
     public Album BelieveBlankPagesSingle;
     public Track Believe;
     public Track BlankPages;
     public Genre DrumAndBass;
 
+    // an extended EP with many guest features and a remix
     public Artist Lenzman;
     public ArtistWithRole LenzmanAsMain;
     public Artist Slay;
@@ -41,6 +43,16 @@ public class TestDatabase : IDisposable
     public Track Yasukuni;
     public Track Combo;
     public Track DownForWhatever;
+
+    // a single track to test non-latin character search
+    public Artist IchikoAoba;
+    public ArtistWithRole IchikoAobaAsMain;
+    public Artist RyuichiSakamoto;
+    public ArtistWithRole RyuichiSakamotoAsGuest;
+    public Track Fuwarin;
+    public Genre Folk;
+    public Album Radio;
+
 
 
 
@@ -75,11 +87,36 @@ public class TestDatabase : IDisposable
             DateIndexed = currentTime,
         });
 
+        Context.Artists.Add(IchikoAoba = new Artist()
+        {
+            Name = "Ichiko Aoba",
+            DateIndexed = currentTime,
+        });
+
+        Context.Artists.Add(RyuichiSakamoto = new Artist()
+        {
+            Name = "Ryuichi Sakamoto",
+            DateIndexed = currentTime,
+        });
+
         Context.ArtistsWithRoles.Add(LenzmanAsMain = new ArtistWithRole()
         {
             Role = ArtistRole.Main,
             Artist = Lenzman
         });
+
+        Context.ArtistsWithRoles.Add(IchikoAobaAsMain = new ArtistWithRole()
+        {
+            Role = ArtistRole.Main,
+            Artist = IchikoAoba
+        });
+
+        Context.ArtistsWithRoles.Add(RyuichiSakamotoAsGuest = new ArtistWithRole()
+        {
+            Role = ArtistRole.Guest,
+            Artist = RyuichiSakamoto
+        });
+
 
         Context.Artists.Add(Slay = new Artist()
         {
@@ -147,6 +184,12 @@ public class TestDatabase : IDisposable
             DateIndexed = currentTime,
         });
 
+        Context.Genres.Add(Folk = new Genre()
+        {
+            Name = "Folk",
+            DateIndexed = currentTime,
+        });
+
         Context.Albums.Add(BelieveBlankPagesSingle = new Album()
         {
             Artists = new List<ArtistWithRole>(),
@@ -168,6 +211,21 @@ public class TestDatabase : IDisposable
             Type = AlbumType.MiniAlbum,
             ReleaseYear = 2021,
             TrackTotal = 8,
+            DiscTotal = 1,
+            CoverFilePath = "nice album art"
+        });
+
+        Context.Albums.Add(Radio = new Album()
+        {
+            Artists = new List<ArtistWithRole>()
+            {
+                IchikoAobaAsMain, RyuichiSakamotoAsGuest
+            },
+            DateIndexed = currentTime,
+            Name = "Radio",
+            Type = AlbumType.Album,
+            ReleaseYear = 2013,
+            TrackTotal = 10,
             DiscTotal = 1,
             CoverFilePath = "nice album art"
         });
@@ -344,6 +402,23 @@ public class TestDatabase : IDisposable
             Title = "Down For Whatever (Jubei Remix)",
             FilePath = "",
             Genre = DrumAndBass,
+            Keywords = new List<Keyword>(),
+        });
+
+        Context.Tracks.Add(Fuwarin = new Track()
+        {
+            Artists = new List<ArtistWithRole>()
+            {
+               IchikoAobaAsMain, RyuichiSakamotoAsGuest
+            },
+            Album = Radio,
+            DateIndexed = currentTime,
+            DurationInSeconds = 264,
+            DiscNumber = 1,
+            TrackNumber = 5,
+            Title = "不和リン",
+            FilePath = @"/tmp/coral/Ichiko Aoba (青葉市子) - Radio (ラヂヲ) (2013) [FLAC]/05 - Ichiko Aoba - 不和リン.flac",
+            Genre = Folk,
             Keywords = new List<Keyword>(),
         });
 

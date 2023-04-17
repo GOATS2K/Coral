@@ -32,7 +32,7 @@ public class CoralDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseSqlite($"Data Source={DbPath}");
+            options.UseSqlite($"Data Source={DbPath}", opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
         }
     }
 

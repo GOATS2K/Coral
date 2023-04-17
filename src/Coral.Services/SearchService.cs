@@ -130,8 +130,12 @@ namespace Coral.Services
         private List<string> ProcessInputString(string inputString)
         {
             // split by word boundary and alphanumerical values
-            var pattern = @"([a-zA-Z0-9])\w*";
-            var matches = Regex.Matches(inputString, pattern);
+            // \p{L}    => matches unicode letters / L     Letter
+            // \p{Nd}   => matches unicode numbers / Nd    Decimal number
+            // +        => one or more of
+            // http://www.pcre.org/original/doc/html/pcrepattern.html
+            var pattern = @"[\p{L}\p{Nd}]+";
+            var matches = Regex.Matches(inputString, pattern, RegexOptions.IgnoreCase);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

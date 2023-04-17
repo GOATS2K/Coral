@@ -43,6 +43,24 @@ namespace Coral.Services.Tests
             Assert.NotEmpty(starlightKeyword.Tracks);
         }
 
+        [Fact]
+        public async Task Search_FuwarinViaNonLatinCharacters_FindsTrack()
+        {
+            // arrange
+            // generate keywords for tracks in album
+            foreach (var track in _testDatabase.Radio.Tracks)
+            {
+                await _searchService.InsertKeywordsForTrack(track);
+            }
+            var trackToFind = _testDatabase.Fuwarin;
+
+            // act
+            var results = await _searchService.Search(trackToFind.Title);
+
+            // assert
+            Assert.NotEmpty(results.Tracks);
+        }
+
         [Theory]
         [InlineData("lenzman starlight")]
         [InlineData("starlight lenzman")]

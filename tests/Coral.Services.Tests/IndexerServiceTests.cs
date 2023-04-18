@@ -23,7 +23,7 @@ public class IndexerServiceTests : IDisposable
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>(); 
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger);
         var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper, httpContextAccessor);
 
@@ -36,7 +36,7 @@ public class IndexerServiceTests : IDisposable
             .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
             || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
             .Select(a => a.Path);
-        
+
         foreach (var artworkPath in indexedArtwork)
         {
             var directory = new DirectoryInfo(artworkPath).Parent;
@@ -66,8 +66,8 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _testDatabase.ArtistsWithRoles.FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
-        var neptune = await _testDatabase.ArtistsWithRoles.FirstAsync(a => a.Artist.Name == "Neptune" && a.Role == ArtistRole.Main);
+        var jupiter = await _testDatabase.ArtistsWithRoles.Include(a => a.Albums).FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
+        var neptune = await _testDatabase.ArtistsWithRoles.Include(a => a.Albums).FirstAsync(a => a.Artist.Name == "Neptune" && a.Role == ArtistRole.Main);
 
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
@@ -80,14 +80,14 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_NeptuneDiscovery_IndexesEmbeddedArtwork()
     {
         // arrange
-        
+
         // act
         await _indexerService.ReadDirectory(TestDataRepository.NeptuneDiscovery);
 
         // assert
-        var album = await _testDatabase.Albums.FirstOrDefaultAsync(a => a.Name == "Discovery");
+        var album = await _testDatabase.Albums.Include(a => a.Artworks).FirstOrDefaultAsync(a => a.Name == "Discovery");
         Assert.NotNull(album);
-        
+
         var originalArtwork = album.Artworks.FirstOrDefault(a => a.Size == ArtworkSize.Original);
         Assert.Equal(480, originalArtwork?.Height);
         Assert.Equal(480, originalArtwork?.Width);
@@ -104,7 +104,11 @@ public class IndexerServiceTests : IDisposable
 
         // assert
         var jupiter = _testDatabase.Artists.Where(a => a.Name == "Jupiter").ToList();
-        var moonsAlbum = _testDatabase.Albums.FirstOrDefault(a => a.Name == "Moons");
+        var moonsAlbum = _testDatabase.Albums
+            .Include(a => a.Tracks)
+            .ThenInclude(a => a.Genre)
+            .Include(a => a.Artists)
+            .FirstOrDefault(a => a.Name == "Moons");
         Assert.NotNull(moonsAlbum);
 
         Assert.Single(jupiter);
@@ -130,7 +134,11 @@ public class IndexerServiceTests : IDisposable
         var unknownArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
 
         // take the Android approach and name the albums with no album tag the same as the folder they're in
-        var albumList = await _testDatabase.Albums.Where(a => a.Name == directoryName).ToListAsync();
+        var albumList = await _testDatabase.Albums
+            .Include(a => a.Tracks)
+            .ThenInclude(a => a.Genre)
+            .Include(a => a.Artists)
+            .Where(a => a.Name == directoryName).ToListAsync();
 
         // ensure only one album was created for both tracks
         Assert.Single(albumList);
@@ -152,7 +160,7 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
 
         // assert
-        var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");
+        var ringsAlbum = _testDatabase.Albums.Include(a => a.Tracks).Include(a => a.Artists).ThenInclude(a => a.Artist).First(a => a.Name == "Rings");
         var saturn = ringsAlbum.Artists.First(a => a.Artist.Name == "Saturn");
         var neptune = ringsAlbum.Artists.First(a => a.Artist.Name == "Neptune");
         Assert.NotNull(ringsAlbum);
@@ -169,9 +177,9 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
 
         // assert
-        var ringsAlbum = _testDatabase.Albums.First(a => a.Name == "Rings");
+        var ringsAlbum = _testDatabase.Albums.Include(a => a.Tracks).ThenInclude(t => t.Artists).First(a => a.Name == "Rings");
         var track = ringsAlbum.Tracks.First(t => t.Title == "We Got Rings");
-        
+
         Assert.NotNull(ringsAlbum);
         Assert.NotNull(track);
         Assert.Equal(2, track.Artists.Count());
@@ -186,7 +194,12 @@ public class IndexerServiceTests : IDisposable
         await _indexerService.ReadDirectory(TestDataRepository.MarsWhoDiscoveredMe);
 
         // assert
-        var album = await _testDatabase.Albums.FirstAsync(a => a.Name == "Who Discovered Me?");
+        var album = await _testDatabase.Albums
+            .Include(a => a.Tracks)
+            .ThenInclude(a => a.Artists)
+            .ThenInclude(a => a.Artist)
+            .Include(a => a.Artists)
+            .FirstAsync(a => a.Name == "Who Discovered Me?");
         var track = album.Tracks.First();
 
         Assert.NotNull(track);

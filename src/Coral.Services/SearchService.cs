@@ -95,6 +95,7 @@ namespace Coral.Services
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
             var trackIds = await _context.Keywords
+                .AsNoTracking()
                 .Where(GenerateSearchQueryForKeywords(keywords))
                 .Select(k => k.Tracks)
                 .SelectMany(t => t)

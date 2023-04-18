@@ -92,15 +92,19 @@ public class IndexerService : IIndexerService
 
             if (folderIsAlbum)
             {
-                _logger.LogInformation("Indexing {path} as album.", directoryGroup.Key);
+                _logger.LogDebug("Indexing {path} as album.", directoryGroup.Key);
                 await IndexAlbum(analyzedTracks);
             }
             else
             {
-                _logger.LogInformation("Indexing {path} as single files.", directoryGroup.Key);
+                _logger.LogDebug("Indexing {path} as single files.", directoryGroup.Key);
                 await IndexSingleFiles(analyzedTracks);
             }
             _logger.LogInformation("Completed indexing of {path}", directoryGroup.Key);
+            // the change tracker consumes a lot of memory and 
+            // progressively slows down the indexing process after a few 1000 items
+            // so here it's being cleared after each folder
+            _context.ChangeTracker.Clear();
         }
     }
 
@@ -108,7 +112,7 @@ public class IndexerService : IIndexerService
     {
         foreach (var atlTrack in tracks)
         {
-            var artists = ParseArtists(atlTrack.Artist, atlTrack.Title);
+            var artists = await ParseArtists(atlTrack.Artist, atlTrack.Title);
             var indexedAlbum = GetAlbum(artists, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
             await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack);
@@ -136,7 +140,7 @@ public class IndexerService : IIndexerService
         var artistForTracks = new Dictionary<ATL.Track, List<ArtistWithRole>>();
         foreach (var track in tracks)
         {
-            var artists = ParseArtists(track.Artist, track.Title);
+            var artists = await ParseArtists(track.Artist, track.Title);
             artistForTracks.Add(track, artists);
         }
 
@@ -205,7 +209,7 @@ public class IndexerService : IIndexerService
             FilePath = atlTrack.Path,
             Keywords = new List<Keyword>()
         };
-        _logger.LogInformation("Indexing track: {trackPath}", atlTrack.Path);
+        _logger.LogDebug("Indexing track: {trackPath}", atlTrack.Path);
         _context.Tracks.Add(indexedTrack);
         await _searchService.InsertKeywordsForTrack(indexedTrack);
     }
@@ -226,7 +230,7 @@ public class IndexerService : IIndexerService
         return indexedGenre;
     }
 
-    private Artist GetArtist(string artistName)
+    private async Task<Artist> GetArtist(string artistName)
     {
         if (string.IsNullOrEmpty(artistName)) artistName = "Unknown Artist";
         var indexedArtist = _context.Artists.FirstOrDefault(a => a.Name == artistName);
@@ -237,8 +241,8 @@ public class IndexerService : IIndexerService
                 Name = artistName,
             };
             _context.Artists.Add(indexedArtist);
-            _logger.LogInformation("Creating new artist: {artist}", artistName);
-            _context.SaveChanges();
+            _logger.LogDebug("Creating new artist: {artist}", artistName);
+            await _context.SaveChangesAsync();
         }
         return indexedArtist;
     }
@@ -251,12 +255,12 @@ public class IndexerService : IIndexerService
         return split.Distinct().ToList();
     }
 
-    private List<ArtistWithRole> GetArtistWithRole(List<string> artists, ArtistRole role)
+    private async Task<List<ArtistWithRole>> GetArtistWithRole(List<string> artists, ArtistRole role)
     {
         var artistsWithRoles = new List<ArtistWithRole>();
         foreach (var artist in artists)
         {
-            var indexedArtist = GetArtist(artist.Trim());
+            var indexedArtist = await GetArtist(artist.Trim());
             var artistWithRole = _context.ArtistsWithRoles.FirstOrDefault(a => a.ArtistId == indexedArtist.Id && a.Role == role);
             if (artistWithRole == null)
             {
@@ -272,7 +276,7 @@ public class IndexerService : IIndexerService
         return artistsWithRoles;
     }
 
-    private List<ArtistWithRole> ParseArtists(string artist, string title)
+    private async Task<List<ArtistWithRole>> ParseArtists(string artist, string title)
     {
         var featuringRegex = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
         var featuringMatch = Regex.Match(title, featuringRegex);
@@ -284,9 +288,9 @@ public class IndexerService : IIndexerService
         // first group is parenthesis, second is brackets
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
-        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
-        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
-        var mainArtists = GetArtistWithRole(SplitArtist(artist), ArtistRole.Main);
+        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
+        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
+        var mainArtists = await GetArtistWithRole(SplitArtist(artist), ArtistRole.Main);
 
         var artistList = new List<ArtistWithRole>();
         artistList.AddRange(guestArtists);

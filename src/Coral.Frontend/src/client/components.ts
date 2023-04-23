@@ -39,11 +39,7 @@ export const useArtworkFromId = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, ArtworkFromIdError, TData>(
-    queryKeyFn({
-      path: "/api/Artwork/{artworkId}",
-      operationId: "artworkFromId",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Artwork/{artworkId}", operationId: "artworkFromId", variables }),
     ({ signal }) => fetchArtworkFromId({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -82,11 +78,7 @@ export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.ArtworkDto, AlbumArtworkError, TData>(
-    queryKeyFn({
-      path: "/api/Artwork/albums/{albumId}",
-      operationId: "albumArtwork",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Artwork/albums/{albumId}", operationId: "albumArtwork", variables }),
     ({ signal }) => fetchAlbumArtwork({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -116,11 +108,7 @@ export const useAuthorizeUser = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, AuthorizeUserError, TData>(
-    queryKeyFn({
-      path: "/api/plugin/LastFm/authorize",
-      operationId: "authorizeUser",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/plugin/LastFm/authorize", operationId: "authorizeUser", variables }),
     ({ signal }) => fetchAuthorizeUser({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -156,11 +144,7 @@ export const useSetUserToken = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, SetUserTokenError, TData>(
-    queryKeyFn({
-      path: "/api/plugin/LastFm/setToken",
-      operationId: "setUserToken",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/plugin/LastFm/setToken", operationId: "setUserToken", variables }),
     ({ signal }) => fetchSetUserToken({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -190,11 +174,7 @@ export const useSomethingNew = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, SomethingNewError, TData>(
-    queryKeyFn({
-      path: "/api/plugin/LastFm/guid",
-      operationId: "somethingNew",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/plugin/LastFm/guid", operationId: "somethingNew", variables }),
     ({ signal }) => fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -282,11 +262,7 @@ export const useSearch = <TData = Schemas.SearchResult>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.SearchResult, SearchError, TData>(
-    queryKeyFn({
-      path: "/api/Library/search",
-      operationId: "search",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Library/search", operationId: "search", variables }),
     ({ signal }) => fetchSearch({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -410,12 +386,7 @@ export const fetchTranscodeTrack = (variables: TranscodeTrackVariables, signal?:
     {},
     TranscodeTrackQueryParams,
     TranscodeTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/transcode",
-    method: "get",
-    ...variables,
-    signal,
-  });
+  >({ url: "/api/Library/tracks/{trackId}/transcode", method: "get", ...variables, signal });
 
 export const useTranscodeTrack = <TData = Schemas.StreamDto>(
   variables: TranscodeTrackVariables,
@@ -473,12 +444,7 @@ export const fetchStreamTrack = (variables: StreamTrackVariables, signal?: Abort
     {},
     StreamTrackQueryParams,
     StreamTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/stream",
-    method: "get",
-    ...variables,
-    signal,
-  });
+  >({ url: "/api/Library/tracks/{trackId}/stream", method: "get", ...variables, signal });
 
 export const useStreamTrack = <TData = Schemas.StreamDto>(
   variables: StreamTrackVariables,
@@ -525,11 +491,7 @@ export const useTracks = <TData = TracksResponse>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<TracksResponse, TracksError, TData>(
-    queryKeyFn({
-      path: "/api/Library/tracks",
-      operationId: "tracks",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Library/tracks", operationId: "tracks", variables }),
     ({ signal }) => fetchTracks({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -561,11 +523,7 @@ export const useAlbums = <TData = AlbumsResponse>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<AlbumsResponse, AlbumsError, TData>(
-    queryKeyFn({
-      path: "/api/Library/albums",
-      operationId: "albums",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Library/albums", operationId: "albums", variables }),
     ({ signal }) => fetchAlbums({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -601,12 +559,7 @@ export const fetchPaginatedAlbums = (variables: PaginatedAlbumsVariables, signal
     {},
     PaginatedAlbumsQueryParams,
     {}
-  >({
-    url: "/api/Library/albums/paginated",
-    method: "get",
-    ...variables,
-    signal,
-  });
+  >({ url: "/api/Library/albums/paginated", method: "get", ...variables, signal });
 
 export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedData>(
   variables: PaginatedAlbumsVariables,
@@ -657,12 +610,7 @@ export const fetchPaginatedArtists = (variables: PaginatedArtistsVariables, sign
     {},
     PaginatedArtistsQueryParams,
     {}
-  >({
-    url: "/api/Library/artists/paginated",
-    method: "get",
-    ...variables,
-    signal,
-  });
+  >({ url: "/api/Library/artists/paginated", method: "get", ...variables, signal });
 
 export const usePaginatedArtists = <TData = Schemas.SimpleArtistDtoPaginatedData>(
   variables: PaginatedArtistsVariables,
@@ -716,11 +664,7 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.AlbumDto, AlbumError, TData>(
-    queryKeyFn({
-      path: "/api/Library/albums/{albumId}",
-      operationId: "album",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Library/albums/{albumId}", operationId: "album", variables }),
     ({ signal }) => fetchAlbum({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -759,11 +703,7 @@ export const useArtist = <TData = Schemas.ArtistDto>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.ArtistDto, ArtistError, TData>(
-    queryKeyFn({
-      path: "/api/Library/artists/{artistId}",
-      operationId: "artist",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Library/artists/{artistId}", operationId: "artist", variables }),
     ({ signal }) => fetchArtist({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -793,11 +733,7 @@ export const useLoadAllPlugins = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, LoadAllPluginsError, TData>(
-    queryKeyFn({
-      path: "/api/Plugin/load",
-      operationId: "loadAllPlugins",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Plugin/load", operationId: "loadAllPlugins", variables }),
     ({ signal }) => fetchLoadAllPlugins({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
@@ -827,11 +763,7 @@ export const useUnloadPlugins = <TData = undefined>(
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, UnloadPluginsError, TData>(
-    queryKeyFn({
-      path: "/api/Plugin/unload",
-      operationId: "unloadPlugins",
-      variables,
-    }),
+    queryKeyFn({ path: "/api/Plugin/unload", operationId: "unloadPlugins", variables }),
     ({ signal }) => fetchUnloadPlugins({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,

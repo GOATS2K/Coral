@@ -37,19 +37,6 @@ namespace Coral.Services
             _logger = logger;
         }
 
-        private ExpressionStarter<Keyword> GenerateSearchQueryForKeywords(List<string> keywords)
-        {
-            var predicate = PredicateBuilder.New<Keyword>();
-            foreach (var keyword in keywords)
-            {
-                // I chose to only set the wildcard on the end of the keyword
-                // for performance reasons - benefiting from indexing done by the database
-                predicate = predicate
-                    .Or(k => EF.Functions.Like(k.Value, $"{keyword}%"));
-            }
-            return predicate;
-        }
-
         public async Task InsertKeywordsForTrack(Track track)
         {
             var keywords = ProcessInputString(track.ToString());
@@ -94,23 +81,38 @@ namespace Coral.Services
         {
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
-            var trackIds = await _context.Keywords
-                .AsNoTracking()
-                .Where(GenerateSearchQueryForKeywords(keywords))
-                .Select(k => k.Tracks)
-                .SelectMany(t => t)
-                .Select(t => t.Id)
-                .ToListAsync();
+            var lastResult = new List<Guid>();
+            var currentSearchResult = new List<Guid>();
+            for (var i = 0; i < keywords.Count(); i++)
+            {
+                var keyword = keywords[i];
+                var currentKeywordResult = await _context.Keywords
+                            .AsNoTracking()
+                            .Where(k => EF.Functions.Like(k.Value, $"{keyword}%"))
+                            .Select(k => k.Tracks)
+                            .SelectMany(t => t)
+                            .Select(t => t.Id)
+                            .ToListAsync();
 
-            var idGroups = trackIds.GroupBy(t => t);
-            // get only the IDs matching the query
-            var idsMatchingQuery = idGroups
-                .Where(g => g.Count() == keywords.Count())
-                .Select(g => g.Key);
+                // if last keyword is not empty, perform an intersection with new result
+                if (lastResult.Any())
+                {
+                    currentSearchResult = lastResult.Intersect(currentKeywordResult).ToList();
+                }
+
+                // return current search if only one keyword was searched for
+                if (keywords.Count() == 1)
+                {
+                    currentSearchResult = currentKeywordResult;
+                    break;
+                }
+
+                lastResult = currentSearchResult.Any() ? currentSearchResult : currentKeywordResult;
+            }
 
             // fetch tracks matching query
             var tracks = await _context.Tracks
-                .Where(t => idsMatchingQuery.Contains(t.Id))
+                .Where(t => currentSearchResult.Contains(t.Id))
                 .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 

@@ -2,12 +2,12 @@
   "profiles": {
     "Coral.Api": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy",
-        "CORAL_CONTENT_DIRECTORY": "P:\\CDJ"
+        "CORAL_CONTENT_DIRECTORY": "P:\\Music"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7031;http://localhost:5031"

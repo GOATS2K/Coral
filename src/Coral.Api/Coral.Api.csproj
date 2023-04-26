@@ -12,7 +12,6 @@
 		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
 		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
 		<RuntimeIdentifiers>win-x64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
-		<PublishSingleFile>true</PublishSingleFile>
 		<PublishTrimmed>true</PublishTrimmed>
 	</PropertyGroup>
 

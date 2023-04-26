@@ -11,9 +11,10 @@
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
 		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
 		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
-		<RuntimeIdentifiers>win-x64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>win-x64;osx-arm64;linux-x64</RuntimeIdentifiers>
 		<PublishTrimmed>true</PublishTrimmed>
 		<TrimMode>partial</TrimMode>
+		<SkipSwaggerGen>false</SkipSwaggerGen>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -35,7 +36,7 @@
 	  <Folder Include="Properties\PublishProfiles\" />
 	</ItemGroup>
 
-	<Target Name="DebugEnsureNodeEnv" BeforeTargets="PostBuildEvent" Condition="'$(DeployOnBuild)' != 'true'">
+	<Target Name="DebugEnsureNodeEnv" BeforeTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
 		<!-- Ensure pnpm is installed -->
 		<Exec Command="pnpm --version" ContinueOnError="true">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
@@ -61,7 +62,7 @@
 		</ItemGroup>
 	</Target>
 
-	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent" Condition="'$(DeployOnBuild)' != 'true'">
+	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
 		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
 		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />

@@ -13,6 +13,7 @@
 		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
 		<RuntimeIdentifiers>win-x64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
 		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -289,7 +289,7 @@ public class IndexerService : IIndexerService
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
 
         var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
-        var remixers = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
+        var remixers = !string.IsNullOrEmpty(parsedRemixers) ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
         var mainArtists = await GetArtistWithRole(SplitArtist(artist), ArtistRole.Main);
 
         var artistList = new List<ArtistWithRole>();

@@ -42,19 +42,23 @@ export const ShakaPlayer = forwardRef(
       const player = new Player(playerRef.current);
       player.configure({
         streaming: {
-          bufferingGoal: 120,
-          rebufferingGoal: 4,
+          // this only applies to transcodes for the most part
+          bufferingGoal: 300,
+          rebufferingGoal: 2,
+          // this applies globally
           retryParameters: {
-            timeout: 30000, // timeout in ms, after which we abort
+            timeout: 10000, // timeout in ms, after which we abort
             stallTimeout: 5000, // stall timeout in ms, after which we abort
-            connectionTimeout: 10000, // connection timeout in ms, after which we abort
-            maxAttempts: 100, // the maximum number of requests before we fail
-            baseDelay: 1000, // the base delay in ms between retries
+            connectionTimeout: 2500, // connection timeout in ms, after which we abort
+            maxAttempts: 3, // the maximum number of requests before we fail
+            baseDelay: 100, // the base delay in ms between retries
             backoffFactor: 1, // the multiplicative backoff factor between retries
             fuzzFactor: 0, // the fuzz factor to apply to each retry delay
           },
         },
       });
+
+      console.log(player.getConfiguration());
 
       player.addEventListener("buffering", (ev: any) => {
         onBuffer(ev.buffering);
@@ -66,6 +70,10 @@ export const ShakaPlayer = forwardRef(
 
       player.addEventListener("error", (ev: any) => {
         console.error("Shaka ran into an error:", ev);
+      });
+
+      player.addEventListener("downloadfailed", (ev: any) => {
+        console.error("Shaka failed to play back the stream:", ev);
       });
 
       setPlayer(player);

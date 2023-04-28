@@ -6,7 +6,7 @@ import styles from "../../styles/Search.module.css";
 
 export default function SearchPage() {
   const [searchString, setSearchString] = useState("");
-  const [debounced] = useDebouncedValue(searchString, 350);
+  const [debounced] = useDebouncedValue(searchString, 500);
 
   return (
     <div className={styles.wrapper}>

@@ -16,11 +16,8 @@
 }
 
 .sidebar {
-  position: sticky;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
-  min-width: 26ch;
+  min-width: 22ch;
   padding: 1em;
   background-color: var(--app-background);
 }

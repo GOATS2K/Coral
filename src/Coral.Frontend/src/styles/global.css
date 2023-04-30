@@ -8,15 +8,11 @@ html {
   color: inherit;
 }
 
-.wrappedLinks {
-  display: flex;
-}
-
-.wrappedPlayerArtist:first-child::before {
+.wrappedLinks > a:first-child::before {
   content: "";
 }
 
-.wrappedPlayerArtist:before {
+.wrappedLinks > a::before {
   content: ", ";
 }
 

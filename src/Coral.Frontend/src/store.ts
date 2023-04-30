@@ -42,22 +42,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     return getTrackArtists(get().selectedTrack);
   },
   getIndexOfSelectedTrack: () => {
-    const index = get().tracks.indexOf(get().selectedTrack);
-    if (index === -1) {
-      // in the event where the track object is constructed elsewhere,
-      // we have to find the track's index using a predicate
-      // because the object itself is different
-      return get().tracks.findIndex((t) => t.id === get().selectedTrack.id);
-    }
-    return index;
+    return get().tracks.findIndex((t) => t.id === get().selectedTrack.id);
   },
   nextTrack: () => {
     const tracks = get().tracks;
-    console.log({
-      lastTrackIndex: get().getIndexOfSelectedTrack(),
-      selectedTrack: get().selectedTrack,
-      tracks,
-    });
     if (get().getIndexOfSelectedTrack() !== tracks.length - 1) {
       set(() => ({
         selectedTrack: tracks[get().getIndexOfSelectedTrack() + 1],

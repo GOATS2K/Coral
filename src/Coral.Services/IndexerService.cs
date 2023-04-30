@@ -121,19 +121,9 @@ public class IndexerService : IIndexerService
 
     private async Task IndexAlbum(List<ATL.Track> tracks)
     {
-        // verify that the collection is not empty
-        if (!tracks.Any())
-        {
-            throw new ArgumentOutOfRangeException("The track collection cannot be empty.");
-        }
-
-        // verify that we in fact have an album
-        if (tracks.Select(t => t.Album).Distinct().Count() > 1)
-        {
-            throw new ArgumentException("The tracks are not from the same album.");
-        }
-
-        var distinctGenres = tracks.Select(t => t.Genre).Distinct();
+        var distinctGenres = tracks.Where(t => t.Genre != null)
+            .Select(t => t.Genre)
+            .Distinct();
         var createdGenres = new List<Genre>();
 
         // parse all artists
@@ -147,10 +137,6 @@ public class IndexerService : IIndexerService
         foreach (var genre in distinctGenres)
         {
             var indexedGenre = GetGenre(genre);
-            if (indexedGenre == null)
-            {
-                continue;
-            }
             createdGenres.Add(indexedGenre);
         }
 
@@ -162,7 +148,7 @@ public class IndexerService : IIndexerService
         indexedAlbum.Type = albumType;
         foreach (var trackToIndex in tracks)
         {
-            var targetGenre = createdGenres.SingleOrDefault(g => g.Name == trackToIndex.Genre);
+            var targetGenre = createdGenres.FirstOrDefault(g => g.Name == trackToIndex.Genre);
             await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
         }
     }
@@ -214,9 +200,8 @@ public class IndexerService : IIndexerService
         await _searchService.InsertKeywordsForTrack(indexedTrack);
     }
 
-    private Genre? GetGenre(string? genreName)
+    private Genre GetGenre(string genreName)
     {
-        if (genreName == null) return null;
         var indexedGenre = _context.Genres.FirstOrDefault(g => g.Name == genreName);
         if (indexedGenre == null)
         {

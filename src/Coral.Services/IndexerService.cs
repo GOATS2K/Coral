@@ -63,6 +63,7 @@ public class IndexerService : IIndexerService
 
         if (!ContentDirectoryNeedsRescan(contentDirectory)) return;
 
+        _logger.LogInformation("Scanning directory: {Directory}", directory);
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
             .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
             .GroupBy(f => f.Directory?.Name, f => f);

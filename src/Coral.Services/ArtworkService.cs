@@ -18,8 +18,8 @@ public interface IArtworkService
 {
     public Task ProcessArtwork(Album album, string artworkPath);
     public Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
-    public Task<ArtworkDto?> GetArtworkForAlbum(Guid albumId);
-    public Task<string?> GetArtworkPath(Guid artworkId);
+    public Task<ArtworkDto?> GetArtworkForAlbum(int albumId);
+    public Task<string?> GetArtworkPath(int artworkId);
 }
 
 public class ArtworkService : IArtworkService
@@ -37,7 +37,7 @@ public class ArtworkService : IArtworkService
         _httpContextAccessor = httpContext;
     }
 
-    public async Task<string?> GetPathForOriginalAlbumArtwork(Guid albumId)
+    public async Task<string?> GetPathForOriginalAlbumArtwork(int albumId)
     {
         return await _context.Artworks
             .Where(a => a.Album.Id == albumId && a.Size == ArtworkSize.Original)
@@ -53,7 +53,7 @@ public class ArtworkService : IArtworkService
         return $"{scheme}://{host}/api/artwork/{requestedArtwork.Id}";
     }
 
-    public async Task<ArtworkDto?> GetArtworkForAlbum(Guid albumId)
+    public async Task<ArtworkDto?> GetArtworkForAlbum(int albumId)
     {
         var artworkList = await _context.Albums.Where(a => a.Id == albumId)
             .Select(a => a.Artworks)
@@ -67,7 +67,7 @@ public class ArtworkService : IArtworkService
         };
     }
 
-    public async Task<string?> GetArtworkPath(Guid artworkId)
+    public async Task<string?> GetArtworkPath(int artworkId)
     {
         return await _context.Artworks
             .Where(a => a.Id == artworkId)

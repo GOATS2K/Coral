@@ -10,7 +10,6 @@ namespace Coral.Database.Configurations
         {
             builder.Property(p => p.Value).IsRequired();
             builder.HasIndex(p => p.Value);
-            builder.ToTable(nameof(Keyword));
         }
     }
 }

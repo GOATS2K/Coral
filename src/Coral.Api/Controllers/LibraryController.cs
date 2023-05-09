@@ -57,7 +57,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/logPlayback")]
-        public async Task<IActionResult> LogPlayback(Guid trackId)
+        public async Task<IActionResult> LogPlayback(int trackId)
         {
             var track = await _libraryService.GetTrackDto(trackId);
             if (track != null)
@@ -70,7 +70,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet, HttpHead]
         [Route("tracks/{trackId}/original")]
-        public async Task<ActionResult> FileFromLibrary(Guid trackId)
+        public async Task<ActionResult> FileFromLibrary(int trackId)
         {
             try
             {
@@ -88,7 +88,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/transcode")]
-        public async Task<ActionResult<StreamDto>> TranscodeTrack(Guid trackId, int bitrate)
+        public async Task<ActionResult<StreamDto>> TranscodeTrack(int trackId, int bitrate)
         {
             var dbTrack = await _libraryService.GetTrack(trackId);
             if (dbTrack == null)
@@ -124,7 +124,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/stream")]
-        public ActionResult<StreamDto> StreamTrack(Guid trackId,
+        public ActionResult<StreamDto> StreamTrack(int trackId,
             [FromQuery] int bitrate = 192,
             [FromQuery] bool transcodeTrack = true)
         {
@@ -181,7 +181,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/{albumId}")]
-        public async Task<ActionResult<AlbumDto>> Album(Guid albumId)
+        public async Task<ActionResult<AlbumDto>> Album(int albumId)
         {
             var album = await _libraryService.GetAlbum(albumId);
             if (album == null)
@@ -194,7 +194,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("artists/{artistId}")]
-        public async Task<ActionResult<ArtistDto>> Artist(Guid artistId)
+        public async Task<ActionResult<ArtistDto>> Artist(int artistId)
         {
             var artist = await _libraryService.GetArtist(artistId);
             return artist != null ? Ok(artist) : NotFound();

@@ -13,15 +13,15 @@ namespace Coral.Services
 {
     public interface ILibraryService
     {
-        public Task<TrackStream> GetStreamForTrack(Guid trackId);
-        public Task<Track?> GetTrack(Guid trackId);
-        public Task<TrackDto?> GetTrackDto(Guid trackId);
+        public Task<TrackStream> GetStreamForTrack(int trackId);
+        public Task<Track?> GetTrack(int trackId);
+        public Task<TrackDto?> GetTrackDto(int trackId);
         public IAsyncEnumerable<TrackDto> GetTracks();
-        public Task<ArtistDto?> GetArtist(Guid artistId);
+        public Task<ArtistDto?> GetArtist(int artistId);
         public IAsyncEnumerable<SimpleAlbumDto> GetAlbums();
-        public Task<string?> GetArtworkForTrack(Guid trackId);
-        public Task<string?> GetArtworkForAlbum(Guid albumId);
-        public Task<AlbumDto?> GetAlbum(Guid albumId);
+        public Task<string?> GetArtworkForTrack(int trackId);
+        public Task<string?> GetArtworkForAlbum(int albumId);
+        public Task<AlbumDto?> GetAlbum(int albumId);
     }
 
     public class LibraryService : ILibraryService
@@ -35,19 +35,19 @@ namespace Coral.Services
             _mapper = mapper;
         }
 
-        public async Task<Track?> GetTrack(Guid trackId)
+        public async Task<Track?> GetTrack(int trackId)
         {
             return await _context.Tracks.FindAsync(trackId);
         }
 
-        public async Task<TrackDto?> GetTrackDto(Guid trackId)
+        public async Task<TrackDto?> GetTrackDto(int trackId)
         {
             return await _context.Tracks.Where(t => t.Id == trackId)
                 .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<TrackStream> GetStreamForTrack(Guid trackId)
+        public async Task<TrackStream> GetStreamForTrack(int trackId)
         {
             var track = await _context.Tracks.FindAsync(trackId);
             if (track == null)
@@ -83,7 +83,7 @@ namespace Coral.Services
                 .AsAsyncEnumerable();
         }
 
-        public async Task<ArtistDto?> GetArtist(Guid artistId)
+        public async Task<ArtistDto?> GetArtist(int artistId)
         {
             //return await _context
             //    .Artists
@@ -128,7 +128,7 @@ namespace Coral.Services
             };
         }
 
-        public async Task<string?> GetArtworkForTrack(Guid trackId)
+        public async Task<string?> GetArtworkForTrack(int trackId)
         {
             var track = await _context.Tracks.Include(t => t.Album)
                 .FirstOrDefaultAsync(t => t.Id == trackId);
@@ -136,14 +136,14 @@ namespace Coral.Services
             return track?.Album?.CoverFilePath;
         }
 
-        public async Task<string?> GetArtworkForAlbum(Guid albumId)
+        public async Task<string?> GetArtworkForAlbum(int albumId)
         {
             var album = await _context.Albums
                 .FirstOrDefaultAsync(a => a.Id == albumId);
             return album?.CoverFilePath;
         }
 
-        public async Task<AlbumDto?> GetAlbum(Guid albumId)
+        public async Task<AlbumDto?> GetAlbum(int albumId)
         {
             var album = await _context.Albums
                 .ProjectTo<AlbumDto>(_mapper.ConfigurationProvider)

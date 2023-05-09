@@ -5,9 +5,9 @@
  */
 export type AlbumDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
   artists: SimpleArtistDto[];
   type?: AlbumType;
@@ -24,9 +24,9 @@ export type AlbumType = "Single" | "EP" | "MiniAlbum" | "Album" | "Compilation";
 
 export type ArtistDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
   releases: SimpleAlbumDto[];
   featuredIn: SimpleAlbumDto[];
@@ -38,9 +38,9 @@ export type ArtistRole = "Main" | "Guest" | "Remixer";
 
 export type ArtistWithRoleDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
   role: ArtistRole;
 };
@@ -53,9 +53,9 @@ export type ArtworkDto = {
 
 export type GenreDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
 };
 
@@ -69,9 +69,9 @@ export type SearchResult = {
 
 export type SimpleAlbumDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
   artists: SimpleArtistDto[];
   type?: AlbumType;
@@ -100,9 +100,9 @@ export type SimpleAlbumDtoPaginatedData = {
 
 export type SimpleArtistDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   name: string;
 };
 
@@ -130,9 +130,9 @@ export type StreamDto = {
 
 export type TrackDto = {
   /**
-   * @format uuid
+   * @format int32
    */
-  id: string;
+  id: number;
   title: string;
   /**
    * @format int32

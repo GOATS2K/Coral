@@ -9,7 +9,7 @@ export enum PlayerInitializationSource {
 
 export interface Initializer {
   source: PlayerInitializationSource;
-  id: string;
+  id: number;
 }
 
 export interface PlayerState {

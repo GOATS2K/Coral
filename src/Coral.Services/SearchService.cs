@@ -81,11 +81,10 @@ namespace Coral.Services
         {
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
-            var lastResult = new List<Guid>();
-            var currentSearchResult = new List<Guid>();
-            for (var i = 0; i < keywords.Count(); i++)
+            var lastResult = new List<int>();
+            var currentSearchResult = new List<int>();
+            foreach (var keyword in keywords)
             {
-                var keyword = keywords[i];
                 var currentKeywordResult = await _context.Keywords
                             .AsNoTracking()
                             .Where(k => EF.Functions.Like(k.Value, $"{keyword}%"))

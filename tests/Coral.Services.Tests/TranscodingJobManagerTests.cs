@@ -18,7 +18,7 @@ namespace Coral.Services.Tests
         private readonly IEncoderFactory _encoderFactory;
         public Track TestTrack { get; } = new Track()
         {
-            Id = Guid.NewGuid(),
+            Id = 1,
             Artists = new List<ArtistWithRole>()
             {
                 new ArtistWithRole()
@@ -31,7 +31,7 @@ namespace Coral.Services.Tests
             },
             Album = new Album()
             {
-                Id = Guid.NewGuid(),
+                Id = 1,
                 Name = "Test Album 1",
                 DateIndexed = DateTime.UtcNow
             },

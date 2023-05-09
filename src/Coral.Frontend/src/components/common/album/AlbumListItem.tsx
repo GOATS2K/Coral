@@ -1,8 +1,9 @@
 import { Anchor, Image, Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { IconPlayerPlay } from "@tabler/icons-react";
+import getConfig from "next/config";
 import Link from "next/link";
 import { useState } from "react";
-import { fetchAlbum, useAlbumArtwork } from "../../../client/components";
+import { fetchAlbum } from "../../../client/components";
 import { SimpleAlbumDto } from "../../../client/schemas";
 import { getAlbumArtists } from "../../../common/album";
 import { Initializer, PlayerInitializationSource, usePlayerStore } from "../../../store";
@@ -14,16 +15,6 @@ type AlbumListItemProps = {
 };
 
 export default function AlbumListItem({ album, artworkSize }: AlbumListItemProps) {
-  const { data } = useAlbumArtwork(
-    {
-      pathParams: {
-        albumId: album != null ? album.id : "",
-      },
-    },
-    {
-      enabled: album != null,
-    }
-  );
   const theme = useMantineTheme();
   const [onHover, setOnHover] = useState(false);
   const [playButtonOnHover, setPlayButtonOnHover] = useState(false);
@@ -65,7 +56,7 @@ export default function AlbumListItem({ album, artworkSize }: AlbumListItemProps
             withPlaceholder
             width={artworkSize}
             height={artworkSize}
-            src={data?.medium}
+            src={`${getConfig().publicRuntimeConfig.apiBaseUrl}${album?.artworks.medium}`}
           />
         </Link>
         <div className={styles.playButtonOnImage}>

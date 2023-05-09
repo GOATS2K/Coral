@@ -1,5 +1,5 @@
 import { Image, Text } from "@mantine/core";
-import { useAlbumArtwork } from "../../client/components";
+import getConfig from "next/config";
 import { AlbumDto } from "../../client/schemas";
 import { getAlbumArtists, getAlbumDuration, getAlbumGenre } from "../../common/album";
 import styles from "../../styles/AlbumInfo.module.css";
@@ -9,17 +9,6 @@ type AlbumInfoProps = {
 };
 
 export default function AlbumInfo({ album }: AlbumInfoProps) {
-  const { data } = useAlbumArtwork(
-    {
-      pathParams: {
-        albumId: album != null ? album.id : "",
-      },
-    },
-    {
-      enabled: album != null,
-    }
-  );
-
   if (album == null) {
     return <Text fz={32}>Cannot get album info...</Text>;
   }
@@ -29,11 +18,19 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
       className={styles.background}
       style={{
         // background: "linear-gradient(135deg, #ABB7B7, #724434, #004365)",
-        backgroundImage: `url(${data?.original})`,
+        backgroundImage: `url(${getConfig().publicRuntimeConfig.apiBaseUrl}${
+          album?.artworks.original
+        })`,
       }}
     >
       <div className={styles.wrapper}>
-        <Image alt="Album cover" withPlaceholder width={250} height={250} src={data?.medium} />
+        <Image
+          alt="Album cover"
+          withPlaceholder
+          width={250}
+          height={250}
+          src={`${getConfig().publicRuntimeConfig.apiBaseUrl}${album?.artworks.medium}`}
+        />
         <div className={styles.metadataWrapper}>
           <div className={styles.metadata}>
             <Text fw={700} color="white" fz={32}>

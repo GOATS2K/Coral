@@ -15,7 +15,7 @@ export type AlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  hasArtwork: boolean;
+  artworks: ArtworkDto;
   tracks: TrackDto[];
   genres: GenreDto[];
 };
@@ -79,7 +79,7 @@ export type SimpleAlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  hasArtwork: boolean;
+  artworks: ArtworkDto;
 };
 
 export type SimpleAlbumDtoPaginatedData = {

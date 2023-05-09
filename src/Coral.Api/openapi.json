@@ -652,8 +652,8 @@
       "AlbumDto": {
         "required": [
           "artists",
+          "artworks",
           "genres",
-          "hasArtwork",
           "id",
           "name",
           "releaseYear",
@@ -681,8 +681,8 @@
             "type": "integer",
             "format": "int32"
           },
-          "hasArtwork": {
-            "type": "boolean"
+          "artworks": {
+            "$ref": "#/components/schemas/ArtworkDto"
           },
           "tracks": {
             "type": "array",
@@ -861,7 +861,7 @@
       "SimpleAlbumDto": {
         "required": [
           "artists",
-          "hasArtwork",
+          "artworks",
           "id",
           "name",
           "releaseYear"
@@ -888,8 +888,8 @@
             "type": "integer",
             "format": "int32"
           },
-          "hasArtwork": {
-            "type": "boolean"
+          "artworks": {
+            "$ref": "#/components/schemas/ArtworkDto"
           }
         },
         "additionalProperties": false

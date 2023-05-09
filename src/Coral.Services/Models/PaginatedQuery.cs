@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Coral.Services.Models
 {
-    public class PaginatedData<TType> 
+    public class PaginatedQuery<TType> 
         where TType : class
     {
         public int AvailableRecords { get; init; }

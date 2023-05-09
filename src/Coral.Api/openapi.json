@@ -157,6 +157,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
           }
         ],
         "responses": {
@@ -165,17 +183,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchResult"
+                  "$ref": "#/components/schemas/SearchResultPaginatedCustomData"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchResult"
+                  "$ref": "#/components/schemas/SearchResultPaginatedCustomData"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchResult"
+                  "$ref": "#/components/schemas/SearchResultPaginatedCustomData"
                 }
               }
             }
@@ -470,17 +488,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedQuery"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedQuery"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleAlbumDtoPaginatedQuery"
                 }
               }
             }
@@ -520,17 +538,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedQuery"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedQuery"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedData"
+                  "$ref": "#/components/schemas/SimpleArtistDtoPaginatedQuery"
                 }
               }
             }
@@ -858,6 +876,33 @@
         },
         "additionalProperties": false
       },
+      "SearchResultPaginatedCustomData": {
+        "required": [
+          "availableRecords",
+          "data",
+          "resultCount",
+          "totalRecords"
+        ],
+        "type": "object",
+        "properties": {
+          "availableRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalRecords": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resultCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "SimpleAlbumDto": {
         "required": [
           "artists",
@@ -894,7 +939,7 @@
         },
         "additionalProperties": false
       },
-      "SimpleAlbumDtoPaginatedData": {
+      "SimpleAlbumDtoPaginatedQuery": {
         "required": [
           "availableRecords",
           "data",
@@ -941,7 +986,7 @@
         },
         "additionalProperties": false
       },
-      "SimpleArtistDtoPaginatedData": {
+      "SimpleArtistDtoPaginatedQuery": {
         "required": [
           "availableRecords",
           "data",

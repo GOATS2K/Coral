@@ -49,9 +49,9 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("search")]
-        public async Task<ActionResult<SearchResult>> Search([FromQuery] string query)
+        public async Task<ActionResult<PaginatedCustomData<SearchResult>>> Search([FromQuery] string query, [FromQuery] int offset = 0, [FromQuery] int limit = 100)
         {
-            var searchResult = await _searchService.Search(query);
+            var searchResult = await _searchService.Search(query, offset, limit);
             return Ok(searchResult);
         }
 
@@ -165,7 +165,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/paginated")]
-        public async Task<ActionResult<PaginatedData<SimpleAlbumDto>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedQuery<SimpleAlbumDto>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
         {
             var result = await _paginationService.PaginateQuery<Album, SimpleAlbumDto>(offset, limit);
             return Ok(result);
@@ -173,7 +173,7 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("artists/paginated")]
-        public async Task<ActionResult<PaginatedData<SimpleArtistDto>>> PaginatedArtists([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedQuery<SimpleArtistDto>>> PaginatedArtists([FromQuery] int limit = 10, [FromQuery] int offset = 0)
         {
             var result = await _paginationService.PaginateQuery<Artist, SimpleArtistDto>(offset, limit);
             return Ok(result);

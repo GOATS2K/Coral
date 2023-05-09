@@ -23,7 +23,8 @@ namespace Coral.Services.Tests
             var testDatabase = new TestDatabase();
             _testDatabase = testDatabase;
             var logger = Substitute.For<ILogger<SearchService>>();
-            _searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, logger);
+            var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
+            _searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, logger, paginationService);
         }
 
         [Fact]
@@ -58,7 +59,7 @@ namespace Coral.Services.Tests
             var results = await _searchService.Search(trackToFind.Title);
 
             // assert
-            Assert.NotEmpty(results.Tracks);
+            Assert.NotEmpty(results.Data.Tracks);
         }
 
         [Theory]
@@ -82,8 +83,8 @@ namespace Coral.Services.Tests
             var result = await _searchService.Search(query);
 
             // assert
-            Assert.Single(result.Tracks);
-            var searchResult = result.Tracks.Single();
+            Assert.Single(result.Data.Tracks);
+            var searchResult = result.Data.Tracks.Single();
             Assert.Equal(trackToFind.Title, searchResult.Title);
         }
 
@@ -99,7 +100,7 @@ namespace Coral.Services.Tests
             // act
             var result = await _searchService.Search(query);
             // assert
-            var album = result.Albums.Single();
+            var album = result.Data.Albums.Single();
             Assert.Equal(_testDatabase.ALittleWhileLonger.Id, album.Id);
         }
     }

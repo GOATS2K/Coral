@@ -67,6 +67,22 @@ export type SearchResult = {
   tracks: TrackDto[];
 };
 
+export type SearchResultPaginatedCustomData = {
+  /**
+   * @format int32
+   */
+  availableRecords: number;
+  /**
+   * @format int32
+   */
+  totalRecords: number;
+  /**
+   * @format int32
+   */
+  resultCount: number;
+  data: SearchResult;
+};
+
 export type SimpleAlbumDto = {
   /**
    * @format int32
@@ -82,7 +98,7 @@ export type SimpleAlbumDto = {
   artworks: ArtworkDto;
 };
 
-export type SimpleAlbumDtoPaginatedData = {
+export type SimpleAlbumDtoPaginatedQuery = {
   /**
    * @format int32
    */
@@ -106,7 +122,7 @@ export type SimpleArtistDto = {
   name: string;
 };
 
-export type SimpleArtistDtoPaginatedData = {
+export type SimpleArtistDtoPaginatedQuery = {
   /**
    * @format int32
    */

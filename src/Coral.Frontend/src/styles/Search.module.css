@@ -34,3 +34,10 @@
   margin-bottom: 0.5em;
   overflow: auto;
 }
+
+.pagination {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1em;
+  margin-top: 1em;
+}

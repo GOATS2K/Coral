@@ -1,5 +1,5 @@
 import { Image, Text, Title } from "@mantine/core";
-import { useAlbumArtwork } from "../../client/components";
+import getConfig from "next/config";
 import { ArtistDto } from "../../client/schemas";
 import styles from "../../styles/Artist.module.css";
 
@@ -19,31 +19,23 @@ export default function ArtistBanner({ artist }: ArtistBannerProps) {
     Number(remixerInCount) +
     Number(compilationCount);
 
-  const releaseWithArtwork = artist?.releases.find((a) => a.hasArtwork === true)?.id;
-
-  const { data } = useAlbumArtwork(
-    {
-      pathParams: {
-        albumId: releaseWithArtwork != null ? releaseWithArtwork : "",
-      },
-    },
-    {
-      enabled: releaseWithArtwork != null,
-    }
-  );
-
+  const releaseWithArtwork = artist?.releases.find((a) => a.artworks.original !== "");
   return (
     <div
       className={styles.bannerBackground}
       style={{
-        backgroundImage: `url(${data?.original})`,
+        backgroundImage: `url(${getConfig().publicRuntimeConfig.apiBaseUrl}${
+          releaseWithArtwork?.artworks.original
+        })`,
       }}
     >
       <div className={styles.bannerWrapper}>
         {releaseWithArtwork && (
           <Image
             className={styles.bannerImage}
-            src={data?.original}
+            src={`${getConfig().publicRuntimeConfig.apiBaseUrl}${
+              releaseWithArtwork?.artworks.medium
+            }`}
             alt=""
             height={150}
             width={150}

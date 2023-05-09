@@ -14,7 +14,7 @@ namespace Coral.Database.Models
     public class ArtistWithRole : BaseTable
     {
         public ArtistRole Role { get; set; }
-        public Guid ArtistId { get; set; }
+        public int ArtistId { get; set; }
         public Artist Artist { get; set; } = null!;
         public List<Track> Tracks { get; set; } = null!;
         public List<Album> Albums { get; set; } = null!;

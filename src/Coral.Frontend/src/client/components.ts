@@ -11,9 +11,9 @@ import type * as Schemas from "./schemas";
 
 export type ArtworkFromIdPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  artworkId: string;
+  artworkId: number;
 };
 
 export type ArtworkFromIdError = Fetcher.ErrorWrapper<undefined>;
@@ -50,9 +50,9 @@ export const useArtworkFromId = <TData = undefined>(
 
 export type AlbumArtworkPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  albumId: string;
+  albumId: number;
 };
 
 export type AlbumArtworkError = Fetcher.ErrorWrapper<undefined>;
@@ -273,9 +273,9 @@ export const useSearch = <TData = Schemas.SearchResult>(
 
 export type LogPlaybackPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  trackId: string;
+  trackId: number;
 };
 
 export type LogPlaybackError = Fetcher.ErrorWrapper<undefined>;
@@ -316,9 +316,9 @@ export const useLogPlayback = <TData = undefined>(
 
 export type FileFromLibraryPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  trackId: string;
+  trackId: number;
 };
 
 export type FileFromLibraryError = Fetcher.ErrorWrapper<undefined>;
@@ -359,9 +359,9 @@ export const useFileFromLibrary = <TData = undefined>(
 
 export type TranscodeTrackPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  trackId: string;
+  trackId: number;
 };
 
 export type TranscodeTrackQueryParams = {
@@ -412,9 +412,9 @@ export const useTranscodeTrack = <TData = Schemas.StreamDto>(
 
 export type StreamTrackPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  trackId: string;
+  trackId: number;
 };
 
 export type StreamTrackQueryParams = {
@@ -636,9 +636,9 @@ export const usePaginatedArtists = <TData = Schemas.SimpleArtistDtoPaginatedData
 
 export type AlbumPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  albumId: string;
+  albumId: number;
 };
 
 export type AlbumError = Fetcher.ErrorWrapper<undefined>;
@@ -675,9 +675,9 @@ export const useAlbum = <TData = Schemas.AlbumDto>(
 
 export type ArtistPathParams = {
   /**
-   * @format uuid
+   * @format int32
    */
-  artistId: string;
+  artistId: number;
 };
 
 export type ArtistError = Fetcher.ErrorWrapper<undefined>;

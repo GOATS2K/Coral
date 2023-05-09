@@ -33,11 +33,30 @@ public class CoralDbContext : DbContext
         if (!options.IsConfigured)
         {
             options.UseSqlite($"Data Source={DbPath}", opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+            // options.EnableSensitiveDataLogging();
         }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordConfiguration).Assembly);
+        var tableTypes = GetDatabaseTableTypes();
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!tableTypes.Contains(entityType.ClrType))
+                continue;
+
+            // https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api#table-name
+            modelBuilder.Entity(entityType.ClrType).ToTable(entityType.ClrType.Name);
+        }
+    }
+
+    private static Type[] GetDatabaseTableTypes()
+    {
+        return typeof(CoralDbContext).GetProperties()
+            .Where(p => typeof(IQueryable).IsAssignableFrom(p.PropertyType))
+            .Select(p => p.PropertyType.GetGenericArguments()[0])
+            .ToArray();
+
     }
 }

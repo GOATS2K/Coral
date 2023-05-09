@@ -7,14 +7,16 @@ import { Initializer, PlayerInitializationSource } from "../../store";
 
 export default function Album() {
   const router = useRouter();
+  const albumId = typeof router.query.id === "string" ? +router.query.id : 0;
+
   const initializer = {
-    id: router.query.id,
+    id: albumId,
     source: PlayerInitializationSource.Album,
   } as Initializer;
 
   const { data, isLoading, error } = useAlbum({
     pathParams: {
-      albumId: typeof router.query.id === "string" ? router.query.id : "",
+      albumId: albumId,
     },
   });
 

@@ -27,6 +27,9 @@ export interface PlayerState {
 export interface SearchState {
   query: string;
   result: SearchResult;
+  currentPage: number;
+  pages: number;
+  setQueryString: (query: string) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -66,7 +69,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
 }));
 
-export const useSearchStore = create<SearchState>()(() => ({
+export const useSearchStore = create<SearchState>()((set) => ({
   query: "",
   result: {} as SearchResult,
+  currentPage: 1,
+  pages: 1,
+  setQueryString: (query: string) => {
+    set(() => ({ query: query, currentPage: 1, pages: 1 }));
+  },
 }));

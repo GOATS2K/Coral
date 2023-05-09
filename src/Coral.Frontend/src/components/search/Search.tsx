@@ -1,4 +1,4 @@
-import { Text } from "@mantine/core";
+import { Pagination, Text } from "@mantine/core";
 import { useEffect } from "react";
 import { useSearch } from "../../client/components";
 import { SearchResult } from "../../client/schemas";
@@ -7,12 +7,9 @@ import { useSearchStore } from "../../store";
 import AlbumList from "./AlbumList";
 import ArtistList from "./ArtistList";
 import TrackList from "./TrackList";
+import styles from "../../styles/Search.module.css";
 
-type SearchProps = {
-  searchString: string;
-};
-
-export default function Search({ searchString }: SearchProps) {
+export default function Search() {
   const lastResult = useSearchStore((state) => state.result);
   const searchPage = (inc?: SearchResult) => {
     return (
@@ -20,30 +17,49 @@ export default function Search({ searchString }: SearchProps) {
         <ArtistList artists={inc?.artists} />
         <AlbumList albums={inc?.albums} />
         <TrackList tracks={inc?.tracks} />
+        <div className={styles.pagination}>
+          <Pagination
+            size="lg"
+            total={pages}
+            page={currentPage}
+            onChange={(page) => useSearchStore.setState({ currentPage: page })}
+          />
+        </div>
       </div>
     );
   };
 
+  const currentPage = useSearchStore((state) => state.currentPage);
+  const query = useSearchStore((state) => state.query);
+  const pages = useSearchStore((state) => state.pages);
+  const limit = 50;
+  const offset = (currentPage - 1) * limit;
+
   const { data, isLoading, error } = useSearch(
     {
       queryParams: {
-        query: searchString,
+        query: query,
+        offset: offset,
+        limit: limit,
       },
     },
-    { enabled: searchString != "" }
+    { enabled: query != "" }
   );
 
   useEffect(() => {
-    if (searchString != "") {
-      useSearchStore.setState({ query: searchString, result: data });
+    if (query != "") {
+      useSearchStore.setState({
+        result: data?.data,
+        pages: Math.ceil(Number(data?.totalRecords) / limit),
+      });
     }
-  }, [searchString, data]);
+  }, [query, data, pages]);
 
-  if (searchString == "" && lastResult.tracks == null) {
+  if (query == "" && lastResult.tracks == null) {
     return <Text>What are you looking for?</Text>;
   }
 
-  if (searchString == "" && lastResult.tracks != null) {
+  if (query == "" && lastResult.tracks != null) {
     return searchPage(lastResult);
   }
 
@@ -55,5 +71,5 @@ export default function Search({ searchString }: SearchProps) {
     return <div>Something went wrong trying to search...</div>;
   }
 
-  return searchPage(data);
+  return searchPage(data?.data);
 }

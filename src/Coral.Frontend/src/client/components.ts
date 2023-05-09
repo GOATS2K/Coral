@@ -237,6 +237,16 @@ export const useRunIndexer = (
 
 export type SearchQueryParams = {
   query?: string;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+  /**
+   * @format int32
+   * @default 100
+   */
+  limit?: number;
 };
 
 export type SearchError = Fetcher.ErrorWrapper<undefined>;
@@ -246,22 +256,19 @@ export type SearchVariables = {
 } & Context["fetcherOptions"];
 
 export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
-  fetch<Schemas.SearchResult, SearchError, undefined, {}, SearchQueryParams, {}>({
-    url: "/api/Library/search",
-    method: "get",
-    ...variables,
-    signal,
-  });
+  fetch<Schemas.SearchResultPaginatedCustomData, SearchError, undefined, {}, SearchQueryParams, {}>(
+    { url: "/api/Library/search", method: "get", ...variables, signal }
+  );
 
-export const useSearch = <TData = Schemas.SearchResult>(
+export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData>(
   variables: SearchVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SearchResult, SearchError, TData>,
+    reactQuery.UseQueryOptions<Schemas.SearchResultPaginatedCustomData, SearchError, TData>,
     "queryKey" | "queryFn"
   >
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SearchResult, SearchError, TData>(
+  return reactQuery.useQuery<Schemas.SearchResultPaginatedCustomData, SearchError, TData>(
     queryKeyFn({ path: "/api/Library/search", operationId: "search", variables }),
     ({ signal }) => fetchSearch({ ...fetcherOptions, ...variables }, signal),
     {
@@ -553,7 +560,7 @@ export type PaginatedAlbumsVariables = {
 
 export const fetchPaginatedAlbums = (variables: PaginatedAlbumsVariables, signal?: AbortSignal) =>
   fetch<
-    Schemas.SimpleAlbumDtoPaginatedData,
+    Schemas.SimpleAlbumDtoPaginatedQuery,
     PaginatedAlbumsError,
     undefined,
     {},
@@ -561,15 +568,15 @@ export const fetchPaginatedAlbums = (variables: PaginatedAlbumsVariables, signal
     {}
   >({ url: "/api/Library/albums/paginated", method: "get", ...variables, signal });
 
-export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedData>(
+export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedQuery>(
   variables: PaginatedAlbumsVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SimpleAlbumDtoPaginatedData, PaginatedAlbumsError, TData>,
+    reactQuery.UseQueryOptions<Schemas.SimpleAlbumDtoPaginatedQuery, PaginatedAlbumsError, TData>,
     "queryKey" | "queryFn"
   >
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SimpleAlbumDtoPaginatedData, PaginatedAlbumsError, TData>(
+  return reactQuery.useQuery<Schemas.SimpleAlbumDtoPaginatedQuery, PaginatedAlbumsError, TData>(
     queryKeyFn({
       path: "/api/Library/albums/paginated",
       operationId: "paginatedAlbums",
@@ -604,7 +611,7 @@ export type PaginatedArtistsVariables = {
 
 export const fetchPaginatedArtists = (variables: PaginatedArtistsVariables, signal?: AbortSignal) =>
   fetch<
-    Schemas.SimpleArtistDtoPaginatedData,
+    Schemas.SimpleArtistDtoPaginatedQuery,
     PaginatedArtistsError,
     undefined,
     {},
@@ -612,15 +619,15 @@ export const fetchPaginatedArtists = (variables: PaginatedArtistsVariables, sign
     {}
   >({ url: "/api/Library/artists/paginated", method: "get", ...variables, signal });
 
-export const usePaginatedArtists = <TData = Schemas.SimpleArtistDtoPaginatedData>(
+export const usePaginatedArtists = <TData = Schemas.SimpleArtistDtoPaginatedQuery>(
   variables: PaginatedArtistsVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SimpleArtistDtoPaginatedData, PaginatedArtistsError, TData>,
+    reactQuery.UseQueryOptions<Schemas.SimpleArtistDtoPaginatedQuery, PaginatedArtistsError, TData>,
     "queryKey" | "queryFn"
   >
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SimpleArtistDtoPaginatedData, PaginatedArtistsError, TData>(
+  return reactQuery.useQuery<Schemas.SimpleArtistDtoPaginatedQuery, PaginatedArtistsError, TData>(
     queryKeyFn({
       path: "/api/Library/artists/paginated",
       operationId: "paginatedArtists",

@@ -22,7 +22,7 @@ import {
 import getConfig from "next/config";
 import Link from "next/link";
 import React, { useState } from "react";
-import { fetchLogPlayback, fetchStreamTrack, useAlbumArtwork } from "../../client/components";
+import { fetchLogPlayback, fetchStreamTrack } from "../../client/components";
 import { StreamDto } from "../../client/schemas";
 import { getLinksForArtist } from "../../common/links";
 import { PlayerState, usePlayerStore } from "../../store";
@@ -155,10 +155,12 @@ function Player() {
         album: selectedTrack.album?.name,
       });
 
-      if (albumArtwork?.medium != null) {
+      if (selectedTrack.album.artworks?.medium != null) {
         metadata["artwork"] = [
           {
-            src: albumArtwork?.medium,
+            src: `${getConfig().publicRuntimeConfig.apiBaseUrl}${
+              selectedTrack.album?.artworks.medium
+            }`,
           },
         ];
       }

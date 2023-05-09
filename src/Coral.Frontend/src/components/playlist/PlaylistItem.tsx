@@ -2,7 +2,6 @@ import { Image, Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { IconDisc, IconPlayerPlay } from "@tabler/icons-react";
 import getConfig from "next/config";
 import { useState } from "react";
-import { useAlbumArtwork } from "../../client/components";
 import { TrackDto } from "../../client/schemas";
 import { getTrackArtists } from "../../common/album";
 import { usePlayerStore } from "../../store";

@@ -15,11 +15,11 @@ namespace Coral.Services
 {
     public interface IPaginationService
     {
-        public Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
+        public Task<PaginatedQuery<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class;
 
-        public Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+        public Task<PaginatedQuery<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class;
     }
@@ -35,7 +35,7 @@ namespace Coral.Services
             _context = context;
         }
 
-        public async Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
+        public async Task<PaginatedQuery<TDtoType>> PaginateQuery<TSourceType, TDtoType>(Func<DbSet<TSourceType>, IQueryable<TSourceType>> sourceQuery, int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class
         {
@@ -44,7 +44,7 @@ namespace Coral.Services
             return await PaginateQueryable<TSourceType, TDtoType>(queryable, offset, limit);
         }
 
-        public async Task<PaginatedData<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
+        public async Task<PaginatedQuery<TDtoType>> PaginateQuery<TSourceType, TDtoType>(int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class
         {
@@ -52,7 +52,7 @@ namespace Coral.Services
             return await PaginateQueryable<TSourceType, TDtoType>(contextSet, offset, limit);
         }
 
-        private async Task<PaginatedData<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(IQueryable<TSourceType> queryable, int offset = 0, int limit = 10)
+        private async Task<PaginatedQuery<TDtoType>> PaginateQueryable<TSourceType, TDtoType>(IQueryable<TSourceType> queryable, int offset = 0, int limit = 10)
             where TSourceType : BaseTable
             where TDtoType : class
         {
@@ -67,7 +67,7 @@ namespace Coral.Services
                 .ProjectTo<TDtoType>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return new PaginatedData<TDtoType>()
+            return new PaginatedQuery<TDtoType>()
             {
                 AvailableRecords = availableRecords,
                 ResultCount = querySize,

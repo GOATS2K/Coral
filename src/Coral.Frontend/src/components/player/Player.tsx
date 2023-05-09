@@ -19,6 +19,7 @@ import {
   IconSettings,
   IconVolume2,
 } from "@tabler/icons-react";
+import getConfig from "next/config";
 import Link from "next/link";
 import React, { useState } from "react";
 import { fetchLogPlayback, fetchStreamTrack, useAlbumArtwork } from "../../client/components";
@@ -37,16 +38,6 @@ function Player() {
   const selectedTrack = usePlayerStore((state: PlayerState) => state.selectedTrack);
   const selectedTrackArtist = usePlayerStore((state) => state.getMainArtists());
   const playerPosition = usePlayerStore((state) => state.getIndexOfSelectedTrack());
-  const { data: albumArtwork } = useAlbumArtwork(
-    {
-      pathParams: {
-        albumId: selectedTrack.album != null ? selectedTrack.album.id : "",
-      },
-    },
-    {
-      enabled: selectedTrack.album != null,
-    }
-  );
 
   // TODO: refactor these state calls to use a reducer at some point
   const [streamTrack, setStreamTrack] = useState({} as StreamDto);
@@ -282,7 +273,9 @@ function Player() {
       <div className={styles.imageBox}>
         <Image
           alt={`Album cover of ${selectedTrack.album.name}`}
-          src={albumArtwork?.small}
+          src={`${getConfig().publicRuntimeConfig.apiBaseUrl}${
+            selectedTrack.album?.artworks.small
+          }`}
           withPlaceholder
           width="70px"
           height="70px"

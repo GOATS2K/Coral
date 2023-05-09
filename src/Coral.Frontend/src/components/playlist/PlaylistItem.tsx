@@ -1,5 +1,6 @@
 import { Image, Text, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { IconDisc, IconPlayerPlay } from "@tabler/icons-react";
+import getConfig from "next/config";
 import { useState } from "react";
 import { useAlbumArtwork } from "../../client/components";
 import { TrackDto } from "../../client/schemas";
@@ -19,16 +20,6 @@ export function PlaylistItem({ track, onPlayback, displayArtwork = false }: Play
   const nowPlayingTrack = usePlayerStore((state) => state.selectedTrack);
   const playState = usePlayerStore((state) => state.playState);
   const trackArtist = getTrackArtists(track);
-  const { data: artwork } = useAlbumArtwork(
-    {
-      pathParams: {
-        albumId: track.album.id,
-      },
-    },
-    {
-      enabled: displayArtwork,
-    }
-  );
 
   const setSelectedTrack = (track: TrackDto) => {
     // set the selected track
@@ -50,7 +41,11 @@ export function PlaylistItem({ track, onPlayback, displayArtwork = false }: Play
     </UnstyledButton>
   );
   const albumArt = (
-    <Image withPlaceholder src={artwork?.small} alt={`Album art of ${track.album}`} />
+    <Image
+      withPlaceholder
+      src={`${getConfig().publicRuntimeConfig.apiBaseUrl}${track?.album.artworks.small}`}
+      alt={`Album art of ${track.album}`}
+    />
   );
   const defaultLeftSection = displayArtwork ? albumArt : <Text fz="lg">{track.trackNumber}</Text>;
   const spinningDisc = (

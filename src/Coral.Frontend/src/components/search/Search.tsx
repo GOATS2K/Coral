@@ -1,5 +1,5 @@
 import { Pagination, Text } from "@mantine/core";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { useSearch } from "../../client/components";
 import { SearchResult } from "../../client/schemas";
 import { CenteredLoader } from "../../common/ui";
@@ -9,7 +9,11 @@ import ArtistList from "./ArtistList";
 import TrackList from "./TrackList";
 import styles from "../../styles/Search.module.css";
 
-export default function Search() {
+export type SearchProps = {
+  query: string;
+};
+
+export const Search = memo(function Search({ query }: SearchProps) {
   const lastResult = useSearchStore((state) => state.result);
   const searchPage = (inc?: SearchResult) => {
     return (
@@ -22,7 +26,11 @@ export default function Search() {
             size="lg"
             total={pages}
             page={currentPage}
-            onChange={(page) => useSearchStore.setState({ currentPage: page })}
+            onChange={(page) => {
+              useSearchStore.setState({ currentPage: page });
+              // too lazy to get refs working
+              document.getElementById("artistList")?.scrollIntoView();
+            }}
           />
         </div>
       </div>
@@ -30,7 +38,6 @@ export default function Search() {
   };
 
   const currentPage = useSearchStore((state) => state.currentPage);
-  const query = useSearchStore((state) => state.query);
   const pages = useSearchStore((state) => state.pages);
   const limit = 50;
   const offset = (currentPage - 1) * limit;
@@ -72,4 +79,4 @@ export default function Search() {
   }
 
   return searchPage(data?.data);
-}
+});

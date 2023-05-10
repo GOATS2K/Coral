@@ -1,7 +1,7 @@
 import { TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { useState } from "react";
-import Search from "../../components/search/Search";
+import { useEffect, useState } from "react";
+import { Search } from "../../components/search/Search";
 import { useSearchStore } from "../../store";
 import styles from "../../styles/Search.module.css";
 
@@ -10,9 +10,11 @@ export default function SearchPage() {
   const [query, setQuery] = useState(storeQueryString);
   const [debounced] = useDebouncedValue(query, 500);
 
-  if (storeQueryString !== query) {
-    useSearchStore.getState().setQueryString(debounced);
-  }
+  useEffect(() => {
+    if (storeQueryString !== debounced) {
+      useSearchStore.getState().setQueryString(debounced);
+    }
+  }, [storeQueryString, debounced]);
 
   return (
     <div className={styles.wrapper}>
@@ -26,7 +28,7 @@ export default function SearchPage() {
           setQuery(event.currentTarget.value);
         }}
       />
-      <Search />
+      <Search query={debounced} />
     </div>
   );
 }

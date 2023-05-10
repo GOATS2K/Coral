@@ -10,7 +10,7 @@ type ArtistListProps = {
 export default function ArtistList({ artists }: ArtistListProps) {
   const artistList = artists?.map((a) => <ArtistSearchItem artist={a} key={a.id} />);
   return (
-    <div className={styles.artistComponentWrapper}>
+    <div id="artistList" className={styles.artistComponentWrapper}>
       <Title order={3} className={styles.title}>
         Artists
       </Title>

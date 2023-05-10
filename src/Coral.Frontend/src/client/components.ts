@@ -48,45 +48,6 @@ export const useArtworkFromId = <TData = undefined>(
   );
 };
 
-export type AlbumArtworkPathParams = {
-  /**
-   * @format int32
-   */
-  albumId: number;
-};
-
-export type AlbumArtworkError = Fetcher.ErrorWrapper<undefined>;
-
-export type AlbumArtworkVariables = {
-  pathParams: AlbumArtworkPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchAlbumArtwork = (variables: AlbumArtworkVariables, signal?: AbortSignal) =>
-  fetch<Schemas.ArtworkDto, AlbumArtworkError, undefined, {}, {}, AlbumArtworkPathParams>({
-    url: "/api/Artwork/albums/{albumId}",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export const useAlbumArtwork = <TData = Schemas.ArtworkDto>(
-  variables: AlbumArtworkVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.ArtworkDto, AlbumArtworkError, TData>,
-    "queryKey" | "queryFn"
-  >
-) => {
-  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.ArtworkDto, AlbumArtworkError, TData>(
-    queryKeyFn({ path: "/api/Artwork/albums/{albumId}", operationId: "albumArtwork", variables }),
-    ({ signal }) => fetchAlbumArtwork({ ...fetcherOptions, ...variables }, signal),
-    {
-      ...options,
-      ...queryOptions,
-    }
-  );
-};
-
 export type AuthorizeUserError = Fetcher.ErrorWrapper<undefined>;
 
 export type AuthorizeUserVariables = Context["fetcherOptions"];
@@ -784,11 +745,6 @@ export type QueryOperation =
       path: "/api/Artwork/{artworkId}";
       operationId: "artworkFromId";
       variables: ArtworkFromIdVariables;
-    }
-  | {
-      path: "/api/Artwork/albums/{albumId}";
-      operationId: "albumArtwork";
-      variables: AlbumArtworkVariables;
     }
   | {
       path: "/api/plugin/LastFm/authorize";

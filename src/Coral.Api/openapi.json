@@ -29,47 +29,6 @@
         }
       }
     },
-    "/api/Artwork/albums/{albumId}": {
-      "get": {
-        "tags": [
-          "Artwork"
-        ],
-        "operationId": "AlbumArtwork",
-        "parameters": [
-          {
-            "name": "albumId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/plugin/LastFm/authorize": {
       "get": {
         "tags": [

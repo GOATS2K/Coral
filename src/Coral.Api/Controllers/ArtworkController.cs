@@ -24,17 +24,4 @@ public class ArtworkController : ControllerBase
         return new PhysicalFileResult(artworkPath,
             MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
     }
-    
-    [HttpGet]
-    [Route("albums/{albumId}")]
-    public async Task<ActionResult<ArtworkDto>> AlbumArtwork(int albumId)
-    {
-        var thumbnails = await _artworkService.GetArtworkForAlbum(albumId);
-        if (thumbnails == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(thumbnails);
-    }
 }

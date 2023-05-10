@@ -120,7 +120,7 @@ namespace Coral.Services
             {
                 var currentKeywordResult = await _context.Keywords
                             .AsNoTracking()
-                            .Where(k => EF.Functions.Like(k.Value, $"{keyword}%"))
+                            .Where(k => EF.Functions.Like(k.Value, $"%{keyword}%"))
                             .Select(k => k.Tracks)
                             .SelectMany(t => t)
                             .Select(t => t.Id)

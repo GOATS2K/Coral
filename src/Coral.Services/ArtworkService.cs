@@ -18,7 +18,6 @@ public interface IArtworkService
 {
     public Task ProcessArtwork(Album album, string artworkPath);
     public Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
-    public Task<ArtworkDto?> GetArtworkForAlbum(int albumId);
     public Task<string?> GetArtworkPath(int artworkId);
 }
 
@@ -27,14 +26,12 @@ public class ArtworkService : IArtworkService
     private readonly CoralDbContext _context;
     private readonly ILogger<ArtworkService> _logger;
     private readonly IMapper _mapper;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     
-    public ArtworkService(CoralDbContext context, ILogger<ArtworkService> logger, IMapper mapper, IHttpContextAccessor httpContext)
+    public ArtworkService(CoralDbContext context, ILogger<ArtworkService> logger, IMapper mapper)
     {
         _context = context;
         _logger = logger;
         _mapper = mapper;
-        _httpContextAccessor = httpContext;
     }
 
     public async Task<string?> GetPathForOriginalAlbumArtwork(int albumId)
@@ -43,28 +40,6 @@ public class ArtworkService : IArtworkService
             .Where(a => a.Album.Id == albumId && a.Size == ArtworkSize.Original)
             .Select(a => a.Path)
             .FirstOrDefaultAsync();
-    }
-    private string CreateLinkForArtwork(List<Artwork> artworkList, ArtworkSize requestedSize)
-    {
-        var requestedArtwork = artworkList.FirstOrDefault(a => a.Size == requestedSize);
-        if (requestedArtwork == null) return "";
-        var scheme = _httpContextAccessor.HttpContext.Request.Scheme;
-        var host = _httpContextAccessor.HttpContext.Request.Host;
-        return $"{scheme}://{host}/api/artwork/{requestedArtwork.Id}";
-    }
-
-    public async Task<ArtworkDto?> GetArtworkForAlbum(int albumId)
-    {
-        var artworkList = await _context.Albums.Where(a => a.Id == albumId)
-            .Select(a => a.Artworks)
-            .FirstOrDefaultAsync();
-        if (artworkList == null) return null;
-        return new ArtworkDto()
-        {
-            Small = CreateLinkForArtwork(artworkList, ArtworkSize.Small),
-            Medium = CreateLinkForArtwork(artworkList, ArtworkSize.Medium),
-            Original = CreateLinkForArtwork(artworkList, ArtworkSize.Original)
-        };
     }
 
     public async Task<string?> GetArtworkPath(int artworkId)

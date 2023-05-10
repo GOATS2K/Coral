@@ -23,10 +23,9 @@ public class IndexerServiceTests : IDisposable
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
-        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper, httpContextAccessor);
+        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper);
 
         _testDatabase = testDatabase.Context;
         _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService);

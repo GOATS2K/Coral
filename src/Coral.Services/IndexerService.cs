@@ -264,15 +264,8 @@ public class IndexerService : IIndexerService
 
     private async Task<List<ArtistWithRole>> ParseArtists(string artist, string title)
     {
-        var featuringRegex = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
-        var featuringMatch = Regex.Match(title, featuringRegex);
-        var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
-
-        // supports both (artist remix) and [artist remix]
-        var remixerRegex = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)|\[([^[\[\]]*)(?: Edit| Remix| VIP| Bootleg)\]";
-        var remixerMatch = Regex.Match(title, remixerRegex, RegexOptions.IgnoreCase).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
-        // first group is parenthesis, second is brackets
-        var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
+        var parsedFeaturingArtists = ParseFeaturingArtists(title);
+        var parsedRemixers = ParseRemixers(title);
 
         var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
         var remixers = !string.IsNullOrEmpty(parsedRemixers) ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
@@ -284,6 +277,26 @@ public class IndexerService : IIndexerService
         artistList.AddRange(remixers);
 
         return artistList;
+    }
+
+    private static string? ParseRemixers(string title)
+    {
+        // supports both (artist remix) and [artist remix]
+        var pattern = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)|\[([^[\[\]]*)(?: Edit| Remix| VIP| Bootleg)\]";
+        var expression = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        var remixerMatch = expression.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
+        // first group is parenthesis, second is brackets
+        var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
+        return parsedRemixers;
+    }
+
+    private static string? ParseFeaturingArtists(string title)
+    {
+        var pattern = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
+        var expression = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        var featuringMatch = expression.Match(title);
+        var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
+        return parsedFeaturingArtists;
     }
 
     private async Task<string?> GetAlbumArtwork(ATL.Track atlTrack)

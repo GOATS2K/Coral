@@ -44,6 +44,17 @@ public class CoralDbContext : DbContext
         // do not create the inherited base table
         modelBuilder.Ignore<BaseTable>();
 
+        // set CURRENT_TIMESTAMP on entities inherting from BaseTable
+        var baseTableTypes = GetBaseTableTypes();
+        foreach (var type in baseTableTypes)
+        {
+            modelBuilder.Entity(type)
+                .Property("DateIndexed")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .ValueGeneratedOnAdd();
+        }
+
+
         var tableTypes = GetDatabaseTableTypes();
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -61,6 +72,10 @@ public class CoralDbContext : DbContext
             .Where(p => typeof(IQueryable).IsAssignableFrom(p.PropertyType))
             .Select(p => p.PropertyType.GetGenericArguments()[0])
             .ToArray();
+    }
 
+    private static Type[] GetBaseTableTypes()
+    {
+        return GetDatabaseTableTypes().Where(t => typeof(BaseTable) == t.BaseType).ToArray();
     }
 }

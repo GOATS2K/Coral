@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230515153627_TimestampMigration2")]
+    partial class TimestampMigration2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.2");
@@ -57,9 +60,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -94,9 +95,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -120,9 +119,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -147,9 +144,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -181,9 +176,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -204,9 +197,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -235,9 +226,7 @@ namespace Coral.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");

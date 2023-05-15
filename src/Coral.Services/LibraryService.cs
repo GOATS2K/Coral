@@ -55,13 +55,13 @@ namespace Coral.Services
                 throw new ArgumentException($"Track ID {trackId} not found.");
             }
 
-            var fileStream = new FileStream(track.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var fileStream = new FileStream(track.AudioFile.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var trackStream = new TrackStream()
             {
-                FileName = Path.GetFileName(track.FilePath),
-                Length = new FileInfo(track.FilePath).Length,
+                FileName = Path.GetFileName(track.AudioFile.FilePath),
+                Length = new FileInfo(track.AudioFile.FilePath).Length,
                 Stream = fileStream,
-                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.FilePath))
+                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.AudioFile.FilePath))
             };
 
             return trackStream;

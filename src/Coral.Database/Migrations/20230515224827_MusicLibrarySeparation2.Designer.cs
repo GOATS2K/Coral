@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230515224827_MusicLibrarySeparation2")]
+    partial class MusicLibrarySeparation2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.2");
@@ -222,7 +225,7 @@ namespace Coral.Database.Migrations
                     b.Property<int>("Bitrate")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("Channels")
+                    b.Property<int>("Channels")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Codec")
@@ -445,7 +448,7 @@ namespace Coral.Database.Migrations
                         .IsRequired();
 
                     b.HasOne("Coral.Database.Models.MusicLibrary", "Library")
-                        .WithMany("AudioFiles")
+                        .WithMany()
                         .HasForeignKey("LibraryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -510,11 +513,6 @@ namespace Coral.Database.Migrations
             modelBuilder.Entity("Coral.Database.Models.Genre", b =>
                 {
                     b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
-                {
-                    b.Navigation("AudioFiles");
                 });
 #pragma warning restore 612, 618
         }

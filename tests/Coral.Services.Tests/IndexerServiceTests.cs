@@ -3,7 +3,6 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.TestProviders;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -124,7 +123,7 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_MissingMetadata_IndexesOK()
     {
         // arrange
-        var directoryName = new DirectoryInfo(TestDataRepository.MarsMissingMetadata).Name;
+        var directoryName = new DirectoryInfo(TestDataRepository.GetTestFolder("Mars - Moons - FLAC [missing metadata]")).Name;
 
         // act
         await _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);

@@ -3,13 +3,16 @@ using Coral.Database.Models;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Coral.Services;
 
 public interface IIndexerService
 {
-    public Task ReadDirectory(string directory);
+    public Task ReadLibraries();
+    public Task<MusicLibrary?> AddMusicLibrary(string path);
+    public Task ReadDirectory(MusicLibrary library);
 }
 
 public class IndexerService : IIndexerService
@@ -18,9 +21,9 @@ public class IndexerService : IIndexerService
     private readonly ISearchService _searchService;
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
-    private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac" };
+    private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus" };
     private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
-    private static readonly string[] ImageFileNames = { "cover", "artwork", "folder", "front" };
+    private List<FileSystemWatcher> _watchers = new();
 
     public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService)
     {
@@ -30,42 +33,93 @@ public class IndexerService : IIndexerService
         _artworkService = artworkService;
     }
 
-    private bool ContentDirectoryNeedsRescan(DirectoryInfo contentDirectory)
+    public async Task<MusicLibrary?> AddMusicLibrary(string path)
     {
         try
         {
-            var maxValue = _context.Tracks.Max(t => t.DateModified);
-            var contentsLastModified = contentDirectory
-                .EnumerateFiles("*.*", SearchOption.AllDirectories)
-                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
-                .Max(x => x.LastWriteTimeUtc);
+            var contentDirectory = new DirectoryInfo(path);
+            if (!contentDirectory.Exists)
+            {
+                throw new ApplicationException("Content directory does not exist.");
+            }
 
-            var contentsCreated = contentDirectory
-                .EnumerateFiles("*.*", SearchOption.AllDirectories)
-                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
-                .Max(x => x.CreationTimeUtc);
-
-            return maxValue < contentsLastModified || maxValue < contentsCreated;
+            var library = await _context.MusicLibraries.FirstOrDefaultAsync(m => m.LibraryPath == path);
+            if (library == null)
+            {
+                library = new MusicLibrary()
+                {
+                    LibraryPath = path,
+                };
+            }
+            _context.MusicLibraries.Add(library);
+            await _context.SaveChangesAsync();
+            return library;
         }
-        catch (InvalidOperationException)
+        catch (Exception e)
         {
-            return true;
+            _logger.LogError("Failed to add music library {Path} due to exception: {Exception}", path, e.ToString());
+            return null;
         }
     }
 
-    public async Task ReadDirectory(string directory)
+
+    private bool ContentDirectoryNeedsRescan(MusicLibrary library)
     {
-        var contentDirectory = new DirectoryInfo(directory);
-        if (!contentDirectory.Exists)
+        if (library.LastScan == DateTime.MinValue)
         {
-            throw new ApplicationException("Content directory does not exist.");
+            return true;
         }
 
-        if (!ContentDirectoryNeedsRescan(contentDirectory)) return;
+        var contentDirectory = new DirectoryInfo(library.LibraryPath);
+        return contentDirectory.LastWriteTimeUtc > library.LastScan;
+    }
 
-        _logger.LogInformation("Scanning directory: {Directory}", directory);
+    private void SetupFileSystemWatcher(MusicLibrary musicLibrary)
+    {
+        var fsWatcher = new FileSystemWatcher(musicLibrary.LibraryPath);
+        fsWatcher.Created += async (args, e) =>
+        {
+            _logger.LogInformation("File system event for {LibraryPath}: Created {Created}", musicLibrary.LibraryPath, e.FullPath);
+            await ReadDirectory(musicLibrary);
+        };
+        fsWatcher.Deleted += async (args, e) =>
+        {
+            _logger.LogInformation("File system event for {LibraryPath}: Deleted {Deleted}", musicLibrary.LibraryPath, e.FullPath);
+            await ReadDirectory(musicLibrary);
+        };
+        fsWatcher.Changed += async (args, e) =>
+        {
+            _logger.LogInformation("File system event for {LibraryPath}: Changed {ChangedFile}", musicLibrary.LibraryPath, e.FullPath);
+            await ReadDirectory(musicLibrary);
+        };
+        fsWatcher.Renamed += async (args, e) =>
+        {
+            _logger.LogInformation("File system event for {LibraryPath}: Renamed {Renamed}", musicLibrary.LibraryPath, e.FullPath);
+            await ReadDirectory(musicLibrary);
+        };
+        fsWatcher.IncludeSubdirectories = true;
+        fsWatcher.EnableRaisingEvents = true;
+        _watchers.Add(fsWatcher);
+    }
+
+    public async Task ReadLibraries()
+    {
+        // initialize filesystem watchers
+        foreach (var musicLibrary in _context.MusicLibraries.ToList())
+        {
+            SetupFileSystemWatcher(musicLibrary);
+            await ReadDirectory(musicLibrary);
+        }
+    }
+
+    public async Task ReadDirectory(MusicLibrary library)
+    {
+        if (!ContentDirectoryNeedsRescan(library)) return;
+
+        _logger.LogInformation("Scanning directory: {Directory}", library.LibraryPath);
+        var contentDirectory = new DirectoryInfo(library.LibraryPath);
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
+            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) && (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan))
             .GroupBy(f => f.Directory?.Name, f => f);
 
         // enumerate directories
@@ -94,33 +148,37 @@ public class IndexerService : IIndexerService
             if (folderIsAlbum)
             {
                 _logger.LogDebug("Indexing {path} as album.", directoryGroup.Key);
-                await IndexAlbum(analyzedTracks);
+                await IndexAlbum(analyzedTracks, library);
             }
             else
             {
                 _logger.LogDebug("Indexing {path} as single files.", directoryGroup.Key);
-                await IndexSingleFiles(analyzedTracks);
+                await IndexSingleFiles(analyzedTracks, library);
             }
             _logger.LogInformation("Completed indexing of {path}", directoryGroup.Key);
             // the change tracker consumes a lot of memory and 
             // progressively slows down the indexing process after a few 1000 items
             // so here it's being cleared after each folder
             _context.ChangeTracker.Clear();
+            // re-attach the library to fix UNIQUE CONSTRAINT issues
+            _context.Attach(library);
         }
+        library.LastScan = DateTime.UtcNow;
+        _context.SaveChanges();
     }
 
-    private async Task IndexSingleFiles(List<ATL.Track> tracks)
+    private async Task IndexSingleFiles(List<ATL.Track> tracks, MusicLibrary library)
     {
         foreach (var atlTrack in tracks)
         {
             var artists = await ParseArtists(atlTrack.Artist, atlTrack.Title);
             var indexedAlbum = GetAlbum(artists, atlTrack);
             var indexedGenre = GetGenre(atlTrack.Genre);
-            await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack);
+            await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack, library);
         }
     }
 
-    private async Task IndexAlbum(List<ATL.Track> tracks)
+    private async Task IndexAlbum(List<ATL.Track> tracks, MusicLibrary library)
     {
         var distinctGenres = tracks.Where(t => t.Genre != null)
             .Select(t => t.Genre)
@@ -150,13 +208,13 @@ public class IndexerService : IIndexerService
         foreach (var trackToIndex in tracks)
         {
             var targetGenre = createdGenres.FirstOrDefault(g => g.Name == trackToIndex.Genre);
-            await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex);
+            await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex, library);
         }
     }
 
-    private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack)
+    private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack, MusicLibrary library)
     {
-        var indexedTrack = _context.Tracks.FirstOrDefault(t => t.FilePath == atlTrack.Path);
+        var indexedTrack = _context.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.AudioFile.FilePath == atlTrack.Path);
         if (indexedTrack != null)
         {
             return;
@@ -189,12 +247,25 @@ public class IndexerService : IIndexerService
             Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path),
             Comment = atlTrack.Comment,
             Genre = indexedGenre,
-            DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
             DiscNumber = atlTrack.DiscNumber,
             TrackNumber = atlTrack.TrackNumber,
             DurationInSeconds = atlTrack.Duration,
-            FilePath = atlTrack.Path,
-            Keywords = new List<Keyword>()
+            Keywords = new List<Keyword>(),
+            AudioFile = new AudioFile()
+            {
+                FilePath = atlTrack.Path,
+                DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
+                FileSizeInBytes = new FileInfo(atlTrack.Path).Length,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Bitrate = atlTrack.Bitrate,
+                    Channels = atlTrack.ChannelsArrangement?.NbChannels,
+                    SampleRate = atlTrack.SampleRate,
+                    Codec = atlTrack.AudioFormat.ShortName,
+                    BitDepth = atlTrack.BitDepth != -1 ? atlTrack.BitDepth : null,
+                },
+                Library = library
+            }
         };
         _logger.LogDebug("Indexing track: {trackPath}", atlTrack.Path);
         _context.Tracks.Add(indexedTrack);

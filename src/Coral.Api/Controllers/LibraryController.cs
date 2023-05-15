@@ -35,16 +35,16 @@ namespace Coral.Api.Controllers
         [Route("scan")]
         public async Task<ActionResult> RunIndexer()
         {
-            var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
-            if (!string.IsNullOrEmpty(contentDirectory))
-            {
-                await _indexerService.ReadDirectory(contentDirectory);
-                return Ok();
-            }
-            else
-            {
-                return BadRequest(new { Message = "CORAL_CONTENT_DIRECTORY has not been set." });
-            }
+            await _indexerService.ReadLibraries();
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("register")]
+        public async Task<ActionResult<MusicLibrary>> RegisterMusicLibrary([FromQuery] string path)
+        {
+            var library = await _indexerService.AddMusicLibrary(path);
+            return library != null ? Ok(library) : BadRequest(new { Message = "Failed to register library" });
         }
 
         [HttpGet]

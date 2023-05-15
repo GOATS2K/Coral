@@ -196,6 +196,51 @@ export const useRunIndexer = (
   );
 };
 
+export type RegisterMusicLibraryQueryParams = {
+  path?: string;
+};
+
+export type RegisterMusicLibraryError = Fetcher.ErrorWrapper<undefined>;
+
+export type RegisterMusicLibraryVariables = {
+  queryParams?: RegisterMusicLibraryQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchRegisterMusicLibrary = (
+  variables: RegisterMusicLibraryVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    Schemas.MusicLibrary,
+    RegisterMusicLibraryError,
+    undefined,
+    {},
+    RegisterMusicLibraryQueryParams,
+    {}
+  >({ url: "/api/Library/register", method: "post", ...variables, signal });
+
+export const useRegisterMusicLibrary = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.MusicLibrary,
+      RegisterMusicLibraryError,
+      RegisterMusicLibraryVariables
+    >,
+    "mutationFn"
+  >
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.MusicLibrary,
+    RegisterMusicLibraryError,
+    RegisterMusicLibraryVariables
+  >(
+    (variables: RegisterMusicLibraryVariables) =>
+      fetchRegisterMusicLibrary({ ...fetcherOptions, ...variables }),
+    options
+  );
+};
+
 export type SearchQueryParams = {
   query?: string;
   /**

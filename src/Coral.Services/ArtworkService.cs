@@ -4,7 +4,6 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;

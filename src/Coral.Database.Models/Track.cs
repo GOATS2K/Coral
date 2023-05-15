@@ -13,7 +13,7 @@ public class Track : BaseTable
 
     public string? Comment { get; set; }
 
-    public string FilePath { get; set; } = null!;
+    public AudioFile AudioFile { get; set; } = null!;
     public List<Keyword> Keywords { get; set; } = null!;
 
     public override string ToString()

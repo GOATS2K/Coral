@@ -37,7 +37,6 @@ namespace Coral.Services.Tests
             },
             Title = "A Nice Song",
             DurationInSeconds = 30,
-            FilePath = "this/file/does/not/exist"
         };
 
         public TranscodingJobManagerTests()

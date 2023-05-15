@@ -155,7 +155,8 @@ namespace Coral.Services
             // +        => one or more of
             // http://www.pcre.org/original/doc/html/pcrepattern.html
             var pattern = @"[\p{L}\p{Nd}]+";
-            var matches = Regex.Matches(sanitized, pattern, RegexOptions.IgnoreCase);
+            var expression = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            var matches = expression.Matches(sanitized);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

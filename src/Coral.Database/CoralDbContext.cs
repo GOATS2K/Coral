@@ -40,6 +40,10 @@ public class CoralDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordConfiguration).Assembly);
+        
+        // do not create the inherited base table
+        modelBuilder.Ignore<BaseTable>();
+
         var tableTypes = GetDatabaseTableTypes();
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

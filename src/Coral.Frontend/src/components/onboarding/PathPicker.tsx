@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDirectoriesInPath, useRegisterMusicLibrary } from "../../client/components";
 import { Modal, Button, Select } from "@mantine/core";
 import styles from "../../styles/Onboarding.module.css";
@@ -10,6 +10,7 @@ type PathPickerModalProps = {
 
 export default function PathPicker({ opened, close }: PathPickerModalProps) {
   const [search, setSearch] = useState("");
+  const [pathList, setPathList] = useState<string[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>("");
   const { data } = useDirectoriesInPath(
     {
@@ -24,6 +25,12 @@ export default function PathPicker({ opened, close }: PathPickerModalProps) {
 
   const registerMusicLibrary = useRegisterMusicLibrary({});
 
+  useEffect(() => {
+    if (data?.length !== 0 && data != null) {
+      setPathList(data);
+    }
+  }, [data]);
+
   return (
     <Modal opened={opened} onClose={close} centered withCloseButton={false}>
       <div className={styles.modal}>
@@ -31,10 +38,15 @@ export default function PathPicker({ opened, close }: PathPickerModalProps) {
           label="Select your music library folder"
           placeholder="Music library path"
           nothingFound="Try another path name"
-          data={data != null ? data : []}
+          data={pathList}
           searchable
           value={selectedPath}
-          onChange={setSelectedPath}
+          onChange={(value) => {
+            if (value != null) {
+              setSearch(value);
+              setSelectedPath(value);
+            }
+          }}
           searchValue={search}
           onSearchChange={setSearch}
         />

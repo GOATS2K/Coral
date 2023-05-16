@@ -1,4 +1,5 @@
 using Coral.Api;
+using Coral.Api.Workers;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
@@ -22,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddServices();
 builder.Services.AddHostedService<PluginInitializer>();
+builder.Services.AddHostedService<IndexerWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {

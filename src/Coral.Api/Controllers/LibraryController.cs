@@ -39,14 +39,6 @@ namespace Coral.Api.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        [Route("register")]
-        public async Task<ActionResult<MusicLibrary>> RegisterMusicLibrary([FromQuery] string path)
-        {
-            var library = await _indexerService.AddMusicLibrary(path);
-            return library != null ? Ok(library) : BadRequest(new { Message = "Failed to register library" });
-        }
-
         [HttpGet]
         [Route("search")]
         public async Task<ActionResult<PaginatedCustomData<SearchResult>>> Search([FromQuery] string query, [FromQuery] int offset = 0, [FromQuery] int limit = 100)

@@ -17,6 +17,7 @@ namespace Coral.Api
             services.AddScoped<IArtworkService, ArtworkService>();
             services.AddScoped<IPaginationService, PaginationService>();
             services.AddScoped<IPlaybackService, PlaybackService>();
+            services.AddScoped<IFileSystemService, FileSystemService>();
             services.AddSingleton<IHostServiceProxy, HostServiceProxy>();
             services.AddSingleton<IPluginContext, PluginContext>();
             services.AddSingleton<TrackPlaybackEventEmitter>();

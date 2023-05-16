@@ -29,7 +29,7 @@ public class IndexerServiceTests : IDisposable
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
 
         _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService, eventEmitter);
+        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService, eventEmitter, testDatabase.Mapper);
     }
     public void Dispose()
     {

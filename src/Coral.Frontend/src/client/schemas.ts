@@ -134,6 +134,18 @@ export type MusicLibrary = {
   audioFiles: AudioFile[];
 };
 
+export type MusicLibraryDto = {
+  /**
+   * @format int32
+   */
+  id: number;
+  libraryPath: string;
+  /**
+   * @format date-time
+   */
+  lastScan: string;
+};
+
 export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus";
 
 export type SearchResult = {

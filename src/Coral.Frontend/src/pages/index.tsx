@@ -1,5 +1,5 @@
-import { Text } from "@mantine/core";
+import Onboarding from "../components/onboarding/Onboarding";
 
 export default function index() {
-  return <Text>Hello world!</Text>;
+  return <Onboarding />;
 }

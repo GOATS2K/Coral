@@ -1,5 +1,6 @@
 ﻿using Coral.Database;
 using Coral.Database.Models;
+using Coral.Events;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -23,14 +24,15 @@ public class IndexerService : IIndexerService
     private readonly ILogger<IndexerService> _logger;
     private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus" };
     private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
-    private List<FileSystemWatcher> _watchers = new();
+    private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
 
-    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService)
+    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
         _artworkService = artworkService;
+        _musicLibraryRegisteredEventEmitter = eventEmitter;
     }
 
     public async Task<MusicLibrary?> AddMusicLibrary(string path)
@@ -53,6 +55,7 @@ public class IndexerService : IIndexerService
             }
             _context.MusicLibraries.Add(library);
             await _context.SaveChangesAsync();
+            _musicLibraryRegisteredEventEmitter.EmitEvent(library);
             return library;
         }
         catch (Exception e)
@@ -71,43 +74,13 @@ public class IndexerService : IIndexerService
         }
 
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        return contentDirectory.LastWriteTimeUtc > library.LastScan;
-    }
-
-    private void SetupFileSystemWatcher(MusicLibrary musicLibrary)
-    {
-        var fsWatcher = new FileSystemWatcher(musicLibrary.LibraryPath);
-        fsWatcher.Created += async (args, e) =>
-        {
-            _logger.LogInformation("File system event for {LibraryPath}: Created {Created}", musicLibrary.LibraryPath, e.FullPath);
-            await ReadDirectory(musicLibrary);
-        };
-        fsWatcher.Deleted += async (args, e) =>
-        {
-            _logger.LogInformation("File system event for {LibraryPath}: Deleted {Deleted}", musicLibrary.LibraryPath, e.FullPath);
-            await ReadDirectory(musicLibrary);
-        };
-        fsWatcher.Changed += async (args, e) =>
-        {
-            _logger.LogInformation("File system event for {LibraryPath}: Changed {ChangedFile}", musicLibrary.LibraryPath, e.FullPath);
-            await ReadDirectory(musicLibrary);
-        };
-        fsWatcher.Renamed += async (args, e) =>
-        {
-            _logger.LogInformation("File system event for {LibraryPath}: Renamed {Renamed}", musicLibrary.LibraryPath, e.FullPath);
-            await ReadDirectory(musicLibrary);
-        };
-        fsWatcher.IncludeSubdirectories = true;
-        fsWatcher.EnableRaisingEvents = true;
-        _watchers.Add(fsWatcher);
+        return contentDirectory.LastAccessTimeUtc > library.LastScan;
     }
 
     public async Task ReadLibraries()
     {
-        // initialize filesystem watchers
         foreach (var musicLibrary in _context.MusicLibraries.ToList())
         {
-            SetupFileSystemWatcher(musicLibrary);
             await ReadDirectory(musicLibrary);
         }
     }
@@ -116,10 +89,20 @@ public class IndexerService : IIndexerService
     {
         if (!ContentDirectoryNeedsRescan(library)) return;
 
+        // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
+        if (library.Id != 0)
+        {
+            var existingLibrary = await _context.MusicLibraries.FindAsync(library.Id);
+            if (existingLibrary != null)
+            {
+                library = existingLibrary;
+            }
+        }
+
         _logger.LogInformation("Scanning directory: {Directory}", library.LibraryPath);
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) && (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan))
+            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) && (f.LastAccessTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan))
             .GroupBy(f => f.Directory?.Name, f => f);
 
         // enumerate directories
@@ -132,18 +115,10 @@ public class IndexerService : IIndexerService
                 continue;
             }
 
-            // we generally shouldn't be introducing side-effects in linq
-            // but it's a lot prettier this way ;_;
-            var analyzedTracks = tracksInDirectory
-                .Select(x => new ATL.Track(x.FullName))
-                // skip zero-length files
-                .Where(x => x.DurationMs > 0)
-                .ToList();
-
+            var analyzedTracks = await ReadTracksInDirectory(tracksInDirectory);
             bool folderIsAlbum = analyzedTracks
                 .Select(x => x.Album)
                 .Distinct().Count() == 1;
-
 
             if (folderIsAlbum)
             {
@@ -159,12 +134,47 @@ public class IndexerService : IIndexerService
             // the change tracker consumes a lot of memory and 
             // progressively slows down the indexing process after a few 1000 items
             // so here it's being cleared after each folder
-            _context.ChangeTracker.Clear();
-            // re-attach the library to fix UNIQUE CONSTRAINT issues
-            _context.Attach(library);
+            // _context.ChangeTracker.Clear();
         }
         library.LastScan = DateTime.UtcNow;
         _context.SaveChanges();
+    }
+
+    private async Task<List<ATL.Track>> ReadTracksInDirectory(List<FileInfo> tracksInDirectory)
+    {
+        var maxRetries = 10;
+        var analyzedTracks = new List<ATL.Track>();
+        foreach (var file in tracksInDirectory)
+        {
+            var retries = 0;
+            ATL.Track? analyzedTrack = null;
+            while (analyzedTrack == null && retries != maxRetries)
+            {
+                try
+                {
+                    analyzedTrack = new ATL.Track(file.FullName);
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogError("Failed to read {File} due to IOException: {Exception} - retrying...", file.FullName, ex.ToString());
+                    retries++;
+                    await Task.Delay(1000);
+                }
+            }
+
+            if (retries == maxRetries)
+            {
+                _logger.LogError("Failed to read track {Track} due to I/O errors.", file.FullName);
+                continue;
+            }
+
+            if (analyzedTrack?.DurationMs > 0)
+            {
+                analyzedTracks.Add(analyzedTrack);
+            }
+        }
+
+        return analyzedTracks;
     }
 
     private async Task IndexSingleFiles(List<ATL.Track> tracks, MusicLibrary library)

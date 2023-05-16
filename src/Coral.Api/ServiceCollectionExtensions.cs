@@ -19,6 +19,7 @@ namespace Coral.Api
             services.AddSingleton<IHostServiceProxy, HostServiceProxy>();
             services.AddSingleton<IPluginContext, PluginContext>();
             services.AddSingleton<TrackPlaybackEventEmitter>();
+            services.AddSingleton<MusicLibraryRegisteredEventEmitter>();
             services.AddSingleton<IServiceProxy, ServiceProxy>();
             services.AddSingleton<IEncoderFactory, EncoderFactory>();
             services.AddSingleton<ITranscoderService, TranscoderService>();

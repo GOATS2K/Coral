@@ -1,5 +1,8 @@
-﻿using Coral.Database;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Coral.Database;
 using Coral.Database.Models;
+using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +15,7 @@ namespace Coral.Services;
 public interface IIndexerService
 {
     public Task ReadLibraries();
+    public Task<List<MusicLibraryDto>> GetMusicLibraries();
     public Task<MusicLibrary?> AddMusicLibrary(string path);
     public Task ReadDirectory(MusicLibrary library);
 }
@@ -25,14 +29,25 @@ public class IndexerService : IIndexerService
     private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus" };
     private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
     private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
+    private readonly IMapper _mapper;
 
-    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter)
+    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter, IMapper mapper)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
         _artworkService = artworkService;
         _musicLibraryRegisteredEventEmitter = eventEmitter;
+        _mapper = mapper;
+    }
+
+    public async Task<List<MusicLibraryDto>> GetMusicLibraries()
+    {
+        return await 
+            _context
+            .MusicLibraries
+            .ProjectTo<MusicLibraryDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
     }
 
     public async Task<MusicLibrary?> AddMusicLibrary(string path)

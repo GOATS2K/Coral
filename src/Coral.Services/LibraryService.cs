@@ -37,7 +37,7 @@ namespace Coral.Services
 
         public async Task<Track?> GetTrack(int trackId)
         {
-            return await _context.Tracks.FindAsync(trackId);
+            return await _context.Tracks.Include(t => t.AudioFile).FirstOrDefaultAsync(t => t.Id == trackId);
         }
 
         public async Task<TrackDto?> GetTrackDto(int trackId)
@@ -49,7 +49,7 @@ namespace Coral.Services
 
         public async Task<TrackStream> GetStreamForTrack(int trackId)
         {
-            var track = await _context.Tracks.FindAsync(trackId);
+            var track = await _context.Tracks.Include(t => t.AudioFile).FirstOrDefaultAsync(t => t.Id == trackId);
             if (track == null)
             {
                 throw new ArgumentException($"Track ID {trackId} not found.");

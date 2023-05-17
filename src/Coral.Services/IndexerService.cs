@@ -102,17 +102,11 @@ public class IndexerService : IIndexerService
 
     public async Task ReadDirectory(MusicLibrary library)
     {
+        // this still doesn't handle missing files
         if (!ContentDirectoryNeedsRescan(library)) return;
 
         // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
-        if (library.Id != 0)
-        {
-            var existingLibrary = await _context.MusicLibraries.FindAsync(library.Id);
-            if (existingLibrary != null)
-            {
-                library = existingLibrary;
-            }
-        }
+        library = await GetLibrary(library);
 
         _logger.LogInformation("Scanning directory: {Directory}", library.LibraryPath);
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
@@ -121,6 +115,7 @@ public class IndexerService : IIndexerService
             .GroupBy(f => f.Directory?.Name, f => f);
 
         // enumerate directories
+        var foldersScanned = 0;
         foreach (var directoryGroup in directoryGroups)
         {
             var tracksInDirectory = directoryGroup.ToList();
@@ -145,14 +140,33 @@ public class IndexerService : IIndexerService
                 _logger.LogDebug("Indexing {path} as single files.", directoryGroup.Key);
                 await IndexSingleFiles(analyzedTracks, library);
             }
+            foldersScanned++;
             _logger.LogInformation("Completed indexing of {path}", directoryGroup.Key);
             // the change tracker consumes a lot of memory and 
-            // progressively slows down the indexing process after a few 1000 items
-            // so here it's being cleared after each folder
-            // _context.ChangeTracker.Clear();
+            // progressively slows down the indexing process
+            if (foldersScanned % 25 == 0)
+            {
+                _logger.LogInformation("Clearing change tracker to maintain current indexing performance...");
+                _context.ChangeTracker.Clear();
+                library = await GetLibrary(library);
+            }
         }
         library.LastScan = DateTime.UtcNow;
         _context.SaveChanges();
+    }
+
+    private async Task<MusicLibrary> GetLibrary(MusicLibrary library)
+    {
+        if (library.Id != 0)
+        {
+            var existingLibrary = await _context.MusicLibraries.FindAsync(library.Id);
+            if (existingLibrary != null)
+            {
+                library = existingLibrary;
+            }
+        }
+
+        return library;
     }
 
     private async Task<List<ATL.Track>> ReadTracksInDirectory(List<FileInfo> tracksInDirectory)

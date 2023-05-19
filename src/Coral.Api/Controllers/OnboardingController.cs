@@ -1,7 +1,6 @@
 ﻿using Coral.Database.Models;
 using Coral.Dto.Models;
 using Coral.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers

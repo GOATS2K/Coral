@@ -7,7 +7,6 @@ using Coral.Events;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Coral.Services;

@@ -1,23 +1,15 @@
-﻿using AutoMapper;
-using AutoMapper.EntityFrameworkCore;
-using AutoMapper.QueryableExtensions;
-using Coral.Database;
+﻿    using AutoMapper;
+    using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using Coral.Services.Models;
 using Diacritics.Extensions;
-using LinqKit;
-using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+    using System.Text.RegularExpressions;
 
-namespace Coral.Services
+    namespace Coral.Services
 {
     public interface ISearchService
     {

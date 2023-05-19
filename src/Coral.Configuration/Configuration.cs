@@ -1,6 +1,4 @@
-﻿using System.Dynamic;
-
-namespace Coral.Configuration
+﻿namespace Coral.Configuration
 {
     public static class ApplicationConfiguration
     {

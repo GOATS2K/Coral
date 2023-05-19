@@ -1,12 +1,4 @@
-﻿using Coral.PluginHost;
-using System;
-using System.Collections.Generic;
-using System.Formats.Tar;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Coral.PluginHost
+﻿namespace Coral.PluginHost
 {
     public interface IServiceProxy
     {

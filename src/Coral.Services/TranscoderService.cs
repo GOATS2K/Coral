@@ -1,12 +1,6 @@
 ﻿using CliWrap;
 using Coral.Dto.EncodingModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using Coral.Dto.Models;
 using Coral.Encoders;
 using Coral.Encoders.EncodingModels;
 

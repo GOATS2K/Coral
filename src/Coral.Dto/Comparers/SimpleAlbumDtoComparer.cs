@@ -1,12 +1,5 @@
-﻿using Coral.Database.Models;
-using Coral.Dto.Models;
-using System;
-using System.Collections.Generic;
+﻿using Coral.Dto.Models;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Coral.Dto.Comparers
 {

@@ -1,10 +1,8 @@
-﻿using System.Net;
-using Coral.Database.Models;
+﻿using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services;
-using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 

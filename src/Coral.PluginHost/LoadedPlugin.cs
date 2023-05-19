@@ -1,6 +1,4 @@
 ﻿using Coral.PluginBase;
-using Coral.PluginHost;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using System.Reflection;
 
 namespace Coral.PluginHost

@@ -2,7 +2,6 @@
 using Coral.Database.Configurations;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Coral.Database;
 

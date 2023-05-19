@@ -1,15 +1,9 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Metadata;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
 namespace Coral.Services;
 

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Coral.Services.Models
+﻿namespace Coral.Services.Models
 {
     public class PaginatedQuery<TType> 
         where TType : class

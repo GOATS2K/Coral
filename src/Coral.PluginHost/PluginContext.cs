@@ -1,12 +1,9 @@
 ﻿using Coral.Configuration;
 using Coral.PluginBase;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Reflection;
 
 namespace Coral.PluginHost
 {

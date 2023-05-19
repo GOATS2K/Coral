@@ -1,4 +1,3 @@
-using System.Net.Mime;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
@@ -7,7 +6,6 @@ using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using SQLitePCL;
 using Xunit;
 
 namespace Coral.Services.Tests;

@@ -1,5 +1,4 @@
-﻿using ATL;
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;

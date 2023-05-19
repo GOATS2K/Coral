@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+<<<<<<< HEAD
 using Coral.PluginBase;
+=======
+>>>>>>> chore: remove un-used imports and create editorconfig
 
 namespace Coral.PluginHost
 {

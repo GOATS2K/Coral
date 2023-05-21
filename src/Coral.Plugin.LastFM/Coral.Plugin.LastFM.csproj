@@ -21,6 +21,7 @@
 	  <ProjectReference Include="..\Coral.PluginBase\Coral.PluginBase.csproj">
 		  <PrivateAssets>false</PrivateAssets>
 		  <ExcludeAssets>runtime</ExcludeAssets>
+          <OutputItemType>Analyzer</OutputItemType>
 	  </ProjectReference>
 	</ItemGroup>
 </Project>

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="RestSharp" Version="108.0.3" />
   </ItemGroup>
@@ -21,10 +22,6 @@
 	  <ProjectReference Include="..\Coral.PluginBase\Coral.PluginBase.csproj">
 		  <PrivateAssets>false</PrivateAssets>
 		  <ExcludeAssets>runtime</ExcludeAssets>
-	  </ProjectReference>
-	  <ProjectReference Include="..\Coral.PluginHost\Coral.PluginHost.csproj">
-			<PrivateAssets>false</PrivateAssets>
-			<ExcludeAssets>runtime</ExcludeAssets> 
 	  </ProjectReference>
 	</ItemGroup>
 </Project>

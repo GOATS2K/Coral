@@ -1,19 +1,7 @@
-﻿using Coral.PluginHost;
-using System;
-using System.Collections.Generic;
-using System.Formats.Tar;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Coral.PluginBase;
 
 namespace Coral.PluginHost
 {
-    public interface IServiceProxy
-    {
-        public TType GetService<TType>()
-            where TType : class;
-    }
-
     public class ServiceProxy : IServiceProxy
     {
         private readonly IPluginContext _context;

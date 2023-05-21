@@ -1,5 +1,6 @@
 ﻿using Coral.Encoders;
 using Coral.Events;
+using Coral.PluginBase;
 using Coral.PluginHost;
 using Coral.Services;
 using Microsoft.AspNetCore.Mvc.Infrastructure;

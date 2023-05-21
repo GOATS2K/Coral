@@ -1,18 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Coral.PluginBase;
 
 namespace Coral.PluginHost
 {
-    public interface IHostServiceProxy
-    {
-        public TType GetHostService<TType>()
-            where TType : class;
-    }
-
     public class HostServiceProxy: IHostServiceProxy
     {
         private readonly IServiceProvider _serviceProvider;

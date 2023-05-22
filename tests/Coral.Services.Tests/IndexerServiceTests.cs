@@ -21,7 +21,7 @@ public class IndexerServiceTests : IDisposable
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
-        var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
+        var paginationService = Substitute.For<IPaginationService>();
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
         var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper);
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
@@ -31,9 +31,35 @@ public class IndexerServiceTests : IDisposable
     }
     public void Dispose()
     {
+        CleanUpArtwork();
+        CleanUpTempLibraries();
+    }
+
+    private void CleanUpTempLibraries()
+    {
+        var libraries = _testDatabase.MusicLibraries
+            .Where(l => l.LibraryPath != "");
+        foreach (var library in libraries)
+        {
+            if (!Guid.TryParse(Path.GetFileName(library.LibraryPath), out _)) continue;
+            var directory = new DirectoryInfo(library.LibraryPath);
+            foreach (var file in directory.EnumerateFiles("*.*", SearchOption.AllDirectories))
+            {
+                file.Delete();
+            }
+            foreach (var directoryInLibrary in directory.EnumerateDirectories("*.*", SearchOption.AllDirectories))
+            {
+                directoryInLibrary.Delete();
+            }
+            directory.Delete();
+        }
+    }
+
+    private void CleanUpArtwork()
+    {
         var indexedArtwork = _testDatabase.Artworks
             .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
-            || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
+                        || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
             .Select(a => a.Path);
 
         foreach (var artworkPath in indexedArtwork)
@@ -211,5 +237,78 @@ public class IndexerServiceTests : IDisposable
         Assert.Equal(ArtistRole.Main, mars.Role);
         Assert.Equal(ArtistRole.Guest, copernicus.Role);
         Assert.Equal(ArtistRole.Remixer, nasa.Role);
+    }
+
+    // https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
+    static void CopyDirectory(string sourceDir, string destinationDir, bool recursive = false)
+    {
+        // Get information about the source directory
+        var dir = new DirectoryInfo(sourceDir);
+
+        // Check if the source directory exists
+        if (!dir.Exists)
+            throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+        // Cache directories before we start copying
+        DirectoryInfo[] dirs = dir.GetDirectories();
+
+        // Create the destination directory
+        Directory.CreateDirectory(destinationDir);
+
+        // Get the files in the source directory and copy to the destination directory
+        foreach (FileInfo file in dir.GetFiles())
+        {
+            string targetFilePath = Path.Combine(destinationDir, file.Name);
+            file.CopyTo(targetFilePath);
+        }
+
+        // If recursive and copying subdirectories, recursively call this method
+        if (recursive)
+        {
+            foreach (DirectoryInfo subDir in dirs)
+            {
+                string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                CopyDirectory(subDir.FullName, newDestinationDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ReadLibraries_RescanWithNewFiles_PicksUpNewAudioFiles()
+    {
+        // arrange
+        var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
+        var moons = TestDataRepository.JupiterMoons.LibraryPath;
+        var tracksOnMoons = Directory
+            .EnumerateFiles(moons, "*.*", SearchOption.TopDirectoryOnly)
+            .Count(f => Path.GetExtension(f) == ".flac");
+        CopyDirectory(moons, Path.Combine(testFolder.FullName, Path.GetFileName(moons)));
+        // register library
+        var library = await _indexerService.AddMusicLibrary(testFolder.FullName);
+        // act 1
+        await _indexerService.ReadLibraries();
+
+        // assert 1
+        Assert.NotNull(library);
+        var insertedMoons = _testDatabase.Tracks.Count(a => a.Album.Name == "Moons" 
+                                                            && a.AudioFile.Library.Id == library.Id);
+        Assert.Equal(tracksOnMoons, insertedMoons);
+
+        // ----
+        
+        // arrange 2
+        var neptune = TestDataRepository.NeptuneDiscovery.LibraryPath;
+        CopyDirectory(neptune, Path.Combine(testFolder.FullName, Path.GetFileName(neptune)));
+        
+        // act 2
+        await _indexerService.ReadLibraries();
+        
+        // assert 2
+        var tracksOnDiscovery = Directory
+            .EnumerateFiles(neptune, "*.*", SearchOption.TopDirectoryOnly)
+            .Count(f => Path.GetExtension(f) == ".flac");
+        var insertedDiscovery = _testDatabase.Tracks.Count(a => a.Album.Name == "Discovery" 
+                                                            && a.AudioFile.Library.Id == library.Id);
+        Assert.Equal(tracksOnDiscovery, insertedDiscovery);
     }
 }

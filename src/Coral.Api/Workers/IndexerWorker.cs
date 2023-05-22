@@ -2,7 +2,6 @@
 using Coral.Database.Models;
 using Coral.Events;
 using Coral.Services;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Runtime.Caching;
 
 namespace Coral.Api.Workers
@@ -15,7 +14,7 @@ namespace Coral.Api.Workers
         private readonly List<FileSystemWatcher> _watchers = new();
         private readonly MemoryCache _memCache;
         private readonly CacheItemPolicy _cacheItemPolicy;
-        private const int CacheTimeMilliseconds = 2500;
+        private const int CacheTimeMilliseconds = 500;
         private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
         private readonly SemaphoreSlim _semaphore = new(1);
 
@@ -26,14 +25,14 @@ namespace Coral.Api.Workers
             _logger = logger;
             _cacheItemPolicy = new CacheItemPolicy()
             {
-                RemovedCallback = async (CacheEntryRemovedArguments args) =>
+                RemovedCallback = async (args) =>
                 {
                     if (args.RemovedReason != CacheEntryRemovedReason.Expired) return;
                     await EnqueueTask(async () => {
                         var musicLibrary = GetMusicLibraryForPath(args.CacheItem.Key);
                         if (musicLibrary == null)
                         {
-                            _logger.LogError("Unable to find music library for: {path}", args.CacheItem.Key);
+                            _logger.LogError("Unable to find music library for: {Path}", args.CacheItem.Key);
                             return;
                         }
 
@@ -64,7 +63,6 @@ namespace Coral.Api.Workers
         void HandleFileSystemEvent(object source, FileSystemEventArgs e)
         {
             _cacheItemPolicy.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(CacheTimeMilliseconds);
-
             _memCache.AddOrGetExisting(e.FullPath, e, _cacheItemPolicy);
         }
 
@@ -77,8 +75,6 @@ namespace Coral.Api.Workers
             {
                 var fsWatcher = new FileSystemWatcher(musicLibrary.LibraryPath);
                 fsWatcher.Changed += HandleFileSystemEvent;
-                fsWatcher.Renamed += HandleFileSystemEvent;
-                fsWatcher.Deleted += HandleFileSystemEvent;
                 fsWatcher.IncludeSubdirectories = true;
                 fsWatcher.EnableRaisingEvents = true;
                 _watchers.Add(fsWatcher);
@@ -90,7 +86,7 @@ namespace Coral.Api.Workers
         public Task StartAsync(CancellationToken cancellationToken)
         {
             InitializeFileSystemWatcher();
-            _musicLibraryRegisteredEventEmitter.MusicLibraryRegisteredEvent += async (object? sender, MusicLibraryRegisteredEventArgs args) =>
+            _musicLibraryRegisteredEventEmitter.MusicLibraryRegisteredEvent += async (_, args) =>
             {
                 _watchers.Clear();
                 using var scope = _serviceProvider.CreateScope();

@@ -25,12 +25,16 @@ public class IndexerService : IIndexerService
     private readonly ISearchService _searchService;
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
-    private static readonly string[] AudioFileFormats = { ".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus" };
-    private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
+
+    private static readonly string[] AudioFileFormats =
+        {".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"};
+
+    private static readonly string[] ImageFileFormats = {".jpg", ".png"};
     private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
     private readonly IMapper _mapper;
 
-    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger, IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter, IMapper mapper)
+    public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger,
+        IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter, IMapper mapper)
     {
         _context = context;
         _searchService = searchService;
@@ -42,11 +46,11 @@ public class IndexerService : IIndexerService
 
     public async Task<List<MusicLibraryDto>> GetMusicLibraries()
     {
-        return await 
+        return await
             _context
-            .MusicLibraries
-            .ProjectTo<MusicLibraryDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+                .MusicLibraries
+                .ProjectTo<MusicLibraryDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
     }
 
     public async Task<MusicLibrary?> AddMusicLibrary(string path)
@@ -59,14 +63,12 @@ public class IndexerService : IIndexerService
                 throw new ApplicationException("Content directory does not exist.");
             }
 
-            var library = await _context.MusicLibraries.FirstOrDefaultAsync(m => m.LibraryPath == path);
-            if (library == null)
-            {
-                library = new MusicLibrary()
-                {
-                    LibraryPath = path,
-                };
-            }
+            var library = await _context.MusicLibraries.FirstOrDefaultAsync(m => m.LibraryPath == path)
+                          ?? new MusicLibrary()
+                          {
+                              LibraryPath = path,
+                              AudioFiles = new List<AudioFile>()
+                          };
             _context.MusicLibraries.Add(library);
             await _context.SaveChangesAsync();
             _musicLibraryRegisteredEventEmitter.EmitEvent(library);
@@ -79,39 +81,24 @@ public class IndexerService : IIndexerService
         }
     }
 
-
-    private bool ContentDirectoryNeedsRescan(MusicLibrary library)
-    {
-        if (library.LastScan == DateTime.MinValue)
-        {
-            return true;
-        }
-
-        var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        return contentDirectory.LastAccessTimeUtc > library.LastScan;
-    }
-
     public async Task ReadLibraries()
     {
         foreach (var musicLibrary in _context.MusicLibraries.ToList())
         {
+            // existing test libraries are ""
+            // new libraries are inserted via AddMusicLibrary
+            // which verifies that the library actually exists
+            if (musicLibrary.LibraryPath == "") continue;
             await ReadDirectory(musicLibrary);
         }
     }
 
     public async Task ReadDirectory(MusicLibrary library)
     {
-        // this still doesn't handle missing files
-        if (!ContentDirectoryNeedsRescan(library)) return;
-
         // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
         library = await GetLibrary(library);
 
-        _logger.LogInformation("Scanning directory: {Directory}", library.LibraryPath);
-        var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) && (f.LastAccessTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan))
-            .GroupBy(f => f.Directory?.Name, f => f);
+        var directoryGroups = await ScanMusicLibrary(library);
 
         // enumerate directories
         var foldersScanned = 0;
@@ -120,7 +107,7 @@ public class IndexerService : IIndexerService
             var tracksInDirectory = directoryGroup.ToList();
             if (!tracksInDirectory.Any())
             {
-                _logger.LogWarning("Skipping empty directory {directory}", directoryGroup.Key);
+                _logger.LogWarning("Skipping empty directory {Directory}", directoryGroup.Key);
                 continue;
             }
 
@@ -131,38 +118,50 @@ public class IndexerService : IIndexerService
 
             if (folderIsAlbum)
             {
-                _logger.LogDebug("Indexing {path} as album.", directoryGroup.Key);
+                _logger.LogDebug("Indexing {Path} as album", directoryGroup.Key);
                 await IndexAlbum(analyzedTracks, library);
             }
             else
             {
-                _logger.LogDebug("Indexing {path} as single files.", directoryGroup.Key);
+                _logger.LogDebug("Indexing {Path} as single files", directoryGroup.Key);
                 await IndexSingleFiles(analyzedTracks, library);
             }
+
             foldersScanned++;
-            _logger.LogInformation("Completed indexing of {path}", directoryGroup.Key);
+            _logger.LogInformation("Completed indexing of {Path}", directoryGroup.Key);
             // the change tracker consumes a lot of memory and 
             // progressively slows down the indexing process
             if (foldersScanned % 25 == 0)
             {
-                _logger.LogInformation("Clearing change tracker to maintain current indexing performance...");
                 _context.ChangeTracker.Clear();
                 library = await GetLibrary(library);
             }
         }
+
         library.LastScan = DateTime.UtcNow;
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibrary(MusicLibrary library)
+    {
+        _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
+        var contentDirectory = new DirectoryInfo(library.LibraryPath);
+        // this should be streamed if possible
+        var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
+        var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(f =>
+                AudioFileFormats.Contains(Path.GetExtension(f.FullName)) 
+                && !existingFiles.Any(t => t.FilePath == f.FullName))
+            .GroupBy(f => f.Directory?.Name, f => f);
+        return directoryGroups;
     }
 
     private async Task<MusicLibrary> GetLibrary(MusicLibrary library)
     {
-        if (library.Id != 0)
+        var existingLibrary = await _context.MusicLibraries.FindAsync(library.Id);
+        if (existingLibrary != null)
         {
-            var existingLibrary = await _context.MusicLibraries.FindAsync(library.Id);
-            if (existingLibrary != null)
-            {
-                library = existingLibrary;
-            }
+            return existingLibrary;
         }
 
         return library;
@@ -182,9 +181,10 @@ public class IndexerService : IIndexerService
                 {
                     analyzedTrack = new ATL.Track(file.FullName);
                 }
-                catch (IOException ex)
+                catch (SystemException ex)
                 {
-                    _logger.LogError("Failed to read {File} due to IOException: {Exception} - retrying...", file.FullName, ex.ToString());
+                    _logger.LogError("Failed to read {File} due to Exception: {Exception} - retrying...",
+                        file.FullName, ex.ToString());
                     retries++;
                     await Task.Delay(1000);
                 }
@@ -192,7 +192,7 @@ public class IndexerService : IIndexerService
 
             if (retries == maxRetries)
             {
-                _logger.LogError("Failed to read track {Track} due to I/O errors.", file.FullName);
+                _logger.LogError("Failed to read track {Track} due to I/O errors", file.FullName);
                 continue;
             }
 
@@ -240,7 +240,8 @@ public class IndexerService : IIndexerService
         // most attributes are going to be the same in an album
         var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
 
-        var albumType = AlbumTypeHelper.GetAlbumType(distinctArtists.Where(a => a.Role == ArtistRole.Main).Count(), tracks.Count());
+        var albumType =
+            AlbumTypeHelper.GetAlbumType(distinctArtists.Count(a => a.Role == ArtistRole.Main), tracks.Count());
         var indexedAlbum = GetAlbum(distinctArtists, tracks.First());
         indexedAlbum.Type = albumType;
         foreach (var trackToIndex in tracks)
@@ -250,9 +251,11 @@ public class IndexerService : IIndexerService
         }
     }
 
-    private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack, MusicLibrary library)
+    private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre,
+        ATL.Track atlTrack, MusicLibrary library)
     {
-        var indexedTrack = _context.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.AudioFile.FilePath == atlTrack.Path);
+        var indexedTrack = _context.Tracks.Include(t => t.AudioFile)
+            .FirstOrDefault(t => t.AudioFile.FilePath == atlTrack.Path);
         if (indexedTrack != null)
         {
             return;
@@ -274,7 +277,8 @@ public class IndexerService : IIndexerService
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to get artwork for track: {Track} due to the following exception: {Exception}", atlTrack.Path, ex.ToString());
+                _logger.LogError("Failed to get artwork for track: {Track} due to the following exception: {Exception}",
+                    atlTrack.Path, ex.ToString());
             }
         }
 
@@ -305,7 +309,7 @@ public class IndexerService : IIndexerService
                 Library = library
             }
         };
-        _logger.LogDebug("Indexing track: {trackPath}", atlTrack.Path);
+        _logger.LogDebug("Indexing track: {TrackPath}", atlTrack.Path);
         _context.Tracks.Add(indexedTrack);
         await _searchService.InsertKeywordsForTrack(indexedTrack);
     }
@@ -336,16 +340,17 @@ public class IndexerService : IIndexerService
                 Name = artistName,
             };
             _context.Artists.Add(indexedArtist);
-            _logger.LogDebug("Creating new artist: {artist}", artistName);
+            _logger.LogDebug("Creating new artist: {Artist}", artistName);
             await _context.SaveChangesAsync();
         }
+
         return indexedArtist;
     }
 
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        string[] splitChars = { ",", "&", ";", " x " };
+        string[] splitChars = {",", "&", ";", " x "};
         var split = artistName.Split(splitChars, StringSplitOptions.TrimEntries);
         return split.Distinct().ToList();
     }
@@ -356,15 +361,13 @@ public class IndexerService : IIndexerService
         foreach (var artist in artists)
         {
             var indexedArtist = await GetArtist(artist.Trim());
-            var artistWithRole = _context.ArtistsWithRoles.FirstOrDefault(a => a.ArtistId == indexedArtist.Id && a.Role == role);
-            if (artistWithRole == null)
-            {
-                artistWithRole = new ArtistWithRole()
+            var artistWithRole =
+                _context.ArtistsWithRoles.FirstOrDefault(a => a.ArtistId == indexedArtist.Id && a.Role == role) ??
+                new ArtistWithRole()
                 {
                     Artist = indexedArtist,
                     Role = role
                 };
-            }
             artistsWithRoles.Add(artistWithRole);
         }
 
@@ -376,8 +379,12 @@ public class IndexerService : IIndexerService
         var parsedFeaturingArtists = ParseFeaturingArtists(title);
         var parsedRemixers = ParseRemixers(title);
 
-        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists) ? await GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest) : new List<ArtistWithRole>();
-        var remixers = !string.IsNullOrEmpty(parsedRemixers) ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer) : new List<ArtistWithRole>();
+        var guestArtists = !string.IsNullOrEmpty(parsedFeaturingArtists)
+            ? await GetArtistWithRole(SplitArtist(parsedFeaturingArtists), ArtistRole.Guest)
+            : new List<ArtistWithRole>();
+        var remixers = !string.IsNullOrEmpty(parsedRemixers)
+            ? await GetArtistWithRole(SplitArtist(parsedRemixers), ArtistRole.Remixer)
+            : new List<ArtistWithRole>();
         var mainArtists = await GetArtistWithRole(SplitArtist(artist), ArtistRole.Main);
 
         var artistList = new List<ArtistWithRole>();
@@ -395,7 +402,7 @@ public class IndexerService : IIndexerService
         var expression = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
         var remixerMatch = expression.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
         // first group is parenthesis, second is brackets
-        var parsedRemixers = remixerMatch.LastOrDefault()?.Value?.Trim();
+        var parsedRemixers = remixerMatch.LastOrDefault()?.Value.Trim();
         return parsedRemixers;
     }
 
@@ -422,18 +429,17 @@ public class IndexerService : IIndexerService
 
     private Album GetAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack)
     {
-        var albumName = !string.IsNullOrEmpty(atlTrack.Album) ? atlTrack.Album : Directory.GetParent(atlTrack.Path)?.Name;
+        var albumName = !string.IsNullOrEmpty(atlTrack.Album)
+            ? atlTrack.Album
+            : Directory.GetParent(atlTrack.Path)?.Name;
         // Albums can have the same name, so in order to differentiate between them
         // we also use supplemental metadata. 
         var albumQuery = _context.Albums
             .Include(a => a.Artists)
             .Include(a => a.Tracks)
-            .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal && a.TrackTotal == atlTrack.TrackTotal);
-        var indexedAlbum = albumQuery.FirstOrDefault();
-        if (indexedAlbum == null)
-        {
-            indexedAlbum = CreateAlbum(artists, atlTrack, albumName);
-        }
+            .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal &&
+                        a.TrackTotal == atlTrack.TrackTotal);
+        var indexedAlbum = albumQuery.FirstOrDefault() ?? CreateAlbum(artists, atlTrack, albumName);
 
         if (!indexedAlbum.Artists
                 .Select(a => a.ArtistId)
@@ -444,12 +450,12 @@ public class IndexerService : IIndexerService
             indexedAlbum.Artists.AddRange(missingArtists);
             _context.Albums.Update(indexedAlbum);
         }
+
         return indexedAlbum;
     }
 
     private Album CreateAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack, string? albumName)
     {
-
         var album = new Album()
         {
             Artists = new List<ArtistWithRole>(),

@@ -33,7 +33,7 @@ namespace Coral.Api.Controllers
         [Route("scan")]
         public async Task<ActionResult> RunIndexer()
         {
-            await _indexerService.ReadLibraries();
+            await _indexerService.ScanLibraries();
             return Ok();
         }
 

@@ -13,7 +13,7 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
-    public Task ReadLibraries();
+    public Task ScanLibraries();
     public Task<List<MusicLibraryDto>> GetMusicLibraries();
     public Task<MusicLibrary?> AddMusicLibrary(string path);
     public Task ReadDirectory(MusicLibrary library);
@@ -29,7 +29,7 @@ public class IndexerService : IIndexerService
     private static readonly string[] AudioFileFormats =
         {".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"};
 
-    private static readonly string[] ImageFileFormats = {".jpg", ".png"};
+    private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
     private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
     private readonly IMapper _mapper;
 
@@ -81,7 +81,7 @@ public class IndexerService : IIndexerService
         }
     }
 
-    public async Task ReadLibraries()
+    public async Task ScanLibraries()
     {
         foreach (var musicLibrary in _context.MusicLibraries.ToList())
         {
@@ -98,7 +98,7 @@ public class IndexerService : IIndexerService
         // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
         library = await GetLibrary(library);
 
-        var directoryGroups = await ScanMusicLibrary(library);
+        var directoryGroups = ScanMusicLibrary(library);
 
         // enumerate directories
         var foldersScanned = 0;
@@ -142,16 +142,15 @@ public class IndexerService : IIndexerService
         await _context.SaveChangesAsync();
     }
 
-    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibrary(MusicLibrary library)
+    private IEnumerable<IGrouping<string?, FileInfo>> ScanMusicLibrary(MusicLibrary library)
     {
         _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        // this should be streamed if possible
-        var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
+        var existingFiles = _context.AudioFiles.Where(f => f.Library.Id == library.Id).AsEnumerable();
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
             .Where(f =>
-                AudioFileFormats.Contains(Path.GetExtension(f.FullName)) 
-                && !existingFiles.Any(t => t.FilePath == f.FullName))
+                AudioFileFormats.Contains(Path.GetExtension(f.FullName))
+                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.DateModified))
             .GroupBy(f => f.Directory?.Name, f => f);
         return directoryGroups;
     }
@@ -254,13 +253,6 @@ public class IndexerService : IIndexerService
     private async Task IndexFile(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre,
         ATL.Track atlTrack, MusicLibrary library)
     {
-        var indexedTrack = _context.Tracks.Include(t => t.AudioFile)
-            .FirstOrDefault(t => t.AudioFile.FilePath == atlTrack.Path);
-        if (indexedTrack != null)
-        {
-            return;
-        }
-
         // this can happen if the scan process is interrupted
         // and then resumed again
         if (indexedAlbum.Artworks == null)
@@ -282,36 +274,51 @@ public class IndexerService : IIndexerService
             }
         }
 
-        indexedTrack = new Track()
+        var indexedTrack = await AddOrUpdateTrack(artists, indexedAlbum, indexedGenre, atlTrack, library);
+        await _searchService.InsertKeywordsForTrack(indexedTrack);
+    }
+
+    private async Task<Track> AddOrUpdateTrack(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack, MusicLibrary library)
+    {
+        var indexedTrack = await _context.Tracks.Include(t => t.AudioFile)
+        .FirstOrDefaultAsync(t => t.AudioFile.FilePath == atlTrack.Path);
+
+        if (indexedTrack == null) indexedTrack = new Track();
+        indexedTrack.Album = indexedAlbum;
+        indexedTrack.Artists = artists;
+        indexedTrack.Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path);
+        indexedTrack.Comment = atlTrack.Comment;
+        indexedTrack.Genre = indexedGenre;
+        indexedTrack.DiscNumber = atlTrack.DiscNumber;
+        indexedTrack.TrackNumber = atlTrack.TrackNumber;
+        indexedTrack.DurationInSeconds = atlTrack.Duration;
+        indexedTrack.Keywords = new List<Keyword>();
+        indexedTrack.AudioFile = new AudioFile()
         {
-            Album = indexedAlbum,
-            Artists = artists,
-            Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path),
-            Comment = atlTrack.Comment,
-            Genre = indexedGenre,
-            DiscNumber = atlTrack.DiscNumber,
-            TrackNumber = atlTrack.TrackNumber,
-            DurationInSeconds = atlTrack.Duration,
-            Keywords = new List<Keyword>(),
-            AudioFile = new AudioFile()
-            {
-                FilePath = atlTrack.Path,
-                DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
-                FileSizeInBytes = new FileInfo(atlTrack.Path).Length,
-                AudioMetadata = new AudioMetadata()
-                {
-                    Bitrate = atlTrack.Bitrate,
-                    Channels = atlTrack.ChannelsArrangement?.NbChannels,
-                    SampleRate = atlTrack.SampleRate,
-                    Codec = atlTrack.AudioFormat.ShortName,
-                    BitDepth = atlTrack.BitDepth != -1 ? atlTrack.BitDepth : null,
-                },
-                Library = library
-            }
+            FilePath = atlTrack.Path,
+            DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
+            FileSizeInBytes = new FileInfo(atlTrack.Path).Length,
+            AudioMetadata = GetAudioMetadata(atlTrack),
+            Library = library
         };
         _logger.LogDebug("Indexing track: {TrackPath}", atlTrack.Path);
-        _context.Tracks.Add(indexedTrack);
-        await _searchService.InsertKeywordsForTrack(indexedTrack);
+
+        if (indexedTrack.Id == 0) _context.Tracks.Add(indexedTrack);
+        else _context.Tracks.Update(indexedTrack);
+        return indexedTrack;
+    }
+
+    private AudioMetadata GetAudioMetadata(ATL.Track atlTrack)
+    {
+        var metadata = new AudioMetadata()
+        {
+            Bitrate = atlTrack.Bitrate,
+            Channels = atlTrack.ChannelsArrangement?.NbChannels,
+            SampleRate = atlTrack.SampleRate,
+            Codec = atlTrack.AudioFormat.ShortName,
+            BitDepth = atlTrack.BitDepth != -1 ? atlTrack.BitDepth : null,
+        };
+        return metadata;
     }
 
     private Genre GetGenre(string genreName)
@@ -350,7 +357,7 @@ public class IndexerService : IIndexerService
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        string[] splitChars = {",", "&", ";", " x "};
+        string[] splitChars = { ",", "&", ";", " x " };
         var split = artistName.Split(splitChars, StringSplitOptions.TrimEntries);
         return split.Distinct().ToList();
     }

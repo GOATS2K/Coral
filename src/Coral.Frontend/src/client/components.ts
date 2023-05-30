@@ -48,6 +48,129 @@ export const useArtworkFromId = <TData = undefined>(
   );
 };
 
+export type AuthorizeUserError = Fetcher.ErrorWrapper<undefined>;
+
+export type AuthorizeUserVariables = Context["fetcherOptions"];
+
+export const fetchAuthorizeUser = (variables: AuthorizeUserVariables, signal?: AbortSignal) =>
+  fetch<undefined, AuthorizeUserError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm/authorize",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useAuthorizeUser = <TData = undefined>(
+  variables: AuthorizeUserVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, AuthorizeUserError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, AuthorizeUserError, TData>(
+    queryKeyFn({ path: "/api/plugin/LastFm/authorize", operationId: "authorizeUser", variables }),
+    ({ signal }) => fetchAuthorizeUser({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type SetUserTokenQueryParams = {
+  token?: string;
+};
+
+export type SetUserTokenError = Fetcher.ErrorWrapper<undefined>;
+
+export type SetUserTokenVariables = {
+  queryParams?: SetUserTokenQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchSetUserToken = (variables: SetUserTokenVariables, signal?: AbortSignal) =>
+  fetch<undefined, SetUserTokenError, undefined, {}, SetUserTokenQueryParams, {}>({
+    url: "/api/plugin/LastFm/setToken",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useSetUserToken = <TData = undefined>(
+  variables: SetUserTokenVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, SetUserTokenError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, SetUserTokenError, TData>(
+    queryKeyFn({ path: "/api/plugin/LastFm/setToken", operationId: "setUserToken", variables }),
+    ({ signal }) => fetchSetUserToken({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type SomethingNewError = Fetcher.ErrorWrapper<undefined>;
+
+export type SomethingNewVariables = Context["fetcherOptions"];
+
+export const fetchSomethingNew = (variables: SomethingNewVariables, signal?: AbortSignal) =>
+  fetch<undefined, SomethingNewError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm/guid",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useSomethingNew = <TData = undefined>(
+  variables: SomethingNewVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, SomethingNewError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, SomethingNewError, TData>(
+    queryKeyFn({ path: "/api/plugin/LastFm/guid", operationId: "somethingNew", variables }),
+    ({ signal }) => fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type TestError = Fetcher.ErrorWrapper<undefined>;
+
+export type TestVariables = Context["fetcherOptions"];
+
+export const fetchTest = (variables: TestVariables, signal?: AbortSignal) =>
+  fetch<undefined, TestError, undefined, {}, {}, {}>({
+    url: "/api/plugin/LastFm",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useTest = <TData = undefined>(
+  variables: TestVariables,
+  options?: Omit<reactQuery.UseQueryOptions<undefined, TestError, TData>, "queryKey" | "queryFn">
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<undefined, TestError, TData>(
+    queryKeyFn({ path: "/api/plugin/LastFm", operationId: "test", variables }),
+    ({ signal }) => fetchTest({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -750,6 +873,26 @@ export type QueryOperation =
       path: "/api/Artwork/{artworkId}";
       operationId: "artworkFromId";
       variables: ArtworkFromIdVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm/authorize";
+      operationId: "authorizeUser";
+      variables: AuthorizeUserVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm/setToken";
+      operationId: "setUserToken";
+      variables: SetUserTokenVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm/guid";
+      operationId: "somethingNew";
+      variables: SomethingNewVariables;
+    }
+  | {
+      path: "/api/plugin/LastFm";
+      operationId: "test";
+      variables: TestVariables;
     }
   | {
       path: "/api/Library/search";

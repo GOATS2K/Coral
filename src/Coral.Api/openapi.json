@@ -29,6 +29,67 @@
         }
       }
     },
+    "/api/plugin/LastFm/authorize": {
+      "get": {
+        "tags": [
+          "LastFm"
+        ],
+        "operationId": "AuthorizeUser",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/plugin/LastFm/setToken": {
+      "get": {
+        "tags": [
+          "LastFm"
+        ],
+        "operationId": "SetUserToken",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/plugin/LastFm/guid": {
+      "get": {
+        "tags": [
+          "LastFm"
+        ],
+        "operationId": "SomethingNew",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/plugin/LastFm": {
+      "get": {
+        "tags": [
+          "LastFm"
+        ],
+        "operationId": "Test",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Library/scan": {
       "post": {
         "tags": [

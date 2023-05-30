@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 ﻿using Coral.PluginBase;
 
 namespace Coral.PluginHost
-=======
-﻿namespace Coral.PluginHost
->>>>>>> chore: remove un-used imports and create editorconfig
 {
     public class ServiceProxy : IServiceProxy
     {

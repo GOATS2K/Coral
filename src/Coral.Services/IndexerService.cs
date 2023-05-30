@@ -13,10 +13,12 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
+    public Task HandleRename(string oldPath, string newPath);
+    public Task ScanDirectory(string directory, MusicLibrary library);
     public Task ScanLibraries();
     public Task<List<MusicLibraryDto>> GetMusicLibraries();
     public Task<MusicLibrary?> AddMusicLibrary(string path);
-    public Task ReadDirectory(MusicLibrary library);
+    public Task ScanLibrary(MusicLibrary library);
 }
 
 public class IndexerService : IIndexerService
@@ -89,16 +91,18 @@ public class IndexerService : IIndexerService
             // new libraries are inserted via AddMusicLibrary
             // which verifies that the library actually exists
             if (musicLibrary.LibraryPath == "") continue;
-            await ReadDirectory(musicLibrary);
+            await ScanLibrary(musicLibrary);
         }
     }
 
-    public async Task ReadDirectory(MusicLibrary library)
+    public async Task ScanLibrary(MusicLibrary library)
     {
         // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
         library = await GetLibrary(library);
-
-        var directoryGroups = ScanMusicLibrary(library);
+        // first delete missing tracks
+        await DeleteMissingTracks(library);
+        // then scan library
+        var directoryGroups = await ScanMusicLibraryAsync(library);
 
         // enumerate directories
         var foldersScanned = 0;
@@ -111,21 +115,7 @@ public class IndexerService : IIndexerService
                 continue;
             }
 
-            var analyzedTracks = await ReadTracksInDirectory(tracksInDirectory);
-            bool folderIsAlbum = analyzedTracks
-                .Select(x => x.Album)
-                .Distinct().Count() == 1;
-
-            if (folderIsAlbum)
-            {
-                _logger.LogDebug("Indexing {Path} as album", directoryGroup.Key);
-                await IndexAlbum(analyzedTracks, library);
-            }
-            else
-            {
-                _logger.LogDebug("Indexing {Path} as single files", directoryGroup.Key);
-                await IndexSingleFiles(analyzedTracks, library);
-            }
+            await IndexDirectory(tracksInDirectory, library);
 
             foldersScanned++;
             _logger.LogInformation("Completed indexing of {Path}", directoryGroup.Key);
@@ -142,17 +132,122 @@ public class IndexerService : IIndexerService
         await _context.SaveChangesAsync();
     }
 
-    private IEnumerable<IGrouping<string?, FileInfo>> ScanMusicLibrary(MusicLibrary library)
+    public async Task ScanDirectory(string directory, MusicLibrary library)
+    {
+        library = await GetLibrary(library);
+        if (directory == library.LibraryPath)
+        {
+            _logger.LogWarning("Aborting scan of {Path} - ScanDirectory is only used for incremental updates.", directory);
+            return;
+        }
+
+        var contentDirectory = new DirectoryInfo(directory);
+        if (!contentDirectory.Exists)
+        {
+            _logger.LogError("Directory {Directory} does not exist", directory);
+            return;
+        }
+
+        var tracksInDirectory = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
+            .ToList();
+        await IndexDirectory(tracksInDirectory, library);
+    }
+
+    public async Task HandleRename(string oldPath, string newPath)
+    {
+        if (File.Exists(newPath))
+        {
+            await HandleFileRename(oldPath, newPath);
+        }
+
+        if (Directory.Exists(newPath))
+        {
+            await HandleDirectoryRename(oldPath, newPath);
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task HandleDirectoryRename(string oldPath, string newPath)
+    {
+        var filesToMove = _context.AudioFiles.Where(t => t.FilePath.StartsWith(oldPath)).ToList();
+        foreach (var file in filesToMove)
+        {
+            file.FilePath = file.FilePath.Replace(oldPath, newPath);
+            _context.Update(file);
+        }
+
+        var artwork = await _context.Artworks.FirstOrDefaultAsync(a => a.Path.StartsWith(oldPath));
+        if (artwork != null)
+        {
+            artwork.Path = artwork.Path.Replace(oldPath, newPath);
+            _context.Update(artwork);
+        }
+    }
+
+    private async Task HandleFileRename(string oldPath, string newPath)
+    {
+        var targetFile = await _context.AudioFiles.FirstOrDefaultAsync(t => t.FilePath == oldPath);
+        if (targetFile == null)
+        {
+            throw new ArgumentException($"File {oldPath} has not previously been indexed");
+        }
+        targetFile.FilePath = newPath;
+    }
+
+    private async Task IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
+    {
+        var analyzedTracks = await ReadTracksInDirectory(tracksInDirectory);
+        bool folderIsAlbum = analyzedTracks
+            .Select(x => x.Album)
+            .Distinct().Count() == 1;
+
+        var parent = Directory.GetParent(tracksInDirectory.First().FullName)?.FullName;
+
+        if (folderIsAlbum)
+        {
+            _logger.LogDebug("Indexing {Path} as album", parent);
+            await IndexAlbum(analyzedTracks, library);
+        }
+        else
+        {
+            _logger.LogDebug("Indexing {Path} as single files", parent);
+            await IndexSingleFiles(analyzedTracks, library);
+        }
+    }
+
+    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibraryAsync(MusicLibrary library)
     {
         _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        var existingFiles = _context.AudioFiles.Where(f => f.Library.Id == library.Id).AsEnumerable();
+        var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
         var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
             .Where(f =>
                 AudioFileFormats.Contains(Path.GetExtension(f.FullName))
                 && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.DateModified))
             .GroupBy(f => f.Directory?.Name, f => f);
         return directoryGroups;
+    }
+
+    private async Task DeleteMissingTracks(MusicLibrary library)
+    {
+        // delete missing tracks
+        var indexedFiles = _context.AudioFiles.Where(f => f.Library.Id == library.Id).AsEnumerable();
+        var missingFiles = indexedFiles.Where(f => !Path.Exists(f.FilePath)).Select(f => f.Id);
+
+        var deletedTracks = await _context.Tracks.Where(f => missingFiles.Contains(f.AudioFile.Id)).ExecuteDeleteAsync();
+        if (deletedTracks > 0) _logger.LogInformation("Deleted {Tracks} missing tracks", deletedTracks);
+
+        // then, delete all tracks and artists with 0 tracks
+        var deletedArtists = await _context.ArtistsWithRoles.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
+        if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} missing artists", deletedArtists);
+
+        var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
+        if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} missing albums", deletedAlbums);
+
+        // finally, delete the missing file entries
+        await _context.AudioFiles.Where(f => missingFiles.Contains(f.Id)).ExecuteDeleteAsync();
     }
 
     private async Task<MusicLibrary> GetLibrary(MusicLibrary library)
@@ -280,8 +375,13 @@ public class IndexerService : IIndexerService
 
     private async Task<Track> AddOrUpdateTrack(List<ArtistWithRole> artists, Album indexedAlbum, Genre? indexedGenre, ATL.Track atlTrack, MusicLibrary library)
     {
-        var indexedTrack = await _context.Tracks.Include(t => t.AudioFile)
+        var indexedTrack = await _context.Tracks
+            .Include(t => t.AudioFile)
+            .Include(t => t.Keywords)
+            .Include(t => t.Artists)
+            .Include(t => t.Album)
         .FirstOrDefaultAsync(t => t.AudioFile.FilePath == atlTrack.Path);
+
 
         if (indexedTrack == null) indexedTrack = new Track();
         indexedTrack.Album = indexedAlbum;
@@ -292,7 +392,7 @@ public class IndexerService : IIndexerService
         indexedTrack.DiscNumber = atlTrack.DiscNumber;
         indexedTrack.TrackNumber = atlTrack.TrackNumber;
         indexedTrack.DurationInSeconds = atlTrack.Duration;
-        indexedTrack.Keywords = new List<Keyword>();
+        indexedTrack.Keywords ??= new List<Keyword>();
         indexedTrack.AudioFile = new AudioFile()
         {
             FilePath = atlTrack.Path,

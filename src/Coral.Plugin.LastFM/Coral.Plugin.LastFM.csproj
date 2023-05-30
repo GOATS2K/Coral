@@ -22,9 +22,5 @@
 		  <PrivateAssets>false</PrivateAssets>
 		  <ExcludeAssets>runtime</ExcludeAssets>
 	  </ProjectReference>
-	  <ProjectReference Include="..\Coral.PluginHost\Coral.PluginHost.csproj">
-			<PrivateAssets>false</PrivateAssets>
-			<ExcludeAssets>runtime</ExcludeAssets> 
-	  </ProjectReference>
 	</ItemGroup>
 </Project>

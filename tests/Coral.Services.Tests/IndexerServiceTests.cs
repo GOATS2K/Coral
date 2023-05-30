@@ -6,7 +6,6 @@ using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using SQLitePCL;
 using Xunit;
 
 namespace Coral.Services.Tests;
@@ -90,7 +89,7 @@ public class IndexerServiceTests : IDisposable
         // arrange
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.MixedAlbumTags);
+        await _indexerService.ScanLibrary(TestDataRepository.MixedAlbumTags);
 
         // assert
         var jupiter = await _testDatabase.ArtistsWithRoles.Include(a => a.Albums).FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
@@ -109,7 +108,7 @@ public class IndexerServiceTests : IDisposable
         // arrange
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.NeptuneDiscovery);
+        await _indexerService.ScanLibrary(TestDataRepository.NeptuneDiscovery);
 
         // assert
         var album = await _testDatabase.Albums.Include(a => a.Artworks).FirstOrDefaultAsync(a => a.Name == "Discovery");
@@ -127,7 +126,7 @@ public class IndexerServiceTests : IDisposable
         // arrange
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.JupiterMoons);
+        await _indexerService.ScanLibrary(TestDataRepository.JupiterMoons);
 
         // assert
         var jupiter = _testDatabase.Artists.Where(a => a.Name == "Jupiter").ToList();
@@ -154,7 +153,7 @@ public class IndexerServiceTests : IDisposable
         var directoryName = new DirectoryInfo(TestDataRepository.GetTestFolder("Mars - Moons - FLAC [missing metadata]")).Name;
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.MarsMissingMetadata);
+        await _indexerService.ScanLibrary(TestDataRepository.MarsMissingMetadata);
 
         // assert
         var marsArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
@@ -184,7 +183,7 @@ public class IndexerServiceTests : IDisposable
         // arrange
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.NeptuneSaturnRings);
+        await _indexerService.ScanLibrary(TestDataRepository.NeptuneSaturnRings);
 
         // assert
         var ringsAlbum = _testDatabase.Albums.Include(a => a.Tracks).Include(a => a.Artists).ThenInclude(a => a.Artist).First(a => a.Name == "Rings");
@@ -207,7 +206,7 @@ public class IndexerServiceTests : IDisposable
         // arrange
 
         // act
-        await _indexerService.ReadDirectory(TestDataRepository.MarsWhoDiscoveredMe);
+        await _indexerService.ScanLibrary(TestDataRepository.MarsWhoDiscoveredMe);
 
         // assert
         var album = await _testDatabase.Albums
@@ -332,5 +331,38 @@ public class IndexerServiceTests : IDisposable
         Assert.NotNull(updatedTrack);
         // verify that the same track was updated
         Assert.Equal(indexedTrack.Id, updatedTrack.Id);
+    }
+
+    [Fact]
+    public async Task ScanLibraries_RenameBeforeRescan_ChangesFilePathOfTrack()
+    {
+        // arrange
+        var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
+        var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
+        CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)));
+        var library = await _indexerService.AddMusicLibrary(testFolder.FullName);
+
+        // run scan before change
+        await _indexerService.ScanLibraries();
+
+        // verify that the release was written
+        Assert.NotNull(library);
+        var indexedTrack = _testDatabase.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
+        Assert.NotNull(indexedTrack);
+
+        var destinationFileName = Path.Combine(Directory.GetParent(indexedTrack.AudioFile.FilePath)!.FullName, "renamed-file.flac");
+        File.Move(indexedTrack.AudioFile.FilePath, destinationFileName);
+
+        // act
+        await _indexerService.ScanLibraries();
+
+        // assert
+        var updatedTrack = _testDatabase.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
+        var oldTrack = _testDatabase.Tracks.FirstOrDefault(f => f.AudioFile.FilePath == indexedTrack.AudioFile.FilePath);
+        var oldFile = _testDatabase.AudioFiles.FirstOrDefault(f => f.FilePath == indexedTrack.AudioFile.FilePath);
+        Assert.Null(oldTrack);
+        Assert.Null(oldFile);
+        Assert.NotNull(updatedTrack);
+        Assert.Equal(destinationFileName, updatedTrack.AudioFile.FilePath);
     }
 }

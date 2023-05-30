@@ -2,7 +2,6 @@
 using Coral.PluginBase;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace Coral.Plugin.LastFM
 {

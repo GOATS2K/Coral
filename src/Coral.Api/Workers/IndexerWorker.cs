@@ -14,7 +14,7 @@ namespace Coral.Api.Workers
         private readonly List<FileSystemWatcher> _watchers = new();
         private readonly MemoryCache _memCache;
         private readonly CacheItemPolicy _cacheItemPolicy;
-        private const int CacheTimeMilliseconds = 500;
+        private const int CacheTimeMilliseconds = 250;
         private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
         private readonly SemaphoreSlim _semaphore = new(1);
 
@@ -35,10 +35,9 @@ namespace Coral.Api.Workers
                             _logger.LogError("Unable to find music library for: {Path}", args.CacheItem.Key);
                             return;
                         }
-
                         using var scope = _serviceProvider.CreateScope();
                         var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-                        await indexer.ReadDirectory(musicLibrary);
+                        await indexer.ScanDirectory(args.CacheItem.Key, musicLibrary);
                     });
                 }
             };
@@ -62,8 +61,14 @@ namespace Coral.Api.Workers
 
         void HandleFileSystemEvent(object source, FileSystemEventArgs e)
         {
+            var parent = Directory.GetParent(e.FullPath)?.FullName!;
+            var existingItem = _memCache.Get(parent) as FileSystemEventArgs;
+            if (existingItem != null)
+            {
+                _memCache.Remove(parent);
+            }
             _cacheItemPolicy.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(CacheTimeMilliseconds);
-            _memCache.AddOrGetExisting(e.FullPath, e, _cacheItemPolicy);
+            _memCache.Add(parent, e, _cacheItemPolicy);
         }
 
         void InitializeFileSystemWatcher()
@@ -75,6 +80,15 @@ namespace Coral.Api.Workers
             {
                 var fsWatcher = new FileSystemWatcher(musicLibrary.LibraryPath);
                 fsWatcher.Changed += HandleFileSystemEvent;
+                fsWatcher.Renamed += async (_, args) =>
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+                    try
+                    {
+                        await indexer.HandleRename(args.OldFullPath, args.FullPath);
+                    } catch (ArgumentException) { }
+                };
                 fsWatcher.IncludeSubdirectories = true;
                 fsWatcher.EnableRaisingEvents = true;
                 _watchers.Add(fsWatcher);
@@ -91,7 +105,7 @@ namespace Coral.Api.Workers
                 _watchers.Clear();
                 using var scope = _serviceProvider.CreateScope();
                 var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-                await indexer.ReadDirectory(args.Library);
+                await indexer.ScanLibrary(args.Library);
                 InitializeFileSystemWatcher();
             };
             return Task.CompletedTask;

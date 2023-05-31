@@ -130,6 +130,7 @@ public class IndexerService : IIndexerService
             }
         }
 
+        _logger.LogInformation("Completed scan of {Directory}", library.LibraryPath);
         library.LastScan = DateTime.UtcNow;
         await _context.SaveChangesAsync();
     }
@@ -187,11 +188,7 @@ public class IndexerService : IIndexerService
         if (deletedTrack > 0) _logger.LogInformation("Deleted track: {FilePath}", filePath);
 
         // then, delete all tracks and artists with 0 tracks
-        var deletedArtists = await _context.ArtistsWithRoles.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
-        if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
-
-        var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
-        if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} albums with no tracks", deletedAlbums);
+        await DeleteEmptyArtistsAndAlbums();
 
         // finally, delete the missing file entries
         _context.Remove(indexedFile);
@@ -280,16 +277,32 @@ public class IndexerService : IIndexerService
 
         var deletedTracks = await _context.Tracks.Where(f => missingFiles.Contains(f.AudioFile.Id)).ExecuteDeleteAsync();
         if (deletedTracks > 0) _logger.LogInformation("Deleted {Tracks} missing tracks", deletedTracks);
+        await DeleteEmptyArtistsAndAlbums();
 
+        // finally, delete the missing file entries
+        await _context.AudioFiles.Where(f => missingFiles.Contains(f.Id)).ExecuteDeleteAsync();
+    }
+
+    private async Task DeleteEmptyArtistsAndAlbums()
+    {
         // then, delete all tracks and artists with 0 tracks
         var deletedArtists = await _context.ArtistsWithRoles.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
         if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
 
+        var emptyAlbumsArtwork = await _context.Albums
+            .Include(t => t.Artworks)
+            .Where(a => !a.Tracks.Any())
+            .Select(a => a.Artworks)
+            .SelectMany(x => x)
+            .ToListAsync();
+
+        foreach (var artwork in emptyAlbumsArtwork)
+        {
+            await _artworkService.DeleteArtwork(artwork);
+        }
+
         var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
         if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} albums with no tracks", deletedAlbums);
-
-        // finally, delete the missing file entries
-        await _context.AudioFiles.Where(f => missingFiles.Contains(f.Id)).ExecuteDeleteAsync();
     }
 
     private async Task<MusicLibrary> GetLibrary(MusicLibrary library)

@@ -72,6 +72,28 @@ namespace Coral.Api.Workers
             _memCache.Add(parent, e, _cacheItemPolicy);
         }
 
+        async void HandleRenameEvent(object source, RenamedEventArgs args)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+            try
+            {
+                await indexer.HandleRename(args.OldFullPath, args.FullPath);
+            }
+            catch (ArgumentException) { }
+        }
+
+        async void HandleDeleteEvent(object source, FileSystemEventArgs args)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+            try
+            {
+                await indexer.DeleteTrack(args.FullPath);
+            }
+            catch (ArgumentException) { }
+        }
+
         void InitializeFileSystemWatcher()
         {
             using var scope = _serviceProvider.CreateScope();
@@ -81,25 +103,9 @@ namespace Coral.Api.Workers
             {
                 var fsWatcher = new FileSystemWatcher(musicLibrary.LibraryPath);
                 fsWatcher.Changed += HandleFileSystemEvent;
-                fsWatcher.Renamed += async (_, args) =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-                    try
-                    {
-                        await indexer.HandleRename(args.OldFullPath, args.FullPath);
-                    } catch (ArgumentException) { }
-                };
-                fsWatcher.Deleted += async (_, args) =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-                    try
-                    {
-                        await indexer.DeleteTrack(args.FullPath);
-                    }
-                    catch (ArgumentException) { }
-                };
+                fsWatcher.Renamed += HandleRenameEvent;
+                fsWatcher.Deleted += HandleDeleteEvent;
+
                 fsWatcher.IncludeSubdirectories = true;
                 fsWatcher.EnableRaisingEvents = true;
                 _watchers.Add(fsWatcher);

@@ -12,6 +12,7 @@ public interface IArtworkService
     public Task ProcessArtwork(Album album, string artworkPath);
     public Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
     public Task<string?> GetArtworkPath(int artworkId);
+    public Task DeleteArtwork(Artwork artwork);
 }
 
 public class ArtworkService : IArtworkService
@@ -102,6 +103,24 @@ public class ArtworkService : IArtworkService
             Width = originalImage.Width
         });
         
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteArtwork(Artwork artwork)
+    {
+        // remove artwork file if its in the AppData folder
+        if (artwork.Path.StartsWith(ApplicationConfiguration.AppData))
+        {
+            File.Delete(artwork.Path);
+            _logger.LogInformation("Deleted local artwork file: {ArtworkPath}", artwork.Path);
+            var parent = Directory.GetParent(artwork.Path)?.FullName;
+
+            if (parent != null && !Directory.GetFiles(parent).Any())
+            {
+                Directory.Delete(parent);
+            }
+        }
+        _context.Remove(artwork);
         await _context.SaveChangesAsync();
     }
 }

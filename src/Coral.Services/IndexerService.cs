@@ -151,6 +151,7 @@ public class IndexerService : IIndexerService
             return;
         }
 
+        await DeleteMissingTracks(library);
         var tracksInDirectory = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
             .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
             .ToList();

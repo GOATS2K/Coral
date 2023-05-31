@@ -13,6 +13,7 @@ namespace Coral.Services;
 
 public interface IIndexerService
 {
+    public Task DeleteTrack(string filePath);
     public Task HandleRename(string oldPath, string newPath);
     public Task ScanDirectory(string directory, MusicLibrary library);
     public Task ScanLibraries();
@@ -152,6 +153,9 @@ public class IndexerService : IIndexerService
             .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
             .ToList();
         await IndexDirectory(tracksInDirectory, library);
+
+        library.LastScan = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
     }
 
     public async Task HandleRename(string oldPath, string newPath)
@@ -166,6 +170,30 @@ public class IndexerService : IIndexerService
             await HandleDirectoryRename(oldPath, newPath);
         }
 
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteTrack(string filePath)
+    {
+        // delete missing tracks
+        var indexedFile = await _context.AudioFiles.FirstOrDefaultAsync(f => f.FilePath == filePath);
+        if (indexedFile == null)
+        {
+            throw new ArgumentException($"File {filePath} has not previously been indexed.");
+        }
+
+        var deletedTrack = await _context.Tracks.Where(f => f.AudioFile.Id == indexedFile.Id).ExecuteDeleteAsync();
+        if (deletedTrack > 0) _logger.LogInformation("Deleted track: {FilePath}", filePath);
+
+        // then, delete all tracks and artists with 0 tracks
+        var deletedArtists = await _context.ArtistsWithRoles.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
+        if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
+
+        var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
+        if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} albums with no tracks", deletedAlbums);
+
+        // finally, delete the missing file entries
+        _context.Remove(indexedFile);
         await _context.SaveChangesAsync();
     }
 
@@ -241,10 +269,10 @@ public class IndexerService : IIndexerService
 
         // then, delete all tracks and artists with 0 tracks
         var deletedArtists = await _context.ArtistsWithRoles.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
-        if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} missing artists", deletedArtists);
+        if (deletedArtists > 0) _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
 
         var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
-        if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} missing albums", deletedAlbums);
+        if (deletedAlbums > 0) _logger.LogInformation("Deleted {DeletedAlbums} albums with no tracks", deletedAlbums);
 
         // finally, delete the missing file entries
         await _context.AudioFiles.Where(f => missingFiles.Contains(f.Id)).ExecuteDeleteAsync();

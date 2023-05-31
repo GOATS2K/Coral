@@ -35,6 +35,7 @@ namespace Coral.Api.Workers
                             _logger.LogError("Unable to find music library for: {Path}", args.CacheItem.Key);
                             return;
                         }
+
                         using var scope = _serviceProvider.CreateScope();
                         var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
                         await indexer.ScanDirectory(args.CacheItem.Key, musicLibrary);
@@ -88,6 +89,16 @@ namespace Coral.Api.Workers
                     {
                         await indexer.HandleRename(args.OldFullPath, args.FullPath);
                     } catch (ArgumentException) { }
+                };
+                fsWatcher.Deleted += async (_, args) =>
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+                    try
+                    {
+                        await indexer.DeleteTrack(args.FullPath);
+                    }
+                    catch (ArgumentException) { }
                 };
                 fsWatcher.IncludeSubdirectories = true;
                 fsWatcher.EnableRaisingEvents = true;

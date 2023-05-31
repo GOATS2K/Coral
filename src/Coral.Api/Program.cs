@@ -75,7 +75,6 @@ app.UseHttpsRedirection();
 // setup content type provider
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
-contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
 // serve HLS

@@ -7,6 +7,7 @@ using Coral.Events;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.CodeDom;
 using System.Text.RegularExpressions;
 
 namespace Coral.Services;
@@ -19,7 +20,7 @@ public interface IIndexerService
     public Task ScanLibraries();
     public Task<List<MusicLibraryDto>> GetMusicLibraries();
     public Task<MusicLibrary?> AddMusicLibrary(string path);
-    public Task ScanLibrary(MusicLibrary library);
+    public Task ScanLibrary(MusicLibrary library, bool incremental = false);
 }
 
 public class IndexerService : IIndexerService
@@ -96,14 +97,14 @@ public class IndexerService : IIndexerService
         }
     }
 
-    public async Task ScanLibrary(MusicLibrary library)
+    public async Task ScanLibrary(MusicLibrary library, bool incremental = false)
     {
         // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
         library = await GetLibrary(library);
         // first delete missing tracks
         await DeleteMissingTracks(library);
         // then scan library
-        var directoryGroups = await ScanMusicLibraryAsync(library);
+        var directoryGroups = await ScanMusicLibraryAsync(library, incremental);
 
         // enumerate directories
         var foldersScanned = 0;
@@ -138,7 +139,7 @@ public class IndexerService : IIndexerService
         library = await GetLibrary(library);
         if (directory == library.LibraryPath)
         {
-            _logger.LogWarning("Aborting scan of {Path} - ScanDirectory is only used for incremental updates.", directory);
+            await ScanLibrary(library, incremental: true);
             return;
         }
 
@@ -245,15 +246,28 @@ public class IndexerService : IIndexerService
         }
     }
 
-    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibraryAsync(MusicLibrary library)
+    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibraryAsync(MusicLibrary library, bool incremental = false)
     {
-        _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
-        var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(f =>
+        Func<FileInfo, bool> predicate;
+
+        if (!incremental)
+        {
+            _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
+            var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
+            predicate = f =>
                 AudioFileFormats.Contains(Path.GetExtension(f.FullName))
-                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.DateModified))
+                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.DateModified);
+        }
+        else
+        {
+            _logger.LogInformation("Starting incremental scan of directory: {Directory}", library.LibraryPath);
+            predicate = f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) 
+            && (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan);
+        }
+
+        var directoryGroups = contentDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(predicate)
             .GroupBy(f => f.Directory?.Name, f => f);
         return directoryGroups;
     }

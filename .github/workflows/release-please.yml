@@ -15,5 +15,5 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@v3
         with:
-          release-type: dotnet
+          release-type: dotnet-yoshi
           package-name: release-please-action

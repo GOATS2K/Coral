@@ -19,3 +19,4 @@ jobs:
           package-name: release-please-action
           # staying on 0.X.X for a minute
           bump-minor-pre-major: true
+          token: ${{ secrets.CORAL_PAT }}

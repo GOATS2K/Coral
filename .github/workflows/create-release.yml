@@ -31,62 +31,59 @@ jobs:
             folder_name: coral-${{ github.ref_name }}-macos-x64
           - platform: osx-arm64
             folder_name: coral-${{ github.ref_name }}-macos-arm64
-          
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 7.0.x
-    - name: Setup Node.js environment
-      uses: actions/setup-node@v3.6.0
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 7.27.1
-    - name: Get pnpm store directory
-      id: pnpm-cache
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-    - uses: actions/cache@v3
-      name: Setup pnpm cache
-      with:
-        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
-    - name: Restore
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Set Versions
-      uses: actions/github-script@v4
-      id: set_version
-      with:
-        script: |
-          const tag = context.ref.substring(10)
-          const no_v = tag.replace('v', '')
-          const dash_index = no_v.lastIndexOf('-')
-          const no_dash = (dash_index > -1) ?  no_v.substring(0, dash_index) : no_v
-          core.setOutput('tag', tag)
-          core.setOutput('no-v', no_v)
-          core.setOutput('no-dash', no_dash)
-    - name: Publish
-      working-directory: src/Coral.Api
-      run: |
-        dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o ${{ matrix.folder_name }} -p:SkipSwaggerGen=true -p:EnableCompressionInSingleFile=true -p:FileVersion=${{ steps.set_version.outputs.no-v }}
-    - name: Compress binary
-      uses: vimtor/action-zip@v1
-      with:
-        files: src/Coral.Api/${{ matrix.folder_name }}
-        dest: src/Coral.Api/${{ matrix.folder_name }}.zip
-    - name: Upload binary to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.CORAL_PAT }}
-        file: src/Coral.Api/${{ matrix.folder_name }}.zip
-        tag: ${{ github.ref }}
 
-          
-        
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3.6.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.27.1
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore
+      - name: Set Versions
+        uses: actions/github-script@v4
+        id: set_version
+        with:
+          script: |
+            const tag = context.ref.substring(10)
+            const no_v = tag.replace('v', '')
+            const dash_index = no_v.lastIndexOf('-')
+            const no_dash = (dash_index > -1) ?  no_v.substring(0, dash_index) : no_v
+            core.setOutput('tag', tag)
+            core.setOutput('no-v', no_v)
+            core.setOutput('no-dash', no_dash)
+      - name: Publish
+        working-directory: src/Coral.Api
+        run: |
+          dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o ${{ matrix.folder_name }} -p:SkipSwaggerGen=true -p:EnableCompressionInSingleFile=true -p:FileVersion=${{ steps.set_version.outputs.no-v }}
+      - name: Compress binary
+        uses: vimtor/action-zip@v1
+        with:
+          files: src/Coral.Api/${{ matrix.folder_name }}
+          dest: src/Coral.Api/${{ matrix.folder_name }}.zip
+      - name: Upload binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/Coral.Api/${{ matrix.folder_name }}.zip
+          tag: ${{ github.ref }}

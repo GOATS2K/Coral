@@ -15,6 +15,7 @@
 		<SkipSwaggerGen>false</SkipSwaggerGen>
 		<PublishSingleFile>true</PublishSingleFile>
 		<DebugType>embedded</DebugType>
+		<Version>0.1.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -2,14 +2,8 @@
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.Models;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Coral.Services
 {

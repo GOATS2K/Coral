@@ -1,5 +1,3 @@
-using Coral.Database.Models;
-
 namespace Coral.Dto.Models;
 
 public record AlbumDto : SimpleAlbumDto

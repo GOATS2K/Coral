@@ -680,6 +680,134 @@ export const useArtist = <TData = Schemas.ArtistDto>(
   );
 };
 
+export type DirectoriesInPathQueryParams = {
+  path?: string;
+};
+
+export type DirectoriesInPathError = Fetcher.ErrorWrapper<undefined>;
+
+export type DirectoriesInPathResponse = string[];
+
+export type DirectoriesInPathVariables = {
+  queryParams?: DirectoriesInPathQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchDirectoriesInPath = (
+  variables: DirectoriesInPathVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    DirectoriesInPathResponse,
+    DirectoriesInPathError,
+    undefined,
+    {},
+    DirectoriesInPathQueryParams,
+    {}
+  >({ url: "/api/Onboarding/listDirectories", method: "get", ...variables, signal });
+
+export const useDirectoriesInPath = <TData = DirectoriesInPathResponse>(
+  variables: DirectoriesInPathVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<DirectoriesInPathResponse, DirectoriesInPathError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<DirectoriesInPathResponse, DirectoriesInPathError, TData>(
+    queryKeyFn({
+      path: "/api/Onboarding/listDirectories",
+      operationId: "directoriesInPath",
+      variables,
+    }),
+    ({ signal }) => fetchDirectoriesInPath({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type MusicLibrariesError = Fetcher.ErrorWrapper<undefined>;
+
+export type MusicLibrariesResponse = Schemas.MusicLibraryDto[];
+
+export type MusicLibrariesVariables = Context["fetcherOptions"];
+
+export const fetchMusicLibraries = (variables: MusicLibrariesVariables, signal?: AbortSignal) =>
+  fetch<MusicLibrariesResponse, MusicLibrariesError, undefined, {}, {}, {}>({
+    url: "/api/Onboarding/musicLibraries",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export const useMusicLibraries = <TData = MusicLibrariesResponse>(
+  variables: MusicLibrariesVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<MusicLibrariesResponse, MusicLibrariesError, TData>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
+  return reactQuery.useQuery<MusicLibrariesResponse, MusicLibrariesError, TData>(
+    queryKeyFn({
+      path: "/api/Onboarding/musicLibraries",
+      operationId: "musicLibraries",
+      variables,
+    }),
+    ({ signal }) => fetchMusicLibraries({ ...fetcherOptions, ...variables }, signal),
+    {
+      ...options,
+      ...queryOptions,
+    }
+  );
+};
+
+export type RegisterMusicLibraryQueryParams = {
+  path?: string;
+};
+
+export type RegisterMusicLibraryError = Fetcher.ErrorWrapper<undefined>;
+
+export type RegisterMusicLibraryVariables = {
+  queryParams?: RegisterMusicLibraryQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchRegisterMusicLibrary = (
+  variables: RegisterMusicLibraryVariables,
+  signal?: AbortSignal
+) =>
+  fetch<
+    Schemas.MusicLibrary,
+    RegisterMusicLibraryError,
+    undefined,
+    {},
+    RegisterMusicLibraryQueryParams,
+    {}
+  >({ url: "/api/Onboarding/register", method: "post", ...variables, signal });
+
+export const useRegisterMusicLibrary = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.MusicLibrary,
+      RegisterMusicLibraryError,
+      RegisterMusicLibraryVariables
+    >,
+    "mutationFn"
+  >
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.MusicLibrary,
+    RegisterMusicLibraryError,
+    RegisterMusicLibraryVariables
+  >(
+    (variables: RegisterMusicLibraryVariables) =>
+      fetchRegisterMusicLibrary({ ...fetcherOptions, ...variables }),
+    options
+  );
+};
+
 export type LoadAllPluginsError = Fetcher.ErrorWrapper<undefined>;
 
 export type LoadAllPluginsVariables = Context["fetcherOptions"];
@@ -820,6 +948,16 @@ export type QueryOperation =
       path: "/api/Library/artists/{artistId}";
       operationId: "artist";
       variables: ArtistVariables;
+    }
+  | {
+      path: "/api/Onboarding/listDirectories";
+      operationId: "directoriesInPath";
+      variables: DirectoriesInPathVariables;
+    }
+  | {
+      path: "/api/Onboarding/musicLibraries";
+      operationId: "musicLibraries";
+      variables: MusicLibrariesVariables;
     }
   | {
       path: "/api/Plugin/load";

@@ -68,7 +68,7 @@ jobs:
     - name: Publish
       working-directory: src/Coral.Api
       run: |
-        dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o ${{ matrix.folder_name }} -p:SkipSwaggerGen=true -p:EnableCompressionInSingleFile=true -p:Version=${{ steps.set_version.outputs.no-v }}
+        dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o ${{ matrix.folder_name }} -p:SkipSwaggerGen=true -p:EnableCompressionInSingleFile=true -p:FileVersion=${{ steps.set_version.outputs.no-v }}
     - name: Compress binary
       uses: vimtor/action-zip@v1
       with:

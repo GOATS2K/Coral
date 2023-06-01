@@ -70,10 +70,11 @@ jobs:
       run: |
         dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o ${{ matrix.folder_name }} -p:SkipSwaggerGen=true -p:EnableCompressionInSingleFile=true -p:Version=${{ steps.set_version.outputs.no-v }}
     - name: Compress binary
-      uses: montudor/action-zip@v1
+    - uses: vimtor/action-zip@v1
       with:
-        args: zip -qq -r ${{ matrix.folder_name }}.zip ${{ matrix.folder_name }}
-    - name: Upload binaries to release
+        files: ${{ matrix.folder_name }}
+        dest: ${{ matrix.folder_name }}.zip
+    - name: Upload binary to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}

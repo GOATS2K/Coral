@@ -72,8 +72,8 @@ jobs:
     - name: Compress binary
       uses: vimtor/action-zip@v1
       with:
-        files: ${{ matrix.folder_name }}
-        dest: ${{ matrix.folder_name }}.zip
+        files: src/Coral.Api/${{ matrix.folder_name }}
+        dest: src/Coral.Api/${{ matrix.folder_name }}.zip
     - name: Upload binary to release
       uses: svenstaro/upload-release-action@v2
       with:

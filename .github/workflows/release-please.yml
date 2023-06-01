@@ -17,3 +17,5 @@ jobs:
         with:
           release-type: simple
           package-name: release-please-action
+          # staying on 0.X.X for a minute
+          bump-minor-pre-major: true

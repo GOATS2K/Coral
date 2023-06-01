@@ -5,9 +5,10 @@ import Artist from "../../components/artist/Artist";
 
 export default function Artists() {
   const router = useRouter();
+  const artistId = typeof router.query.id === "string" ? +router.query.id : 0;
   const { data, isLoading } = useArtist({
     pathParams: {
-      artistId: typeof router.query.id === "string" ? router.query.id : "",
+      artistId: artistId,
     },
   });
 

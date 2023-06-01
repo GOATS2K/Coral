@@ -1,23 +1,15 @@
-﻿using AutoMapper;
-using AutoMapper.EntityFrameworkCore;
-using AutoMapper.QueryableExtensions;
-using Coral.Database;
+﻿    using AutoMapper;
+    using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using Coral.Services.Models;
 using Diacritics.Extensions;
-using LinqKit;
-using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+    using System.Text.RegularExpressions;
 
-namespace Coral.Services
+    namespace Coral.Services
 {
     public interface ISearchService
     {
@@ -120,7 +112,7 @@ namespace Coral.Services
             {
                 var currentKeywordResult = await _context.Keywords
                             .AsNoTracking()
-                            .Where(k => EF.Functions.Like(k.Value, $"{keyword}%"))
+                            .Where(k => EF.Functions.Like(k.Value, $"%{keyword}%"))
                             .Select(k => k.Tracks)
                             .SelectMany(t => t)
                             .Select(t => t.Id)
@@ -155,7 +147,8 @@ namespace Coral.Services
             // +        => one or more of
             // http://www.pcre.org/original/doc/html/pcrepattern.html
             var pattern = @"[\p{L}\p{Nd}]+";
-            var matches = Regex.Matches(sanitized, pattern, RegexOptions.IgnoreCase);
+            var expression = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            var matches = expression.Matches(sanitized);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

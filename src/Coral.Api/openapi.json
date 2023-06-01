@@ -29,47 +29,6 @@
         }
       }
     },
-    "/api/Artwork/albums/{albumId}": {
-      "get": {
-        "tags": [
-          "Artwork"
-        ],
-        "operationId": "AlbumArtwork",
-        "parameters": [
-          {
-            "name": "albumId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArtworkDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/plugin/LastFm/authorize": {
       "get": {
         "tags": [
@@ -638,6 +597,132 @@
         }
       }
     },
+    "/api/Onboarding/listDirectories": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "DirectoriesInPath",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Onboarding/musicLibraries": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "MusicLibraries",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicLibraryDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicLibraryDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicLibraryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Onboarding/register": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "RegisterMusicLibrary",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicLibrary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicLibrary"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicLibrary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Plugin/load": {
       "get": {
         "tags": [
@@ -821,6 +906,93 @@
         },
         "additionalProperties": false
       },
+      "AudioFile": {
+        "required": [
+          "audioMetadata",
+          "dateIndexed",
+          "dateModified",
+          "filePath",
+          "fileSizeInBytes",
+          "id",
+          "library"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dateIndexed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "fileSizeInBytes": {
+            "type": "number",
+            "format": "double"
+          },
+          "audioMetadata": {
+            "$ref": "#/components/schemas/AudioMetadata"
+          },
+          "library": {
+            "$ref": "#/components/schemas/MusicLibrary"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AudioMetadata": {
+        "required": [
+          "bitrate",
+          "codec",
+          "dateIndexed",
+          "dateModified",
+          "id",
+          "sampleRate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dateIndexed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bitrate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bitDepth": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "sampleRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "channels": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "codec": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "GenreDto": {
         "required": [
           "id",
@@ -834,6 +1006,67 @@
           },
           "name": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MusicLibrary": {
+        "required": [
+          "audioFiles",
+          "dateIndexed",
+          "dateModified",
+          "id",
+          "lastScan",
+          "libraryPath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dateIndexed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "libraryPath": {
+            "type": "string"
+          },
+          "lastScan": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "audioFiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AudioFile"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MusicLibraryDto": {
+        "required": [
+          "id",
+          "lastScan",
+          "libraryPath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "libraryPath": {
+            "type": "string"
+          },
+          "lastScan": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

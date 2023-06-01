@@ -1,12 +1,8 @@
 using Coral.Api;
+using Coral.Api.Workers;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Dto.Profiles;
-using Coral.Encoders;
-using Coral.Events;
-using Coral.PluginHost;
-using Coral.Services;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -22,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddServices();
 builder.Services.AddHostedService<PluginInitializer>();
+builder.Services.AddHostedService<IndexerWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {
@@ -78,7 +75,6 @@ app.UseHttpsRedirection();
 // setup content type provider
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
-contentTypeProvider.Mappings[".ts"] = "audio/mp2t";
 contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
 
 // serve HLS

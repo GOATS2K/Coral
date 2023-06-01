@@ -1,9 +1,4 @@
-using CliWrap;
-using CliWrap.Builders;
-using CliWrap.EventStream;
-using Coral.Configuration;
 using Coral.Dto.EncodingModels;
-using Coral.Encoders.EncodingModels;
 
 namespace Coral.Encoders.AAC;
 

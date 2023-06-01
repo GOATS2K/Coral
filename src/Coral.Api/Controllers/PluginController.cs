@@ -1,5 +1,4 @@
 ﻿using Coral.PluginHost;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers

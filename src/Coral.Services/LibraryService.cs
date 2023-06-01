@@ -1,5 +1,4 @@
-﻿using ATL;
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
@@ -37,7 +36,7 @@ namespace Coral.Services
 
         public async Task<Track?> GetTrack(int trackId)
         {
-            return await _context.Tracks.FindAsync(trackId);
+            return await _context.Tracks.Include(t => t.AudioFile).FirstOrDefaultAsync(t => t.Id == trackId);
         }
 
         public async Task<TrackDto?> GetTrackDto(int trackId)
@@ -49,19 +48,19 @@ namespace Coral.Services
 
         public async Task<TrackStream> GetStreamForTrack(int trackId)
         {
-            var track = await _context.Tracks.FindAsync(trackId);
+            var track = await _context.Tracks.Include(t => t.AudioFile).FirstOrDefaultAsync(t => t.Id == trackId);
             if (track == null)
             {
                 throw new ArgumentException($"Track ID {trackId} not found.");
             }
 
-            var fileStream = new FileStream(track.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var fileStream = new FileStream(track.AudioFile.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var trackStream = new TrackStream()
             {
-                FileName = Path.GetFileName(track.FilePath),
-                Length = new FileInfo(track.FilePath).Length,
+                FileName = Path.GetFileName(track.AudioFile.FilePath),
+                Length = new FileInfo(track.AudioFile.FilePath).Length,
                 Stream = fileStream,
-                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.FilePath))
+                ContentType = MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(track.AudioFile.FilePath))
             };
 
             return trackStream;

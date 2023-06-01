@@ -1,10 +1,8 @@
-﻿using System.Net;
-using Coral.Database.Models;
+﻿using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services;
-using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,16 +33,8 @@ namespace Coral.Api.Controllers
         [Route("scan")]
         public async Task<ActionResult> RunIndexer()
         {
-            var contentDirectory = Environment.GetEnvironmentVariable("CORAL_CONTENT_DIRECTORY");
-            if (!string.IsNullOrEmpty(contentDirectory))
-            {
-                await _indexerService.ReadDirectory(contentDirectory);
-                return Ok();
-            }
-            else
-            {
-                return BadRequest(new { Message = "CORAL_CONTENT_DIRECTORY has not been set." });
-            }
+            await _indexerService.ScanLibraries();
+            return Ok();
         }
 
         [HttpGet]

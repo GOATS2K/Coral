@@ -1,11 +1,5 @@
 ﻿using Coral.Database.Models;
-using Coral.Encoders.EncodingModels;
 using NSubstitute;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Coral.Encoders;
 using Xunit;
 using Coral.Dto.EncodingModels;
@@ -37,7 +31,6 @@ namespace Coral.Services.Tests
             },
             Title = "A Nice Song",
             DurationInSeconds = 30,
-            FilePath = "this/file/does/not/exist"
         };
 
         public TranscodingJobManagerTests()

@@ -1,14 +1,7 @@
-﻿using Castle.Core.Logging;
-using Coral.TestProviders;
+﻿using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using SQLitePCL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Coral.Services.Tests

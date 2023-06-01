@@ -20,7 +20,7 @@ public interface IEncoder
         };
 
         var configuration = Configure()
-            .SetSourceFile(request.SourceTrack.FilePath)
+            .SetSourceFile(request.SourceTrack.AudioFile.FilePath)
             .SetBitrate(request.Bitrate);
 
         if (request.RequestType == TranscodeRequestType.HLS)

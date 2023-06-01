@@ -84,7 +84,7 @@ jobs:
     - name: Upload binary to release
       uses: svenstaro/upload-release-action@v2
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        repo_token: ${{ secrets.CORAL_PAT }}
         file: src/Coral.Api/${{ matrix.folder_name }}.zip
         tag: ${{ github.ref }}
 

@@ -1,6 +1,5 @@
 using Coral.Dto.EncodingModels;
 using Coral.Encoders.AAC;
-using Coral.Encoders.EncodingModels;
 using NSubstitute;
 using NSubstitute.Extensions;
 using Xunit;

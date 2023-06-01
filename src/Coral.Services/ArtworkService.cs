@@ -1,16 +1,9 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Metadata;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
 namespace Coral.Services;
 
@@ -19,6 +12,7 @@ public interface IArtworkService
     public Task ProcessArtwork(Album album, string artworkPath);
     public Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
     public Task<string?> GetArtworkPath(int artworkId);
+    public Task DeleteArtwork(Artwork artwork);
 }
 
 public class ArtworkService : IArtworkService
@@ -53,6 +47,8 @@ public class ArtworkService : IArtworkService
     public async Task<string?> ExtractEmbeddedArtwork(ATL.Track track)
     {
         var outputDir = ApplicationConfiguration.ExtractedArtwork;
+        // ensure directory is created
+        Directory.CreateDirectory(outputDir);
         
         var guid = Guid.NewGuid();
         var outputFile = Path.Join(outputDir, $"{guid}.jpg");
@@ -107,6 +103,24 @@ public class ArtworkService : IArtworkService
             Width = originalImage.Width
         });
         
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteArtwork(Artwork artwork)
+    {
+        // remove artwork file if its in the AppData folder
+        if (artwork.Path.StartsWith(ApplicationConfiguration.AppData))
+        {
+            File.Delete(artwork.Path);
+            _logger.LogInformation("Deleted local artwork file: {ArtworkPath}", artwork.Path);
+            var parent = Directory.GetParent(artwork.Path)?.FullName;
+
+            if (parent != null && !Directory.GetFiles(parent).Any())
+            {
+                Directory.Delete(parent);
+            }
+        }
+        _context.Remove(artwork);
         await _context.SaveChangesAsync();
     }
 }

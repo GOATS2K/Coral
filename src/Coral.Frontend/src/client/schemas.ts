@@ -51,12 +51,99 @@ export type ArtworkDto = {
   original: string;
 };
 
+export type AudioFile = {
+  /**
+   * @format int32
+   */
+  id: number;
+  /**
+   * @format date-time
+   */
+  dateIndexed: string;
+  /**
+   * @format date-time
+   */
+  dateModified: string;
+  filePath: string;
+  /**
+   * @format double
+   */
+  fileSizeInBytes: number;
+  audioMetadata: AudioMetadata;
+  library: MusicLibrary;
+};
+
+export type AudioMetadata = {
+  /**
+   * @format int32
+   */
+  id: number;
+  /**
+   * @format date-time
+   */
+  dateIndexed: string;
+  /**
+   * @format date-time
+   */
+  dateModified: string;
+  /**
+   * @format int32
+   */
+  bitrate: number;
+  /**
+   * @format int32
+   */
+  bitDepth?: number | null;
+  /**
+   * @format double
+   */
+  sampleRate: number;
+  /**
+   * @format int32
+   */
+  channels?: number | null;
+  codec: string;
+};
+
 export type GenreDto = {
   /**
    * @format int32
    */
   id: number;
   name: string;
+};
+
+export type MusicLibrary = {
+  /**
+   * @format int32
+   */
+  id: number;
+  /**
+   * @format date-time
+   */
+  dateIndexed: string;
+  /**
+   * @format date-time
+   */
+  dateModified: string;
+  libraryPath: string;
+  /**
+   * @format date-time
+   */
+  lastScan: string;
+  audioFiles: AudioFile[];
+};
+
+export type MusicLibraryDto = {
+  /**
+   * @format int32
+   */
+  id: number;
+  libraryPath: string;
+  /**
+   * @format date-time
+   */
+  lastScan: string;
 };
 
 export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus";

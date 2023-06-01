@@ -121,9 +121,9 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Slay = new Artist()
         {
             Name = "Slay",
-            DateIndexed = currentTime 
+            DateIndexed = currentTime
         });
-        
+
         Context.ArtistsWithRoles.Add(SlayAsGuest = new ArtistWithRole()
         {
             Role = ArtistRole.Guest,
@@ -246,8 +246,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 1,
             Title = "Believe",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
 
@@ -267,8 +282,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 1,
             Title = "Blank Pages",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
 
@@ -286,8 +316,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 1,
             Title = "Lil Souljah (feat. Slay)",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Zusterliefde = new Track()
@@ -302,8 +347,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 2,
             Title = "Zusterliefde",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(GimmeASec = new Track()
@@ -320,8 +380,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 3,
             Title = "Gimme a Sec (feat. Danny Sanchez)",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(OldTimesSake = new Track()
@@ -336,8 +411,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 4,
             Title = "Old Times' Sake",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Starlight = new Track()
@@ -352,8 +442,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 5,
             Title = "Starlight (feat. Fox)",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Yasukuni = new Track()
@@ -368,8 +473,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 6,
             Title = "Yasukuni",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Combo = new Track()
@@ -384,8 +504,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 7,
             Title = "Combo (feat. Satl)",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(DownForWhatever = new Track()
@@ -400,8 +535,23 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 8,
             Title = "Down For Whatever (Jubei Remix)",
-            FilePath = "",
             Genre = DrumAndBass,
+            AudioFile = new AudioFile()
+            {
+                FilePath = "",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Keywords = new List<Keyword>(),
         });
 
@@ -417,7 +567,22 @@ public class TestDatabase : IDisposable
             DiscNumber = 1,
             TrackNumber = 5,
             Title = "不和リン",
-            FilePath = @"/tmp/coral/Ichiko Aoba (青葉市子) - Radio (ラヂヲ) (2013) [FLAC]/05 - Ichiko Aoba - 不和リン.flac",
+            AudioFile = new AudioFile()
+            {
+                FilePath = @"/tmp/coral/Ichiko Aoba (青葉市子) - Radio (ラヂヲ) (2013) [FLAC]/05 - Ichiko Aoba - 不和リン.flac",
+                FileSizeInBytes = 0,
+                AudioMetadata = new AudioMetadata()
+                {
+                    Codec = "FLAC",
+                    Channels = 2,
+                    Bitrate = 1411,
+                    SampleRate = 44100
+                },
+                Library = new MusicLibrary()
+                {
+                    LibraryPath = ""
+                },
+            },
             Genre = Folk,
             Keywords = new List<Keyword>(),
         });

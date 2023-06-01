@@ -1,12 +1,6 @@
-﻿using Coral.Database;
-using Coral.Database.Models;
+﻿using Coral.Database.Models;
 using Coral.Dto.Models;
 using Coral.TestProviders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Coral.Services.Tests

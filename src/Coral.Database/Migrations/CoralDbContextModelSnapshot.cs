@@ -57,7 +57,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -92,7 +94,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -116,7 +120,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -141,7 +147,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -166,6 +174,77 @@ namespace Coral.Database.Migrations
                     b.ToTable("Artwork", (string)null);
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.AudioFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AudioMetadataId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateIndexed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("FileSizeInBytes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LibraryId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AudioMetadataId");
+
+                    b.HasIndex("LibraryId");
+
+                    b.ToTable("AudioFile", (string)null);
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.AudioMetadata", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BitDepth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Bitrate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Channels")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Codec")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateIndexed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("SampleRate")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AudioMetadata", (string)null);
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Genre", b =>
                 {
                     b.Property<int>("Id")
@@ -173,7 +252,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -194,7 +275,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -210,6 +293,32 @@ namespace Coral.Database.Migrations
                     b.ToTable("Keyword", (string)null);
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateIndexed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastScan")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LibraryPath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MusicLibrary", (string)null);
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
                     b.Property<int>("Id")
@@ -219,11 +328,16 @@ namespace Coral.Database.Migrations
                     b.Property<int>("AlbumId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("AudioFileId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Comment")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateIndexed")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
@@ -233,10 +347,6 @@ namespace Coral.Database.Migrations
 
                     b.Property<int>("DurationInSeconds")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<int?>("GenreId")
                         .HasColumnType("INTEGER");
@@ -251,6 +361,8 @@ namespace Coral.Database.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AlbumId");
+
+                    b.HasIndex("AudioFileId");
 
                     b.HasIndex("GenreId");
 
@@ -324,6 +436,25 @@ namespace Coral.Database.Migrations
                     b.Navigation("Album");
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.AudioFile", b =>
+                {
+                    b.HasOne("Coral.Database.Models.AudioMetadata", "AudioMetadata")
+                        .WithMany()
+                        .HasForeignKey("AudioMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Coral.Database.Models.MusicLibrary", "Library")
+                        .WithMany("AudioFiles")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AudioMetadata");
+
+                    b.Navigation("Library");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
                     b.HasOne("Coral.Database.Models.Album", "Album")
@@ -332,11 +463,19 @@ namespace Coral.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Coral.Database.Models.AudioFile", "AudioFile")
+                        .WithMany()
+                        .HasForeignKey("AudioFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Coral.Database.Models.Genre", "Genre")
                         .WithMany("Tracks")
                         .HasForeignKey("GenreId");
 
                     b.Navigation("Album");
+
+                    b.Navigation("AudioFile");
 
                     b.Navigation("Genre");
                 });
@@ -371,6 +510,11 @@ namespace Coral.Database.Migrations
             modelBuilder.Entity("Coral.Database.Models.Genre", b =>
                 {
                     b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
+                {
+                    b.Navigation("AudioFiles");
                 });
 #pragma warning restore 612, 618
         }

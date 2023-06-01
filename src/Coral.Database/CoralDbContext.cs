@@ -2,7 +2,6 @@
 using Coral.Database.Configurations;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Coral.Database;
 
@@ -15,6 +14,10 @@ public class CoralDbContext : DbContext
     public DbSet<Album> Albums { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
     public DbSet<Keyword> Keywords { get; set; } = null!;
+    public DbSet<AudioFile> AudioFiles { get; set; } = null!;
+    public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
+    public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
+
     private string DbPath { get; }
 
 
@@ -40,6 +43,21 @@ public class CoralDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordConfiguration).Assembly);
+        
+        // do not create the inherited base table
+        modelBuilder.Ignore<BaseTable>();
+
+        // set CURRENT_TIMESTAMP on entities inherting from BaseTable
+        var baseTableTypes = GetBaseTableTypes();
+        foreach (var type in baseTableTypes)
+        {
+            modelBuilder.Entity(type)
+                .Property("DateIndexed")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .ValueGeneratedOnAdd();
+        }
+
+
         var tableTypes = GetDatabaseTableTypes();
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -57,6 +75,10 @@ public class CoralDbContext : DbContext
             .Where(p => typeof(IQueryable).IsAssignableFrom(p.PropertyType))
             .Select(p => p.PropertyType.GetGenericArguments()[0])
             .ToArray();
+    }
 
+    private static Type[] GetBaseTableTypes()
+    {
+        return GetDatabaseTableTypes().Where(t => typeof(BaseTable) == t.BaseType).ToArray();
     }
 }

@@ -1,5 +1,3 @@
-using System.Security.AccessControl;
-
 namespace Coral.Database.Models;
 
 public enum ArtworkSize

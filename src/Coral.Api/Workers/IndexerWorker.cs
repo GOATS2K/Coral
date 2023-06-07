@@ -38,7 +38,11 @@ namespace Coral.Api.Workers
 
                         using var scope = _serviceProvider.CreateScope();
                         var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-                        await indexer.ScanDirectory(args.CacheItem.Key, musicLibrary);
+                        // exceptions in async void functions will crash the application
+                        try
+                        {
+                            await indexer.ScanDirectory(args.CacheItem.Key, musicLibrary);
+                        } catch (Exception) { }
                     });
                 }
             };
@@ -76,6 +80,7 @@ namespace Coral.Api.Workers
         {
             using var scope = _serviceProvider.CreateScope();
             var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+            // exceptions in async void functions will crash the application
             try
             {
                 await indexer.HandleRename(args.OldFullPath, args.FullPath);
@@ -87,6 +92,7 @@ namespace Coral.Api.Workers
         {
             using var scope = _serviceProvider.CreateScope();
             var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+            // exceptions in async void functions will crash the application
             try
             {
                 await indexer.DeleteTrack(args.FullPath);

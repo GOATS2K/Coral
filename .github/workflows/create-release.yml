@@ -4,9 +4,6 @@
 name: Create Release
 
 on:
-  create:
-    tags:
-      - "v*"
   push:
     tags:
       - "v*"

@@ -36,7 +36,6 @@ namespace Coral.Plugin.LastFM
             _playbackEvents = serviceProxy.GetHostService<TrackPlaybackEventEmitter>();
             _client = new RestClient("https://ws.audioscrobbler.com/2.0/");
             _configuration = options.Value;
-            _client.UseSystemTextJson();
         }
 
         private string GenerateRequestSignature(RestRequest request)
@@ -96,6 +95,7 @@ namespace Coral.Plugin.LastFM
 
             var signature = GenerateRequestSignature(body);
             body.AddParameter("api_sig", signature);
+            body.AddParameter("format", "json");
 
             var response = _client.Get<GetSessionResponse>(body);
             ArgumentNullException.ThrowIfNull(response);

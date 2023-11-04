@@ -31,6 +31,7 @@
 		<ProjectReference Include="..\Coral.Encoders\Coral.Encoders.csproj" />
 		<ProjectReference Include="..\Coral.Events\Coral.Events.csproj" />
 		<ProjectReference Include="..\Coral.PluginHost\Coral.PluginHost.csproj" />
+		<ProjectReference Include="..\Coral.PluginBase\Coral.PluginBase.csproj" />
 		<ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
 	</ItemGroup>
 
@@ -66,7 +67,7 @@
 
 	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
-		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
+<!--		<Exec Command="dotnet tool run swagger tofile &#45;&#45;output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />-->
 		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
 	</Target>
 </Project>

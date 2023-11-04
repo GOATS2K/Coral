@@ -7,7 +7,6 @@ using Coral.PluginBase;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RestSharp;
-using RestSharp.Serializers.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -30,7 +29,9 @@ namespace Coral.Plugin.LastFM
         private (TrackDto Track, DateTimeOffset Timestamp)? _lastPlayed;
         private readonly string _sessionFile = Path.Join(ApplicationConfiguration.Plugins, "LastFmUser.json");
 
-        public LastFmService(ILogger<LastFmService> logger, IHostServiceProxy serviceProxy, IOptions<LastFmConfiguration> options)
+        public LastFmService(ILogger<LastFmService> logger,
+            IHostServiceProxy serviceProxy,
+            IOptions<LastFmConfiguration> options)
         {
             _logger = logger;
             _playbackEvents = serviceProxy.GetHostService<TrackPlaybackEventEmitter>();

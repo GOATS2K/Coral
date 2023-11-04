@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Coral.PluginBase;
+﻿using Coral.PluginBase;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Coral.PluginBase
+namespace Coral.PluginHost
 {
     public class HostServiceProxy: IHostServiceProxy
     {

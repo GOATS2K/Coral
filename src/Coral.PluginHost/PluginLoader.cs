@@ -59,9 +59,9 @@ namespace Coral.PluginHost
                         assemblyGroup = (assembly, plugin);
                     }
                 }
-                catch (ReflectionTypeLoadException)
+                catch (ReflectionTypeLoadException ex)
                 {
-                    _logger.LogWarning("Exception thrown loading types for assembly: {AssemblyName}", assembly.GetName().Name);
+                    _logger.LogError("Exception thrown loading types for assembly {AssemblyName} with message {Message}", assembly.GetName().Name, ex);
                 }
             }
             return assemblyGroup;

@@ -10,7 +10,7 @@
 		<SpaRoot>..\Coral.Frontend\</SpaRoot>
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
 		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
-		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
+		<SpaProxyLaunchCommand>yarn run dev</SpaProxyLaunchCommand>
 		<RuntimeIdentifiers>win-x64;osx-arm64;linux-x64</RuntimeIdentifiers>
 		<SkipSwaggerGen>false</SkipSwaggerGen>
 		<PublishSingleFile>true</PublishSingleFile>
@@ -40,19 +40,19 @@
 	</ItemGroup>
 
 	<Target Name="DebugEnsureNodeEnv" BeforeTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
-		<!-- Ensure pnpm is installed -->
-		<Exec Command="pnpm --version" ContinueOnError="true">
+		<!-- Ensure yarn is installed -->
+		<Exec Command="yarn --version" ContinueOnError="true">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
 		</Exec>
-		<Error Condition="'$(ErrorCode)' != '0'" Text="pnpm is required to build and run this project." />
-		<Message Importance="high" Text="Restoring dependencies using 'pnpm'. This may take several minutes..." />
-		<Exec WorkingDirectory="..\Coral.Frontend" Command="pnpm install" ContinueOnError="false" />
+		<Error Condition="'$(ErrorCode)' != '0'" Text="yarn is required to build and run this project." />
+		<Message Importance="high" Text="Restoring dependencies using 'yarn'. This may take several minutes..." />
+		<Exec WorkingDirectory="..\coral" Command="yarn install" ContinueOnError="false" />
 	</Target>
 	
 	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install" />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm run build" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn install" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn run build" />
 
 		<!-- Include the newly-built files in the publish output -->
 		<ItemGroup>
@@ -68,6 +68,6 @@
 	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
 <!--		<Exec Command="dotnet tool run swagger tofile &#45;&#45;output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />-->
-		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
+		<Exec Command="yarn run generate-client" WorkingDirectory="..\coral\packages\app" />
 	</Target>
 </Project>

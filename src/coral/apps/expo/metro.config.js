@@ -8,13 +8,17 @@ const path = require('path')
 const projectRoot = __dirname
 const workspaceRoot = path.resolve(__dirname, '../..')
 
-const config = getDefaultConfig(projectRoot)
+const config = getDefaultConfig(projectRoot, {
+  // [Web-only]: Enables CSS support in Metro.
+  isCSSEnabled: true,
+})
 
 config.watchFolders = [workspaceRoot]
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ]
+config.resolver.sourceExts.push('mjs')
 
 config.transformer = { ...config.transformer, unstable_allowRequireContext: true }
 config.transformer.minifierPath = require.resolve('metro-minify-terser')

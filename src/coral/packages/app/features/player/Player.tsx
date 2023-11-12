@@ -1,5 +1,6 @@
 import React from 'react'
-import { Image, Paragraph, Slider, Stack, Text, XStack, YStack } from '@coral/ui'
+import { Button, Image, Paragraph, Slider, XStack, YStack } from '@coral/ui'
+import { SkipBack, Play, Pause, SkipForward } from '@tamagui/lucide-icons'
 import { ArtistWithRoleDto, TrackDto } from 'app/client/schemas'
 
 const getMainArists = (artists: ArtistWithRoleDto[]) => {
@@ -37,14 +38,16 @@ export function Player() {
         maxWidth={350}
         resizeMode="contain"
         source={{ uri: trackDto.album.artworks.original, height: 1200, width: 1200 }}
-        marginBottom="$6"
+        marginBottom="$8"
       />
+
       <YStack justifyContent="center" alignItems="center" marginBottom="$6">
         <Paragraph fontWeight={'800'} fontSize={'$5'}>
           {trackDto.title}
         </Paragraph>
         <Paragraph fontSize={'$5'}>{getMainArists(trackDto.artists)}</Paragraph>
       </YStack>
+
       <Slider
         dir="ltr"
         size="$5"
@@ -61,6 +64,18 @@ export function Player() {
       <XStack justifyContent="space-between">
         <Paragraph>0:00</Paragraph>
         <Paragraph>4:51</Paragraph>
+      </XStack>
+
+      <XStack gap="$6" alignItems="center" justifyContent="center" flexShrink={0}>
+        <Button circular size="$5" icon={SkipBack}></Button>
+        <Button
+          circular
+          backgroundColor={'$color.gray10Light'}
+          color={'black'}
+          size="$6"
+          icon={Play}
+        ></Button>
+        <Button circular size="$5" icon={SkipForward}></Button>
       </XStack>
     </YStack>
   )

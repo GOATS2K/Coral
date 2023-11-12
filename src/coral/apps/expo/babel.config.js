@@ -1,35 +1,21 @@
 module.exports = function (api) {
   api.cache(true)
   return {
-    presets: [['babel-preset-expo', { jsxRuntime: 'automatic' }]],
+    presets: ['babel-preset-expo'],
     plugins: [
-      require.resolve('expo-router/babel'),
+      // optional, only if you ever use process.env
+      'transform-inline-environment-variables',
+      // NOTE: this is optional, you don't *need* the compiler
       [
-        require.resolve('babel-plugin-module-resolver'),
+        '@tamagui/babel-plugin',
         {
-          root: ['../..'],
-          alias: {
-            // define aliases to shorten the import paths
-            app: '../../packages/app',
-            '@coral/ui': '../../packages/ui',
-          },
-          extensions: ['.js', '.jsx', '.tsx', '.ios.js', '.android.js'],
+          components: ['tamagui'],
+          config: './tamagui.config.ts',
+          logTimings: true,
         },
       ],
-      // if you want reanimated support
-      // 'react-native-reanimated/plugin',
-      ...(process.env.EAS_BUILD_PLATFORM === 'android'
-        ? []
-        : [
-            [
-              '@tamagui/babel-plugin',
-              {
-                components: ['@coral/ui', 'tamagui'],
-                config: './tamagui.config.ts',
-              },
-            ],
-          ]),
-      'transform-inline-environment-variables',
+      // NOTE: this is only necessary if you are using reanimated for animations
+      'react-native-reanimated/plugin',
     ],
   }
 }

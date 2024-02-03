@@ -1,3 +1,0 @@
-{
-  "installCommand": "yarn set version berry && yarn install"
-}

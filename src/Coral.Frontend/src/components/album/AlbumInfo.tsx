@@ -50,9 +50,9 @@ export default function AlbumInfo({ album }: AlbumInfoProps) {
             <Text fz={16} className="attribute">
               {getAlbumDuration(album)}
             </Text>
-            <Text fz={16} className="attribute">
+            {getAlbumGenre(album) !== "" ? <Text fz={16} className="attribute">
               {getAlbumGenre(album)}
-            </Text>
+            </Text> : <></>}
           </div>
         </div>
       </div>

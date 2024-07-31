@@ -12,6 +12,7 @@ public class Track : BaseTable
     public Genre? Genre { get; set; }
 
     public string? Comment { get; set; }
+    public string? Isrc { get; set; }
 
     public AudioFile AudioFile { get; set; } = null!;
     public List<Keyword> Keywords { get; set; } = null!;
@@ -20,6 +21,7 @@ public class Track : BaseTable
     {
         var artistString = string.Join(", ", Artists.Where(a => a.Role == ArtistRole.Main).Select(a => a.Artist.Name));
         var releaseYear = Album.ReleaseYear != null ? $"({Album.ReleaseYear})" : "";
-        return $"{artistString} - {Title} - {Album.Name} {releaseYear}";
+        var label = Album.Label != null ? $"({Album.Label.Name} - {Album.CatalogNumber})" : "";
+        return $"{artistString} - {Title} - {Album.Name} {releaseYear} {label}";
     }
 }

@@ -31,9 +31,9 @@ public class IndexerService : IIndexerService
     private readonly ILogger<IndexerService> _logger;
 
     private static readonly string[] AudioFileFormats =
-        {".flac", ".mp3", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"};
+        [".flac", ".mp3", ".mp2", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"];
 
-    private static readonly string[] ImageFileFormats = { ".jpg", ".png" };
+    private static readonly string[] ImageFileFormats = [".jpg", ".png"];
     private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
     private readonly IMapper _mapper;
 
@@ -360,8 +360,8 @@ public class IndexerService : IIndexerService
         foreach (var atlTrack in tracks)
         {
             var artists = await ParseArtists(atlTrack.Artist, atlTrack.Title);
-            var indexedAlbum = GetAlbum(artists, atlTrack);
-            var indexedGenre = GetGenre(atlTrack.Genre);
+            var indexedAlbum = await GetAlbum(artists, atlTrack);
+            var indexedGenre = await GetGenre(atlTrack.Genre);
             await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack, library);
         }
     }
@@ -383,7 +383,7 @@ public class IndexerService : IIndexerService
 
         foreach (var genre in distinctGenres)
         {
-            var indexedGenre = GetGenre(genre);
+            var indexedGenre = await GetGenre(genre);
             createdGenres.Add(indexedGenre);
         }
 
@@ -392,7 +392,7 @@ public class IndexerService : IIndexerService
 
         var albumType =
             AlbumTypeHelper.GetAlbumType(distinctArtists.Count(a => a.Role == ArtistRole.Main), tracks.Count());
-        var indexedAlbum = GetAlbum(distinctArtists, tracks.First());
+        var indexedAlbum = await GetAlbum(distinctArtists, tracks.First());
         indexedAlbum.Type = albumType;
         foreach (var trackToIndex in tracks)
         {
@@ -448,6 +448,7 @@ public class IndexerService : IIndexerService
         indexedTrack.DiscNumber = atlTrack.DiscNumber;
         indexedTrack.TrackNumber = atlTrack.TrackNumber;
         indexedTrack.DurationInSeconds = atlTrack.Duration;
+        indexedTrack.Isrc = atlTrack.ISRC;
         indexedTrack.Keywords ??= new List<Keyword>();
         indexedTrack.AudioFile = new AudioFile()
         {
@@ -477,9 +478,9 @@ public class IndexerService : IIndexerService
         return metadata;
     }
 
-    private Genre GetGenre(string genreName)
+    private async Task<Genre> GetGenre(string genreName)
     {
-        var indexedGenre = _context.Genres.FirstOrDefault(g => g.Name == genreName);
+        var indexedGenre = await _context.Genres.FirstOrDefaultAsync(g => g.Name == genreName);
         if (indexedGenre == null)
         {
             indexedGenre = new Genre()
@@ -590,7 +591,7 @@ public class IndexerService : IIndexerService
         return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
 
-    private Album GetAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack)
+    private async Task<Album> GetAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack)
     {
         var albumName = !string.IsNullOrEmpty(atlTrack.Album)
             ? atlTrack.Album
@@ -602,7 +603,7 @@ public class IndexerService : IIndexerService
             .Include(a => a.Tracks)
             .Where(a => a.Name == albumName && a.ReleaseYear == atlTrack.Year && a.DiscTotal == atlTrack.DiscTotal &&
                         a.TrackTotal == atlTrack.TrackTotal);
-        var indexedAlbum = albumQuery.FirstOrDefault() ?? CreateAlbum(artists, atlTrack, albumName);
+        var indexedAlbum = await albumQuery.FirstOrDefaultAsync() ?? await CreateAlbum(artists, atlTrack, albumName);
 
         if (!indexedAlbum.Artists
                 .Select(a => a.ArtistId)
@@ -617,8 +618,25 @@ public class IndexerService : IIndexerService
         return indexedAlbum;
     }
 
-    private Album CreateAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack, string? albumName)
+    private async Task<RecordLabel?> GetRecordLabel(ATL.Track atlTrack)
     {
+        var trackHasLabel = atlTrack.AdditionalFields.TryGetValue("LABEL", out var labelName);
+        if (!trackHasLabel) return null;
+        var existingLabel = await _context.RecordLabels.FirstOrDefaultAsync(t => t.Name == labelName);
+        if (existingLabel is not null) return existingLabel;
+
+        var label = new RecordLabel()
+        {
+            Name = labelName!,
+            DateIndexed = DateTime.UtcNow,
+        };
+        _context.RecordLabels.Add(label);
+        return label;
+    }
+
+    private async Task<Album> CreateAlbum(List<ArtistWithRole> artists, ATL.Track atlTrack, string? albumName)
+    {
+        var label = await GetRecordLabel(atlTrack);
         var album = new Album()
         {
             Artists = new List<ArtistWithRole>(),
@@ -626,9 +644,12 @@ public class IndexerService : IIndexerService
             ReleaseYear = atlTrack.Year,
             DiscTotal = atlTrack.DiscTotal,
             TrackTotal = atlTrack.TrackTotal,
+            CatalogNumber = atlTrack.CatalogNumber,
             DateIndexed = DateTime.UtcNow,
             Artworks = new List<Artwork>()
         };
+        if (label is not null)
+            album.Label = label;
 
         _context.Albums.Add(album);
         album.Artists.AddRange(artists);

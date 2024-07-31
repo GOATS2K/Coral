@@ -15,7 +15,7 @@ namespace Coral.Database.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "7.0.2");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.7");
 
             modelBuilder.Entity("AlbumArtistWithRole", b =>
                 {
@@ -53,6 +53,9 @@ namespace Coral.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CatalogNumber")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CoverFilePath")
                         .HasColumnType("TEXT");
 
@@ -65,6 +68,9 @@ namespace Coral.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("DiscTotal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("LabelId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -80,7 +86,12 @@ namespace Coral.Database.Migrations
                     b.Property<int?>("Type")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Upc")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("LabelId");
 
                     b.HasIndex("Type");
 
@@ -319,6 +330,27 @@ namespace Coral.Database.Migrations
                     b.ToTable("MusicLibrary", (string)null);
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateIndexed")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RecordLabel");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
                     b.Property<int>("Id")
@@ -350,6 +382,9 @@ namespace Coral.Database.Migrations
 
                     b.Property<int?>("GenreId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Isrc")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -412,6 +447,15 @@ namespace Coral.Database.Migrations
                         .HasForeignKey("TracksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Album", b =>
+                {
+                    b.HasOne("Coral.Database.Models.RecordLabel", "Label")
+                        .WithMany("Releases")
+                        .HasForeignKey("LabelId");
+
+                    b.Navigation("Label");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.ArtistWithRole", b =>
@@ -515,6 +559,11 @@ namespace Coral.Database.Migrations
             modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
                 {
                     b.Navigation("AudioFiles");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
+                {
+                    b.Navigation("Releases");
                 });
 #pragma warning restore 612, 618
         }

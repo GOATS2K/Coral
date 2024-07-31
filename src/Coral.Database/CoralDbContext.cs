@@ -17,6 +17,7 @@ public class CoralDbContext : DbContext
     public DbSet<AudioFile> AudioFiles { get; set; } = null!;
     public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
+    public DbSet<RecordLabel> RecordLabels { get; set; } = null!;
 
     private string DbPath { get; }
 

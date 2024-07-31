@@ -22,8 +22,7 @@ export default function Playlist({ tracks, initializer, displayArtwork = false }
     }
   };
 
-  const playlistItems = tracks
-    .sort((a, b) => a.trackNumber - b.trackNumber)
+  const playlistItems = tracks      
     .map((track) => {
       return (
         <PlaylistItem

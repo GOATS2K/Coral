@@ -153,7 +153,7 @@ namespace Coral.Services
                 return null;
             }
 
-            album.Tracks = album.Tracks.OrderBy(a => a.TrackNumber).ToList();
+            album.Tracks = album.Tracks.OrderBy(t => t.DiscNumber).ThenBy(a => a.TrackNumber).ToList();
             return album;
         }
     }

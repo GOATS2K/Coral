@@ -96,6 +96,8 @@ app.UseAuthorization();
 app.MapControllers();
 // could probably remap these to use query params instead in the frontend
 app.MapFallbackToFile("/albums/{id}", "albums/[id].html");
+app.MapFallbackToFile("/artists/{id}", "artists/[id].html");
+app.MapFallbackToFile("/search/{id}", "search/search.html");
 app.MapFallbackToFile("index.html");
 
 using var scope = app.Services.CreateScope();

@@ -20,6 +20,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="8.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 		<PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
 	</ItemGroup>
@@ -39,7 +43,7 @@
 	</ItemGroup>
 
 	<Target Name="DebugEnsureNodeEnv" BeforeTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
-		<!-- Ensure pnpm is installed -->
+		<!-- Ensure pnpm is installed -->																		
 		<Exec Command="pnpm --version" ContinueOnError="true">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
 		</Exec>

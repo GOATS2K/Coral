@@ -38,10 +38,7 @@ builder.Services.AddSwaggerGen(conf =>
     conf.SupportNonNullableReferenceTypes();
     conf.SchemaFilter<RequiredNotNullableSchemaFilter>();
     // Use method name as operationId
-    conf.CustomOperationIds(apiDesc =>
-    {
-        return apiDesc.TryGetMethodInfo(out MethodInfo methodInfo) ? methodInfo.Name : null;
-    });
+    conf.CustomOperationIds(apiDesc => apiDesc.TryGetMethodInfo(out MethodInfo methodInfo) ? methodInfo.Name : null);
 });
 // return enums via their names instead of rank
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>

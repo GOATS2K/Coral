@@ -22,29 +22,39 @@ export type ArtworkFromIdVariables = {
   pathParams: ArtworkFromIdPathParams;
 } & Context["fetcherOptions"];
 
-export const fetchArtworkFromId = (variables: ArtworkFromIdVariables, signal?: AbortSignal) =>
-  fetch<undefined, ArtworkFromIdError, undefined, {}, {}, ArtworkFromIdPathParams>({
-    url: "/api/Artwork/{artworkId}",
-    method: "get",
-    ...variables,
-    signal,
-  });
+export const fetchArtworkFromId = (
+  variables: ArtworkFromIdVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ArtworkFromIdError,
+    undefined,
+    {},
+    {},
+    ArtworkFromIdPathParams
+  >({ url: "/api/Artwork/{artworkId}", method: "get", ...variables, signal });
 
-export const useArtworkFromId = <TData = undefined>(
+export const useArtworkFromId = <TData = undefined,>(
   variables: ArtworkFromIdVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, ArtworkFromIdError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, ArtworkFromIdError, TData>(
-    queryKeyFn({ path: "/api/Artwork/{artworkId}", operationId: "artworkFromId", variables }),
-    ({ signal }) => fetchArtworkFromId({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/Artwork/{artworkId}",
+      operationId: "artworkFromId",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchArtworkFromId({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -52,7 +62,10 @@ export type AuthorizeUserError = Fetcher.ErrorWrapper<undefined>;
 
 export type AuthorizeUserVariables = Context["fetcherOptions"];
 
-export const fetchAuthorizeUser = (variables: AuthorizeUserVariables, signal?: AbortSignal) =>
+export const fetchAuthorizeUser = (
+  variables: AuthorizeUserVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, AuthorizeUserError, undefined, {}, {}, {}>({
     url: "/api/plugin/LastFm/authorize",
     method: "get",
@@ -60,21 +73,26 @@ export const fetchAuthorizeUser = (variables: AuthorizeUserVariables, signal?: A
     signal,
   });
 
-export const useAuthorizeUser = <TData = undefined>(
+export const useAuthorizeUser = <TData = undefined,>(
   variables: AuthorizeUserVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, AuthorizeUserError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, AuthorizeUserError, TData>(
-    queryKeyFn({ path: "/api/plugin/LastFm/authorize", operationId: "authorizeUser", variables }),
-    ({ signal }) => fetchAuthorizeUser({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/plugin/LastFm/authorize",
+      operationId: "authorizeUser",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchAuthorizeUser({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -88,29 +106,44 @@ export type SetUserTokenVariables = {
   queryParams?: SetUserTokenQueryParams;
 } & Context["fetcherOptions"];
 
-export const fetchSetUserToken = (variables: SetUserTokenVariables, signal?: AbortSignal) =>
-  fetch<undefined, SetUserTokenError, undefined, {}, SetUserTokenQueryParams, {}>({
+export const fetchSetUserToken = (
+  variables: SetUserTokenVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    SetUserTokenError,
+    undefined,
+    {},
+    SetUserTokenQueryParams,
+    {}
+  >({
     url: "/api/plugin/LastFm/setToken",
     method: "get",
     ...variables,
     signal,
   });
 
-export const useSetUserToken = <TData = undefined>(
+export const useSetUserToken = <TData = undefined,>(
   variables: SetUserTokenVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, SetUserTokenError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, SetUserTokenError, TData>(
-    queryKeyFn({ path: "/api/plugin/LastFm/setToken", operationId: "setUserToken", variables }),
-    ({ signal }) => fetchSetUserToken({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/plugin/LastFm/setToken",
+      operationId: "setUserToken",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchSetUserToken({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -118,7 +151,10 @@ export type SomethingNewError = Fetcher.ErrorWrapper<undefined>;
 
 export type SomethingNewVariables = Context["fetcherOptions"];
 
-export const fetchSomethingNew = (variables: SomethingNewVariables, signal?: AbortSignal) =>
+export const fetchSomethingNew = (
+  variables: SomethingNewVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, SomethingNewError, undefined, {}, {}, {}>({
     url: "/api/plugin/LastFm/guid",
     method: "get",
@@ -126,21 +162,26 @@ export const fetchSomethingNew = (variables: SomethingNewVariables, signal?: Abo
     signal,
   });
 
-export const useSomethingNew = <TData = undefined>(
+export const useSomethingNew = <TData = undefined,>(
   variables: SomethingNewVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, SomethingNewError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, SomethingNewError, TData>(
-    queryKeyFn({ path: "/api/plugin/LastFm/guid", operationId: "somethingNew", variables }),
-    ({ signal }) => fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/plugin/LastFm/guid",
+      operationId: "somethingNew",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchSomethingNew({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -156,9 +197,12 @@ export const fetchTest = (variables: TestVariables, signal?: AbortSignal) =>
     signal,
   });
 
-export const useTest = <TData = undefined>(
+export const useTest = <TData = undefined,>(
   variables: TestVariables,
-  options?: Omit<reactQuery.UseQueryOptions<undefined, TestError, TData>, "queryKey" | "queryFn">
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, TestError, TData>,
+    "queryKey" | "queryFn"
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, TestError, TData>(
@@ -167,7 +211,7 @@ export const useTest = <TData = undefined>(
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -175,7 +219,10 @@ export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
 
-export const fetchRunIndexer = (variables: RunIndexerVariables, signal?: AbortSignal) =>
+export const fetchRunIndexer = (
+  variables: RunIndexerVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, RunIndexerError, undefined, {}, {}, {}>({
     url: "/api/Library/scan",
     method: "post",
@@ -185,14 +232,23 @@ export const fetchRunIndexer = (variables: RunIndexerVariables, signal?: AbortSi
 
 export const useRunIndexer = (
   options?: Omit<
-    reactQuery.UseMutationOptions<undefined, RunIndexerError, RunIndexerVariables>,
+    reactQuery.UseMutationOptions<
+      undefined,
+      RunIndexerError,
+      RunIndexerVariables
+    >,
     "mutationFn"
-  >
+  >,
 ) => {
   const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<undefined, RunIndexerError, RunIndexerVariables>(
-    (variables: RunIndexerVariables) => fetchRunIndexer({ ...fetcherOptions, ...variables }),
-    options
+  return reactQuery.useMutation<
+    undefined,
+    RunIndexerError,
+    RunIndexerVariables
+  >(
+    (variables: RunIndexerVariables) =>
+      fetchRunIndexer({ ...fetcherOptions, ...variables }),
+    options,
   );
 };
 
@@ -217,25 +273,42 @@ export type SearchVariables = {
 } & Context["fetcherOptions"];
 
 export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
-  fetch<Schemas.SearchResultPaginatedCustomData, SearchError, undefined, {}, SearchQueryParams, {}>(
-    { url: "/api/Library/search", method: "get", ...variables, signal }
-  );
+  fetch<
+    Schemas.SearchResultPaginatedCustomData,
+    SearchError,
+    undefined,
+    {},
+    SearchQueryParams,
+    {}
+  >({ url: "/api/Library/search", method: "get", ...variables, signal });
 
-export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData>(
+export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData,>(
   variables: SearchVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SearchResultPaginatedCustomData, SearchError, TData>,
+    reactQuery.UseQueryOptions<
+      Schemas.SearchResultPaginatedCustomData,
+      SearchError,
+      TData
+    >,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SearchResultPaginatedCustomData, SearchError, TData>(
-    queryKeyFn({ path: "/api/Library/search", operationId: "search", variables }),
+  return reactQuery.useQuery<
+    Schemas.SearchResultPaginatedCustomData,
+    SearchError,
+    TData
+  >(
+    queryKeyFn({
+      path: "/api/Library/search",
+      operationId: "search",
+      variables,
+    }),
     ({ signal }) => fetchSearch({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -252,7 +325,10 @@ export type LogPlaybackVariables = {
   pathParams: LogPlaybackPathParams;
 } & Context["fetcherOptions"];
 
-export const fetchLogPlayback = (variables: LogPlaybackVariables, signal?: AbortSignal) =>
+export const fetchLogPlayback = (
+  variables: LogPlaybackVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, LogPlaybackError, undefined, {}, {}, LogPlaybackPathParams>({
     url: "/api/Library/tracks/{trackId}/logPlayback",
     method: "get",
@@ -260,12 +336,12 @@ export const fetchLogPlayback = (variables: LogPlaybackVariables, signal?: Abort
     signal,
   });
 
-export const useLogPlayback = <TData = undefined>(
+export const useLogPlayback = <TData = undefined,>(
   variables: LogPlaybackVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, LogPlaybackError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, LogPlaybackError, TData>(
@@ -274,11 +350,12 @@ export const useLogPlayback = <TData = undefined>(
       operationId: "logPlayback",
       variables,
     }),
-    ({ signal }) => fetchLogPlayback({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchLogPlayback({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -295,20 +372,30 @@ export type FileFromLibraryVariables = {
   pathParams: FileFromLibraryPathParams;
 } & Context["fetcherOptions"];
 
-export const fetchFileFromLibrary = (variables: FileFromLibraryVariables, signal?: AbortSignal) =>
-  fetch<undefined, FileFromLibraryError, undefined, {}, {}, FileFromLibraryPathParams>({
+export const fetchFileFromLibrary = (
+  variables: FileFromLibraryVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    FileFromLibraryError,
+    undefined,
+    {},
+    {},
+    FileFromLibraryPathParams
+  >({
     url: "/api/Library/tracks/{trackId}/original",
     method: "get",
     ...variables,
     signal,
   });
 
-export const useFileFromLibrary = <TData = undefined>(
+export const useFileFromLibrary = <TData = undefined,>(
   variables: FileFromLibraryVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, FileFromLibraryError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, FileFromLibraryError, TData>(
@@ -317,11 +404,12 @@ export const useFileFromLibrary = <TData = undefined>(
       operationId: "fileFromLibrary",
       variables,
     }),
-    ({ signal }) => fetchFileFromLibrary({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchFileFromLibrary({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -346,7 +434,10 @@ export type TranscodeTrackVariables = {
   queryParams?: TranscodeTrackQueryParams;
 } & Context["fetcherOptions"];
 
-export const fetchTranscodeTrack = (variables: TranscodeTrackVariables, signal?: AbortSignal) =>
+export const fetchTranscodeTrack = (
+  variables: TranscodeTrackVariables,
+  signal?: AbortSignal,
+) =>
   fetch<
     Schemas.StreamDto,
     TranscodeTrackError,
@@ -354,14 +445,19 @@ export const fetchTranscodeTrack = (variables: TranscodeTrackVariables, signal?:
     {},
     TranscodeTrackQueryParams,
     TranscodeTrackPathParams
-  >({ url: "/api/Library/tracks/{trackId}/transcode", method: "get", ...variables, signal });
+  >({
+    url: "/api/Library/tracks/{trackId}/transcode",
+    method: "get",
+    ...variables,
+    signal,
+  });
 
-export const useTranscodeTrack = <TData = Schemas.StreamDto>(
+export const useTranscodeTrack = <TData = Schemas.StreamDto,>(
   variables: TranscodeTrackVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<Schemas.StreamDto, TranscodeTrackError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.StreamDto, TranscodeTrackError, TData>(
@@ -370,11 +466,12 @@ export const useTranscodeTrack = <TData = Schemas.StreamDto>(
       operationId: "transcodeTrack",
       variables,
     }),
-    ({ signal }) => fetchTranscodeTrack({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchTranscodeTrack({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -404,7 +501,10 @@ export type StreamTrackVariables = {
   queryParams?: StreamTrackQueryParams;
 } & Context["fetcherOptions"];
 
-export const fetchStreamTrack = (variables: StreamTrackVariables, signal?: AbortSignal) =>
+export const fetchStreamTrack = (
+  variables: StreamTrackVariables,
+  signal?: AbortSignal,
+) =>
   fetch<
     Schemas.StreamDto,
     StreamTrackError,
@@ -412,14 +512,19 @@ export const fetchStreamTrack = (variables: StreamTrackVariables, signal?: Abort
     {},
     StreamTrackQueryParams,
     StreamTrackPathParams
-  >({ url: "/api/Library/tracks/{trackId}/stream", method: "get", ...variables, signal });
+  >({
+    url: "/api/Library/tracks/{trackId}/stream",
+    method: "get",
+    ...variables,
+    signal,
+  });
 
-export const useStreamTrack = <TData = Schemas.StreamDto>(
+export const useStreamTrack = <TData = Schemas.StreamDto,>(
   variables: StreamTrackVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<Schemas.StreamDto, StreamTrackError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.StreamDto, StreamTrackError, TData>(
@@ -428,11 +533,12 @@ export const useStreamTrack = <TData = Schemas.StreamDto>(
       operationId: "streamTrack",
       variables,
     }),
-    ({ signal }) => fetchStreamTrack({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchStreamTrack({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -450,21 +556,25 @@ export const fetchTracks = (variables: TracksVariables, signal?: AbortSignal) =>
     signal,
   });
 
-export const useTracks = <TData = TracksResponse>(
+export const useTracks = <TData = TracksResponse,>(
   variables: TracksVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<TracksResponse, TracksError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<TracksResponse, TracksError, TData>(
-    queryKeyFn({ path: "/api/Library/tracks", operationId: "tracks", variables }),
+    queryKeyFn({
+      path: "/api/Library/tracks",
+      operationId: "tracks",
+      variables,
+    }),
     ({ signal }) => fetchTracks({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -482,21 +592,25 @@ export const fetchAlbums = (variables: AlbumsVariables, signal?: AbortSignal) =>
     signal,
   });
 
-export const useAlbums = <TData = AlbumsResponse>(
+export const useAlbums = <TData = AlbumsResponse,>(
   variables: AlbumsVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<AlbumsResponse, AlbumsError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<AlbumsResponse, AlbumsError, TData>(
-    queryKeyFn({ path: "/api/Library/albums", operationId: "albums", variables }),
+    queryKeyFn({
+      path: "/api/Library/albums",
+      operationId: "albums",
+      variables,
+    }),
     ({ signal }) => fetchAlbums({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -519,7 +633,10 @@ export type PaginatedAlbumsVariables = {
   queryParams?: PaginatedAlbumsQueryParams;
 } & Context["fetcherOptions"];
 
-export const fetchPaginatedAlbums = (variables: PaginatedAlbumsVariables, signal?: AbortSignal) =>
+export const fetchPaginatedAlbums = (
+  variables: PaginatedAlbumsVariables,
+  signal?: AbortSignal,
+) =>
   fetch<
     Schemas.SimpleAlbumDtoPaginatedQuery,
     PaginatedAlbumsError,
@@ -527,27 +644,43 @@ export const fetchPaginatedAlbums = (variables: PaginatedAlbumsVariables, signal
     {},
     PaginatedAlbumsQueryParams,
     {}
-  >({ url: "/api/Library/albums/paginated", method: "get", ...variables, signal });
+  >({
+    url: "/api/Library/albums/paginated",
+    method: "get",
+    ...variables,
+    signal,
+  });
 
-export const usePaginatedAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedQuery>(
+export const usePaginatedAlbums = <
+  TData = Schemas.SimpleAlbumDtoPaginatedQuery,
+>(
   variables: PaginatedAlbumsVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SimpleAlbumDtoPaginatedQuery, PaginatedAlbumsError, TData>,
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleAlbumDtoPaginatedQuery,
+      PaginatedAlbumsError,
+      TData
+    >,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SimpleAlbumDtoPaginatedQuery, PaginatedAlbumsError, TData>(
+  return reactQuery.useQuery<
+    Schemas.SimpleAlbumDtoPaginatedQuery,
+    PaginatedAlbumsError,
+    TData
+  >(
     queryKeyFn({
       path: "/api/Library/albums/paginated",
       operationId: "paginatedAlbums",
       variables,
     }),
-    ({ signal }) => fetchPaginatedAlbums({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchPaginatedAlbums({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -570,7 +703,10 @@ export type PaginatedArtistsVariables = {
   queryParams?: PaginatedArtistsQueryParams;
 } & Context["fetcherOptions"];
 
-export const fetchPaginatedArtists = (variables: PaginatedArtistsVariables, signal?: AbortSignal) =>
+export const fetchPaginatedArtists = (
+  variables: PaginatedArtistsVariables,
+  signal?: AbortSignal,
+) =>
   fetch<
     Schemas.SimpleArtistDtoPaginatedQuery,
     PaginatedArtistsError,
@@ -578,27 +714,43 @@ export const fetchPaginatedArtists = (variables: PaginatedArtistsVariables, sign
     {},
     PaginatedArtistsQueryParams,
     {}
-  >({ url: "/api/Library/artists/paginated", method: "get", ...variables, signal });
+  >({
+    url: "/api/Library/artists/paginated",
+    method: "get",
+    ...variables,
+    signal,
+  });
 
-export const usePaginatedArtists = <TData = Schemas.SimpleArtistDtoPaginatedQuery>(
+export const usePaginatedArtists = <
+  TData = Schemas.SimpleArtistDtoPaginatedQuery,
+>(
   variables: PaginatedArtistsVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.SimpleArtistDtoPaginatedQuery, PaginatedArtistsError, TData>,
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleArtistDtoPaginatedQuery,
+      PaginatedArtistsError,
+      TData
+    >,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<Schemas.SimpleArtistDtoPaginatedQuery, PaginatedArtistsError, TData>(
+  return reactQuery.useQuery<
+    Schemas.SimpleArtistDtoPaginatedQuery,
+    PaginatedArtistsError,
+    TData
+  >(
     queryKeyFn({
       path: "/api/Library/artists/paginated",
       operationId: "paginatedArtists",
       variables,
     }),
-    ({ signal }) => fetchPaginatedArtists({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchPaginatedArtists({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -623,21 +775,25 @@ export const fetchAlbum = (variables: AlbumVariables, signal?: AbortSignal) =>
     signal,
   });
 
-export const useAlbum = <TData = Schemas.AlbumDto>(
+export const useAlbum = <TData = Schemas.AlbumDto,>(
   variables: AlbumVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<Schemas.AlbumDto, AlbumError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.AlbumDto, AlbumError, TData>(
-    queryKeyFn({ path: "/api/Library/albums/{albumId}", operationId: "album", variables }),
+    queryKeyFn({
+      path: "/api/Library/albums/{albumId}",
+      operationId: "album",
+      variables,
+    }),
     ({ signal }) => fetchAlbum({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -662,21 +818,25 @@ export const fetchArtist = (variables: ArtistVariables, signal?: AbortSignal) =>
     signal,
   });
 
-export const useArtist = <TData = Schemas.ArtistDto>(
+export const useArtist = <TData = Schemas.ArtistDto,>(
   variables: ArtistVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<Schemas.ArtistDto, ArtistError, TData>(
-    queryKeyFn({ path: "/api/Library/artists/{artistId}", operationId: "artist", variables }),
+    queryKeyFn({
+      path: "/api/Library/artists/{artistId}",
+      operationId: "artist",
+      variables,
+    }),
     ({ signal }) => fetchArtist({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -694,7 +854,7 @@ export type DirectoriesInPathVariables = {
 
 export const fetchDirectoriesInPath = (
   variables: DirectoriesInPathVariables,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) =>
   fetch<
     DirectoriesInPathResponse,
@@ -703,27 +863,41 @@ export const fetchDirectoriesInPath = (
     {},
     DirectoriesInPathQueryParams,
     {}
-  >({ url: "/api/Onboarding/listDirectories", method: "get", ...variables, signal });
+  >({
+    url: "/api/Onboarding/listDirectories",
+    method: "get",
+    ...variables,
+    signal,
+  });
 
-export const useDirectoriesInPath = <TData = DirectoriesInPathResponse>(
+export const useDirectoriesInPath = <TData = DirectoriesInPathResponse,>(
   variables: DirectoriesInPathVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<DirectoriesInPathResponse, DirectoriesInPathError, TData>,
+    reactQuery.UseQueryOptions<
+      DirectoriesInPathResponse,
+      DirectoriesInPathError,
+      TData
+    >,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<DirectoriesInPathResponse, DirectoriesInPathError, TData>(
+  return reactQuery.useQuery<
+    DirectoriesInPathResponse,
+    DirectoriesInPathError,
+    TData
+  >(
     queryKeyFn({
       path: "/api/Onboarding/listDirectories",
       operationId: "directoriesInPath",
       variables,
     }),
-    ({ signal }) => fetchDirectoriesInPath({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchDirectoriesInPath({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -733,7 +907,10 @@ export type MusicLibrariesResponse = Schemas.MusicLibraryDto[];
 
 export type MusicLibrariesVariables = Context["fetcherOptions"];
 
-export const fetchMusicLibraries = (variables: MusicLibrariesVariables, signal?: AbortSignal) =>
+export const fetchMusicLibraries = (
+  variables: MusicLibrariesVariables,
+  signal?: AbortSignal,
+) =>
   fetch<MusicLibrariesResponse, MusicLibrariesError, undefined, {}, {}, {}>({
     url: "/api/Onboarding/musicLibraries",
     method: "get",
@@ -741,25 +918,34 @@ export const fetchMusicLibraries = (variables: MusicLibrariesVariables, signal?:
     signal,
   });
 
-export const useMusicLibraries = <TData = MusicLibrariesResponse>(
+export const useMusicLibraries = <TData = MusicLibrariesResponse,>(
   variables: MusicLibrariesVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<MusicLibrariesResponse, MusicLibrariesError, TData>,
+    reactQuery.UseQueryOptions<
+      MusicLibrariesResponse,
+      MusicLibrariesError,
+      TData
+    >,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
-  return reactQuery.useQuery<MusicLibrariesResponse, MusicLibrariesError, TData>(
+  return reactQuery.useQuery<
+    MusicLibrariesResponse,
+    MusicLibrariesError,
+    TData
+  >(
     queryKeyFn({
       path: "/api/Onboarding/musicLibraries",
       operationId: "musicLibraries",
       variables,
     }),
-    ({ signal }) => fetchMusicLibraries({ ...fetcherOptions, ...variables }, signal),
+    ({ signal }) =>
+      fetchMusicLibraries({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -775,7 +961,7 @@ export type RegisterMusicLibraryVariables = {
 
 export const fetchRegisterMusicLibrary = (
   variables: RegisterMusicLibraryVariables,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) =>
   fetch<
     Schemas.MusicLibrary,
@@ -794,7 +980,7 @@ export const useRegisterMusicLibrary = (
       RegisterMusicLibraryVariables
     >,
     "mutationFn"
-  >
+  >,
 ) => {
   const { fetcherOptions } = useContext();
   return reactQuery.useMutation<
@@ -804,7 +990,7 @@ export const useRegisterMusicLibrary = (
   >(
     (variables: RegisterMusicLibraryVariables) =>
       fetchRegisterMusicLibrary({ ...fetcherOptions, ...variables }),
-    options
+    options,
   );
 };
 
@@ -812,7 +998,10 @@ export type LoadAllPluginsError = Fetcher.ErrorWrapper<undefined>;
 
 export type LoadAllPluginsVariables = Context["fetcherOptions"];
 
-export const fetchLoadAllPlugins = (variables: LoadAllPluginsVariables, signal?: AbortSignal) =>
+export const fetchLoadAllPlugins = (
+  variables: LoadAllPluginsVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, LoadAllPluginsError, undefined, {}, {}, {}>({
     url: "/api/Plugin/load",
     method: "get",
@@ -820,21 +1009,26 @@ export const fetchLoadAllPlugins = (variables: LoadAllPluginsVariables, signal?:
     signal,
   });
 
-export const useLoadAllPlugins = <TData = undefined>(
+export const useLoadAllPlugins = <TData = undefined,>(
   variables: LoadAllPluginsVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, LoadAllPluginsError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, LoadAllPluginsError, TData>(
-    queryKeyFn({ path: "/api/Plugin/load", operationId: "loadAllPlugins", variables }),
-    ({ signal }) => fetchLoadAllPlugins({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/Plugin/load",
+      operationId: "loadAllPlugins",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchLoadAllPlugins({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 
@@ -842,7 +1036,10 @@ export type UnloadPluginsError = Fetcher.ErrorWrapper<undefined>;
 
 export type UnloadPluginsVariables = Context["fetcherOptions"];
 
-export const fetchUnloadPlugins = (variables: UnloadPluginsVariables, signal?: AbortSignal) =>
+export const fetchUnloadPlugins = (
+  variables: UnloadPluginsVariables,
+  signal?: AbortSignal,
+) =>
   fetch<undefined, UnloadPluginsError, undefined, {}, {}, {}>({
     url: "/api/Plugin/unload",
     method: "get",
@@ -850,21 +1047,26 @@ export const fetchUnloadPlugins = (variables: UnloadPluginsVariables, signal?: A
     signal,
   });
 
-export const useUnloadPlugins = <TData = undefined>(
+export const useUnloadPlugins = <TData = undefined,>(
   variables: UnloadPluginsVariables,
   options?: Omit<
     reactQuery.UseQueryOptions<undefined, UnloadPluginsError, TData>,
     "queryKey" | "queryFn"
-  >
+  >,
 ) => {
   const { fetcherOptions, queryOptions, queryKeyFn } = useContext(options);
   return reactQuery.useQuery<undefined, UnloadPluginsError, TData>(
-    queryKeyFn({ path: "/api/Plugin/unload", operationId: "unloadPlugins", variables }),
-    ({ signal }) => fetchUnloadPlugins({ ...fetcherOptions, ...variables }, signal),
+    queryKeyFn({
+      path: "/api/Plugin/unload",
+      operationId: "unloadPlugins",
+      variables,
+    }),
+    ({ signal }) =>
+      fetchUnloadPlugins({ ...fetcherOptions, ...variables }, signal),
     {
       ...options,
       ...queryOptions,
-    }
+    },
   );
 };
 

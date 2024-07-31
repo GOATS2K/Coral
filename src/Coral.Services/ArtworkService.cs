@@ -4,6 +4,8 @@ using Coral.Database;
 using Coral.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Coral.Services;
 

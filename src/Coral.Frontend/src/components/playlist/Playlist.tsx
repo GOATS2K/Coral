@@ -15,14 +15,11 @@ export default function Playlist({ tracks, initializer, displayArtwork = false }
   }
 
   // trigger initiailization check on playback
-  const onPlayback = () => {
-    const playerInitializer = usePlayerStore.getState().initializer;
-    if (playerInitializer.id != initializer.id || playerInitializer.source != initializer.source) {
-      usePlayerStore.setState({ tracks: tracks, initializer: initializer });
-    }
+  const onPlayback = () => {  
+    usePlayerStore.setState({ tracks: tracks, initializer: initializer });
   };
 
-  const playlistItems = tracks      
+  const playlistItems = tracks
     .map((track) => {
       return (
         <PlaylistItem

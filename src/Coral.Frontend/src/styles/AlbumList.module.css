@@ -56,6 +56,10 @@
   margin-top: 1em;
 }
 
+.metadataContainer {
+  margin-top: 0.25em;
+}
+
 .wrapper {
   display: flex;
   flex-direction: column;

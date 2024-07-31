@@ -74,15 +74,18 @@ export default function AlbumListItem({ album, artworkSize }: AlbumListItemProps
           )}
         </div>
       </div>
-      <div>
+      <div className={styles.metadataContainer}>
         <Link className={styles.link} passHref href={`/albums/${album.id}`}>
-          <Anchor className={styles.link} component="a" lineClamp={1} fz="md" fw="bold">
+          <Anchor className={styles.link} component="a" lineClamp={2} fz="md" fw="bold">
             {album.name}
           </Anchor>
         </Link>
         <Text lineClamp={1} fz="sm" fw="light">
           {getAlbumArtists(album)}
         </Text>
+      </div>
+      <div>
+        <Text fz="xs" fw="lighter">{album.releaseYear}</Text>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@
         "CORAL_CONTENT_DIRECTORY": "P:\\Coral Library"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:7031;http://localhost:5031"
+      "applicationUrl": "http://localhost:5031"
     },
     "IIS Express": {
       "commandName": "IISExpress",

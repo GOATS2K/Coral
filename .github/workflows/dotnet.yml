@@ -19,13 +19,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
     - name: Setup Node.js environment
       uses: actions/setup-node@v3.6.0
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 9.6.0
+        version: 10.15.1
     - name: Get pnpm store directory
       id: pnpm-cache
       shell: bash

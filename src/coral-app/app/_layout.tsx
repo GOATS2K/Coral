@@ -1,10 +1,10 @@
 import getPrefferedColor from '@/components/util/getPreferredColor';
-import UseColorSchemeCustom from '@/components/util/getPreferredColor';
 import '@/global.css';
 
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
@@ -16,9 +16,11 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme();
-  const [preferredColor, setPrefferedColor] = useState<'light' | 'dark'>(getPrefferedColor())
+  const [preferredColor, setPrefferedColor] = useState<'light' | 'dark'>(getPrefferedColor());
 
   // wire up event listeners for platform changes
   useEffect(() => {
@@ -41,10 +43,12 @@ export default function RootLayout() {
   }, [preferredColor]);
 
   return (
-    <ThemeProvider value={NAV_THEME[preferredColor ?? 'dark']}>
-      <StatusBar style={preferredColor === 'dark' ? 'light' : 'dark'} />
-      <Stack />
-      <PortalHost />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={NAV_THEME[preferredColor ?? 'dark']}>
+        <StatusBar style={preferredColor === 'dark' ? 'light' : 'dark'} />
+        <Stack />
+        <PortalHost />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

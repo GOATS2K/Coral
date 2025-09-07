@@ -7,10 +7,10 @@
 		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
 		<TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
 		<IsPackable>false</IsPackable>
-		<SpaRoot>..\Coral.Frontend\</SpaRoot>
+		<SpaRoot>..\coral-app\</SpaRoot>
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
-		<SpaProxyServerUrl>http://localhost:3000</SpaProxyServerUrl>
-		<SpaProxyLaunchCommand>pnpm run dev</SpaProxyLaunchCommand>
+		<SpaProxyServerUrl>http://localhost:8081</SpaProxyServerUrl>
+		<SpaProxyLaunchCommand>bun run web</SpaProxyLaunchCommand>
 		<RuntimeIdentifiers>win-x64;osx-arm64;linux-x64</RuntimeIdentifiers>
 		<SkipSwaggerGen>false</SkipSwaggerGen>
 		<PublishSingleFile>true</PublishSingleFile>
@@ -41,16 +41,6 @@
 	<ItemGroup>
 	  <Folder Include="Properties\PublishProfiles\" />
 	</ItemGroup>
-
-	<Target Name="DebugEnsureNodeEnv" BeforeTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
-		<!-- Ensure pnpm is installed -->																		
-		<Exec Command="pnpm --version" ContinueOnError="true">
-			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-		</Exec>
-		<Error Condition="'$(ErrorCode)' != '0'" Text="pnpm is required to build and run this project." />
-		<Message Importance="high" Text="Restoring dependencies using 'pnpm'. This may take several minutes..." />
-		<Exec WorkingDirectory="..\Coral.Frontend" Command="pnpm install" ContinueOnError="false" />
-	</Target>
 	
 	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
@@ -71,6 +61,6 @@
 	<Target Name="SwaggerDocumentGeneration" AfterTargets="PostBuildEvent" Condition="'$(SkipSwaggerGen)' != 'true'">
 		<Exec Command="dotnet tool restore" WorkingDirectory="$(ProjectDir)" />
 		<Exec Command="dotnet tool run swagger tofile --output openapi.json $(OutputPath)\$(AssemblyName).dll v1" WorkingDirectory="$(ProjectDir)" />
-		<Exec Command="pnpm run generate-client" WorkingDirectory="..\Coral.Frontend" />
+		<Exec Command="bun run generate-client" WorkingDirectory="..\coral-app" />
 	</Target>
 </Project>

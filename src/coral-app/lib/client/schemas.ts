@@ -49,6 +49,7 @@ export type ArtworkDto = {
   small: string;
   medium: string;
   original: string;
+  colors: string[];
 };
 
 export type AudioFile = {

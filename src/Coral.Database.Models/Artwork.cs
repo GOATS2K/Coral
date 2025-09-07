@@ -12,4 +12,6 @@ public class Artwork : BaseTable
     public ArtworkSize Size { get; set; }
     public string Path { get; set; } = null!;
     public Album Album { get; set; } = null!;
+    public int AlbumId { get; set; }
+    public string[] Colors { get; set; } = null!;
 }

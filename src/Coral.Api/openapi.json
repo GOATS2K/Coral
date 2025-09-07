@@ -827,6 +827,7 @@
       },
       "ArtworkDto": {
         "required": [
+          "colors",
           "medium",
           "original",
           "small"
@@ -841,6 +842,12 @@
           },
           "original": {
             "type": "string"
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false

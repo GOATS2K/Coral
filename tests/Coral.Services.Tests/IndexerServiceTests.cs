@@ -23,7 +23,7 @@ public class IndexerServiceTests : IDisposable
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
         var paginationService = Substitute.For<IPaginationService>();
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
-        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger, testDatabase.Mapper);
+        var artworkService = new ArtworkService(testDatabase.Context, artworkLogger);
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
 
         _testDatabase = testDatabase.Context;

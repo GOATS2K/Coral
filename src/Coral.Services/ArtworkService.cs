@@ -78,6 +78,8 @@ public class ArtworkService : IArtworkService
         var outputDir = Path.Join(ApplicationConfiguration.Thumbnails, guid.ToString());
         Directory.CreateDirectory(outputDir);
         
+        _logger.LogDebug("Processing artwork for album {AlbumTitle}", album.Name);
+        
         // add original cover
         using var originalImage = await Image.LoadAsync(artworkPath);
         var prominentColors = await GetProminentColorsForImage(artworkPath);

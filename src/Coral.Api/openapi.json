@@ -729,7 +729,7 @@
           "tracks": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TrackDto"
+              "$ref": "#/components/schemas/SimpleTrackDto"
             }
           },
           "genres": {
@@ -1191,6 +1191,48 @@
             "items": {
               "$ref": "#/components/schemas/SimpleArtistDto"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimpleTrackDto": {
+        "required": [
+          "artists",
+          "discNumber",
+          "durationInSeconds",
+          "id",
+          "title",
+          "trackNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "durationInSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trackNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "discNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistWithRoleDto"
+            }
+          },
+          "genre": {
+            "$ref": "#/components/schemas/GenreDto"
           }
         },
         "additionalProperties": false

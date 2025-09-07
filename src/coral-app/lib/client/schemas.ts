@@ -16,7 +16,7 @@ export type AlbumDto = {
    */
   releaseYear: number;
   artworks: ArtworkDto;
-  tracks: TrackDto[];
+  tracks: SimpleTrackDto[];
   genres: GenreDto[];
 };
 
@@ -224,6 +224,28 @@ export type SimpleArtistDtoPaginatedQuery = {
    */
   resultCount: number;
   data: SimpleArtistDto[];
+};
+
+export type SimpleTrackDto = {
+  /**
+   * @format int32
+   */
+  id: number;
+  title: string;
+  /**
+   * @format int32
+   */
+  durationInSeconds: number;
+  /**
+   * @format int32
+   */
+  trackNumber: number;
+  /**
+   * @format int32
+   */
+  discNumber: number;
+  artists: ArtistWithRoleDto[];
+  genre?: GenreDto;
 };
 
 export type StreamDto = {

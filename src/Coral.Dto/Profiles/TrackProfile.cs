@@ -9,5 +9,6 @@ public class TrackProfile : Profile
     public TrackProfile()
     {
         CreateMap<Track, TrackDto>();
+        CreateMap<Track, SimpleTrackDto>();
     }
 }

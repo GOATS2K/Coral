@@ -1,0 +1,14 @@
+[project]
+name = "recs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "essentia-tensorflow>=2.1b6.dev1389",
+    "fastapi[standard]>=0.116.1",
+    "psycopg>=3.2.9",
+    "requests>=2.32.5",
+    "scikit-learn>=1.7.1",
+    "tensorflow[and-cuda]>=2.20.0",
+]

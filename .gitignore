@@ -561,3 +561,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Protobuf models
+*.pb

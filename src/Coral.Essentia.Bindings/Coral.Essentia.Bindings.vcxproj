@@ -112,16 +112,22 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;CORALESSENTIABINDINGS_EXPORTS;_WINDOWS;_USRDLL;NOMINMAX;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;CORALESSENTIABINDINGS_EXPORTS;_WINDOWS;_USRDLL;NOMINMAX;_USE_MATH_DEFINES;ESSENTIA_EXPORTS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/MP /W4 /wd4100 /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avcodec.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avformat.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avutil.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\chromaprint.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\fftw3f.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\samplerate.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\swresample.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\tag.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\tensorflow.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\vamp-hostsdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\vamp-sdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\yaml.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\zlibd.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\essentia_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\Projects\Coral\src\Coral.Essentia.Bindings\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/VERBOSE:LIB %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

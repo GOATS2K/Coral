@@ -569,3 +569,4 @@ dist
 src/Coral.Essentia.Bindings/include/
 src/Coral.Essentia.Bindings/bin/
 src/Coral.Essentia.Bindings/lib/
+src/Coral.Essentia.Bindings/build/

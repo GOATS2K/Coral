@@ -20,6 +20,12 @@ extern "C" {
     WRAPPER_API int ew_run_inference();
     WRAPPER_API int ew_get_embedding_size();
     WRAPPER_API bool ew_get_embeddings(float* out_buffer, int buffer_size);
+    WRAPPER_API int ew_get_embedding_count();
+    WRAPPER_API int ew_get_embedding_size();
+    WRAPPER_API int ew_get_total_embedding_elements();
+    WRAPPER_API bool ew_get_embeddings_flattened(float* out_buffer, int buffer_size);
+
+
 
 #ifdef __cplusplus
 }

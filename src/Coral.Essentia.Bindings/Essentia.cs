@@ -1,0 +1,70 @@
+﻿using NumSharp;
+
+namespace Coral.Essentia.Bindings;
+
+public class Essentia : IDisposable
+{
+    private IntPtr _monoLoaderInstance = IntPtr.Zero;
+    private IntPtr _tfModelInstance = IntPtr.Zero;
+    private bool _disposed = false;
+    
+    public void Dispose()
+    {
+        if (!_disposed)
+            EssentiaBindings.ew_clean_up();
+    }
+
+    public void Initialize()
+    {
+        _monoLoaderInstance = EssentiaBindings.ew_create_mono_loader();
+        _tfModelInstance = EssentiaBindings.ew_create_tf_model();
+
+        if (_monoLoaderInstance == IntPtr.Zero || _tfModelInstance == IntPtr.Zero)
+        {
+            throw new EssentiaException("Failed to initialize Essentia");
+        }
+    }
+
+    public void LoadAudio(string filePath, int sampleRate = 16000)
+    {
+        var loadSuccess = EssentiaBindings.ew_configure_mono_loader(_monoLoaderInstance, filePath, sampleRate);
+        if (!loadSuccess)
+            throw new EssentiaException("Failed to configure mono loader");
+    }
+
+    public void LoadModel(string filePath)
+    {
+        var loadSuccess = EssentiaBindings.ew_configure_tf_model(_tfModelInstance, filePath);
+        if (!loadSuccess)
+            throw new EssentiaException("Failed to configure tf model");
+    }
+
+    public float[] RunInference()
+    {
+        var result = EssentiaBindings.ew_run_inference();
+        if (result != 0)
+            return [];
+
+        var embeddingCount = EssentiaBindings.ew_get_embedding_count();
+        var embeddingSize = EssentiaBindings.ew_get_embedding_size();
+        var totalElements = EssentiaBindings.ew_get_total_embedding_elements();
+        if (totalElements <= 0)
+            return [];
+
+        var flattenedEmbeddings = new float[totalElements];
+        var success = EssentiaBindings.ew_get_embeddings_flattened(flattenedEmbeddings, totalElements);
+        if (!success)
+            throw new  EssentiaException("Failed to get embeddings");
+        
+        var ndArray = np.array(flattenedEmbeddings);
+        var reshaped = ndArray.reshape(embeddingCount, embeddingSize);
+        return reshaped.mean(axis: 0).ToArray<float>();
+    }
+}
+
+public class EssentiaException : Exception
+{
+    public EssentiaException(string message) : base(message)
+    {
+    }
+}

@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.PluginHost", "src\Cor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Events", "src\Coral.Events\Coral.Events.csproj", "{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Essentia.Bindings", "src\Coral.Essentia.Bindings\Coral.Essentia.Bindings.csproj", "{8CA4FB0F-B4D5-48F1-A4F1-F3E6F27FBF2E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,10 @@ Global
 		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD11F27F-59D4-48C1-A9FB-41838BA8DC42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CA4FB0F-B4D5-48F1-A4F1-F3E6F27FBF2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CA4FB0F-B4D5-48F1-A4F1-F3E6F27FBF2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CA4FB0F-B4D5-48F1-A4F1-F3E6F27FBF2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CA4FB0F-B4D5-48F1-A4F1-F3E6F27FBF2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

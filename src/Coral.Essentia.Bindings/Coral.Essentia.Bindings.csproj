@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="NumSharp" Version="0.30.0" />
+    </ItemGroup>
+
+    <Target Name="CopyLibraries" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <TestData Include="lib\**" />
+        </ItemGroup>
+        <Copy SourceFiles="@(TestData)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
+    </Target>
+
+</Project>

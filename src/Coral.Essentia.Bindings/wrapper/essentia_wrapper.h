@@ -19,11 +19,13 @@ extern "C" {
     WRAPPER_API bool ew_configure_tf_model(void* instance, const char* model_path);
     WRAPPER_API int ew_run_inference();
     WRAPPER_API int ew_get_embedding_size();
-    WRAPPER_API bool ew_get_embeddings(float* out_buffer, int buffer_size);
     WRAPPER_API int ew_get_embedding_count();
-    WRAPPER_API int ew_get_embedding_size();
+    WRAPPER_API int ew_get_embedding_size(); 
     WRAPPER_API int ew_get_total_embedding_elements();
     WRAPPER_API bool ew_get_embeddings_flattened(float* out_buffer, int buffer_size);
+    WRAPPER_API void ew_clean_up();
+    WRAPPER_API bool ew_get_error(char* buffer, int buffer_size);
+    WRAPPER_API int ew_get_error_length();
 
 
 

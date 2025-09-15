@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Coral.Essentia.Bindings;
 
@@ -81,4 +82,21 @@ public static class EssentiaBindings
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool ew_get_embeddings_flattened([Out] float[] outBuffer, int bufferSize);
+
+    /// <summary>
+    /// Alternative: Copy error message to byte array buffer
+    /// </summary>
+    /// <param name="buffer">Buffer to receive error message (as byte array)</param>
+    /// <param name="bufferSize">Size of buffer</param>
+    /// <returns>True if successful, false if buffer too small or error occurred</returns>
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool ew_get_error([Out] byte[] buffer, int bufferSize);
+
+    /// <summary>
+    /// Get the length of the current error message
+    /// </summary>
+    /// <returns>Length of error message in characters (excluding null terminator)</returns>
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int ew_get_error_length();
 }

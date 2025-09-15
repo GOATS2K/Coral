@@ -566,7 +566,7 @@ dist
 *.pb
 
 # Bindings
-src/Coral.Essentia.Bindings/include/
-src/Coral.Essentia.Bindings/bin/
-src/Coral.Essentia.Bindings/lib/
-src/Coral.Essentia.Bindings/build/
+src/Coral.Essentia.Bindings/wrapper/include/
+src/Coral.Essentia.Bindings/wrapper/bin/
+src/Coral.Essentia.Bindings/wrapper/lib/
+src/Coral.Essentia.Bindings/wrapper/build/

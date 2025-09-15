@@ -15,6 +15,7 @@ extern "C" {
         essentia::standard::Algorithm* tfModelInstance = nullptr;
         bool hasInitialized = false;
         std::vector<std::vector<float>> lastEmbeddings;
+        std::string lastError = "";
     }
 
     void ew_clean_up() {
@@ -22,7 +23,30 @@ extern "C" {
         monoLoaderInstance = nullptr;
         delete tfModelInstance;
         tfModelInstance = nullptr;
+        lastEmbeddings.clear();
         essentia::shutdown();
+    }
+
+    bool ew_get_error(char* buffer, int buffer_size) {
+        if (!buffer || buffer_size <= 0) {
+            std::cout << "[Coral Essentia Wrapper] No buffer/buffer_size detected.";
+            return false;
+        }
+
+        if (lastError.length() >= static_cast<size_t>(buffer_size)) {
+            std::cout << "[Coral Essentia Wrapper] Buffer too small.";
+            return false; // Buffer too small
+        }
+
+        strcpy_s(buffer, buffer_size, lastError.c_str());
+        return true;
+    }
+
+    int ew_get_error_length() {
+        // strcpy_s needs an extra byte for the null terminator.
+        int length = lastError.length();
+        int lengthWithNullTerminator = length + 1;
+        return lengthWithNullTerminator;
     }
 
     void* ew_create_mono_loader() {
@@ -40,7 +64,7 @@ extern "C" {
             return monoLoaderInstance;
         }
         catch (const std::exception& e) {
-            std::cerr << "Error creating MonoLoader: " << e.what() << std::endl;
+            lastError = e.what();
             return nullptr;
         }
     }
@@ -51,7 +75,7 @@ extern "C" {
             return true;
         }
         catch (const std::exception& e) {
-            std::cerr << "Error configuring MonoLoader: " << e.what() << std::endl;
+            lastError = e.what();
             return false;
         }
     }
@@ -71,7 +95,6 @@ extern "C" {
             return tfModelInstance;
         }
         catch (const std::exception& e) {
-            std::cerr << "Error creating TensorflowPredict model: " << e.what() << std::endl;
             return nullptr;
         }
     }
@@ -82,7 +105,7 @@ extern "C" {
             return true;
         }
         catch (const std::exception& e) {
-            std::cerr << "Error configuring TensorflowPredict model: " << e.what() << std::endl;
+            lastError = e.what();
             return false;
         }
     }
@@ -99,14 +122,14 @@ extern "C" {
 
             monoLoaderInstance->compute();
             if (audioBuffer.empty()) {
-                std::cerr << "Error: Audio buffer is empty after loading." << std::endl;
+                lastError = "Error: Audio buffer is empty after loading.";
                 return -1;
             }
             tfModelInstance->compute();
             return 0;
         }
         catch (const std::exception& e) {
-            std::cerr << "Error during inference: " << e.what() << std::endl;
+            lastError = e.what();
             return -1;
         }
     }

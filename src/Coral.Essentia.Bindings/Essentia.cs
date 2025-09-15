@@ -1,4 +1,5 @@
-﻿using NumSharp;
+﻿using System.Text;
+using NumSharp;
 
 namespace Coral.Essentia.Bindings;
 
@@ -29,14 +30,14 @@ public class Essentia : IDisposable
     {
         var loadSuccess = EssentiaBindings.ew_configure_mono_loader(_monoLoaderInstance, filePath, sampleRate);
         if (!loadSuccess)
-            throw new EssentiaException("Failed to configure mono loader");
+            throw new EssentiaException($"Failed to configure mono loader: {GetError()}");
     }
 
     public void LoadModel(string filePath)
     {
         var loadSuccess = EssentiaBindings.ew_configure_tf_model(_tfModelInstance, filePath);
         if (!loadSuccess)
-            throw new EssentiaException("Failed to configure tf model");
+            throw new EssentiaException($"Failed to configure tf model: {GetError()}");
     }
 
     public float[] RunInference()
@@ -54,11 +55,19 @@ public class Essentia : IDisposable
         var flattenedEmbeddings = new float[totalElements];
         var success = EssentiaBindings.ew_get_embeddings_flattened(flattenedEmbeddings, totalElements);
         if (!success)
-            throw new  EssentiaException("Failed to get embeddings");
+            throw new  EssentiaException($"Failed to get embeddings: {GetError()}");
         
         var ndArray = np.array(flattenedEmbeddings);
         var reshaped = ndArray.reshape(embeddingCount, embeddingSize);
         return reshaped.mean(axis: 0).ToArray<float>();
+    }
+
+    private string GetError()
+    {
+        var bufferSize = EssentiaBindings.ew_get_error_length();
+        var errorChars = new byte[bufferSize];
+        var success = EssentiaBindings.ew_get_error(errorChars, bufferSize);
+        return !success ? throw new EssentiaException("Failed to get error.") : Encoding.ASCII.GetString(errorChars,  0, bufferSize);
     }
 }
 

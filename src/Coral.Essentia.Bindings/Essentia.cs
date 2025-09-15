@@ -8,7 +8,7 @@ public class Essentia : IDisposable
     private IntPtr _monoLoaderInstance = IntPtr.Zero;
     private IntPtr _tfModelInstance = IntPtr.Zero;
     private bool _disposed = false;
-    
+
     public void Dispose()
     {
         if (!_disposed)
@@ -55,8 +55,8 @@ public class Essentia : IDisposable
         var flattenedEmbeddings = new float[totalElements];
         var success = EssentiaBindings.ew_get_embeddings_flattened(flattenedEmbeddings, totalElements);
         if (!success)
-            throw new  EssentiaException($"Failed to get embeddings: {GetError()}");
-        
+            throw new EssentiaException($"Failed to get embeddings: {GetError()}");
+
         var ndArray = np.array(flattenedEmbeddings);
         var reshaped = ndArray.reshape(embeddingCount, embeddingSize);
         return reshaped.mean(axis: 0).ToArray<float>();
@@ -67,7 +67,7 @@ public class Essentia : IDisposable
         var bufferSize = EssentiaBindings.ew_get_error_length();
         var errorChars = new byte[bufferSize];
         var success = EssentiaBindings.ew_get_error(errorChars, bufferSize);
-        return !success ? throw new EssentiaException("Failed to get error.") : Encoding.ASCII.GetString(errorChars,  0, bufferSize);
+        return !success ? throw new EssentiaException("Failed to get error.") : Encoding.ASCII.GetString(errorChars);
     }
 }
 

@@ -14,7 +14,7 @@ extern "C" {
         essentia::standard::Algorithm* monoLoaderInstance = nullptr;
         essentia::standard::Algorithm* tfModelInstance = nullptr;
         bool hasInitialized = false;
-        std::vector<essentia::Real> lastEmbeddings;
+        std::vector<std::vector<float>> lastEmbeddings;
     }
 
     void ew_clean_up() {
@@ -29,6 +29,7 @@ extern "C" {
         try {
             if (!hasInitialized) {
                 essentia::init();
+                hasInitialized = true;
             }
 
             essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
@@ -59,6 +60,7 @@ extern "C" {
         try {
             if (!hasInitialized) {
                 essentia::init();
+                hasInitialized = true;
             }
 
             essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
@@ -92,8 +94,8 @@ extern "C" {
 
             std::vector<essentia::Real> audioBuffer;
             monoLoaderInstance->output("audio").set(audioBuffer);
-            tfModelInstance->input("audio").set(audioBuffer);
-            tfModelInstance->output("embeddings").set(lastEmbeddings);
+            tfModelInstance->input("signal").set(audioBuffer);
+            tfModelInstance->output("predictions").set(lastEmbeddings);
 
             monoLoaderInstance->compute();
             if (audioBuffer.empty()) {
@@ -109,14 +111,35 @@ extern "C" {
         }
     }
 
-    int ew_get_embedding_size() {
+    // Get the number of embedding vectors (outer dimension)
+    int ew_get_embedding_count() {
         return static_cast<int>(lastEmbeddings.size());
     }
 
-    bool ew_get_embeddings(float* out_buffer, int buffer_size) {
+    // Get the size of each embedding vector (inner dimension)
+    int ew_get_embedding_size() {
+        if (lastEmbeddings.empty()) return 0;
+        return static_cast<int>(lastEmbeddings[0].size());
+    }
+
+    // Get total number of floats (count * size)
+    int ew_get_total_embedding_elements() {
+        if (lastEmbeddings.empty()) return 0;
+        return static_cast<int>(lastEmbeddings.size() * lastEmbeddings[0].size());
+    }
+
+    // Option 1: Flatten the 2D array into a 1D array (row-major order)
+    bool ew_get_embeddings_flattened(float* out_buffer, int buffer_size) {
         if (!out_buffer || lastEmbeddings.empty()) return false;
-        if (static_cast<int>(lastEmbeddings.size()) > buffer_size) return false;
-        std::copy(lastEmbeddings.begin(), lastEmbeddings.end(), out_buffer);
+
+        int totalElements = ew_get_total_embedding_elements();
+        if (totalElements > buffer_size) return false;
+
+        int idx = 0;
+        for (const auto& embedding : lastEmbeddings) {
+            std::copy(embedding.begin(), embedding.end(), out_buffer + idx);
+            idx += embedding.size();
+        }
         return true;
     }
 }

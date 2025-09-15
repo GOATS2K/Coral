@@ -73,6 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\include\eigen3;$(MSBuildProjectDirectory)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(MSBuildProjectDirectory)\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>essentia_bindings</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -123,7 +124,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avcodec.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avformat.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\avutil.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\chromaprint.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\fftw3f.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\samplerate.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\swresample.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\tag.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\tensorflow.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\vamp-hostsdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\vamp-sdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\yaml.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\zlibd.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\lib\essentia_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\avcodec.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\avformat.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\avutil.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\chromaprint.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\fftw3f.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\samplerate.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\swresample.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\tag.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\tensorflow.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\vamp-hostsdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\vamp-sdk.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\yaml.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\zlibd.lib;C:\Projects\Coral\src\Coral.Essentia.Bindings\wrapper\lib\essentia_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <AdditionalLibraryDirectories>C:\Projects\Coral\src\Coral.Essentia.Bindings\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

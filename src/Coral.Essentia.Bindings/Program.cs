@@ -5,10 +5,10 @@ var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs6
 
 List<string> tracks =
 [
-    @"P:\Music\Downloads\Halogenix - Let Me Explain.opus",
-    @"P:\Music\Halogenix - Edits Vol. 1 (2021) [WEB FLAC]\03 - San Holo - Always On My Mind (feat. James Vincent McMorrow & Yvette Young) (Halogenix Edit).flac",
-    @"P:\Music\Ichiko Aoba (青葉市子) - Radio (ラヂヲ) (2013) [CD FLAC]\05 - Ichiko Aoba - 不和リン.flac",
-    @"P:\Music\50 Cent - The Massacre (2005) [WEB FLAC]\03 - 50 Cent - This Is 50.flac"
+    @"D:\Syncthing\Music\Gregory Porter - Holding On (Velocity Bootleg)_final.mp3",
+    @"D:\Syncthing\Music\Ghostface_Feat_NeYo_-_Back_Like_That_(Marky_&_Bungle_Remix).mp3",
+    @"D:\Syncthing\Music\Fluidity - Leave Me Alone.mp3",
+    @"D:\Syncthing\Music\dRamatic_amp_dbAudio-Smile.mp3"
 ];
 
 using var essentia = new EssentiaService();

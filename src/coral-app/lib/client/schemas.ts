@@ -5,9 +5,9 @@
  */
 export type AlbumDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
   artists: SimpleArtistDto[];
   type?: AlbumType;
@@ -24,9 +24,9 @@ export type AlbumType = "Single" | "EP" | "MiniAlbum" | "Album" | "Compilation";
 
 export type ArtistDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
   releases: SimpleAlbumDto[];
   featuredIn: SimpleAlbumDto[];
@@ -38,9 +38,9 @@ export type ArtistRole = "Main" | "Guest" | "Remixer";
 
 export type ArtistWithRoleDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
   role: ArtistRole;
 };
@@ -54,17 +54,17 @@ export type ArtworkDto = {
 
 export type AudioFile = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   /**
    * @format date-time
    */
-  dateIndexed: string;
+  createdAt: string;
   /**
    * @format date-time
    */
-  dateModified: string;
+  updatedAt: string;
   filePath: string;
   /**
    * @format double
@@ -76,17 +76,17 @@ export type AudioFile = {
 
 export type AudioMetadata = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   /**
    * @format date-time
    */
-  dateIndexed: string;
+  createdAt: string;
   /**
    * @format date-time
    */
-  dateModified: string;
+  updatedAt: string;
   /**
    * @format int32
    */
@@ -108,25 +108,25 @@ export type AudioMetadata = {
 
 export type GenreDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
 };
 
 export type MusicLibrary = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   /**
    * @format date-time
    */
-  dateIndexed: string;
+  createdAt: string;
   /**
    * @format date-time
    */
-  dateModified: string;
+  updatedAt: string;
   libraryPath: string;
   /**
    * @format date-time
@@ -137,9 +137,9 @@ export type MusicLibrary = {
 
 export type MusicLibraryDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   libraryPath: string;
   /**
    * @format date-time
@@ -173,9 +173,9 @@ export type SearchResultPaginatedCustomData = {
 
 export type SimpleAlbumDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
   artists: SimpleArtistDto[];
   type?: AlbumType;
@@ -204,9 +204,9 @@ export type SimpleAlbumDtoPaginatedQuery = {
 
 export type SimpleArtistDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   name: string;
 };
 
@@ -228,9 +228,9 @@ export type SimpleArtistDtoPaginatedQuery = {
 
 export type SimpleTrackDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   title: string;
   /**
    * @format int32
@@ -256,9 +256,9 @@ export type StreamDto = {
 
 export type TrackDto = {
   /**
-   * @format int32
+   * @format uuid
    */
-  id: number;
+  id: string;
   title: string;
   /**
    * @format int32

@@ -16,9 +16,9 @@ type QueryFnOptions = {
 
 export type ArtworkFromIdPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  artworkId: number;
+  artworkId: string;
 };
 
 export type ArtworkFromIdError = Fetcher.ErrorWrapper<undefined>;
@@ -257,9 +257,9 @@ export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData,>(
 
 export type LogPlaybackPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type LogPlaybackError = Fetcher.ErrorWrapper<undefined>;
@@ -345,9 +345,9 @@ export const useLogPlayback = <TData = undefined,>(
 
 export type FileFromLibraryPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type FileFromLibraryError = Fetcher.ErrorWrapper<undefined>;
@@ -441,9 +441,9 @@ export const useFileFromLibrary = <TData = undefined,>(
 
 export type TranscodeTrackPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type TranscodeTrackQueryParams = {
@@ -549,9 +549,9 @@ export const useTranscodeTrack = <TData = Schemas.StreamDto,>(
 
 export type StreamTrackPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  trackId: number;
+  trackId: string;
 };
 
 export type StreamTrackQueryParams = {
@@ -1065,9 +1065,9 @@ export const usePaginatedArtists = <
 
 export type AlbumPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  albumId: number;
+  albumId: string;
 };
 
 export type AlbumError = Fetcher.ErrorWrapper<undefined>;
@@ -1146,9 +1146,9 @@ export const useAlbum = <TData = Schemas.AlbumDto,>(
 
 export type ArtistPathParams = {
   /**
-   * @format int32
+   * @format uuid
    */
-  artistId: number;
+  artistId: string;
 };
 
 export type ArtistError = Fetcher.ErrorWrapper<undefined>;

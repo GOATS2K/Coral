@@ -139,7 +139,7 @@ public class ArtworkService : IArtworkService
         return await GetProminentColorsForImage(artwork.Path);
     }
 
-    private static async Task<string[]> GetProminentColorsForImage(string filePath)
+    private async Task<string[]> GetProminentColorsForImage(string filePath)
     {
         using var image = await Image.LoadAsync<Rgba32>(filePath);
 
@@ -154,12 +154,20 @@ public class ArtworkService : IArtworkService
             })));
 
         var pixels = new List<PixelColor>();
-        for (var i = 0; i < image.Height; i++)
+        for (var i = 0; i < image.Width; i++)
         {
-            for (var j = 0; j < image.Width; j++)
+            for (var j = 0; j < image.Height; j++)
             {
-                var color = image[i, j];
-                pixels.Add(new PixelColor(color, GetBrightness(color)));
+                try
+                {
+                    var color = image[i, j];
+                    pixels.Add(new PixelColor(color, GetBrightness(color)));
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    _logger.LogError(ex, "Failed to get colors for artwork: {FilePath}", filePath);
+                    _logger.LogInformation("I: {IValue}, J: {JValue} - Dimensions: {ImageDimensions}", i, j, $"{image.Width}x{image.Height}");
+                }
             }
         }
 
@@ -169,6 +177,8 @@ public class ArtworkService : IArtworkService
             .Select(c => $"#{c.Color.ToHex().Substring(0, 6)}")
             .Take(3)
             .ToArray();
+        
+        _logger.LogDebug("Successfully got artwork colors for {FilePath}", filePath);
         
         return colors;
     }

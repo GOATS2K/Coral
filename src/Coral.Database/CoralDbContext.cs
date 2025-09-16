@@ -18,16 +18,12 @@ public class CoralDbContext : DbContext
     public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
     public DbSet<RecordLabel> RecordLabels { get; set; } = null!;
-
-    private string DbPath { get; }
+    public DbSet<TrackEmbedding> TrackEmbeddings { get; set; } = null!;
 
 
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
         : base(options)
     {
-        var path = ApplicationConfiguration.AppData;
-        Directory.CreateDirectory(path);
-        DbPath = Path.Join(path, "Coral.db");
     }
 
     // The following configures EF to create a Sqlite database file in the
@@ -36,50 +32,20 @@ public class CoralDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseSqlite($"Data Source={DbPath}", opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
-            // options.EnableSensitiveDataLogging();
+            // TODO: Make this user-configurable
+            options.UseNpgsql("Host=localhost;Username=postgres;Password=admin;Database=coral", opt => opt.UseVector());
         }
     }
-
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(KeywordConfiguration).Assembly);
+        modelBuilder.HasPostgresExtension("vector");
         
-        // do not create the inherited base table
-        modelBuilder.Ignore<BaseTable>();
-
-        // set CURRENT_TIMESTAMP on entities inherting from BaseTable
-        var baseTableTypes = GetBaseTableTypes();
-        foreach (var type in baseTableTypes)
-        {
-            modelBuilder.Entity(type)
-                .Property("DateIndexed")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .ValueGeneratedOnAdd();
-        }
-
-
-        var tableTypes = GetDatabaseTableTypes();
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (!tableTypes.Contains(entityType.ClrType))
-                continue;
-
-            // https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api#table-name
-            modelBuilder.Entity(entityType.ClrType).ToTable(entityType.ClrType.Name);
-        }
-    }
-
-    private static Type[] GetDatabaseTableTypes()
-    {
-        return typeof(CoralDbContext).GetProperties()
-            .Where(p => typeof(IQueryable).IsAssignableFrom(p.PropertyType))
-            .Select(p => p.PropertyType.GetGenericArguments()[0])
-            .ToArray();
-    }
-
-    private static Type[] GetBaseTableTypes()
-    {
-        return GetDatabaseTableTypes().Where(t => typeof(BaseTable) == t.BaseType).ToArray();
+        modelBuilder.Entity<TrackEmbedding>()
+            .HasIndex(i => i.Embedding)
+            .HasMethod("hnsw")
+            .HasOperators("vector_cosine_ops")
+            .HasStorageParameter("m", 16)
+            .HasStorageParameter("ef_construction", 64);
     }
 }

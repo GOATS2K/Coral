@@ -6,20 +6,10 @@ namespace Coral.Database;
 
 public class CoralDbContextFactory : IDesignTimeDbContextFactory<CoralDbContext>
 {
-    private string DbPath { get; set; }
-    
-    public CoralDbContextFactory()
-    {
-        var path = ApplicationConfiguration.AppData;
-        Directory.CreateDirectory(path);
-        DbPath = Path.Join(path, "Coral.db");
-    }
-    
     public CoralDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<CoralDbContext>();
-        optionsBuilder.UseSqlite($"Data Source={DbPath}",
-            opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        optionsBuilder.UseNpgsql("Host=localhost;Username=postgres;Password=postgres;Database=coral", opt => opt.UseVector());
         return new CoralDbContext(optionsBuilder.Options);
     }
 }

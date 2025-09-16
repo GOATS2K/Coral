@@ -16,7 +16,7 @@ public class ArtworkController : ControllerBase
 
     [HttpGet]
     [Route("{artworkId}")]
-    public async Task<ActionResult> ArtworkFromId(int artworkId)
+    public async Task<ActionResult> ArtworkFromId(Guid artworkId)
     {
         var artworkPath = await _artworkService.GetArtworkPath(artworkId);
         if (artworkPath == null) return NotFound();

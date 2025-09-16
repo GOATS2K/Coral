@@ -254,7 +254,7 @@ public class IndexerService : IIndexerService
             var existingFiles = await _context.AudioFiles.Where(f => f.Library.Id == library.Id).ToListAsync();
             predicate = f =>
                 AudioFileFormats.Contains(Path.GetExtension(f.FullName))
-                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.DateModified);
+                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.UpdatedAt);
         }
         else
         {
@@ -452,14 +452,14 @@ public class IndexerService : IIndexerService
         indexedTrack.AudioFile = new AudioFile()
         {
             FilePath = atlTrack.Path,
-            DateModified = File.GetLastWriteTimeUtc(atlTrack.Path),
+            UpdatedAt = File.GetLastWriteTimeUtc(atlTrack.Path),
             FileSizeInBytes = new FileInfo(atlTrack.Path).Length,
             AudioMetadata = GetAudioMetadata(atlTrack),
             Library = library
         };
         _logger.LogDebug("Indexing track: {TrackPath}", atlTrack.Path);
 
-        if (indexedTrack.Id == 0) _context.Tracks.Add(indexedTrack);
+        if (indexedTrack.Id == Guid.Empty) _context.Tracks.Add(indexedTrack);
         else _context.Tracks.Update(indexedTrack);
         return indexedTrack;
     }
@@ -627,7 +627,7 @@ public class IndexerService : IIndexerService
         var label = new RecordLabel()
         {
             Name = labelName!,
-            DateIndexed = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
         };
         _context.RecordLabels.Add(label);
         return label;
@@ -644,7 +644,7 @@ public class IndexerService : IIndexerService
             DiscTotal = atlTrack.DiscTotal,
             TrackTotal = atlTrack.TrackTotal,
             CatalogNumber = atlTrack.CatalogNumber,
-            DateIndexed = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             Artworks = new List<Artwork>()
         };
         if (label is not null)

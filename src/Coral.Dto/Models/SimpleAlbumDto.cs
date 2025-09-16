@@ -4,7 +4,7 @@ namespace Coral.Dto.Models
 {
     public record SimpleAlbumDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public IEnumerable<SimpleArtistDto> Artists { get; set; } = null!;
         public AlbumType? Type { get; set; }

@@ -2,16 +2,29 @@
 using Coral.Essentia.Bindings;
 
 var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs64-1.pb";
-var trackPath = @"P:\Music\Rare Dubs\Producer-sourced\Friends\Satl - Guilty v3 [Closure Master 2 24-44].flac";
-var track2 = @"P:\Music\Lenzman - A Little While Longer (2021) [NQ025] [WEB FLAC]\05 - Lenzman - Starlight (feat. Fox).flac";
+
+List<string> tracks =
+[
+    @"P:\Music\Downloads\Halogenix - Let Me Explain.opus",
+    @"P:\Music\Halogenix - Edits Vol. 1 (2021) [WEB FLAC]\03 - San Holo - Always On My Mind (feat. James Vincent McMorrow & Yvette Young) (Halogenix Edit).flac",
+    @"P:\Music\Ichiko Aoba (青葉市子) - Radio (ラヂヲ) (2013) [CD FLAC]\05 - Ichiko Aoba - 不和リン.flac",
+    @"P:\Music\50 Cent - The Massacre (2005) [WEB FLAC]\03 - 50 Cent - This Is 50.flac"
+];
+
+using var essentia = new Essentia();
+essentia.LoadModel(modelPath);
 
 var sw = Stopwatch.StartNew();
-using var essentia = new Essentia();
-essentia.LoadAudio(trackPath);
-essentia.LoadModel(modelPath);
-var e1 = essentia.RunInference();
-Console.WriteLine($"[{sw.Elapsed.TotalSeconds}s] Got embeddings for track 1 - {e1[0]}.");
-
-essentia.LoadAudio(track2);
-var e2 = essentia.RunInference();
-Console.WriteLine($"[{sw.Elapsed.TotalSeconds}s] Got embeddings for track 2 - {e2[0]}.");
+foreach (var track in tracks)
+{
+    try
+    {
+        essentia.LoadAudio(track);
+        var emb = essentia.RunInference();
+        Console.WriteLine($"[{sw.Elapsed.TotalSeconds}s] {string.Join(", ", emb[..4])}");
+    }
+    catch (EssentiaException e)
+    {
+        Console.WriteLine($"Failed to get embeddings: {e.Message}");
+    }
+}

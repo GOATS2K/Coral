@@ -18,12 +18,14 @@ public static class EssentiaBindings
     /// </summary>
     /// <param name="filename">Path to audio file</param>
     /// <param name="sampleRate">Sample rate for audio processing</param>
+    /// <param name="resampleQuality">Resampling accuracy, lower number for higher accuracy, trading performance.</param>
     /// <returns>True if configuration successful, false otherwise</returns>
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool ew_configure_mono_loader(
-        [MarshalAs(UnmanagedType.LPStr)] string filename,
-        int sampleRate);
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string filename,
+        int sampleRate,
+        int resampleQuality);
 
     /// <summary>
     /// Configure the TensorFlow model with model path
@@ -32,7 +34,7 @@ public static class EssentiaBindings
     /// <returns>True if configuration successful, false otherwise</returns>
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static extern bool ew_configure_tf_model([MarshalAs(UnmanagedType.LPStr)] string modelPath);
+    public static extern bool ew_configure_tf_model([MarshalAs(UnmanagedType.LPUTF8Str)] string modelPath);
 
     /// <summary>
     /// Run inference on loaded audio using the configured model

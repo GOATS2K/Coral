@@ -11,7 +11,7 @@ List<string> tracks =
     @"P:\Music\50 Cent - The Massacre (2005) [WEB FLAC]\03 - 50 Cent - This Is 50.flac"
 ];
 
-using var essentia = new Essentia();
+using var essentia = new EssentiaService();
 essentia.LoadModel(modelPath);
 
 var sw = Stopwatch.StartNew();

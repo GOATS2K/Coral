@@ -3,10 +3,8 @@ using NumSharp;
 
 namespace Coral.Essentia.Bindings;
 
-public class Essentia : IDisposable
+public class EssentiaService : IDisposable
 {
-    private IntPtr _monoLoaderInstance = IntPtr.Zero;
-    private IntPtr _tfModelInstance = IntPtr.Zero;
     private bool _disposed = false;
 
     public void Dispose()

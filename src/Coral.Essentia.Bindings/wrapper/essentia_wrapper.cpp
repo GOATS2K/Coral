@@ -72,7 +72,7 @@ extern "C" {
 
     bool ew_configure_mono_loader(const char* filename, int sampleRate) {
         try {
-            ew_get_mono_loader()->configure("filename", std::string(filename), "sampleRate", sampleRate);
+            ew_get_mono_loader()->configure("filename", std::string(filename), "sampleRate", sampleRate, "resampleQuality", 4);
             return true;
         }
         catch (const std::exception& e) {

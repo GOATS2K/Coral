@@ -42,6 +42,13 @@
 	<ItemGroup>
 	  <Folder Include="Properties\PublishProfiles\" />
 	</ItemGroup>
+
+    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <BindingLibraries Include="..\Coral.Essentia.Bindings\lib\**" />
+        </ItemGroup>
+        <Copy SourceFiles="@(BindingLibraries)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
+    </Target>
 	
 	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->

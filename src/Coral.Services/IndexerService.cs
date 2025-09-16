@@ -8,6 +8,7 @@ using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using Coral.Services.ChannelWrappers;
 
 namespace Coral.Services;
 
@@ -35,9 +36,10 @@ public class IndexerService : IIndexerService
     private static readonly string[] ImageFileFormats = [".jpg", ".png"];
     private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
     private readonly IMapper _mapper;
+    private readonly IEmbeddingChannel _embeddingChannel;
 
     public IndexerService(CoralDbContext context, ISearchService searchService, ILogger<IndexerService> logger,
-        IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter, IMapper mapper)
+        IArtworkService artworkService, MusicLibraryRegisteredEventEmitter eventEmitter, IMapper mapper, IEmbeddingChannel embeddingChannel)
     {
         _context = context;
         _searchService = searchService;
@@ -45,6 +47,7 @@ public class IndexerService : IIndexerService
         _artworkService = artworkService;
         _musicLibraryRegisteredEventEmitter = eventEmitter;
         _mapper = mapper;
+        _embeddingChannel = embeddingChannel;
     }
 
     public async Task<List<MusicLibraryDto>> GetMusicLibraries()
@@ -459,8 +462,18 @@ public class IndexerService : IIndexerService
         };
         _logger.LogDebug("Indexing track: {TrackPath}", atlTrack.Path);
 
-        if (indexedTrack.Id == Guid.Empty) _context.Tracks.Add(indexedTrack);
-        else _context.Tracks.Update(indexedTrack);
+        if (indexedTrack.Id == Guid.Empty)
+        {
+            indexedTrack.Id = Guid.NewGuid();
+            _context.Tracks.Add(indexedTrack);
+        }
+        else
+        {
+            indexedTrack.UpdatedAt = DateTime.UtcNow;
+            _context.Tracks.Update(indexedTrack);
+        }
+        
+        await _embeddingChannel.GetWriter().WriteAsync(indexedTrack);
         return indexedTrack;
     }
 

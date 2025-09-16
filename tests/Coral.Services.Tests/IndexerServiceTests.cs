@@ -2,6 +2,7 @@ using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Events;
+using Coral.Services.ChannelWrappers;
 using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,12 +23,13 @@ public class IndexerServiceTests : IDisposable
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
         var paginationService = Substitute.For<IPaginationService>();
+        var embeddingChannel = Substitute.For<IEmbeddingChannel>();
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
         var artworkService = new ArtworkService(testDatabase.Context, artworkLogger);
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
 
         _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService, eventEmitter, testDatabase.Mapper);
+        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService, eventEmitter, testDatabase.Mapper, embeddingChannel);
     }
     public void Dispose()
     {

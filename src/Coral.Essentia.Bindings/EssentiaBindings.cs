@@ -14,42 +14,25 @@ public static class EssentiaBindings
     public static extern void ew_clean_up();
 
     /// <summary>
-    /// Create a MonoLoader instance
-    /// </summary>
-    /// <returns>Pointer to MonoLoader instance, or IntPtr.Zero on failure</returns>
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr ew_create_mono_loader();
-
-    /// <summary>
     /// Configure the MonoLoader with filename and sample rate
     /// </summary>
-    /// <param name="instance">MonoLoader instance pointer</param>
     /// <param name="filename">Path to audio file</param>
     /// <param name="sampleRate">Sample rate for audio processing</param>
     /// <returns>True if configuration successful, false otherwise</returns>
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static extern bool ew_configure_mono_loader(IntPtr instance, 
-        [MarshalAs(UnmanagedType.LPStr)] string filename, 
+    public static extern bool ew_configure_mono_loader(
+        [MarshalAs(UnmanagedType.LPStr)] string filename,
         int sampleRate);
-
-    /// <summary>
-    /// Create a TensorFlow model instance
-    /// </summary>
-    /// <returns>Pointer to TensorFlow model instance, or IntPtr.Zero on failure</returns>
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr ew_create_tf_model();
 
     /// <summary>
     /// Configure the TensorFlow model with model path
     /// </summary>
-    /// <param name="instance">TensorFlow model instance pointer</param>
     /// <param name="modelPath">Path to the TensorFlow model file</param>
     /// <returns>True if configuration successful, false otherwise</returns>
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static extern bool ew_configure_tf_model(IntPtr instance, 
-        [MarshalAs(UnmanagedType.LPStr)] string modelPath);
+    public static extern bool ew_configure_tf_model([MarshalAs(UnmanagedType.LPStr)] string modelPath);
 
     /// <summary>
     /// Run inference on loaded audio using the configured model

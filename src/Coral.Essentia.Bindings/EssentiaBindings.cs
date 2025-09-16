@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Coral.Essentia.Bindings;
 
-public static class EssentiaBindings
+internal static class EssentiaBindings
 {
     private const string DllName = "essentia_bindings.dll";
 

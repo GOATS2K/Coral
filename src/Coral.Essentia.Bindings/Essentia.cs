@@ -15,27 +15,16 @@ public class Essentia : IDisposable
             EssentiaBindings.ew_clean_up();
     }
 
-    public void Initialize()
-    {
-        _monoLoaderInstance = EssentiaBindings.ew_create_mono_loader();
-        _tfModelInstance = EssentiaBindings.ew_create_tf_model();
-
-        if (_monoLoaderInstance == IntPtr.Zero || _tfModelInstance == IntPtr.Zero)
-        {
-            throw new EssentiaException("Failed to initialize Essentia");
-        }
-    }
-
     public void LoadAudio(string filePath, int sampleRate = 16000)
     {
-        var loadSuccess = EssentiaBindings.ew_configure_mono_loader(_monoLoaderInstance, filePath, sampleRate);
+        var loadSuccess = EssentiaBindings.ew_configure_mono_loader(filePath, sampleRate);
         if (!loadSuccess)
             throw new EssentiaException($"Failed to configure mono loader: {GetError()}");
     }
 
     public void LoadModel(string filePath)
     {
-        var loadSuccess = EssentiaBindings.ew_configure_tf_model(_tfModelInstance, filePath);
+        var loadSuccess = EssentiaBindings.ew_configure_tf_model(filePath);
         if (!loadSuccess)
             throw new EssentiaException($"Failed to configure tf model: {GetError()}");
     }

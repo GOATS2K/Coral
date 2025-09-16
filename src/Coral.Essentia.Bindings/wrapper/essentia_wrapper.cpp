@@ -49,17 +49,18 @@ extern "C" {
         return lengthWithNullTerminator;
     }
 
-    void* ew_create_mono_loader() {
+    essentia::standard::Algorithm* ew_get_mono_loader() {
         try {
             if (!hasInitialized) {
                 essentia::init();
                 hasInitialized = true;
             }
 
-            essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
-            if (monoLoaderInstance) {
+            if (monoLoaderInstance != nullptr) {
                 return monoLoaderInstance;
             }
+
+            essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
             monoLoaderInstance = factory.create("MonoLoader");
             return monoLoaderInstance;
         }
@@ -69,9 +70,9 @@ extern "C" {
         }
     }
 
-    bool ew_configure_mono_loader(void* instance, const char* filename, int sampleRate) {
+    bool ew_configure_mono_loader(const char* filename, int sampleRate) {
         try {
-            monoLoaderInstance->configure("filename", std::string(filename), "sampleRate", sampleRate);
+            ew_get_mono_loader()->configure("filename", std::string(filename), "sampleRate", sampleRate);
             return true;
         }
         catch (const std::exception& e) {
@@ -80,7 +81,7 @@ extern "C" {
         }
     }
 
-    void* ew_create_tf_model() {
+    essentia::standard::Algorithm* ew_get_tf_model() {
         try {
             if (!hasInitialized) {
                 essentia::init();
@@ -88,8 +89,8 @@ extern "C" {
             }
 
             essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
-            if (tfModelInstance) {
-                delete tfModelInstance;
+            if (tfModelInstance != nullptr) {
+                return tfModelInstance;
             }
             tfModelInstance = factory.create("TensorflowPredictEffnetDiscogs");
             return tfModelInstance;
@@ -99,9 +100,9 @@ extern "C" {
         }
     }
 
-    bool ew_configure_tf_model(void* instance, const char* model_path) {
+    bool ew_configure_tf_model(const char* model_path) {
         try {
-            tfModelInstance->configure("graphFilename", std::string(model_path), "output", "PartitionedCall:1");
+            ew_get_tf_model()->configure("graphFilename", std::string(model_path), "output", "PartitionedCall:1");
             return true;
         }
         catch (const std::exception& e) {
@@ -114,6 +115,7 @@ extern "C" {
         try {
             monoLoaderInstance->reset();
             tfModelInstance->reset();
+            lastEmbeddings.clear();
 
             std::vector<essentia::Real> audioBuffer;
             monoLoaderInstance->output("audio").set(audioBuffer);

@@ -1,21 +1,22 @@
-﻿    using AutoMapper;
-    using Coral.Database;
+﻿using AutoMapper;
+using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using Coral.Services.Models;
 using Diacritics.Extensions;
-    using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-    using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
-    namespace Coral.Services
+namespace Coral.Services
 {
     public interface ISearchService
     {
         public Task InsertKeywordsForTrack(Track track);
         public Task<PaginatedCustomData<SearchResult>> Search(string query, int offset = 0, int limit = 100);
     }
+
     public class SearchService : ISearchService
     {
         private readonly IMapper _mapper;
@@ -23,7 +24,8 @@ using Microsoft.Extensions.Logging;
         private readonly CoralDbContext _context;
         private readonly IPaginationService _paginationService;
 
-        public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger, IPaginationService paginationService)
+        public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
+            IPaginationService paginationService)
         {
             _mapper = mapper;
             _context = context;
@@ -68,6 +70,7 @@ using Microsoft.Extensions.Logging;
                 });
                 track.Keywords.AddRange(newKeywords);
             }
+
             await _context.SaveChangesAsync();
         }
 
@@ -76,7 +79,9 @@ using Microsoft.Extensions.Logging;
             var searchResult = await GetTracksForKeywords(query);
 
             // fetch tracks matching query
-            var paginated = await _paginationService.PaginateQuery<Track, TrackDto>(t => t.Where(tr => searchResult.Contains(tr.Id)), offset, limit);
+            var paginated =
+                await _paginationService.PaginateQuery<Track, TrackDto>(
+                    t => t.Where(tr => searchResult.Contains(tr.Id)), offset, limit);
             var tracks = paginated.Data;
 
             var artists = tracks.Select(a => a.Artists)
@@ -85,11 +90,11 @@ using Microsoft.Extensions.Logging;
             var finalResults = new SearchResult()
             {
                 Albums = tracks.Select(t => t.Album)
-                .Distinct(new SimpleAlbumDtoComparer())
-                .ToList(),
+                    .Distinct(new SimpleAlbumDtoComparer())
+                    .ToList(),
                 Artists = artists
-                .Distinct(new SimpleArtistDtoComparer())
-                .ToList(),
+                    .Distinct(new SimpleArtistDtoComparer())
+                    .ToList(),
                 Tracks = tracks
             };
 
@@ -102,21 +107,21 @@ using Microsoft.Extensions.Logging;
             };
         }
 
-        private async Task<List<int>> GetTracksForKeywords(string query)
+        private async Task<List<Guid>> GetTracksForKeywords(string query)
         {
             // get all tracks matching keywords
             var keywords = ProcessInputString(query);
-            var lastResult = new List<int>();
-            var currentSearchResult = new List<int>();
+            var lastResult = new List<Guid>();
+            var currentSearchResult = new List<Guid>();
             foreach (var keyword in keywords)
             {
                 var currentKeywordResult = await _context.Keywords
-                            .AsNoTracking()
-                            .Where(k => EF.Functions.Like(k.Value, $"%{keyword}%"))
-                            .Select(k => k.Tracks)
-                            .SelectMany(t => t)
-                            .Select(t => t.Id)
-                            .ToListAsync();
+                    .AsNoTracking()
+                    .Where(k => EF.Functions.Like(k.Value, $"%{keyword}%"))
+                    .Select(k => k.Tracks)
+                    .SelectMany(t => t)
+                    .Select(t => t.Id)
+                    .ToListAsync();
 
                 // if last keyword is not empty, perform an intersection with new result
                 if (lastResult.Any())

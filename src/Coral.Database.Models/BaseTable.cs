@@ -2,8 +2,8 @@
 {
     public abstract class BaseTable
     {
-        public int Id { get; set; }
-        public DateTime DateIndexed { get; set; }
-        public DateTime DateModified { get; set; }
+        public Guid Id { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
 }

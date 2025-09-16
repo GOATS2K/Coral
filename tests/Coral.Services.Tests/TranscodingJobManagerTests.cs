@@ -12,7 +12,7 @@ namespace Coral.Services.Tests
         private readonly IEncoderFactory _encoderFactory;
         public Track TestTrack { get; } = new Track()
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             Artists = new List<ArtistWithRole>()
             {
                 new ArtistWithRole()
@@ -25,9 +25,9 @@ namespace Coral.Services.Tests
             },
             Album = new Album()
             {
-                Id = 1,
+                Id = Guid.NewGuid(),
                 Name = "Test Album 1",
-                DateIndexed = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow
             },
             Title = "A Nice Song",
             DurationInSeconds = 30,

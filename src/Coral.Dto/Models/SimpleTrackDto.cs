@@ -2,7 +2,7 @@
 
 public class SimpleTrackDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public string Title { get; init; } = null!;
     public int DurationInSeconds { get; set; }
     public int TrackNumber { get; set; }

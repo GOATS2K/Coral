@@ -5,28 +5,33 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    [Migration("20230515225416_MusicLibrarySeparation3")]
-    partial class MusicLibrarySeparation3
+    [Migration("20250916201140_PgMigration1")]
+    partial class PgMigration1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "7.0.2");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("AlbumArtistWithRole", b =>
                 {
-                    b.Property<int>("AlbumsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AlbumsId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("ArtistsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ArtistsId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("AlbumsId", "ArtistsId");
 
@@ -37,11 +42,11 @@ namespace Coral.Database.Migrations
 
             modelBuilder.Entity("ArtistWithRoleTrack", b =>
                 {
-                    b.Property<int>("ArtistsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ArtistsId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("TracksId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("TracksId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("ArtistsId", "TracksId");
 
@@ -52,157 +57,160 @@ namespace Coral.Database.Migrations
 
             modelBuilder.Entity("Coral.Database.Models.Album", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CatalogNumber")
+                        .HasColumnType("text");
 
                     b.Property<string>("CoverFilePath")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("DiscTotal")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LabelId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<int?>("ReleaseYear")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("TrackTotal")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("Type")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Upc")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Type");
+                    b.HasIndex("LabelId");
 
-                    b.ToTable("Album", (string)null);
+                    b.ToTable("Albums");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Artist", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Artist", (string)null);
+                    b.ToTable("Artists");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.ArtistWithRole", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Role")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ArtistId");
 
-                    b.ToTable("ArtistWithRole", (string)null);
+                    b.ToTable("ArtistsWithRoles");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Artwork", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AlbumId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                    b.PrimitiveCollection<string[]>("Colors")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Height")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Path")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<int>("Size")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Width")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AlbumId");
 
-                    b.ToTable("Artwork", (string)null);
+                    b.ToTable("Artworks");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.AudioFile", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AudioMetadataId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AudioMetadataId")
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FilePath")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<decimal>("FileSizeInBytes")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("numeric");
 
-                    b.Property<int>("LibraryId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -210,156 +218,168 @@ namespace Coral.Database.Migrations
 
                     b.HasIndex("LibraryId");
 
-                    b.ToTable("AudioFile", (string)null);
+                    b.ToTable("AudioFiles");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.AudioMetadata", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("BitDepth")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Bitrate")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
-                    b.Property<int>("Channels")
-                        .HasColumnType("INTEGER");
+                    b.Property<int?>("Channels")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Codec")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<double>("SampleRate")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("AudioMetadata", (string)null);
+                    b.ToTable("AudioMetadata");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Genre", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Genre", (string)null);
+                    b.ToTable("Genres");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Keyword", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Value");
-
-                    b.ToTable("Keyword", (string)null);
+                    b.ToTable("Keywords");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("LastScan")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LibraryPath")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("MusicLibrary", (string)null);
+                    b.ToTable("MusicLibraries");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RecordLabels");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AlbumId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AudioFileId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("AudioFileId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("DateIndexed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime>("DateModified")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("DiscNumber")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int>("DurationInSeconds")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
-                    b.Property<int?>("GenreId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("GenreId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Isrc")
+                        .HasColumnType("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<int?>("TrackNumber")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -369,16 +389,16 @@ namespace Coral.Database.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("Track", (string)null);
+                    b.ToTable("Tracks");
                 });
 
             modelBuilder.Entity("KeywordTrack", b =>
                 {
-                    b.Property<int>("KeywordsId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("KeywordsId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("TracksId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("TracksId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("KeywordsId", "TracksId");
 
@@ -415,6 +435,15 @@ namespace Coral.Database.Migrations
                         .HasForeignKey("TracksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Album", b =>
+                {
+                    b.HasOne("Coral.Database.Models.RecordLabel", "Label")
+                        .WithMany("Releases")
+                        .HasForeignKey("LabelId");
+
+                    b.Navigation("Label");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.ArtistWithRole", b =>
@@ -518,6 +547,11 @@ namespace Coral.Database.Migrations
             modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
                 {
                     b.Navigation("AudioFiles");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
+                {
+                    b.Navigation("Releases");
                 });
 #pragma warning restore 612, 618
         }

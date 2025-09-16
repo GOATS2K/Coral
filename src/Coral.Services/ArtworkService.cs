@@ -17,9 +17,9 @@ public interface IArtworkService
 {
     Task ProcessArtwork(Album album, string artworkPath);
     Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
-    Task<string?> GetArtworkPath(int artworkId);
+    Task<string?> GetArtworkPath(Guid artworkId);
     Task DeleteArtwork(Artwork artwork);
-    Task<string[]> GetProminentColors(int artworkId);
+    Task<string[]> GetProminentColors(Guid artworkId);
 }
 
 internal record PixelColor(Rgba32 Color, int Brightness);
@@ -35,7 +35,7 @@ public class ArtworkService : IArtworkService
         _logger = logger;
     }
 
-    public async Task<string?> GetPathForOriginalAlbumArtwork(int albumId)
+    public async Task<string?> GetPathForOriginalAlbumArtwork(Guid albumId)
     {
         return await _context.Artworks
             .Where(a => a.Album.Id == albumId && a.Size == ArtworkSize.Original)
@@ -43,7 +43,7 @@ public class ArtworkService : IArtworkService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<string?> GetArtworkPath(int artworkId)
+    public async Task<string?> GetArtworkPath(Guid artworkId)
     {
         return await _context.Artworks
             .Where(a => a.Id == artworkId)
@@ -128,7 +128,7 @@ public class ArtworkService : IArtworkService
             c.B * c.B * .068);
     }
 
-    public async Task<string[]> GetProminentColors(int artworkId)
+    public async Task<string[]> GetProminentColors(Guid artworkId)
     {
         var artwork = await _context.Artworks
             .FirstOrDefaultAsync(t => t.Id == artworkId);

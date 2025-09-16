@@ -78,25 +78,25 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Tatora = new Artist()
         {
             Name = "Tatora",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.Artists.Add(Lenzman = new Artist()
         {
             Name = "Lenzman",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.Artists.Add(IchikoAoba = new Artist()
         {
             Name = "Ichiko Aoba",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.Artists.Add(RyuichiSakamoto = new Artist()
         {
             Name = "Ryuichi Sakamoto",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.ArtistsWithRoles.Add(LenzmanAsMain = new ArtistWithRole()
@@ -121,7 +121,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Slay = new Artist()
         {
             Name = "Slay",
-            DateIndexed = currentTime
+            CreatedAt = currentTime
         });
 
         Context.ArtistsWithRoles.Add(SlayAsGuest = new ArtistWithRole()
@@ -133,7 +133,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(DannySanchez = new Artist()
         {
             Name = "Danny Sanchez",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.ArtistsWithRoles.Add(DannySanchezAsGuest = new ArtistWithRole()
@@ -145,7 +145,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Fox = new Artist()
         {
             Name = "Fox",
-            DateIndexed = currentTime
+            CreatedAt = currentTime
         });
 
         Context.ArtistsWithRoles.Add(FoxAsGuest = new ArtistWithRole()
@@ -157,7 +157,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Satl = new Artist()
         {
             Name = "Satl",
-            DateIndexed = currentTime
+            CreatedAt = currentTime
         });
 
         Context.ArtistsWithRoles.Add(SatlAsGuest = new ArtistWithRole()
@@ -169,7 +169,7 @@ public class TestDatabase : IDisposable
         Context.Artists.Add(Jubei = new Artist()
         {
             Name = "Jubei",
-            DateIndexed = currentTime
+            CreatedAt = currentTime
         });
 
         Context.ArtistsWithRoles.Add(JubeiAsRemixer = new ArtistWithRole()
@@ -181,19 +181,19 @@ public class TestDatabase : IDisposable
         Context.Genres.Add(DrumAndBass = new Genre()
         {
             Name = "Drum & Bass",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.Genres.Add(Folk = new Genre()
         {
             Name = "Folk",
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
         });
 
         Context.Albums.Add(BelieveBlankPagesSingle = new Album()
         {
             Artists = new List<ArtistWithRole>(),
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             Name = "Believe / Blank Pages",
             ReleaseYear = 2020,
             TrackTotal = 2,
@@ -206,7 +206,7 @@ public class TestDatabase : IDisposable
             {
                 LenzmanAsMain, SlayAsGuest, DannySanchezAsGuest, FoxAsGuest, SatlAsGuest, JubeiAsRemixer
             },
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             Name = "A Little While Longer",
             Type = AlbumType.MiniAlbum,
             ReleaseYear = 2021,
@@ -221,7 +221,7 @@ public class TestDatabase : IDisposable
             {
                 IchikoAobaAsMain, RyuichiSakamotoAsGuest
             },
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             Name = "Radio",
             Type = AlbumType.Album,
             ReleaseYear = 2013,
@@ -241,7 +241,7 @@ public class TestDatabase : IDisposable
                 }
             },
             Album = BelieveBlankPagesSingle,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 269,
             DiscNumber = 1,
             TrackNumber = 1,
@@ -277,7 +277,7 @@ public class TestDatabase : IDisposable
                 }
             },
             Album = BelieveBlankPagesSingle,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 243,
             DiscNumber = 1,
             TrackNumber = 1,
@@ -311,7 +311,7 @@ public class TestDatabase : IDisposable
 
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 254,
             DiscNumber = 1,
             TrackNumber = 1,
@@ -342,7 +342,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 303,
             DiscNumber = 1,
             TrackNumber = 2,
@@ -375,7 +375,7 @@ public class TestDatabase : IDisposable
 
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 272,
             DiscNumber = 1,
             TrackNumber = 3,
@@ -406,7 +406,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 319,
             DiscNumber = 1,
             TrackNumber = 4,
@@ -437,7 +437,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain, FoxAsGuest
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 272,
             DiscNumber = 1,
             TrackNumber = 5,
@@ -468,7 +468,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 307,
             DiscNumber = 1,
             TrackNumber = 6,
@@ -499,7 +499,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain, SatlAsGuest
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 303,
             DiscNumber = 1,
             TrackNumber = 7,
@@ -530,7 +530,7 @@ public class TestDatabase : IDisposable
                 LenzmanAsMain, JubeiAsRemixer
             },
             Album = ALittleWhileLonger,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 330,
             DiscNumber = 1,
             TrackNumber = 8,
@@ -562,7 +562,7 @@ public class TestDatabase : IDisposable
                IchikoAobaAsMain, RyuichiSakamotoAsGuest
             },
             Album = Radio,
-            DateIndexed = currentTime,
+            CreatedAt = currentTime,
             DurationInSeconds = 264,
             DiscNumber = 1,
             TrackNumber = 5,

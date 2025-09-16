@@ -13,7 +13,7 @@ extern "C" {
 
     // --- Function Declarations ---
 
-    WRAPPER_API bool ew_configure_mono_loader(const char* filename, int sampleRate);
+    WRAPPER_API bool ew_configure_mono_loader(const char* filename, int sampleRate, int resampleQuality);
     WRAPPER_API bool ew_configure_tf_model(const char* model_path);
     WRAPPER_API int ew_run_inference();
     WRAPPER_API int ew_get_embedding_size();

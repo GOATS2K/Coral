@@ -15,9 +15,9 @@ public class Essentia : IDisposable
             EssentiaBindings.ew_clean_up();
     }
 
-    public void LoadAudio(string filePath, int sampleRate = 16000)
+    public void LoadAudio(string filePath, int sampleRate = 16000, int resampleQuality = 4)
     {
-        var loadSuccess = EssentiaBindings.ew_configure_mono_loader(filePath, sampleRate);
+        var loadSuccess = EssentiaBindings.ew_configure_mono_loader(filePath, sampleRate, resampleQuality);
         if (!loadSuccess)
             throw new EssentiaException($"Failed to configure mono loader: {GetError()}");
     }

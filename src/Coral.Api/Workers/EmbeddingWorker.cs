@@ -56,9 +56,7 @@ public class EmbeddingWorker : BackgroundService
             await using var scope = _scopeFactory.CreateAsyncScope();
             await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
             _essentia.LoadAudio(track.AudioFile.FilePath);
-            _logger.LogInformation("Loaded track: {FilePath} in {Time} seconds", track.AudioFile.FilePath,  sw.Elapsed.TotalSeconds);
             var embeddings = _essentia.RunInference();
-            _logger.LogInformation("Got embeddings for track: {FilePath} in {Time} seconds", track.AudioFile.FilePath,  sw.Elapsed.TotalSeconds);
             await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
             {
                 CreatedAt = DateTime.UtcNow,

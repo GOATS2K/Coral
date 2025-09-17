@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="NumSharp" Version="0.30.0" />
+      <PackageReference Include="z440.atl.core" Version="7.4.0" />
     </ItemGroup>
 
     <Target Name="CopyLibraries" AfterTargets="AfterBuild">

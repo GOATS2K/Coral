@@ -57,7 +57,7 @@ extern "C" {
             }
 
             if (monoLoaderInstance != nullptr) {
-                return monoLoaderInstance;
+                monoLoaderInstance = nullptr;
             }
 
             essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
@@ -113,6 +113,8 @@ extern "C" {
 
     int ew_run_inference() {
         try {
+            auto startTime = std::chrono::system_clock::now();
+
             monoLoaderInstance->reset();
             tfModelInstance->reset();
             lastEmbeddings.clear();
@@ -123,11 +125,18 @@ extern "C" {
             tfModelInstance->output("predictions").set(lastEmbeddings);
 
             monoLoaderInstance->compute();
+            std::chrono::duration<double> audioComputationTime = std::chrono::system_clock::now() - startTime;
+            auto audioInferenceCompletedTime = std::chrono::system_clock::now();
+            std::cout << "[Coral Essentia Wrapper] Audio computation completed in " << audioComputationTime.count() << " seconds" << "\n";
             if (audioBuffer.empty()) {
                 lastError = "Error: Audio buffer is empty after loading.";
                 return -1;
             }
             tfModelInstance->compute();
+            std::chrono::duration<double> inferenceComputationTime = std::chrono::system_clock::now() - audioInferenceCompletedTime;
+            std::cout << "[Coral Essentia Wrapper] Inference completed in " << inferenceComputationTime.count() << " seconds" << "\n";
+
+
             return 0;
         }
         catch (const std::exception& e) {

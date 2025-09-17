@@ -31,19 +31,19 @@ public class EssentiaService : IDisposable
     {
         var result = EssentiaBindings.ew_run_inference();
         if (result != 0)
-            return [];
+            throw new EssentiaException($"Failed to get embeddings: {GetError()}");
 
         var embeddingCount = EssentiaBindings.ew_get_embedding_count();
         var embeddingSize = EssentiaBindings.ew_get_embedding_size();
         var totalElements = EssentiaBindings.ew_get_total_embedding_elements();
         if (totalElements <= 0)
-            return [];
+            throw new EssentiaException($"Failed to get embeddings: {GetError()}");
 
         var flattenedEmbeddings = new float[totalElements];
         var success = EssentiaBindings.ew_get_embeddings_flattened(flattenedEmbeddings, totalElements);
         if (!success)
             throw new EssentiaException($"Failed to get embeddings: {GetError()}");
-
+        
         var ndArray = np.array(flattenedEmbeddings);
         var reshaped = ndArray.reshape(embeddingCount, embeddingSize);
         return reshaped.mean(axis: 0).ToArray<float>();

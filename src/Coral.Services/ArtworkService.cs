@@ -66,7 +66,7 @@ public class ArtworkService : IArtworkService
             return null;
         }
 
-        _logger.LogInformation("Found embedded artwork in file {Track}", track.Path);
+        _logger.LogDebug("Found embedded artwork in file {Track}", track.Path);
         var image = await Image.LoadAsync(new MemoryStream(artwork.PictureData));
         await image.SaveAsJpegAsync(outputFile);
         return outputFile;

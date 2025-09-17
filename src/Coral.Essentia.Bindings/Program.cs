@@ -10,21 +10,20 @@ var tracks = Directory.GetFiles(@"C:\Music", "*.*", SearchOption.AllDirectories)
     .Select(c => c.Path)
     .ToArray();
 
-using var essentia = new EssentiaService();
-essentia.LoadModel(modelPath);
+var slices = tracks.Length % 4;
+var s1 = tracks[..slices];
+var s2 = tracks[slices..(slices * 2)];
 
-foreach (var track in tracks)
+void Work1()
 {
-    try
+    var essentia = new EssentiaService();
+    essentia.LoadModel(modelPath);
+    foreach (var t in tracks)
     {
-        var sw =  Stopwatch.StartNew();
-        Console.WriteLine($"Loading track: {track}");
-        essentia.LoadAudio(track);
-        var emb = essentia.RunInference();
-        Console.WriteLine($"Inference completed in {sw.Elapsed.TotalSeconds} seconds");
-    }
-    catch (EssentiaException e)
-    {
-        Console.WriteLine($"Failed to get embeddings: {e.Message}");
+        essentia.LoadAudio(t);
+        essentia.RunInference();
     }
 }
+
+
+Work1();

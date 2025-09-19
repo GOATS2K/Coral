@@ -1,179 +1,74 @@
 #include <pch.h>
 
 #include "essentia_wrapper.h"
-
-#include "essentia/algorithmfactory.h"
-#include "essentia/essentiamath.h"
-#include "essentia/pool.h"
-#include <essentia/essentia.h>
-#include <essentia/debugging.h>
+#include "essentia_context.h"
 
 
 extern "C" {
     namespace {
-        essentia::standard::Algorithm* monoLoaderInstance = nullptr;
-        essentia::standard::Algorithm* tfModelInstance = nullptr;
-        bool hasInitialized = false;
-        std::vector<std::vector<float>> lastEmbeddings;
-        std::string lastError = "";
+        // context ID -> context
+        int current_context_id = 0;
+        std::map<int, EssentiaContext*> context;
+        std::mutex context_mutex;
+        bool essentiaInit = false;
     }
 
-    void ew_clean_up() {
-        delete monoLoaderInstance;
-        monoLoaderInstance = nullptr;
-        delete tfModelInstance;
-        tfModelInstance = nullptr;
-        lastEmbeddings.clear();
-        essentia::shutdown();
+    int ew_create_context() {
+        std::lock_guard<std::mutex> guard(context_mutex);
+        if (!essentiaInit) {
+            essentia::init();
+            essentiaInit = true;
+        }
+
+        current_context_id += 1;
+        EssentiaContext* ctx = new EssentiaContext();
+        ctx->set_context_id(current_context_id);
+        context.insert(std::make_pair(current_context_id, ctx));
+        std::cout << "[Coral Essentia Wrapper] Creating context: " << current_context_id << "\n";
+        std::cout << "[Coral Essentia Wrapper] Context length: " << context.size() << "\n";
+        return current_context_id;
     }
 
-    bool ew_get_error(char* buffer, int buffer_size) {
-        if (!buffer || buffer_size <= 0) {
-            std::cout << "[Coral Essentia Wrapper] No buffer/buffer_size detected.";
-            return false;
-        }
-
-        if (lastError.length() >= static_cast<size_t>(buffer_size)) {
-            std::cout << "[Coral Essentia Wrapper] Buffer too small.";
-            return false; // Buffer too small
-        }
-
-        strcpy_s(buffer, buffer_size, lastError.c_str());
-        return true;
+    EssentiaContext* get_context(int context_id) {        
+        // std::cout << "[Coral Essentia Wrapper] Getting context " << current_context_id << "\n";
+        return context.at(context_id);
     }
 
-    int ew_get_error_length() {
-        // strcpy_s needs an extra byte for the null terminator.
-        int length = lastError.length();
-        int lengthWithNullTerminator = length + 1;
-        return lengthWithNullTerminator;
+    void ew_destroy_context(int context_id) {
+        auto ctx = get_context(context_id);
+        ctx->clean_up();
+        delete ctx;
     }
 
-    essentia::standard::Algorithm* ew_get_mono_loader() {
-        try {
-            if (!hasInitialized) {
-                essentia::init();
-                hasInitialized = true;
-            }
-
-            if (monoLoaderInstance != nullptr) {
-                monoLoaderInstance = nullptr;
-            }
-
-            essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
-            monoLoaderInstance = factory.create("MonoLoader");
-            return monoLoaderInstance;
-        }
-        catch (const std::exception& e) {
-            lastError = e.what();
-            return nullptr;
-        }
+    bool ew_get_error(int context_id, char* buffer, int buffer_size) {
+        return get_context(context_id)->get_error(buffer, buffer_size);
     }
 
-    bool ew_configure_mono_loader(const char* filename, int sampleRate, int resampleQuality) {
-        try {
-            ew_get_mono_loader()->configure("filename", std::string(filename), "sampleRate", sampleRate, "resampleQuality", resampleQuality);
-            return true;
-        }
-        catch (const std::exception& e) {
-            lastError = e.what();
-            return false;
-        }
+    int ew_get_error_length(int context_id) {
+        return get_context(context_id)->get_error_length();
     }
 
-    essentia::standard::Algorithm* ew_get_tf_model() {
-        try {
-            if (!hasInitialized) {
-                essentia::init();
-                hasInitialized = true;
-            }
-
-            essentia::standard::AlgorithmFactory& factory = essentia::standard::AlgorithmFactory::instance();
-            if (tfModelInstance != nullptr) {
-                return tfModelInstance;
-            }
-            tfModelInstance = factory.create("TensorflowPredictEffnetDiscogs");
-            return tfModelInstance;
-        }
-        catch (const std::exception& e) {
-            return nullptr;
-        }
+    bool ew_configure_tf_model(int context_id, const char* model_path) {
+        return get_context(context_id)->configure_tf_model(model_path);
     }
 
-    bool ew_configure_tf_model(const char* model_path) {
-        try {
-            ew_get_tf_model()->configure("graphFilename", std::string(model_path), "output", "PartitionedCall:1");
-            return true;
-        }
-        catch (const std::exception& e) {
-            lastError = e.what();
-            return false;
-        }
+    int ew_run_inference(int context_id, const char* audioFile, int sampleRate, int resampleQuality) {
+        return get_context(context_id)->run_inference(audioFile, sampleRate, resampleQuality);
     }
 
-    int ew_run_inference() {
-        try {
-            auto startTime = std::chrono::system_clock::now();
-
-            monoLoaderInstance->reset();
-            tfModelInstance->reset();
-            lastEmbeddings.clear();
-
-            std::vector<essentia::Real> audioBuffer;
-            monoLoaderInstance->output("audio").set(audioBuffer);
-            tfModelInstance->input("signal").set(audioBuffer);
-            tfModelInstance->output("predictions").set(lastEmbeddings);
-
-            monoLoaderInstance->compute();
-            std::chrono::duration<double> audioComputationTime = std::chrono::system_clock::now() - startTime;
-            auto audioInferenceCompletedTime = std::chrono::system_clock::now();
-            std::cout << "[Coral Essentia Wrapper] Audio computation completed in " << audioComputationTime.count() << " seconds" << "\n";
-            if (audioBuffer.empty()) {
-                lastError = "Error: Audio buffer is empty after loading.";
-                return -1;
-            }
-            tfModelInstance->compute();
-            std::chrono::duration<double> inferenceComputationTime = std::chrono::system_clock::now() - audioInferenceCompletedTime;
-            std::cout << "[Coral Essentia Wrapper] Inference completed in " << inferenceComputationTime.count() << " seconds" << "\n";
-
-
-            return 0;
-        }
-        catch (const std::exception& e) {
-            lastError = e.what();
-            return -1;
-        }
+    int ew_get_embedding_count(int context_id) {
+        return get_context(context_id)->get_embedding_count();
     }
 
-    // Get the number of embedding vectors (outer dimension)
-    int ew_get_embedding_count() {
-        return static_cast<int>(lastEmbeddings.size());
+    int ew_get_embedding_size(int context_id) {
+        return get_context(context_id)->get_embedding_size();
     }
 
-    // Get the size of each embedding vector (inner dimension)
-    int ew_get_embedding_size() {
-        if (lastEmbeddings.empty()) return 0;
-        return static_cast<int>(lastEmbeddings[0].size());
+    int ew_get_total_embedding_elements(int context_id) {
+        return get_context(context_id)->get_total_embedding_elements();
     }
 
-    // Get total number of floats (count * size)
-    int ew_get_total_embedding_elements() {
-        if (lastEmbeddings.empty()) return 0;
-        return static_cast<int>(lastEmbeddings.size() * lastEmbeddings[0].size());
-    }
-
-    // Option 1: Flatten the 2D array into a 1D array (row-major order)
-    bool ew_get_embeddings_flattened(float* out_buffer, int buffer_size) {
-        if (!out_buffer || lastEmbeddings.empty()) return false;
-
-        int totalElements = ew_get_total_embedding_elements();
-        if (totalElements > buffer_size) return false;
-
-        int idx = 0;
-        for (const auto& embedding : lastEmbeddings) {
-            std::copy(embedding.begin(), embedding.end(), out_buffer + idx);
-            idx += embedding.size();
-        }
-        return true;
+    bool ew_get_embeddings_flattened(int context_id, float* out_buffer, int buffer_size) {
+        return get_context(context_id)->get_embeddings_flattened(out_buffer, buffer_size);
     }
 }

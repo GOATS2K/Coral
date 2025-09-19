@@ -8,22 +8,22 @@ var tracks = Directory.GetFiles(@"C:\Music", "*.*", SearchOption.AllDirectories)
     .Select(c => new ATL.Track(c))
     .Where(c => c.Duration < 300)
     .Select(c => c.Path)
-    .ToArray();
+    .Take(10)
+    .ToList();
 
-var slices = tracks.Length % 4;
-var s1 = tracks[..slices];
-var s2 = tracks[slices..(slices * 2)];
-
-void Work1()
+var tasks = tracks.Select<string, Func<Task>>(t =>
 {
-    var essentia = new EssentiaService();
-    essentia.LoadModel(modelPath);
-    foreach (var t in tracks)
+    return async () =>
     {
-        essentia.LoadAudio(t);
-        essentia.RunInference();
-    }
-}
+        await Task.Run(() =>
+        {
+            var service = new EssentiaService();
+            service.LoadModel(modelPath);
+            service.RunInference(t);
+        });
+    };
+});
+
+await Task.WhenAll(tasks.Select(t => t.Invoke()));
 
 
-Work1();

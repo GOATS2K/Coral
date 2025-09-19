@@ -8,28 +8,17 @@ public static partial class EssentiaBindings
     private const string DllName = "essentia_bindings.dll";
 
     /// <summary>
-    /// Clean up resources and shutdown Essentia
+    /// Clean up resources
     /// </summary>
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial void ew_clean_up();
+    public static partial void ew_destroy_context(int context_id);
 
-    /// <summary>
-    /// Configure the MonoLoader with filename and sample rate
-    /// </summary>
-    /// <param name="filename">Path to audio file</param>
-    /// <param name="sampleRate">Sample rate for audio processing</param>
-    /// <param name="resampleQuality">Resampling accuracy, lower number for higher accuracy, trading performance.</param>
-    /// <returns>True if configuration successful, false otherwise</returns>
-    [LibraryImport(DllName, StringMarshalling = StringMarshalling.Utf8)]
+    [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    [return: MarshalAs(UnmanagedType.I1)]
-    public static partial bool ew_configure_mono_loader(
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string filename,
-        int sampleRate,
-        int resampleQuality);
+    public static partial int ew_create_context();
 
     /// <summary>
     /// Configure the TensorFlow model with model path
@@ -40,7 +29,7 @@ public static partial class EssentiaBindings
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static partial bool ew_configure_tf_model([MarshalAs(UnmanagedType.LPUTF8Str)] string modelPath);
+    public static partial bool ew_configure_tf_model(int context_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string modelPath);
 
     /// <summary>
     /// Run inference on loaded audio using the configured model
@@ -49,7 +38,8 @@ public static partial class EssentiaBindings
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial int ew_run_inference();
+    public static partial int ew_run_inference(int context_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string audioFile,
+        int sampleRate, int resampleQuality);
 
     /// <summary>
     /// Get the number of embedding vectors (outer dimension)
@@ -57,7 +47,7 @@ public static partial class EssentiaBindings
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial int ew_get_embedding_count();
+    public static partial int ew_get_embedding_count(int context_id);
 
     /// <summary>
     /// Get the size of each embedding vector (inner dimension)
@@ -65,7 +55,7 @@ public static partial class EssentiaBindings
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial int ew_get_embedding_size();
+    public static partial int ew_get_embedding_size(int context_id);
 
     /// <summary>
     /// Get total number of float elements across all embeddings
@@ -73,7 +63,7 @@ public static partial class EssentiaBindings
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial int ew_get_total_embedding_elements();
+    public static partial int ew_get_total_embedding_elements(int context_id);
 
     /// <summary>
     /// Get all embeddings flattened into a 1D array (row-major order)
@@ -82,7 +72,7 @@ public static partial class EssentiaBindings
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static partial bool ew_get_embeddings_flattened([Out] float[] outBuffer, int bufferSize);
+    public static partial bool ew_get_embeddings_flattened(int context_id, [Out] float[] outBuffer, int bufferSize);
 
     /// <summary>
     /// Alternative: Copy error message to byte array buffer
@@ -94,7 +84,7 @@ public static partial class EssentiaBindings
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
     [return: MarshalAs(UnmanagedType.I1)]
-    public static partial bool ew_get_error([Out] byte[] buffer, int bufferSize);
+    public static partial bool ew_get_error(int context_id, [Out] byte[] buffer, int bufferSize);
 
     /// <summary>
     /// Get the length of the current error message
@@ -103,5 +93,5 @@ public static partial class EssentiaBindings
     [LibraryImport(DllName)]
     [UnmanagedCallConv(
         CallConvs = [typeof(CallConvCdecl)])]
-    public static partial int ew_get_error_length();
+    public static partial int ew_get_error_length(int context_id);
 }

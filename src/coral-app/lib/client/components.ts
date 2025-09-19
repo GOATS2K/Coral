@@ -659,6 +659,128 @@ export const useStreamTrack = <TData = Schemas.StreamDto,>(
   });
 };
 
+export type RecommendationsForTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type RecommendationsForTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecommendationsForTrackResponse = Schemas.SimpleTrackDto[];
+
+export type RecommendationsForTrackVariables = {
+  pathParams: RecommendationsForTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRecommendationsForTrack = (
+  variables: RecommendationsForTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    undefined,
+    {},
+    {},
+    RecommendationsForTrackPathParams
+  >({
+    url: "/api/Library/tracks/{trackId}/recommendations",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<RecommendationsForTrackResponse>;
+};
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecommendationsForTrackResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/tracks/{trackId}/recommendations",
+      operationId: "recommendationsForTrack",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecommendationsForTrack(variables, signal),
+  };
+}
+
+export const useSuspenseRecommendationsForTrack = <
+  TData = RecommendationsForTrackResponse,
+>(
+  variables: RecommendationsForTrackVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForTrackResponse,
+      RecommendationsForTrackError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    TData
+  >({
+    ...recommendationsForTrackQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecommendationsForTrack = <
+  TData = RecommendationsForTrackResponse,
+>(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForTrackResponse,
+      RecommendationsForTrackError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    TData
+  >({
+    ...recommendationsForTrackQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type TracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type TracksResponse = Schemas.TrackDto[];
@@ -1672,6 +1794,11 @@ export type QueryOperation =
       path: "/api/Library/tracks/{trackId}/stream";
       operationId: "streamTrack";
       variables: StreamTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/tracks/{trackId}/recommendations";
+      operationId: "recommendationsForTrack";
+      variables: RecommendationsForTrackVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/tracks";

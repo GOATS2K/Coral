@@ -134,6 +134,16 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("tracks/{trackId}/recommendations")]
+        public async Task<ActionResult<List<SimpleTrackDto>>> RecommendationsForTrack(Guid trackId)
+        {
+            var tracks = await _libraryService.GetRecommendationsForTrack(trackId);
+            if (tracks.Count == 0)
+                return NotFound();
+            return Ok(tracks);
+        }
+
+        [HttpGet]
         [Route("tracks")]
         public async IAsyncEnumerable<TrackDto> Tracks()
         {

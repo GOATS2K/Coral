@@ -6,6 +6,7 @@ using Coral.Dto.Models;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 using Track = Coral.Database.Models.Track;
 
 namespace Coral.Services
@@ -21,6 +22,7 @@ namespace Coral.Services
         public Task<string?> GetArtworkForTrack(Guid trackId);
         public Task<string?> GetArtworkForAlbum(Guid albumId);
         public Task<AlbumDto?> GetAlbum(Guid albumId);
+        public Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId);
     }
 
     public class LibraryService : ILibraryService
@@ -155,6 +157,40 @@ namespace Coral.Services
 
             album.Tracks = album.Tracks.OrderBy(t => t.DiscNumber).ThenBy(a => a.TrackNumber).ToList();
             return album;
+        }
+
+        public async Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId)
+        {
+            var trackEmbeddings = await _context.TrackEmbeddings.FirstOrDefaultAsync(t => t.TrackId == trackId);
+            if (trackEmbeddings == null)
+                return [];
+
+            var recs = await _context.TrackEmbeddings
+                .Select(t => new {Entity = t, Distance = t.Embedding.CosineDistance(trackEmbeddings.Embedding)} )
+                .OrderBy(t => t.Distance)
+                .Take(100)
+                .ToListAsync();
+            
+            var trackIds = recs
+                .Where(t => t.Distance < 0.3)
+                .Select(t => t.Entity.TrackId).Distinct().ToList();
+            
+            var tracks = await _context.Tracks
+                .Where(t => trackIds.Contains(t.Id))
+                .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            List<SimpleTrackDto> orderedTracks = [];
+            foreach (var track in recs)
+            {
+                var targetTrack = tracks.FirstOrDefault(t => t.Id == track.Entity.TrackId);
+                if (targetTrack == null)
+                    continue;
+                orderedTracks.Add(targetTrack);
+            } 
+            
+            
+            return orderedTracks;
         }
     }
 }

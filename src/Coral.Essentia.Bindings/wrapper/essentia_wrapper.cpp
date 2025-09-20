@@ -35,9 +35,14 @@ extern "C" {
     }
 
     void ew_destroy_context(int context_id) {
+        std::lock_guard<std::mutex> guard(context_mutex);
         auto ctx = get_context(context_id);
+        context.erase(context_id);
         ctx->clean_up();
         delete ctx;
+        std::cout << "[Coral Essentia Wrapper] Removed context " << context_id << "\n";
+        essentia::shutdown();
+        essentiaInit = false;
     }
 
     bool ew_get_error(int context_id, char* buffer, int buffer_size) {

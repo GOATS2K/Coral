@@ -29,15 +29,8 @@ namespace Coral.Api
             services.AddSingleton<ITranscoderService, TranscoderService>();
             services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
-            services.AddSingleton<EssentiaService>(_ =>
-            {
-                // TODO: Get this from config
-                var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs64-1.pb";
-                var e = new EssentiaService();
-                e.LoadModel(modelPath);
-                return e;
-            });
             services.AddSingleton<IEmbeddingChannel, EmbeddingChannel>();
+            services.AddSingleton<IEssentiaContextManager, EssentiaContextManager>();
         }
     }
 }

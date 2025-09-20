@@ -33,7 +33,7 @@ public class CoralDbContext : DbContext
         if (!options.IsConfigured)
         {
             // TODO: Make this user-configurable
-            options.UseNpgsql("Host=localhost;Username=postgres;Password=admin;Database=coral", opt => opt.UseVector());
+            options.UseNpgsql("Host=localhost;Username=postgres;Password=admin;Database=coral2", opt => opt.UseVector());
         }
     }
     

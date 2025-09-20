@@ -1,29 +1,40 @@
 ﻿using System.Diagnostics;
 using Coral.Essentia.Bindings;
+using Microsoft.Extensions.Logging;
 
 var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs64-1.pb";
 
 var tracks = Directory.GetFiles(@"C:\Music", "*.*", SearchOption.AllDirectories)
-    .Where(c => Path.GetExtension(c) == ".mp3")
+    .Take(500)
+    .Where(c => Path.GetExtension(c) == ".m4a")
     .Select(c => new ATL.Track(c))
     .Where(c => c.Duration < 300)
     .Select(c => c.Path)
-    .Take(10)
     .ToList();
 
-var tasks = tracks.Select<string, Func<Task>>(t =>
+var essentia = new EssentiaService();
+essentia.LoadModel(modelPath);
+var predictions = essentia.RunInference(@"P:\Music\Rare Dubs\Producer-sourced\Friends\Satl - Medi Vibe.mp3");
+Console.WriteLine($"[{string.Join(", ", predictions.Take(5).Select(p => p.ToString("F4")))}...]");
+
+/*var completions = 0;
+var loggerFactory = new LoggerFactory();
+var logger = loggerFactory.CreateLogger<EssentiaContextManager>();
+var essentia = new EssentiaContextManager(logger, 10);
+essentia.CreateWorkers();
+foreach (var track in tracks)
 {
-    return async () =>
+    await essentia.GetEmbeddings(track, _ =>
     {
-        await Task.Run(() =>
-        {
-            var service = new EssentiaService();
-            service.LoadModel(modelPath);
-            service.RunInference(t);
-        });
-    };
-});
+        Interlocked.Increment(ref completions);
+        Console.WriteLine($"Completed {completions} tracks out of {tracks.Count}");
+        return Task.CompletedTask;
+    });
+}
 
-await Task.WhenAll(tasks.Select(t => t.Invoke()));
-
+while (completions != tracks.Count)
+{
+    await Task.Delay(1000);
+}
+*/
 

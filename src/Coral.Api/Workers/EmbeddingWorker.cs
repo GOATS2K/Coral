@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Coral.Database;
 using Coral.Database.Models;
+using Coral.Services;
 using Coral.Services.ChannelWrappers;
 using Microsoft.EntityFrameworkCore;
 using Pgvector;
@@ -12,7 +13,6 @@ public class EmbeddingWorker : BackgroundService
     private readonly IEmbeddingChannel _channel;
     private readonly ILogger<EmbeddingWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly string _modelPath = @"P:\discogs_embeddings_both_outputs.onnx";
     private readonly SemaphoreSlim _semaphore = new(10);
 
     public EmbeddingWorker(IEmbeddingChannel channel, ILogger<EmbeddingWorker> logger,
@@ -57,9 +57,7 @@ public class EmbeddingWorker : BackgroundService
         await _semaphore.WaitAsync(stoppingToken);
         try
         {
-            using var essentia = new EssentiaInference();
-            essentia.LoadModel(_modelPath);
-            var embeddings = essentia.RunInference(track.AudioFile.FilePath);
+            var embeddings = await InferenceService.RunInference(track.AudioFile.FilePath);
             await using var scope = _scopeFactory.CreateAsyncScope();
             await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
             await context.TrackEmbeddings.AddAsync(new TrackEmbedding()

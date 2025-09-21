@@ -1,5 +1,4 @@
 ﻿using Coral.Encoders;
-using Coral.Essentia.Bindings;
 using Coral.Events;
 using Coral.PluginBase;
 using Coral.PluginHost;
@@ -30,7 +29,6 @@ namespace Coral.Api
             services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton<IEmbeddingChannel, EmbeddingChannel>();
-            services.AddSingleton<IEssentiaContextManager, EssentiaContextManager>();
         }
     }
 }

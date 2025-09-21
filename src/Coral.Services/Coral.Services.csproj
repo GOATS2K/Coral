@@ -10,6 +10,7 @@
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="Diacritics" Version="4.0.17" />
 		<PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
+		<PackageReference Include="NumSharp" Version="0.30.0" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
 		<PackageReference Include="z440.atl.core" Version="7.3.0" />
 	</ItemGroup>

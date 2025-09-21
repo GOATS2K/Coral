@@ -18,38 +18,59 @@ public static class MusiCnnFeatureExtractor
 
     static MusiCnnFeatureExtractor()
     {
-        var tempWindow = Window.Hann(FrameSize).Select(w => (float) w).ToArray();
-        float windowSquareSum = tempWindow.Sum(x => x * x);
-        _hannWindow = tempWindow.Select(w => w / (float) Math.Sqrt(windowSquareSum)).ToArray();
-        MelFilterbank = CreateMelFilterbank(SampleRate, FftSize, NumberBands);
+        // Create Hann window - NO NORMALIZATION first to test
+        _hannWindow = Window.Hann(FrameSize).Select(w => (float)w).ToArray();
+        MelFilterbank = CreateMelFilterbank();
     }
 
     public static float[][] Compute(float[] audio)
     {
         var frames = FrameAudio(audio);
         var melSpectrogram = new List<float[]>();
-        var fftBuffer = new Complex[FftSize];
 
-        foreach (var frame in frames)
+        for (int frameIdx = 0; frameIdx < frames.Count; frameIdx++)
         {
+            var frame = frames[frameIdx];
+
+            // Create fresh FFT buffer for each frame
+            var fftBuffer = new Complex[FftSize];
+
+            // Apply windowing (no normalization)
             for (int i = 0; i < FrameSize; i++)
             {
                 fftBuffer[i] = new Complex(frame[i] * _hannWindow[i], 0);
             }
 
+            // Compute FFT with no scaling to match Essentia
             Fourier.Forward(fftBuffer, FourierOptions.NoScaling);
 
+            // Compute magnitude spectrum (NOT power)
             var magnitudeSpectrum = new float[FftSize / 2 + 1];
             for (int i = 0; i < magnitudeSpectrum.Length; i++)
             {
-                magnitudeSpectrum[i] = (float) fftBuffer[i].Magnitude;
+                magnitudeSpectrum[i] = (float)fftBuffer[i].Magnitude;
             }
 
+            // Apply mel filterbank to get linear mel bands
             var melSpectrumVector = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(magnitudeSpectrum);
             var melBandsEnergy = MelFilterbank.Multiply(melSpectrumVector);
 
-            var logMelSpectrum = melBandsEnergy.Select(val => (float) Math.Log(val + 1e-6)).ToArray();
-            melSpectrogram.Add(logMelSpectrum);
+            // DO NOT square for power - keep as magnitude
+            // Apply the exact TensorflowInputMusiCNN processing:
+            // 1. Log10 with cutoff (matching UnaryOperator behavior)
+            var logMelBands = melBandsEnergy.Select(val =>
+            {
+                float cutoff = 1e-30f;
+                float clampedVal = Math.Max(val, cutoff);
+                return (float)Math.Log10(clampedVal);
+            }).ToArray();
+
+            // 2. Apply scale and shift from TensorflowInputMusiCNN parameters
+            float scale = 10000f;
+            float shift = 1f;
+            var finalMelBands = logMelBands.Select(val => val * scale + shift).ToArray();
+
+            melSpectrogram.Add(finalMelBands);
         }
 
         return melSpectrogram.ToArray();
@@ -57,56 +78,131 @@ public static class MusiCnnFeatureExtractor
 
     private static List<float[]> FrameAudio(float[] audio)
     {
-        // 1. Apply start padding to center the first frame, matching Essentia's startFromZero=true
-        int startPadding = FrameSize / 2;
-
-        // 2. Calculate the number of frames that will be produced. This formula
-        //    implicitly accounts for the necessary end-padding.
-        int numFrames = (audio.Length + HopSize - 1) / HopSize;
-
-        // 3. Create a new buffer with enough space for both start and end padding.
-        int totalLength = (numFrames - 1) * HopSize + FrameSize;
-        var paddedAudio = new float[totalLength];
-        Array.Copy(audio, 0, paddedAudio, startPadding, audio.Length);
-
         var frames = new List<float[]>();
-        for (int i = 0; i + FrameSize <= totalLength; i += HopSize)
+
+        int frameIdx = 0;
+        while (true)
         {
             var frame = new float[FrameSize];
-            Array.Copy(paddedAudio, i, frame, 0, FrameSize);
+            // Match Essentia's FrameCutter default behavior (startFromZero=false)
+            int startSample = frameIdx * HopSize - FrameSize / 2;
+
+            // Fill frame with audio data or zero padding
+            for (int i = 0; i < FrameSize; i++)
+            {
+                int sampleIdx = startSample + i;
+                if (sampleIdx >= 0 && sampleIdx < audio.Length)
+                {
+                    frame[i] = audio[sampleIdx];
+                }
+                // else remains 0 (zero padding)
+            }
+
             frames.Add(frame);
+            frameIdx++;
+
+            // Stop when we're past the end of the audio
+            if (startSample >= audio.Length) break;
         }
 
         return frames;
     }
 
-    private static Matrix<float> CreateMelFilterbank(float sampleRate, int fftSize, int numBands,
-        float minFreq = 0f, float maxFreq = -1f)
+    private static Matrix<float> CreateMelFilterbank()
     {
-        if (maxFreq <= 0) maxFreq = sampleRate / 2.0f;
-        float minMel = EssentiaMath.HzToMel(minFreq);
-        float maxMel = EssentiaMath.HzToMel(maxFreq);
-        var melPoints = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.Dense(numBands + 2,
-            i => minMel + i * (maxMel - minMel) / (numBands + 1));
-        var hzPoints = melPoints.Select(EssentiaMath.MelToHz).ToArray();
-        var fftBins = hzPoints.Select(f => (float) Math.Floor((fftSize + 1) * f / sampleRate)).ToArray();
-        var filterbank = Matrix<float>.Build.Dense(numBands, fftSize / 2 + 1, 0f);
+        const float minFreq = 0f;
+        float maxFreq = SampleRate / 2.0f;
 
-        for (int j = 0; j < numBands; j++)
+        // Slaney mel conversion functions (matching Essentia's "slaneyMel")
+        float HzToSlaneyMel(float hz)
         {
-            for (int i = (int) fftBins[j]; i < (int) fftBins[j + 1]; i++)
-                filterbank[j, i] = (i - fftBins[j]) / (fftBins[j + 1] - fftBins[j]);
-            for (int i = (int) fftBins[j + 1]; i < (int) fftBins[j + 2]; i++)
-                filterbank[j, i] = (fftBins[j + 2] - i) / (fftBins[j + 2] - fftBins[j + 1]);
+            const float f_sp = 200.0f / 3.0f; // ~66.67 Hz
+            const float f_log = 1000.0f;
+
+            if (hz >= f_log)
+            {
+                return 15.0f + 27.0f * (float)Math.Log10(hz / f_log);
+            }
+            else
+            {
+                return hz / f_sp;
+            }
         }
 
-        for (int i = 0; i < filterbank.RowCount; i++)
+        float SlaneyMelToHz(float mel)
         {
-            var row = filterbank.Row(i);
-            float area = row.Sum();
-            if (area > 1e-6)
+            const float f_sp = 200.0f / 3.0f; // ~66.67 Hz  
+            const float f_log = 1000.0f;
+
+            if (mel >= 15.0f)
             {
-                filterbank.SetRow(i, row / area);
+                return f_log * (float)Math.Pow(10.0, (mel - 15.0f) / 27.0f);
+            }
+            else
+            {
+                return f_sp * mel;
+            }
+        }
+
+        // Create mel-spaced frequency points
+        float minMel = HzToSlaneyMel(minFreq);
+        float maxMel = HzToSlaneyMel(maxFreq);
+
+        var melPoints = new float[NumberBands + 2];
+        for (int i = 0; i < NumberBands + 2; i++)
+        {
+            melPoints[i] = minMel + i * (maxMel - minMel) / (NumberBands + 1);
+        }
+
+        // Convert mel points to Hz
+        var hzPoints = new float[NumberBands + 2];
+        for (int i = 0; i < NumberBands + 2; i++)
+        {
+            hzPoints[i] = SlaneyMelToHz(melPoints[i]);
+        }
+
+        // Convert Hz to FFT bin indices (continuous values)
+        var binIndices = new float[NumberBands + 2];
+        for (int i = 0; i < NumberBands + 2; i++)
+        {
+            binIndices[i] = hzPoints[i] * (FftSize / 2) / maxFreq;
+        }
+
+        // Create filterbank matrix
+        var filterbank = Matrix<float>.Build.Dense(NumberBands, FftSize / 2 + 1, 0f);
+
+        // Build triangular filters
+        for (int m = 0; m < NumberBands; m++)
+        {
+            float leftBin = binIndices[m];
+            float centerBin = binIndices[m + 1];
+            float rightBin = binIndices[m + 2];
+
+            for (int k = 0; k < FftSize / 2 + 1; k++)
+            {
+                float binFreq = k;
+
+                // Left side of triangle (rising slope)
+                if (binFreq >= leftBin && binFreq <= centerBin && centerBin > leftBin)
+                {
+                    filterbank[m, k] = (binFreq - leftBin) / (centerBin - leftBin);
+                }
+                // Right side of triangle (falling slope)
+                else if (binFreq >= centerBin && binFreq <= rightBin && rightBin > centerBin)
+                {
+                    filterbank[m, k] = (rightBin - binFreq) / (rightBin - centerBin);
+                }
+            }
+        }
+
+        // Try unit_sum normalization to match Essentia's MelBands default
+        for (int m = 0; m < NumberBands; m++)
+        {
+            var row = filterbank.Row(m);
+            float sum = row.Sum();
+            if (sum > 1e-6f)
+            {
+                filterbank.SetRow(m, row / sum);
             }
         }
 

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
+    </ItemGroup>
+
+    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <BindingLibraries Include="..\Coral.Essentia.Cli\x64\Debug\**" />
+        </ItemGroup>
+        <Copy SourceFiles="@(BindingLibraries)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
+    </Target>
+
+</Project>

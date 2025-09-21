@@ -44,7 +44,7 @@
 
     <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild">
         <ItemGroup>
-            <BindingLibraries Include="..\Coral.Essentia.Bindings\lib\**" />
+            <BindingLibraries Include="..\Coral.Essentia.Cli\x64\Debug\**" />
         </ItemGroup>
         <Copy SourceFiles="@(BindingLibraries)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
     </Target>

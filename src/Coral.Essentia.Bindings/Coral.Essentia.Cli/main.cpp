@@ -12,7 +12,7 @@ using namespace essentia;
 using namespace essentia::standard;
 
 int main() {
-    string audioFile = "P:\\Music\\Rare Dubs\\Producer-sourced\\Friends\\Satl - Medi Vibe.mp3";
+    string audioFile = "P:\\Music\\Halogenix - All Blue EP (2015) [META023] [WEB FLAC]\\05 - Halogenix - Paper Sword.flac";
     string outputFile = "cpp_spectrogram.txt";
     const int sampleRate = 16000;
 
@@ -28,54 +28,94 @@ int main() {
     monoLoader->output("audio").set(audioBuffer);
     monoLoader->compute();
 
-    // 2. Manually cut the audio into frames
-    vector<vector<Real>> allFrames;
-    const int frameSize = 512;
-    const int hopSize = 256;
-    for (int i = 0; i + frameSize <= (int)audioBuffer.size(); i += hopSize) {
-        allFrames.emplace_back(audioBuffer.begin() + i, audioBuffer.begin() + i + frameSize);
-    }
+    // Debug audio loading
+    cout << "Audio buffer size: " << audioBuffer.size() << " samples" << endl;
+    cout << "Audio duration: " << (float)audioBuffer.size() / sampleRate << " seconds" << endl;
 
-    // 3. Instantiate processing algorithms
-    Algorithm* windowing = factory.create("Windowing", "type", "hann");
-    Algorithm* spectrum = factory.create("Spectrum");
-    Algorithm* melbands = factory.create("MelBands",
-        "numberBands", 96,
-        "sampleRate", sampleRate,
-        "highFrequencyBound", sampleRate / 2);
-
-    vector<vector<Real>> logSpectrogram;
-
-    // 4. Loop through the `allFrames` vector to process each 1D frame individually
-    for (const auto& frame : allFrames) {
-        vector<Real> windowedFrame, spec, melFrame;
-
-        windowing->input("frame").set(frame);
-        windowing->output("frame").set(windowedFrame);
-        windowing->compute();
-
-        spectrum->input("frame").set(windowedFrame);
-        spectrum->output("spectrum").set(spec);
-        spectrum->compute();
-
-        melbands->input("spectrum").set(spec);
-        melbands->output("bands").set(melFrame);
-        melbands->compute();
-
-        // 5. Apply log scaling to the 1D melFrame
-        for (auto& val : melFrame) {
-            val = log(val + 1e-6);
+    if (audioBuffer.size() > 0) {
+        cout << "First 10 samples: ";
+        for (int i = 0; i < min(10, (int)audioBuffer.size()); i++) {
+            cout << fixed << setprecision(6) << audioBuffer[i] << " ";
         }
-        logSpectrogram.push_back(melFrame);
+        cout << endl;
+
+        // Calculate RMS
+        Real sum = 0;
+        for (Real sample : audioBuffer) sum += sample * sample;
+        Real rms = sqrt(sum / audioBuffer.size());
+        cout << "Audio RMS: " << rms << endl;
     }
 
-    // 6. Save results to file
+    // Replace your manual frame cutting with proper FrameCutter usage :
+    Algorithm * frameCutter = factory.create("FrameCutter",
+        "frameSize", 512,
+        "hopSize", 256);
+
+    Algorithm* tensorflowInput = factory.create("TensorflowInputMusiCNN");
+    Algorithm* melbands = factory.create("MelBands");
+    cout << "Default MelBands parameters:" << endl;
+    cout << "  numberBands: " << melbands->parameter("numberBands").toReal() << endl;
+    cout << "  sampleRate: " << melbands->parameter("sampleRate").toReal() << endl;
+    cout << "  inputSize: " << melbands->parameter("inputSize").toInt() << endl;
+    cout << "  lowFrequencyBound: " << melbands->parameter("lowFrequencyBound").toReal() << endl;
+    cout << "  highFrequencyBound: " << melbands->parameter("highFrequencyBound").toReal() << endl;
+
+    // Process frame by frame
+    vector<Real> frame;
+    vector<Real> melBands;
+    vector<vector<Real>> allMelBands;
+
+    frameCutter->input("signal").set(audioBuffer);
+    frameCutter->output("frame").set(frame);
+
+    // Debug the first few frames to see padding behavior
+    cout << "[DEBUG] First few frames from FrameCutter:" << endl;
+    for (int i = 0; i < 5; i++) {
+        frameCutter->compute();
+        if (frame.empty()) break;
+
+        cout << "Frame " << i << " first 10 samples: ";
+        for (int j = 0; j < min(10, (int)frame.size()); j++) {
+            cout << fixed << setprecision(6) << frame[j] << " ";
+        }
+        cout << endl;
+    }
+    // Reset for actual processing
+    frameCutter->reset();
+
+    tensorflowInput->input("frame").set(frame);
+    tensorflowInput->output("bands").set(melBands);
+
+    // Process each frame
+    while (true) {
+        try {
+            frameCutter->compute();
+            if (frame.empty()) break;
+
+            tensorflowInput->compute();
+
+            // Apply log scaling
+            vector<Real> logMelBands;
+            for (Real val : melBands) {
+                logMelBands.push_back(log(val + 1e-6));
+            }
+
+            allMelBands.push_back(logMelBands);
+
+        }
+        catch (...) {
+            break;
+        }
+    }
+
+    // 3. Save results to file
     ofstream outFileStream(outputFile);
     outFileStream << "--- Ground Truth Spectrogram (from Essentia/C++) ---" << endl;
-    for (int i = 0; i < min(5, (int)logSpectrogram.size()); ++i) {
+    for (int i = 0; i < min(5, (int)allMelBands.size()); ++i) {
         outFileStream << "Frame " << i << ": [";
-        for (int j = 0; j < logSpectrogram[i].size(); ++j) {
-            outFileStream << fixed << setprecision(4) << logSpectrogram[i][j] << (j == logSpectrogram[i].size() - 1 ? "" : ", ");
+        for (int j = 0; j < (int)allMelBands[i].size(); ++j) {
+            outFileStream << fixed << setprecision(4) << allMelBands[i][j]
+                << (j == (int)allMelBands[i].size() - 1 ? "" : ", ");
         }
         outFileStream << "]" << endl;
     }
@@ -83,9 +123,8 @@ int main() {
 
     // Cleanup
     delete monoLoader;
-    delete windowing;
-    delete spectrum;
-    delete melbands;
+    delete frameCutter;
+    delete tensorflowInput;
     essentia::shutdown();
 
     return 0;

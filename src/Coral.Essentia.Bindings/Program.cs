@@ -15,7 +15,7 @@ var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs6
 var essentia = new EssentiaService();
 essentia.LoadModel(modelPath);
 var predictions = essentia.RunInference(@"P:\Music\Halogenix - All Blue EP (2015) [META023] [WEB FLAC]\05 - Halogenix - Paper Sword.flac");
-Console.WriteLine($"[{string.Join(", ", predictions.Take(5).Select(p => p.ToString("F4")))}...]");
+Console.WriteLine($"[{string.Join(", ", predictions.Take(5))}]");
 
 /*var completions = 0;
 var loggerFactory = new LoggerFactory();

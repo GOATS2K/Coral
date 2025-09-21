@@ -1,145 +1,258 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using System.Numerics;
+using MathNet.Numerics.IntegralTransforms;
+using MathNet.Numerics.LinearAlgebra;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using NumSharp;
 
 namespace Coral.Essentia;
 
-public class TensorflowPredictEffnetDiscogs : Configurable, IDisposable
+public class TensorflowPredictEffnetDiscogs : IDisposable
 {
-    private InferenceSession _session;
-    private string _inputName;
-    private string _outputName = "PartitionedCall:1";
-    private int _patchSize = 128;
-    private int _patchHopSize = 62;
-    private int _batchSize = 64;
+    // Hardcoded parameters matching the C++ implementation
+    private const int FrameSize = 512;
+    private const int HopSize = 256;
+    private const int NumberBands = 96;
+    private const float SampleRate = 16000f;
+    private const int PatchSize = 128;
+    private const int PatchHopSize = 62;
+    private const int BatchSize = 64;
 
-    public override void DeclareParameters()
+    private InferenceSession? _session;
+    private readonly float[] _window;
+    private readonly Matrix<float> _melFilterbank;
+
+    public TensorflowPredictEffnetDiscogs()
     {
-        DeclareParameter("input", "melspectrogram", "Input node name.");
-        DeclareParameter("output", "PartitionedCall:1", "Output node name.");
-        DeclareParameter("patchSize", 128, "Number of frames per inference patch.");
-        DeclareParameter("patchHopSize", 62, "Hop size between patches in frames.");
-        DeclareParameter("batchSize", 64, "Inference batch size.");
+        _window = CreateHannWindow();
+        _melFilterbank = CreateMelFilterbank();
     }
 
     public void LoadModel(string modelPath)
     {
         _session?.Dispose();
         _session = new InferenceSession(modelPath);
-        _inputName = _session.InputMetadata.Keys.First();
     }
 
-    public override void Configure()
+    public float[] Compute(float[] audioSignal)
     {
-        _inputName = GetParameter<string>("input");
-        _outputName = GetParameter<string>("output");
-        _patchSize = GetParameter<int>("patchSize");
-        _patchHopSize = GetParameter<int>("patchHopSize");
-        _batchSize = GetParameter<int>("batchSize");
-    }
+        if (_session == null)
+            throw new InvalidOperationException("Model not loaded");
 
-    public float[] Compute(float[] audio)
-    {
-        if (_session is null) throw new EssentiaException("Model not loaded.");
+        // Step 1: Frame the audio signal
+        var frames = FrameCutter(audioSignal);
 
-        var melFrames = MusiCnnFeatureExtractor.Compute(audio);
-        if (melFrames.Length == 0) return [];
-
-        var patches = CreatePatches(melFrames);
-        if (patches.Count == 0) return [];
-
-        var allPredictions = new List<float[]>();
-        for (int i = 0; i < patches.Count; i += _batchSize)
+        // Step 2: Compute mel-spectrograms for each frame
+        var melSpectrograms = new List<float[]>();
+        foreach (var frame in frames)
         {
-            var batchPatches = patches.Skip(i).Take(_batchSize).ToList();
+            var melBands = ComputeMelBands(frame);
+            melSpectrograms.Add(melBands);
+        }
 
-            // --- DEFINITIVE CORRECTION: Pad the final batch to match model's fixed size ---
-            int originalCount = batchPatches.Count;
-            if (originalCount > 0 && originalCount < _batchSize)
+        // Step 3: Create patches from mel-spectrograms
+        var patches = CreatePatches(melSpectrograms);
+
+        // Step 4: Process patches in batches
+        var allEmbeddings = new List<float[]>();
+        for (int i = 0; i < patches.Count; i += BatchSize)
+        {
+            var batch = patches.Skip(i).Take(BatchSize).ToList();
+
+            // Pad batch if needed
+            while (batch.Count < BatchSize)
             {
-                int numBands = batchPatches.First().GetLength(1);
-                var emptyPatch = new float[_patchSize, numBands];
-                while (batchPatches.Count < _batchSize)
+                // Repeat last patch or use zeros
+                var emptyPatch = new float[PatchSize, NumberBands];
+                batch.Add(emptyPatch);
+            }
+
+            var embeddings = RunInference(batch);
+            // Only keep non-padded results
+            int validCount = Math.Min(patches.Count - i, BatchSize);
+            allEmbeddings.AddRange(embeddings.Take(validCount));
+        }
+
+        // Step 5: Average embeddings
+        if (allEmbeddings.Count == 0)
+            return Array.Empty<float>();
+
+        return AverageEmbeddings(allEmbeddings);
+    }
+
+    private float[] CreateHannWindow()
+    {
+        var window = new float[FrameSize];
+
+        // Standard Hann window formula
+        for (int i = 0; i < FrameSize; i++)
+        {
+            window[i] = 0.5f - 0.5f * (float) Math.Cos(2.0 * Math.PI * i / (FrameSize - 1.0));
+        }
+
+        // Normalize window (Essentia default: normalized=true)
+        float sum = window.Sum();
+        if (sum > 0)
+        {
+            float scale = 2.0f / sum; // Scale by 2 for negative frequencies
+            for (int i = 0; i < window.Length; i++)
+                window[i] *= scale;
+        }
+
+        return window;
+    }
+
+    private List<float[]> FrameCutter(float[] audio)
+    {
+        var frames = new List<float[]>();
+        int frameCount = 0;
+
+        // Essentia's default: startFromZero=false, meaning first frame is centered at t=0
+        while (true)
+        {
+            var frame = new float[FrameSize];
+            int startSample = frameCount * HopSize - FrameSize / 2;
+
+            // Copy samples with zero padding
+            for (int i = 0; i < FrameSize; i++)
+            {
+                int sampleIdx = startSample + i;
+                if (sampleIdx >= 0 && sampleIdx < audio.Length)
+                    frame[i] = audio[sampleIdx];
+                // else frame[i] remains 0
+            }
+
+            frames.Add(frame);
+            frameCount++;
+
+            // Stop after we've processed all audio
+            if (startSample >= audio.Length)
+                break;
+        }
+
+        return frames;
+    }
+
+    private float[] ComputeMelBands(float[] frame)
+    {
+        // Step 1: Apply window
+        var windowedFrame = new float[FrameSize];
+        for (int i = 0; i < FrameSize; i++)
+            windowedFrame[i] = frame[i] * _window[i];
+
+        // Step 2: Compute FFT
+        var fftBuffer = new Complex[FrameSize];
+        for (int i = 0; i < FrameSize; i++)
+            fftBuffer[i] = new Complex(windowedFrame[i], 0);
+
+        Fourier.Forward(fftBuffer, FourierOptions.NoScaling);
+
+        // Step 3: Compute magnitude spectrum
+        var magnitudeSpectrum = new float[FrameSize / 2 + 1];
+        for (int i = 0; i < magnitudeSpectrum.Length; i++)
+            magnitudeSpectrum[i] = (float) fftBuffer[i].Magnitude;
+
+        // Step 4: Apply mel filterbank
+        var spectrumVector = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(magnitudeSpectrum);
+        var melBands = _melFilterbank.Multiply(spectrumVector).ToArray();
+
+        // Step 5: Convert to power spectrum (MelBands default: type="power")
+        for (int i = 0; i < melBands.Length; i++)
+            melBands[i] = melBands[i] * melBands[i];
+
+        // Step 6: Apply log10 (TensorflowInputMusiCNN processing)
+        const float epsilon = 1e-30f;
+        for (int i = 0; i < melBands.Length; i++)
+        {
+            melBands[i] = (float) Math.Log10(Math.Max(melBands[i], epsilon));
+        }
+
+        // Step 7: Apply scale and shift
+        const float scale = 10000f;
+        const float shift = 1f;
+        for (int i = 0; i < melBands.Length; i++)
+        {
+            melBands[i] = melBands[i] * scale + shift;
+        }
+
+        return melBands;
+    }
+
+    private Matrix<float> CreateMelFilterbank()
+    {
+        // HTK mel scale (Essentia MelBands default)
+        float HzToMel(float hz) => 2595.0f * (float) Math.Log10(1.0f + hz / 700.0f);
+        float MelToHz(float mel) => 700.0f * ((float) Math.Pow(10.0f, mel / 2595.0f) - 1.0f);
+
+        float minFreq = 0f;
+        float maxFreq = SampleRate / 2.0f;
+        float minMel = HzToMel(minFreq);
+        float maxMel = HzToMel(maxFreq);
+
+        // Create mel-spaced points
+        var melPoints = new float[NumberBands + 2];
+        for (int i = 0; i < NumberBands + 2; i++)
+            melPoints[i] = minMel + i * (maxMel - minMel) / (NumberBands + 1);
+
+        // Convert to Hz then to bin indices
+        var binFreqs = new float[NumberBands + 2];
+        for (int i = 0; i < NumberBands + 2; i++)
+        {
+            float hz = MelToHz(melPoints[i]);
+            binFreqs[i] = hz * FrameSize / SampleRate;
+        }
+
+        // Build triangular filterbank
+        var filterbank = Matrix<float>.Build.Dense(NumberBands, FrameSize / 2 + 1);
+
+        for (int m = 0; m < NumberBands; m++)
+        {
+            float left = binFreqs[m];
+            float center = binFreqs[m + 1];
+            float right = binFreqs[m + 2];
+
+            for (int k = 0; k <= FrameSize / 2; k++)
+            {
+                if (k >= left && k <= center)
                 {
-                    batchPatches.Add(emptyPatch);
+                    filterbank[m, k] = (k - left) / (center - left);
+                }
+                else if (k > center && k <= right)
+                {
+                    filterbank[m, k] = (right - k) / (right - center);
                 }
             }
+        }
 
-            // Only run inference if there's a full batch to process
-            if (batchPatches.Count == _batchSize)
+        // Normalize: unit_sum (MelBands default)
+        for (int m = 0; m < NumberBands; m++)
+        {
+            float sum = 0;
+            for (int k = 0; k <= FrameSize / 2; k++)
+                sum += filterbank[m, k];
+
+            if (sum > 0)
             {
-                var predictions = RunInference(batchPatches);
-                // Only add predictions for the original, non-padded data
-                allPredictions.AddRange(predictions.Take(originalCount));
-            }
-            else if (originalCount > 0)
-            {
-                // This case handles when the total number of patches is less than one full batch
-                allPredictions.AddRange(RunInference(batchPatches));
+                for (int k = 0; k <= FrameSize / 2; k++)
+                    filterbank[m, k] /= sum;
             }
         }
 
-        // 1. Convert the list of arrays into a Matrix.
-        //    This is the C# equivalent of creating a 2D NumPy array.
-        var matrix = Matrix<float>.Build.DenseOfRows(allPredictions);
-
-        // 2. Calculate the mean of each column (equivalent to np.mean(axis=0)).
-        var meanVector = matrix.ColumnSums().Divide(matrix.RowCount);
-
-        // 3. (Optional) Convert the result back to a standard float[] array.
-        float[] finalAggregatedVector = meanVector.ToArray();
-
-        L2Normalize(finalAggregatedVector);
-
-        return finalAggregatedVector;
+        return filterbank;
     }
 
-    private void L2Normalize(float[] vector)
-    {
-        if (vector == null || vector.Length == 0) return;
-
-        // Use a 'double' for the sum to maintain precision and avoid overflow.
-        double sumOfSquares = 0.0;
-        foreach (float value in vector)
-        {
-            sumOfSquares += value * value;
-        }
-
-        // The magnitude will also be a double.
-        double magnitude = Math.Sqrt(sumOfSquares);
-
-        // Handle the edge case of a zero vector.
-        // Use a small epsilon for robust floating-point comparison.
-        if (magnitude < 1e-6)
-        {
-            // Optionally, you could zero out the vector here if needed.
-            // Array.Clear(vector, 0, vector.Length);
-            return;
-        }
-
-        // Cast the magnitude back to float for the final division.
-        float norm = (float)magnitude;
-        for (int i = 0; i < vector.Length; i++)
-        {
-            vector[i] /= norm;
-        }
-    }
-
-    private List<float[,]> CreatePatches(float[][] frames)
+    private List<float[,]> CreatePatches(List<float[]> melSpectrograms)
     {
         var patches = new List<float[,]>();
-        if (frames.Length == 0 || frames[0].Length == 0) return patches;
 
-        int numBands = frames[0].Length;
-        for (int i = 0; i + _patchSize <= frames.Length; i += _patchHopSize)
+        // Create patches with hop
+        for (int i = 0; i <= melSpectrograms.Count - PatchSize; i += PatchHopSize)
         {
-            var patch = new float[_patchSize, numBands];
-            for (int j = 0; j < _patchSize; j++)
+            var patch = new float[PatchSize, NumberBands];
+            for (int j = 0; j < PatchSize; j++)
             {
-                for (int k = 0; k < numBands; k++)
+                for (int k = 0; k < NumberBands; k++)
                 {
-                    patch[j, k] = frames[i + j][k];
+                    patch[j, k] = melSpectrograms[i + j][k];
                 }
             }
 
@@ -149,41 +262,71 @@ public class TensorflowPredictEffnetDiscogs : Configurable, IDisposable
         return patches;
     }
 
-    private List<float[]> RunInference(List<float[,]> patchBatch)
+    private List<float[]> RunInference(List<float[,]> batch)
     {
-        if (patchBatch.Count != _batchSize)
+        // Prepare input tensor
+        var shape = new[] {batch.Count, PatchSize, NumberBands};
+        var inputData = new float[batch.Count * PatchSize * NumberBands];
+
+        int idx = 0;
+        foreach (var patch in batch)
         {
-            throw new EssentiaException($"Inference batch size must be {_batchSize}, but got {patchBatch.Count}.");
+            for (int i = 0; i < PatchSize; i++)
+            {
+                for (int j = 0; j < NumberBands; j++)
+                {
+                    inputData[idx++] = patch[i, j];
+                }
+            }
         }
 
-        var shape = new int[] {patchBatch.Count, _patchSize, patchBatch[0].GetLength(1)};
-        var inputData = patchBatch.SelectMany(p => p.Cast<float>()).ToArray();
         var inputTensor = new DenseTensor<float>(inputData, shape);
+        var inputs = new List<NamedOnnxValue>
+        {
+            NamedOnnxValue.CreateFromTensor("serving_default_melspectrogram:0", inputTensor)
+        };
 
-        var inputs = new List<NamedOnnxValue> {NamedOnnxValue.CreateFromTensor(_inputName, inputTensor)};
-
+        // Run inference
         using var results = _session!.Run(inputs);
-        var outputTensor = results.First(r => r.Name == _outputName).AsTensor<float>();
+        var outputTensor = results.First(r => r.Name == "PartitionedCall:1").AsTensor<float>();
 
-        var predictions = new List<float[]>();
+        // Extract embeddings
+        var embeddings = new List<float[]>();
         var outputArray = outputTensor.ToArray();
-
-        int batchSizeOut = outputTensor.Dimensions[0];
         int embeddingSize = outputTensor.Dimensions[1];
 
-        for (int i = 0; i < batchSizeOut; i++)
+        for (int i = 0; i < batch.Count; i++)
         {
             var embedding = new float[embeddingSize];
             Array.Copy(outputArray, i * embeddingSize, embedding, 0, embeddingSize);
-            predictions.Add(embedding);
+            embeddings.Add(embedding);
         }
 
-        return predictions;
+        return embeddings;
+    }
+
+    private float[] AverageEmbeddings(List<float[]> embeddings)
+    {
+        if (embeddings.Count == 0)
+            return Array.Empty<float>();
+
+        int size = embeddings[0].Length;
+        var result = new float[size];
+
+        foreach (var embedding in embeddings)
+        {
+            for (int i = 0; i < size; i++)
+                result[i] += embedding[i];
+        }
+
+        for (int i = 0; i < size; i++)
+            result[i] /= embeddings.Count;
+
+        return result;
     }
 
     public void Dispose()
     {
         _session?.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

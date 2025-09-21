@@ -172,7 +172,7 @@ namespace Coral.Services
                 .ToListAsync();
             
             var trackIds = recs
-                .Where(t => t.Distance < 0.3)
+                .Where(t => t.Distance < 0.01)
                 .Select(t => t.Entity.TrackId).Distinct().ToList();
             
             var tracks = await _context.Tracks

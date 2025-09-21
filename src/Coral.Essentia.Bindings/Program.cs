@@ -4,17 +4,17 @@ using Microsoft.Extensions.Logging;
 
 var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs64-1.pb";
 
-var tracks = Directory.GetFiles(@"C:\Music", "*.*", SearchOption.AllDirectories)
+/*var tracks = Directory.GetFiles(@"C:\Music", "*.*", SearchOption.AllDirectories)
     .Take(500)
     .Where(c => Path.GetExtension(c) == ".m4a")
     .Select(c => new ATL.Track(c))
     .Where(c => c.Duration < 300)
     .Select(c => c.Path)
-    .ToList();
+    .ToList();*/
 
 var essentia = new EssentiaService();
 essentia.LoadModel(modelPath);
-var predictions = essentia.RunInference(@"P:\Music\Rare Dubs\Producer-sourced\Friends\Satl - Medi Vibe.mp3");
+var predictions = essentia.RunInference(@"P:\Music\Halogenix - All Blue EP (2015) [META023] [WEB FLAC]\05 - Halogenix - Paper Sword.flac");
 Console.WriteLine($"[{string.Join(", ", predictions.Take(5).Select(p => p.ToString("F4")))}...]");
 
 /*var completions = 0;

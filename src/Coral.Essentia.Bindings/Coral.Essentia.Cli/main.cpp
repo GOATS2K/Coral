@@ -1,124 +1,93 @@
-﻿// Coral.Essentia.Cli.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+﻿#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include <iomanip> // For std::fixed and std::setprecision
 
-#include <iostream>
-#include <essentia_wrapper.h>
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "essentia/essentia.h"
+#include "essentia/algorithmfactory.h"
 
-std::vector<std::string> findM4AFiles(const std::string& directory_path, bool verbose = false) {
-    std::vector<std::string> m4a_files;
+using namespace std;
+using namespace essentia;
+using namespace essentia::standard;
 
-    try {
-        // Check if the directory exists
-        if (!fs::exists(directory_path) || !fs::is_directory(directory_path)) {
-            std::cerr << "Error: Directory does not exist or is not a directory: "
-                << directory_path << std::endl;
-            return m4a_files;
-        }
+int main() {
+    string audioFile = "P:\\Music\\Rare Dubs\\Producer-sourced\\Friends\\Satl - Medi Vibe.mp3";
+    string outputFile = "cpp_spectrogram.txt";
+    const int sampleRate = 16000;
 
-        if (verbose) {
-            std::cout << "Searching directory: " << fs::absolute(directory_path) << std::endl;
-        }
+    essentia::init();
+    AlgorithmFactory& factory = AlgorithmFactory::instance();
 
-        // Configure iterator options to skip problematic directories but continue
-        auto options = fs::directory_options::skip_permission_denied;
-        std::error_code ec;
+    // 1. Load audio into a 1D vector
+    vector<Real> audioBuffer;
+    Algorithm* monoLoader = factory.create("MonoLoader",
+        "filename", audioFile,
+        "sampleRate", sampleRate,
+        "resampleQuality", 4);
+    monoLoader->output("audio").set(audioBuffer);
+    monoLoader->compute();
 
-        // Create iterator with error handling
-        auto iterator = fs::recursive_directory_iterator(directory_path, options, ec);
-        auto end = fs::recursive_directory_iterator{};
-
-        if (ec) {
-            std::cerr << "Error creating directory iterator: " << ec.message() << std::endl;
-            return m4a_files;
-        }
-
-        // Recursively iterate through all directories
-        while (iterator != end) {
-            const auto& entry = *iterator;
-            std::error_code entry_ec;
-
-            if (verbose) {
-                std::cout << "Checking: " << entry.path() << std::endl;
-            }
-
-            // Check if it's a regular file
-            bool is_regular = entry.is_regular_file(entry_ec);
-            if (entry_ec) {
-                if (verbose) {
-                    std::cout << "  Warning: Cannot check file type: " << entry_ec.message() << std::endl;
-                }
-                // Try to advance iterator and continue
-                iterator.increment(entry_ec);
-                if (entry_ec && verbose) {
-                    std::cout << "  Warning: Cannot advance iterator: " << entry_ec.message() << std::endl;
-                }
-                continue;
-            }
-
-            if (is_regular) {
-                std::string extension = entry.path().extension().string();
-
-                // Convert extension to lowercase for case-insensitive comparison
-                std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-
-                if (verbose) {
-                    std::cout << "  File extension: '" << extension << "'" << std::endl;
-                }
-
-                if (extension == ".m4a") {
-                    m4a_files.push_back(entry.path().string());
-                    if (verbose) {
-                        std::cout << "  ✓ Found M4A file!" << std::endl;
-                    }
-                }
-            }
-
-            // Safely advance to next entry
-            std::error_code advance_ec;
-            iterator.increment(advance_ec);
-            if (advance_ec) {
-                if (verbose) {
-                    std::cout << "Warning: Error advancing iterator: " << advance_ec.message() << std::endl;
-                }
-                break; // Exit if we can't advance
-            }
-        }
-    }
-    catch (const fs::filesystem_error& ex) {
-        std::cerr << "Filesystem error: " << ex.what() << std::endl;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << "General error: " << ex.what() << std::endl;
+    // 2. Manually cut the audio into frames
+    vector<vector<Real>> allFrames;
+    const int frameSize = 512;
+    const int hopSize = 256;
+    for (int i = 0; i + frameSize <= (int)audioBuffer.size(); i += hopSize) {
+        allFrames.emplace_back(audioBuffer.begin() + i, audioBuffer.begin() + i + frameSize);
     }
 
-    return m4a_files;
+    // 3. Instantiate processing algorithms
+    Algorithm* windowing = factory.create("Windowing", "type", "hann");
+    Algorithm* spectrum = factory.create("Spectrum");
+    Algorithm* melbands = factory.create("MelBands",
+        "numberBands", 96,
+        "sampleRate", sampleRate,
+        "highFrequencyBound", sampleRate / 2);
+
+    vector<vector<Real>> logSpectrogram;
+
+    // 4. Loop through the `allFrames` vector to process each 1D frame individually
+    for (const auto& frame : allFrames) {
+        vector<Real> windowedFrame, spec, melFrame;
+
+        windowing->input("frame").set(frame);
+        windowing->output("frame").set(windowedFrame);
+        windowing->compute();
+
+        spectrum->input("frame").set(windowedFrame);
+        spectrum->output("spectrum").set(spec);
+        spectrum->compute();
+
+        melbands->input("spectrum").set(spec);
+        melbands->output("bands").set(melFrame);
+        melbands->compute();
+
+        // 5. Apply log scaling to the 1D melFrame
+        for (auto& val : melFrame) {
+            val = log(val + 1e-6);
+        }
+        logSpectrogram.push_back(melFrame);
+    }
+
+    // 6. Save results to file
+    ofstream outFileStream(outputFile);
+    outFileStream << "--- Ground Truth Spectrogram (from Essentia/C++) ---" << endl;
+    for (int i = 0; i < min(5, (int)logSpectrogram.size()); ++i) {
+        outFileStream << "Frame " << i << ": [";
+        for (int j = 0; j < logSpectrogram[i].size(); ++j) {
+            outFileStream << fixed << setprecision(4) << logSpectrogram[i][j] << (j == logSpectrogram[i].size() - 1 ? "" : ", ");
+        }
+        outFileStream << "]" << endl;
+    }
+    cout << "[DEBUG] C++ spectrogram saved to " << outputFile << endl;
+
+    // Cleanup
+    delete monoLoader;
+    delete windowing;
+    delete spectrum;
+    delete melbands;
+    essentia::shutdown();
+
+    return 0;
 }
 
-int main()
-{
-    auto audioFileDir = "C:\\Music";
-    auto files = findM4AFiles(audioFileDir, true);
-
-
-    for (const auto& file : files) {
-        auto ctxId = ew_create_context();
-        auto modelPath = "C:\\Users\\bootie-\\Downloads\\discogs_track_embeddings-effnet-bs64-1.pb";
-        ew_configure_tf_model(ctxId, modelPath);
-        ew_run_inference(ctxId, file.c_str(), 16000, 4);
-        ew_destroy_context(ctxId);
-    }
-
-}
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file

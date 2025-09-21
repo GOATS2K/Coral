@@ -101,7 +101,14 @@ app.MapFallbackToFile("/artists/{id}", "artists/[id].html");
 app.MapFallbackToFile("/search/{id}", "search/search.html");
 app.MapFallbackToFile("index.html");
 
-using var scope = app.Services.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
-await db.Database.MigrateAsync();
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+    await db.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Failed to run migrations.");
+}
 app.Run();

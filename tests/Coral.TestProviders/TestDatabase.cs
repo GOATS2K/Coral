@@ -53,13 +53,7 @@ public class TestDatabase
     public Track Fuwarin;
     public Genre Folk;
     public Album Radio;
-
-
-    public TestDatabase()
-    {
-    }
-
-
+    
     public TestDatabase(Action<DbContextOptionsBuilder> optionsAction)
     {
         var serviceCollection = new ServiceCollection();

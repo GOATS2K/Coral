@@ -1,23 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj" />
-		<ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Coral.Database\Coral.Database.csproj"/>
+        <ProjectReference Include="..\..\src\Coral.Services\Coral.Services.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-	  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-	  <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.2" />
-	  <PackageReference Include="Testcontainers" Version="4.7.0" />
-	  <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0" />
-	  <PackageReference Include="Testcontainers.Xunit" Version="4.7.0" />
-	  <PackageReference Include="xunit" Version="2.9.3" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
+        <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.2"/>
+        <PackageReference Include="Testcontainers" Version="4.7.0"/>
+        <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0"/>
+        <PackageReference Include="Testcontainers.Xunit" Version="4.7.0"/>
+        <PackageReference Include="xunit" Version="2.9.3"/>
+    </ItemGroup>
 
 </Project>

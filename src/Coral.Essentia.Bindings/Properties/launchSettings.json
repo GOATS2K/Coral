@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Coral.Essentia.Bindings": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}

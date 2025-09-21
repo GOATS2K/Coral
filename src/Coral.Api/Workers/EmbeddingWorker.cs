@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Essentia;
-using Coral.Essentia.Bindings;
 using Coral.Services.ChannelWrappers;
 using Microsoft.EntityFrameworkCore;
 using Pgvector;

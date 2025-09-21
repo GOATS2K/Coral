@@ -402,7 +402,7 @@ namespace Coral.Database.Migrations
 
                     b.Property<Vector>("Embedding")
                         .IsRequired()
-                        .HasColumnType("vector(512)");
+                        .HasColumnType("vector(1280)");
 
                     b.Property<Guid>("TrackId")
                         .HasColumnType("uuid");

@@ -3,25 +3,23 @@ using Xunit;
 
 namespace Coral.Services.Tests
 {
-    public class LibraryServiceTests
+    public class LibraryServiceTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
-        private readonly ILibraryService _libraryService;
-        private readonly TestDatabase _testDatabase;
+        public ILibraryService LibraryService;
+        private readonly DatabaseFixture _fixture;
 
-        public LibraryServiceTests()
+        public LibraryServiceTests(DatabaseFixture fixture)
         {
-            var testDatabase = new TestDatabase();
-            _testDatabase = testDatabase;
-            _libraryService = new LibraryService(testDatabase.Context, testDatabase.Mapper);
+            _fixture = fixture;
         }
 
         [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()
         {
             // arrange
-            var trackToFind = _testDatabase.Believe;
+            var trackToFind = _fixture.TestDb.Believe;
             // act
-            var track = await _libraryService.GetTrack(trackToFind.Id);
+            var track = await LibraryService.GetTrack(trackToFind.Id);
             // assert
             Assert.NotNull(track);
             Assert.Equal(trackToFind.Title, track.Title);
@@ -32,7 +30,7 @@ namespace Coral.Services.Tests
         {
             // arrange
             // act
-            var tracks = await _libraryService.GetTracks().ToListAsync();
+            var tracks = await LibraryService.GetTracks().ToListAsync();
             // assert
             Assert.NotEmpty(tracks);
         }
@@ -41,7 +39,7 @@ namespace Coral.Services.Tests
         {
             // arrange
             // act
-            var albums = await _libraryService.GetAlbums().ToListAsync();
+            var albums = await LibraryService.GetAlbums().ToListAsync();
             // assert
             Assert.NotEmpty(albums);
         }
@@ -49,10 +47,10 @@ namespace Coral.Services.Tests
         public async Task GetArtworkForTrack_TrackWithNoArtwork_ReturnsNull()
         {
             // arrange
-            var trackWithoutArtwork = _testDatabase.Believe;
+            var trackWithoutArtwork = _fixture.TestDb.Believe;
 
             // act
-            var artwork = await _libraryService.GetArtworkForTrack(trackWithoutArtwork.Id);
+            var artwork = await LibraryService.GetArtworkForTrack(trackWithoutArtwork.Id);
 
             // assert
             Assert.Null(artwork);
@@ -61,11 +59,22 @@ namespace Coral.Services.Tests
         public async Task GetArtworkForAlbum_AlbumWithArtwork_ReturnsArtworkPath()
         {
             // arrange
-            var albumWithArtwork = _testDatabase.ALittleWhileLonger;
+            var albumWithArtwork = _fixture.TestDb.ALittleWhileLonger;
             // act
-            var artwork = await _libraryService.GetArtworkForAlbum(albumWithArtwork.Id);
+            var artwork = await LibraryService.GetArtworkForAlbum(albumWithArtwork.Id);
             // assert
             Assert.NotNull(artwork);
+        }
+
+        public Task InitializeAsync()
+        {
+            LibraryService = new LibraryService(_fixture.TestDb.Context, _fixture.TestDb.Mapper);
+            return Task.CompletedTask;
+        }
+
+        public Task DisposeAsync()
+        {
+            return Task.CompletedTask;
         }
     }
 }

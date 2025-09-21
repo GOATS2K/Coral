@@ -7,74 +7,61 @@ using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Testcontainers.PostgreSql;
+using Testcontainers.Xunit;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Coral.Services.Tests;
 
-public class IndexerServiceTests : IDisposable
+internal class Services
 {
-    private readonly IIndexerService _indexerService;
-    private readonly CoralDbContext _testDatabase;
+    public TestDatabase TestDatabase { get; set; } = null!;
+    public IIndexerService IndexerService { get; set; } = null!;
 
-    public IndexerServiceTests()
+}
+
+// These tests will overlap, so using `ContainerTest` makes sure
+// that we create a new Postgres database for each test.
+public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
+    : ContainerTest<PostgreSqlBuilder, PostgreSqlContainer>(testOutputHelper)
+{
+    protected override PostgreSqlBuilder Configure(PostgreSqlBuilder builder)
     {
-        var testDatabase = new TestDatabase();
+        return new PostgreSqlBuilder()
+            .WithImage("pgvector/pgvector:0.8.1-pg17-trixie");
+    }
+
+    private TestDatabase CreateDatabase()
+    {
+        return new TestDatabase(opt =>
+        {
+            opt.UseNpgsql(Container.GetConnectionString(), p => p.UseVector());
+        });
+    }
+
+    private Services CreateServices()
+    {
+        var testDatabase = CreateDatabase();
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
         var paginationService = Substitute.For<IPaginationService>();
-        var embeddingChannel = Substitute.For<IEmbeddingChannel>();
-        var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
+        var embeddingChannel = new EmbeddingChannel();
+        var searchService =
+            new SearchService(testDatabase.Mapper, testDatabase.Context, searchLogger, paginationService);
         var artworkService = new ArtworkService(testDatabase.Context, artworkLogger);
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
+        var indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService,
+            eventEmitter, testDatabase.Mapper, embeddingChannel);
 
-        _testDatabase = testDatabase.Context;
-        _indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService, eventEmitter, testDatabase.Mapper, embeddingChannel);
-    }
-    public void Dispose()
-    {
-        CleanUpArtwork();
-        CleanUpTempLibraries();
-        _testDatabase.Dispose();
-    }
-
-    private void CleanUpTempLibraries()
-    {
-        var libraries = _testDatabase.MusicLibraries
-            .Where(l => l.LibraryPath != "");
-        foreach (var library in libraries)
+        return new Services()
         {
-            if (!Guid.TryParse(Path.GetFileName(library.LibraryPath), out _)) continue;
-            var directory = new DirectoryInfo(library.LibraryPath);
-            foreach (var file in directory.EnumerateFiles("*.*", SearchOption.AllDirectories))
-            {
-                file.Delete();
-            }
-            foreach (var directoryInLibrary in directory.EnumerateDirectories("*.*", SearchOption.AllDirectories))
-            {
-                directoryInLibrary.Delete();
-            }
-            directory.Delete();
-        }
+            TestDatabase = testDatabase,
+            IndexerService = indexerService,
+        };
     }
 
-    private void CleanUpArtwork()
-    {
-        var indexedArtwork = _testDatabase.Artworks
-            .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
-                        || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
-            .Select(a => a.Path);
-
-        foreach (var artworkPath in indexedArtwork)
-        {
-            var directory = new DirectoryInfo(artworkPath).Parent;
-            File.Delete(artworkPath);
-            if (!directory!.GetFiles().Any())
-            {
-                directory.Delete();
-            }
-        }
-    }
 
     [Fact]
     public void EnsureTestFilesExist()
@@ -89,13 +76,16 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_MixedAlbums_CreatesTwoAlbums()
     {
         // arrange
+        var services = CreateServices();
 
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.MixedAlbumTags);
+        await services.IndexerService.ScanLibrary(TestDataRepository.MixedAlbumTags);
 
         // assert
-        var jupiter = await _testDatabase.ArtistsWithRoles.Include(a => a.Albums).FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
-        var neptune = await _testDatabase.ArtistsWithRoles.Include(a => a.Albums).FirstAsync(a => a.Artist.Name == "Neptune" && a.Role == ArtistRole.Main);
+        var jupiter = await services.TestDatabase.Context.ArtistsWithRoles.Include(a => a.Albums)
+            .FirstAsync(a => a.Artist.Name == "Jupiter" && a.Role == ArtistRole.Main);
+        var neptune = await services.TestDatabase.Context.ArtistsWithRoles.Include(a => a.Albums)
+            .FirstAsync(a => a.Artist.Name == "Neptune" && a.Role == ArtistRole.Main);
 
         Assert.NotEmpty(jupiter.Albums);
         Assert.NotEmpty(neptune.Albums);
@@ -108,12 +98,14 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_NeptuneDiscovery_IndexesEmbeddedArtwork()
     {
         // arrange
+        var services = CreateServices();
 
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.NeptuneDiscovery);
+        await services.IndexerService.ScanLibrary(TestDataRepository.NeptuneDiscovery);
 
         // assert
-        var album = await _testDatabase.Albums.Include(a => a.Artworks).FirstOrDefaultAsync(a => a.Name == "Discovery");
+        var album = await services.TestDatabase.Context.Albums.Include(a => a.Artworks)
+            .FirstOrDefaultAsync(a => a.Name == "Discovery");
         Assert.NotNull(album);
 
         var originalArtwork = album.Artworks.FirstOrDefault(a => a.Size == ArtworkSize.Original);
@@ -126,13 +118,14 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_JupiterMoons_CreatesValidMetadata()
     {
         // arrange
+        var services = CreateServices();
 
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.JupiterMoons);
+        await services.IndexerService.ScanLibrary(TestDataRepository.JupiterMoons);
 
         // assert
-        var jupiter = _testDatabase.Artists.Where(a => a.Name == "Jupiter").ToList();
-        var moonsAlbum = _testDatabase.Albums
+        var jupiter = services.TestDatabase.Context.Artists.Where(a => a.Name == "Jupiter").ToList();
+        var moonsAlbum = services.TestDatabase.Context.Albums
             .Include(a => a.Tracks)
             .ThenInclude(a => a.Genre)
             .Include(a => a.Artists)
@@ -152,17 +145,19 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_MissingMetadata_IndexesOK()
     {
         // arrange
-        var directoryName = new DirectoryInfo(TestDataRepository.GetTestFolder("Mars - Moons - FLAC [missing metadata]")).Name;
+        var services = CreateServices();
+        var directoryName =
+            new DirectoryInfo(TestDataRepository.GetTestFolder("Mars - Moons - FLAC [missing metadata]")).Name;
 
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.MarsMissingMetadata);
+        await services.IndexerService.ScanLibrary(TestDataRepository.MarsMissingMetadata);
 
         // assert
-        var marsArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
-        var unknownArtist = await _testDatabase.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
+        var marsArtist = await services.TestDatabase.Context.Artists.FirstOrDefaultAsync(a => a.Name == "Mars");
+        var unknownArtist = await services.TestDatabase.Context.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
 
         // take the Android approach and name the albums with no album tag the same as the folder they're in
-        var albumList = await _testDatabase.Albums
+        var albumList = await services.TestDatabase.Context.Albums
             .Include(a => a.Tracks)
             .ThenInclude(a => a.Genre)
             .Include(a => a.Artists)
@@ -183,12 +178,15 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_VariousArtistRelease_AttachesBothArtistsToAlbum()
     {
         // arrange
-
+        var services = CreateServices();
+        
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.NeptuneSaturnRings);
+        await services.IndexerService.ScanLibrary(TestDataRepository.NeptuneSaturnRings);
 
         // assert
-        var ringsAlbum = _testDatabase.Albums.Include(a => a.Tracks).Include(a => a.Artists).ThenInclude(a => a.Artist).First(a => a.Name == "Rings");
+        var ringsAlbum = services.TestDatabase.Context.Albums.Include(a => a.Tracks).ThenInclude(track => track.Artists)
+            .Include(a => a.Artists)
+            .ThenInclude(a => a.Artist).First(a => a.Name == "Rings");
         var saturn = ringsAlbum.Artists.First(a => a.Artist.Name == "Saturn");
         var neptune = ringsAlbum.Artists.First(a => a.Artist.Name == "Neptune");
 
@@ -206,12 +204,13 @@ public class IndexerServiceTests : IDisposable
     public async Task ReadDirectory_MarsWhoDiscoveredMe_ParsesArtistsCorrectly()
     {
         // arrange
+        var services = CreateServices();
 
         // act
-        await _indexerService.ScanLibrary(TestDataRepository.MarsWhoDiscoveredMe);
+        await services.IndexerService.ScanLibrary(TestDataRepository.MarsWhoDiscoveredMe);
 
         // assert
-        var album = await _testDatabase.Albums
+        var album = await services.TestDatabase.Context.Albums
             .Include(a => a.Tracks)
             .ThenInclude(a => a.Artists)
             .ThenInclude(a => a.Artist)
@@ -269,6 +268,7 @@ public class IndexerServiceTests : IDisposable
     public async Task ScanLibraries_RescanWithNewFiles_PicksUpNewAudioFiles()
     {
         // arrange
+        var services = CreateServices();
         var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
         var moons = TestDataRepository.JupiterMoons.LibraryPath;
         var tracksOnMoons = Directory
@@ -276,31 +276,31 @@ public class IndexerServiceTests : IDisposable
             .Count(f => Path.GetExtension(f) == ".flac");
         CopyDirectory(moons, Path.Combine(testFolder.FullName, Path.GetFileName(moons)));
         // register library
-        var library = await _indexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
         // act 1
-        await _indexerService.ScanLibraries();
+        await services.IndexerService.ScanLibraries();
 
         // assert 1
         Assert.NotNull(library);
-        var insertedMoons = _testDatabase.Tracks.Count(a => a.Album.Name == "Moons" 
-                                                            && a.AudioFile.Library.Id == library.Id);
+        var insertedMoons = services.TestDatabase.Context.Tracks.Count(a => a.Album.Name == "Moons"
+                                                                      && a.AudioFile.Library.Id == library.Id);
         Assert.Equal(tracksOnMoons, insertedMoons);
 
         // ----
-        
+
         // arrange 2
         var neptune = TestDataRepository.NeptuneDiscovery.LibraryPath;
         CopyDirectory(neptune, Path.Combine(testFolder.FullName, Path.GetFileName(neptune)));
-        
+
         // act 2
-        await _indexerService.ScanLibraries();
-        
+        await services.IndexerService.ScanLibraries();
+
         // assert 2
         var tracksOnDiscovery = Directory
             .EnumerateFiles(neptune, "*.*", SearchOption.TopDirectoryOnly)
             .Count(f => Path.GetExtension(f) == ".flac");
-        var insertedDiscovery = _testDatabase.Tracks.Count(a => a.Album.Name == "Discovery" 
-                                                            && a.AudioFile.Library.Id == library.Id);
+        var insertedDiscovery = services.TestDatabase.Context.Tracks.Count(a => a.Album.Name == "Discovery"
+                                                                          && a.AudioFile.Library.Id == library.Id);
         Assert.Equal(tracksOnDiscovery, insertedDiscovery);
     }
 
@@ -308,17 +308,19 @@ public class IndexerServiceTests : IDisposable
     public async Task ScanLibraries_ModifyTagsBeforeRescan_PicksUpMetadataChange()
     {
         // arrange
+        var services = CreateServices();
         var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
         var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
         CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)));
-        var library = await _indexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
 
         // run scan before change
-        await _indexerService.ScanLibraries();
+        await services.IndexerService.ScanLibraries();
 
         // verify that the release was written
         Assert.NotNull(library);
-        var indexedTrack = _testDatabase.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
+        var indexedTrack = services.TestDatabase.Context.Tracks.Include(t => t.AudioFile)
+            .FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
         Assert.NotNull(indexedTrack);
 
         var track = new ATL.Track(indexedTrack.AudioFile.FilePath);
@@ -326,10 +328,12 @@ public class IndexerServiceTests : IDisposable
         await track.SaveAsync();
 
         // act
-        await _indexerService.ScanLibraries();
+        await services.IndexerService.ScanLibraries();
 
         // assert
-        var updatedTrack = await _testDatabase.Tracks.FirstOrDefaultAsync(t => t.Title == "Modified" && t.Album.Name == indexedTrack.Album.Name);
+        var updatedTrack =
+            await services.TestDatabase.Context.Tracks.FirstOrDefaultAsync(t =>
+                t.Title == "Modified" && t.Album.Name == indexedTrack.Album.Name);
         Assert.NotNull(updatedTrack);
         // verify that the same track was updated
         Assert.Equal(indexedTrack.Id, updatedTrack.Id);
@@ -339,29 +343,35 @@ public class IndexerServiceTests : IDisposable
     public async Task ScanLibraries_RenameBeforeRescan_ChangesFilePathOfTrack()
     {
         // arrange
+        var services = CreateServices();
         var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
         var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
         CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)));
-        var library = await _indexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
 
         // run scan before change
-        await _indexerService.ScanLibraries();
+        await services.IndexerService.ScanLibraries();
 
         // verify that the release was written
         Assert.NotNull(library);
-        var indexedTrack = _testDatabase.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
+        var indexedTrack = services.TestDatabase.Context.Tracks.Include(t => t.AudioFile)
+            .FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
         Assert.NotNull(indexedTrack);
 
-        var destinationFileName = Path.Combine(Directory.GetParent(indexedTrack.AudioFile.FilePath)!.FullName, "renamed-file.flac");
+        var destinationFileName = Path.Combine(Directory.GetParent(indexedTrack.AudioFile.FilePath)!.FullName,
+            "renamed-file.flac");
         File.Move(indexedTrack.AudioFile.FilePath, destinationFileName);
 
         // act
-        await _indexerService.ScanLibraries();
+        await services.IndexerService.ScanLibraries();
 
         // assert
-        var updatedTrack = _testDatabase.Tracks.Include(t => t.AudioFile).FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
-        var oldTrack = _testDatabase.Tracks.FirstOrDefault(f => f.AudioFile.FilePath == indexedTrack.AudioFile.FilePath);
-        var oldFile = _testDatabase.AudioFiles.FirstOrDefault(f => f.FilePath == indexedTrack.AudioFile.FilePath);
+        var updatedTrack = services.TestDatabase.Context.Tracks.Include(t => t.AudioFile)
+            .FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
+        var oldTrack =
+            services.TestDatabase.Context.Tracks.FirstOrDefault(f => f.AudioFile.FilePath == indexedTrack.AudioFile.FilePath);
+        var oldFile =
+            services.TestDatabase.Context.AudioFiles.FirstOrDefault(f => f.FilePath == indexedTrack.AudioFile.FilePath);
         Assert.Null(oldTrack);
         Assert.Null(oldFile);
         Assert.NotNull(updatedTrack);

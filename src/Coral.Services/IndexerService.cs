@@ -441,7 +441,7 @@ public class IndexerService : IIndexerService
         .FirstOrDefaultAsync(t => t.AudioFile.FilePath == atlTrack.Path);
 
 
-        if (indexedTrack == null) indexedTrack = new Track();
+        if (indexedTrack == null) indexedTrack = new();
         indexedTrack.Album = indexedAlbum;
         indexedTrack.Artists = artists;
         indexedTrack.Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path);

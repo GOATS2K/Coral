@@ -5,16 +5,15 @@ using Xunit;
 
 namespace Coral.Services.Tests
 {
-    public class PaginationServiceTests
+    public class PaginationServiceTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
-        private readonly IPaginationService _paginationService;
-        private readonly TestDatabase _testDatabase;
+        public IPaginationService PaginationService;
+        
+        private readonly DatabaseFixture _fixture;
 
-        public PaginationServiceTests()
+        public PaginationServiceTests(DatabaseFixture fixture)
         {
-            var testDatabase = new TestDatabase();
-            _paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
-            _testDatabase = testDatabase;
+            _fixture = fixture;
         }
 
         [Fact]
@@ -25,12 +24,12 @@ namespace Coral.Services.Tests
             var skip = 0;
 
             // act
-            var results = await _paginationService.PaginateQuery<Track, TrackDto>(query =>
+            var results = await PaginationService.PaginateQuery<Track, TrackDto>(query =>
             {
-                return query.Where(t => t.Artists.Any(t => t.Artist.Name == _testDatabase.Lenzman.Name));
+                return query.Where(t => t.Artists.Any(t => t.Artist.Name == _fixture.TestDb.Lenzman.Name));
             }, skip, take);
             // assert
-            var selfQuery = _testDatabase.Context.Tracks.Where(t => t.Artists.Any(a => a.Artist.Name == _testDatabase.Lenzman.Name)).ToList();
+            var selfQuery = _fixture.TestDb.Context.Tracks.Where(t => t.Artists.Any(a => a.Artist.Name == _fixture.TestDb.Lenzman.Name)).ToList();
 
             var resultCount = results.ResultCount;
             var availableRecords = results.AvailableRecords;
@@ -47,12 +46,23 @@ namespace Coral.Services.Tests
             var take = 1;
             var skip = 0;
             // act
-            var results = await _paginationService.PaginateQuery<Album, SimpleAlbumDto>(skip, take);
+            var results = await PaginationService.PaginateQuery<Album, SimpleAlbumDto>(skip, take);
             // assert
             Assert.Single(results.Data);
-            Assert.Equal(_testDatabase.Context.Albums.Count(), results.TotalRecords);
+            Assert.Equal(_fixture.TestDb.Context.Albums.Count(), results.TotalRecords);
             Assert.Equal(results.Data.Count(), results.ResultCount);
             Assert.NotEqual(0, results.AvailableRecords);
+        }
+
+        public Task InitializeAsync()
+        {
+            PaginationService = new PaginationService(_fixture.TestDb.Mapper, _fixture.TestDb.Context);
+            return Task.CompletedTask;
+        }
+
+        public Task DisposeAsync()
+        {
+            return Task.CompletedTask;
         }
     }
 }

@@ -6,25 +6,23 @@ using Xunit;
 
 namespace Coral.Dto.Tests
 {
-    public class AlbumDtoTests
+    public class AlbumDtoTests : IClassFixture<DatabaseFixture>
     {
-        private readonly IMapper _mapper;
-        private readonly TestDatabase _testDatabase;
-        public AlbumDtoTests()
+        private readonly DatabaseFixture _fixture;
+
+        public AlbumDtoTests(DatabaseFixture fixture)
         {
-            var testDatabase = new TestDatabase();
-            _mapper = testDatabase.Mapper;
-            _testDatabase = testDatabase;
+            _fixture = fixture;
         }
 
         [Fact]
         public void AlbumDto_AlbumWithMultiplArtistRoles_SetsArtistRoleOnTrackDto()
         {
             // arrange
-            var album = _testDatabase.ALittleWhileLonger;
+            var album = _fixture.TestDb.ALittleWhileLonger;
 
             // act
-            var result = _mapper.Map<AlbumDto>(album);
+            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(album.Name, result.Name);
@@ -48,10 +46,10 @@ namespace Coral.Dto.Tests
         public void AlbumDto_AlbumWithType_SetsType()
         {
             // arrange
-            var album = _testDatabase.ALittleWhileLonger;
+            var album = _fixture.TestDb.ALittleWhileLonger;
 
             // act
-            var result = _mapper.Map<AlbumDto>(album);
+            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(AlbumType.MiniAlbum, result.Type);
@@ -61,10 +59,10 @@ namespace Coral.Dto.Tests
         public void AlbumDto_AlbumWithMultipleArtistRoles_SetsMainContributingArtistsAsAlbumArtists()
         {
             // arrange
-            var album = _testDatabase.ALittleWhileLonger;
+            var album = _fixture.TestDb.ALittleWhileLonger;
 
             // act
-            var result = _mapper.Map<AlbumDto>(album);
+            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(album.Name, result.Name);

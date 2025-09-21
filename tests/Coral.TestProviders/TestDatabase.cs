@@ -4,14 +4,15 @@ using Coral.Database.Models;
 using Coral.Dto.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Testcontainers.PostgreSql;
 
 namespace Coral.TestProviders;
 
-public class TestDatabase : IDisposable
+public class TestDatabase
 {
     public CoralDbContext Context;
     public IMapper Mapper;
-    private readonly IServiceProvider _serviceProvider;
+    private IServiceProvider _serviceProvider;
 
     // a simple single with 2 tracks and a single artist
     public Artist Tatora;
@@ -54,23 +55,19 @@ public class TestDatabase : IDisposable
     public Album Radio;
 
 
-
-
     public TestDatabase()
     {
+    }
+
+
+    public TestDatabase(Action<DbContextOptionsBuilder> optionsAction)
+    {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.AddDbContext<CoralDbContext>(options =>
-        {
-            options.UseSqlite("DataSource=:memory:");
-        });
-        serviceCollection.AddAutoMapper(opt =>
-        {
-            opt.AddMaps(typeof(TrackProfile));
-        });
+        serviceCollection.AddDbContext<CoralDbContext>(optionsAction);
+        serviceCollection.AddAutoMapper(opt => { opt.AddMaps(typeof(TrackProfile)); });
         _serviceProvider = serviceCollection.BuildServiceProvider();
         Context = _serviceProvider.GetRequiredService<CoralDbContext>();
         Mapper = _serviceProvider.GetRequiredService<IMapper>();
-        Context.Database.OpenConnection();
         Context.Database.EnsureCreated();
 
         var currentTime = DateTime.UtcNow;
@@ -308,7 +305,6 @@ public class TestDatabase : IDisposable
             {
                 LenzmanAsMain,
                 SlayAsGuest
-
             },
             Album = ALittleWhileLonger,
             CreatedAt = currentTime,
@@ -372,7 +368,6 @@ public class TestDatabase : IDisposable
             {
                 LenzmanAsMain,
                 DannySanchezAsGuest
-
             },
             Album = ALittleWhileLonger,
             CreatedAt = currentTime,
@@ -559,7 +554,7 @@ public class TestDatabase : IDisposable
         {
             Artists = new List<ArtistWithRole>()
             {
-               IchikoAobaAsMain, RyuichiSakamotoAsGuest
+                IchikoAobaAsMain, RyuichiSakamotoAsGuest
             },
             Album = Radio,
             CreatedAt = currentTime,

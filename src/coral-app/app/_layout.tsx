@@ -10,6 +10,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
 import { Appearance, Platform } from 'react-native';
+import { useAtom } from 'jotai'
+import { themeAtom } from '@/app/state';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -19,33 +21,37 @@ export {
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  const { setColorScheme } = useColorScheme();
-  const [preferredColor, setPrefferedColor] = useState<'light' | 'dark'>(getPrefferedColor());
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const [preferredColor, setPrefferedColor] = useAtom(themeAtom)
 
   // wire up event listeners for platform changes
+  if (Platform.OS === 'web') {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e: MediaQueryListEvent) => {
+      setPrefferedColor(e.matches ? 'dark' : 'light');
+    });
+  } else {
+    Appearance.addChangeListener((ch) => {
+      setPrefferedColor(ch.colorScheme ?? 'light');
+    });
+  }
+
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      mediaQuery.addEventListener('change', (e: MediaQueryListEvent) => {
-        setPrefferedColor(e.matches ? 'dark' : 'light');
-      });
-    } else {
-      Appearance.addChangeListener((ch) => {
-        setPrefferedColor(ch.colorScheme ?? 'light');
-      });
-    }
-  }, []);
+    // initialize with preferredColor
+    setPrefferedColor(getPrefferedColor())
+  }, [])
 
   // get preferred color for first run and use preferred color set by event listners
   // in subsequent runs
   useEffect(() => {
+    console.log("preferred color changed", preferredColor)
     setColorScheme(preferredColor);
   }, [preferredColor]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={NAV_THEME[preferredColor ?? 'dark']}>
-        <StatusBar style={preferredColor === 'dark' ? 'light' : 'dark'} />
+      <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <Stack />
         <PortalHost />
       </ThemeProvider>

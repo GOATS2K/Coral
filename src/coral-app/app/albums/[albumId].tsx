@@ -27,7 +27,7 @@ export default function Screen() {
   const { albumId } = useLocalSearchParams();
   const { data, error } = useAlbum({
     pathParams: {
-      albumId: +albumId,
+      albumId: albumId as string,
     },
   });
   console.log(data);

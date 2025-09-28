@@ -5,21 +5,28 @@ import { Icon } from '@/components/ui/icon';
 
 import * as React from 'react';
 
+import { useAtom } from 'jotai'
+import { themeAtom } from '@/app/state';
+
+
 const THEME_ICONS = {
   light: SunIcon,
   dark: MoonStarIcon,
 };
 
 export function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const [preferredColor, setPrefferedColor] = useAtom(themeAtom)
 
   return (
     <Button
-      onPressIn={toggleColorScheme}
+      onPressIn={() => {
+        const color = preferredColor == 'dark' ? "light" : 'dark'
+        setPrefferedColor(color)
+      }}
       size="icon"
       variant="ghost"
       className="rounded-full web:mx-4">
-      <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-5" />
+      <Icon as={THEME_ICONS[preferredColor ?? 'light']} className="size-5" />
     </Button>
   );
 }

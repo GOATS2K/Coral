@@ -11,7 +11,7 @@ import { useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
 import { Appearance, Platform } from 'react-native';
 import { useAtom } from 'jotai'
-import { themeAtom } from '@/app/state';
+import { themeAtom } from '@/lib/state';
 
 export {
   // Catch any errors thrown by the Layout component.

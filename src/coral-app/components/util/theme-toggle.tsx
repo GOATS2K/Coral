@@ -6,7 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import * as React from 'react';
 
 import { useAtom } from 'jotai'
-import { themeAtom } from '@/app/state';
+import { themeAtom } from '@/lib/state';
 
 
 const THEME_ICONS = {

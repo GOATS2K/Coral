@@ -33,11 +33,8 @@ function AlbumHeaderCard({ album, gradientColors }: AlbumHeaderCardProps) {
   
   return (
       <LinearGradient
-        colors={[...gradientColors, 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.6)', 'transparent'] as ColorValue[]}
-        locations={[0, 0.6, 0.8, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        className="flex-col sm:flex-row gap-4 pt-8 sm:pt-4 p-4 items-center sm:items-start sm:h-[230px] h-[300px]"
+        colors={[...gradientColors] as ColorValue[]}
+        className="flex-col sm:flex-row gap-4 pt-8 sm:pt-4 p-4 items-center sm:items-start sm:h-[250px] h-[350px]"
       >
       {/* Album Cover */}
       <View className="mx-auto sm:mx-0">
@@ -136,7 +133,7 @@ function TrackListing({ tracks }: TrackListingProps) {
   updateDiscTrackNumbers();
 
   return (
-    <View className="mx-2 pl-4 mt-8 pb-20">
+    <View className="mx-2 pl-4 mt-2 pb-20">
       <View className="gap-2">
         {Object.entries(tracksByDisc).map(([discNumber, discTracks]) => (
           <View key={discNumber}>
@@ -212,9 +209,6 @@ export default function Screen() {
   const gradientColors = data?.artworks?.colors?.length > 0 
     ? data.artworks.colors.map(reduceColorIntensity)
     : ['#6366f1', '#8b5cf6'].map(reduceColorIntensity);
-
-  // Create faded gradient that extends across page
-  const extendedGradientColors = [...gradientColors, 'rgba(0,0,0,0.1)', 'transparent'] as ColorValue[];
 
   return (
     <>

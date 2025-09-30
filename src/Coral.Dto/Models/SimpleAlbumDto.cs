@@ -10,5 +10,6 @@ namespace Coral.Dto.Models
         public AlbumType? Type { get; set; }
         public int ReleaseYear { get; set; }
         public ArtworkDto Artworks { get; set; } = null!;
+        public DateTime CreatedAt { get; set; }
     }
 }

@@ -1,14 +1,14 @@
-import { ColorValue, Image, Pressable, ScrollView, View } from 'react-native';
+import { ColorValue, Image, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
-import { AlbumDto, SimpleTrackDto } from '@/lib/client/schemas';
+import { AlbumDto } from '@/lib/client/schemas';
 import { baseUrl } from '@/lib/client/fetcher';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
-import { useColorScheme } from 'nativewind';
+import { TrackListing } from '@/components/track-listing';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -102,80 +102,6 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
           </View>
         </View>
       </BlurView>
-    </View>
-  );
-}
-
-interface TrackListingProps {
-  tracks: SimpleTrackDto[];
-}
-
-function TrackListing({ tracks }: TrackListingProps) {
-  // Group tracks by disc number
-  const tracksByDisc = tracks.reduce((acc, track) => {
-    const discNumber = track.discNumber || 1;
-    if (!acc[discNumber]) {
-      acc[discNumber] = [];
-    }
-    acc[discNumber].push(track);
-    return acc;
-  }, {} as Record<number, SimpleTrackDto[]>);
-
-  const hasMultipleDiscs = Object.keys(tracksByDisc).length > 1;
-
-  // Format duration in MM:SS
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  // Format track number display
-  const formatTrackNumber = (track: SimpleTrackDto, disc: string) => {
-    const trackNum = track.trackNumber.toString().padStart(2, '0');
-    return hasMultipleDiscs ? `${disc}.${trackNum}` : trackNum;
-  };
-
-  const handleTrackPress = (trackId: string) => {
-    // TODO: Implement track playback
-    console.log('Track pressed:', trackId);
-  };
-
-  return (
-    <View className="px-4 sm:px-6 pb-20 mt-6">
-      <View className="gap-0">
-        {Object.entries(tracksByDisc).map(([discNumber, discTracks]) => (
-          <View key={discNumber} className="gap-0">
-            {discTracks.map((track) => (
-              <Pressable
-                key={track.id}
-                onPress={() => handleTrackPress(track.id)}
-                className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30 rounded-md -mx-2 px-2"
-              >
-                {/* Track Number */}
-                <Text variant="small" className="text-muted-foreground w-8 select-none text-xs">
-                  {formatTrackNumber(track, discNumber)}
-                </Text>
-
-                {/* Track Info Stack */}
-                <View className="flex-1 min-w-0">
-                  <Text variant="default" className="text-foreground select-none leading-tight text-sm" numberOfLines={1}>
-                    {track.title}
-                  </Text>
-                  <Text variant="small" className="text-muted-foreground mt-0.5 select-none leading-tight text-xs" numberOfLines={1}>
-                    {track.artists.filter(artist => artist.role === 'Main').map(artist => artist.name).join(', ')}
-                  </Text>
-                </View>
-
-                {/* Duration - Hidden on small screens */}
-                <Text variant="small" className="text-muted-foreground hidden sm:block w-12 text-right select-none text-xs">
-                  {formatDuration(track.durationInSeconds)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
@@ -278,7 +204,12 @@ export default function Screen() {
             gradientLocations={gradientLocations}
             backgroundColor={backgroundColor}
           />
-          <TrackListing tracks={data.tracks} />
+          <TrackListing
+            tracks={data.tracks}
+            album={data}
+            showTrackNumber={true}
+            className="px-4 sm:px-6 pb-20 mt-6"
+          />
         </ScrollView>
       </View>
     </>

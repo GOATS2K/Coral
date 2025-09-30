@@ -11,6 +11,7 @@
     "generate-client": "openapi-codegen gen client"
   },
   "dependencies": {
+    "@gorhom/bottom-sheet": "^5",
     "@react-navigation/native": "^7.0.0",
     "@rn-primitives/portal": "~1.3.0",
     "@rn-primitives/slot": "^1.2.0",
@@ -19,6 +20,8 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "expo": "^53.0.19",
+    "expo-audio": "~0.4.9",
+    "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",
     "expo-linear-gradient": "~14.1.5",
@@ -33,7 +36,8 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
-    "react-native-reanimated": "~3.17.5",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",

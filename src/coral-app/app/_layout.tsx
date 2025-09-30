@@ -8,10 +8,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Appearance, Platform } from 'react-native';
-import { useAtom } from 'jotai'
+import { useAtom } from 'jotai';
 import { themeAtom } from '@/lib/state';
+import { WebPlayerBar } from '@/components/player/web-player-bar';
+import { PlayerProvider } from '@/lib/player/player-provider';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,11 +52,14 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack />
-        <PortalHost />
-      </ThemeProvider>
+      <PlayerProvider>
+        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <Stack />
+          <PortalHost />
+          <WebPlayerBar />
+        </ThemeProvider>
+      </PlayerProvider>
     </QueryClientProvider>
   );
 }

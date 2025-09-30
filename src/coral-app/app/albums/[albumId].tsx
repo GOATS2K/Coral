@@ -57,11 +57,11 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
         className="absolute inset-0"
       />
       <BlurView
-        intensity={80}
+        intensity={60}
         tint="dark"
-        className="flex-1"
+        className="flex-1 flex justify-center"
       >
-        <View className="flex-col sm:flex-row gap-4 pt-8 sm:pt-4 p-4 items-center sm:items-start h-full">
+        <View className="flex-col sm:flex-row gap-4 px-4 items-center sm:items-start">
           {/* Album Cover */}
           <View className="mx-auto sm:mx-0 w-[200px] h-[200px]">
             {artworkUrl ? (
@@ -78,7 +78,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
           </View>
 
           {/* Album Info */}
-          <View className="flex-1 flex-col justify-between items-center sm:items-start">
+          <View className="flex-1 flex-col justify-center items-center sm:items-start">
             <View className="gap-2">
               {/* Album Title */}
               <Text variant="h4" className="text-white font-bold text-center sm:text-left drop-shadow-lg">
@@ -93,7 +93,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
 
             {/* Metadata */}
             {infoParts.length > 0 && (
-              <View className="mt-3 mb-6">
+              <View className="mt-3">
                 <Text variant="small" className="text-white/90 text-center sm:text-left drop-shadow-md">
                   {infoParts.join(' • ')}
                 </Text>

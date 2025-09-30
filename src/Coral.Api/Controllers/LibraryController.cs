@@ -193,6 +193,19 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("albums/{albumId}/tracks")]
+        public async Task<ActionResult<List<SimpleTrackDto>>> AlbumTracks(Guid albumId)
+        {
+            var album = await _libraryService.GetAlbum(albumId);
+            if (album == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(album.Tracks);
+        }
+
+        [HttpGet]
         [Route("artists/{artistId}")]
         public async Task<ActionResult<ArtistDto>> Artist(Guid artistId)
         {

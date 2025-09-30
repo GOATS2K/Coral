@@ -1,7 +1,7 @@
 import { useAudioPlayerStatus } from 'expo-audio';
 import { useAtom } from 'jotai';
 import { useEffect } from 'react';
-import type { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
+import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { baseUrl } from '@/lib/client/fetcher';
 import { playerStateAtom } from '@/lib/state';
 import { useAudioPlayerInstance } from './player-provider';
@@ -13,11 +13,11 @@ export function usePlayer() {
 
   const getTrackUrl = (trackId: string) => `${baseUrl}/api/library/tracks/${trackId}/original`;
 
-  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, album?: AlbumDto) => {
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0) => {
     const track = tracks[startIndex];
     await player.pause();
     await player.seekTo(0);
-    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track, currentAlbum: album || null });
+    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track });
     await player.replace(getTrackUrl(track.id));
     await player.play();
   };
@@ -42,7 +42,7 @@ export function usePlayer() {
     player.seekTo(position);
   };
 
-  const addToQueue = (track: SimpleTrackDto, album?: AlbumDto) => {
+  const addToQueue = (track: SimpleTrackDto) => {
     setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
   };
 
@@ -55,12 +55,13 @@ export function usePlayer() {
 
   return {
     activeTrack: state.currentTrack,
-    activeAlbum: state.currentAlbum,
     isPlaying: status.playing,
     progress: { position: status.currentTime, duration: status.duration },
+    queue: state.queue,
     play,
     togglePlayPause,
     skip,
     seekTo: (position: number) => player.seekTo(position),
+    addToQueue,
   };
 }

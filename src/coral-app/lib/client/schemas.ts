@@ -56,6 +56,8 @@ export type ArtworkDto = {
   colors: string[];
 };
 
+export type ArtworkSize = "Small" | "Medium" | "Original";
+
 export type AudioFile = {
   /**
    * @format uuid
@@ -239,6 +241,10 @@ export type SimpleTrackDto = {
    * @format uuid
    */
   id: string;
+  /**
+   * @format uuid
+   */
+  albumId: string;
   title: string;
   /**
    * @format int32

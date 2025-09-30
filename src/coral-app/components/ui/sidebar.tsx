@@ -27,7 +27,7 @@ function NavItem({ href, icon: Icon, label, isActive, collapsed }: NavItemProps)
     <Link href={href} asChild>
       <Pressable
         className={cn(
-          'flex-row items-center rounded-lg transition-colors px-4 py-3',
+          'flex-row items-center rounded-lg transition-colors px-4 h-11',
           collapsed ? 'gap-0 justify-center' : 'gap-3',
           isActive
             ? 'bg-accent'

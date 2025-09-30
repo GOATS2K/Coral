@@ -1,6 +1,6 @@
 import { atom } from 'jotai'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SimpleTrackDto, AlbumDto } from './client/schemas'
+import { SimpleTrackDto } from './client/schemas'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
@@ -56,14 +56,12 @@ export const themeAtom = atom<ResolvedTheme>((get) => {
 
 export interface PlayerState {
   currentTrack: SimpleTrackDto | null;
-  currentAlbum: AlbumDto | null;
   queue: SimpleTrackDto[];
   currentIndex: number;
 }
 
 export const playerStateAtom = atom<PlayerState>({
   currentTrack: null,
-  currentAlbum: null,
   queue: [],
   currentIndex: 0,
 })

@@ -14,8 +14,8 @@ export default function LibraryScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 bg-background">
-        <Tabs value={value} onValueChange={setValue} className="flex-1">
-          <View className="mt-4 px-2">
+        <View className="pt-4 pb-2 px-4 -ml-[3px]">
+          <Tabs value={value} onValueChange={setValue} className="flex-1 gap-0">
             <TabsList>
               <TabsTrigger value="albums">
                 <Text>Albums</Text>
@@ -27,8 +27,10 @@ export default function LibraryScreen() {
                 <Text>Tracks</Text>
               </TabsTrigger>
             </TabsList>
-          </View>
+          </Tabs>
+        </View>
 
+        <Tabs value={value} onValueChange={setValue} className="flex-1">
           <TabsContent value="albums" className="flex-1">
             <AlbumsTab />
           </TabsContent>

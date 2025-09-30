@@ -6,8 +6,6 @@ const PlayerContext = createContext<AudioPlayer | null>(null);
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const player = useAudioPlayer();
 
-  console.log('[PlayerProvider] Player instance ID:', player.id);
-
   return (
     <PlayerContext.Provider value={player}>
       {children}

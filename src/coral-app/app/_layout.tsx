@@ -10,10 +10,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { Appearance, Platform } from 'react-native';
-import { useAtom } from 'jotai';
-import { themeAtom } from '@/lib/state';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,40 +25,64 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const [preferredColor, setPrefferedColor] = useAtom(themeAtom)
+  const resolvedTheme = useAtomValue(themeAtom);
+  const setSystemTheme = useSetAtom(systemThemeAtom);
+  const setThemePreference = useSetAtom(themePreferenceAtom);
 
-  // wire up event listeners for platform changes
-  if (Platform.OS === 'web') {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', (e: MediaQueryListEvent) => {
-      setPrefferedColor(e.matches ? 'dark' : 'light');
-    });
-  } else {
-    Appearance.addChangeListener((ch) => {
-      setPrefferedColor(ch.colorScheme ?? 'light');
-    });
-  }
+  console.log('[RootLayout] Render - colorScheme:', colorScheme, 'resolvedTheme:', resolvedTheme);
 
   useEffect(() => {
-    // initialize with preferredColor
-    setPrefferedColor(getPrefferedColor())
+    // On native platforms, load theme preference from AsyncStorage
+    // (On web, it's already loaded synchronously in the atom)
+    if (Platform.OS !== 'web') {
+      AsyncStorage.getItem('theme-preference').then(stored => {
+        if (stored) {
+          const preference = JSON.parse(stored);
+          console.log('[RootLayout] Init (native) - loaded theme preference from storage:', preference);
+          setThemePreference(preference);
+        }
+      }).catch(e => console.error('[RootLayout] Init (native) - error loading theme preference:', e));
+    }
+
+    // Initialize system theme
+    const systemTheme = getPrefferedColor();
+    console.log('[RootLayout] Init - setting system theme to:', systemTheme);
+    setSystemTheme(systemTheme);
+
+    // wire up event listeners for platform changes
+    if (Platform.OS === 'web') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (e: MediaQueryListEvent) => {
+        const newTheme = e.matches ? 'dark' : 'light';
+        console.log('[RootLayout] Web media query change - setting system theme to:', newTheme);
+        setSystemTheme(newTheme);
+      };
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    } else {
+      const subscription = Appearance.addChangeListener((ch) => {
+        const newTheme = ch.colorScheme === 'dark' ? 'dark' : 'light';
+        console.log('[RootLayout] Native appearance change - setting system theme to:', newTheme);
+        setSystemTheme(newTheme);
+      });
+      return () => subscription.remove();
+    }
   }, [])
 
-  // get preferred color for first run and use preferred color set by event listners
-  // in subsequent runs
+  // Apply resolved theme to NativeWind
   useEffect(() => {
-    console.log("preferred color changed", preferredColor)
-    setColorScheme(preferredColor);
-  }, [preferredColor]);
+    console.log('[RootLayout] Resolved theme effect - setting colorScheme from', colorScheme, 'to', resolvedTheme);
+    setColorScheme(resolvedTheme);
+  }, [resolvedTheme]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <PlayerProvider>
         <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Stack />
+          <Stack screenOptions={{ headerShown: false }} />
           <PortalHost />
-          <WebPlayerBar />
+          {Platform.OS === 'web' && <WebPlayerBar />}
         </ThemeProvider>
       </PlayerProvider>
     </QueryClientProvider>

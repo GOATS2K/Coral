@@ -12,8 +12,6 @@ export function WebPlayerBar() {
 
   const { activeTrack, activeAlbum, isPlaying, progress, togglePlayPause, skip, seekTo } = usePlayer();
 
-  console.log('[WebPlayerBar] Render - activeTrack:', activeTrack?.title, 'isPlaying:', isPlaying);
-
   // Don't show bar if no track is active
   if (!activeTrack) {
     return null;

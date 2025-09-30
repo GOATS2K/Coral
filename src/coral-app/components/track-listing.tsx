@@ -33,7 +33,7 @@ export function TrackListing({ tracks, album, showTrackNumber = true, className 
         return (
           <Pressable
             key={track.id}
-            onPress={() => play(tracks, index, album)}
+            onPress={() => play(tracks, index)}
             className={`flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30 rounded-md -mx-2 px-2 ${isActive ? 'bg-primary/10' : ''}`}
           >
             {showTrackNumber && (

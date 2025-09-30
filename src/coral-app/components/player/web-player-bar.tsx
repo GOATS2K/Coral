@@ -3,6 +3,8 @@ import { Text } from '@/components/ui/text';
 import { usePlayer } from '@/lib/player/use-player';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react-native';
 import { baseUrl } from '@/lib/client/fetcher';
+import { Link } from 'expo-router';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function WebPlayerBar() {
   // Only render on web
@@ -10,7 +12,7 @@ export function WebPlayerBar() {
     return null;
   }
 
-  const { activeTrack, activeAlbum, isPlaying, progress, togglePlayPause, skip, seekTo } = usePlayer();
+  const { activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo } = usePlayer();
 
   // Don't show bar if no track is active
   if (!activeTrack) {
@@ -20,9 +22,10 @@ export function WebPlayerBar() {
   const duration = progress.duration || activeTrack.durationInSeconds || 0;
   const currentPosition = progress.position;
 
-  // Get artwork URL - use small size optimized for web player
-  const artworkPath = activeAlbum?.artworks?.small ?? "";
-  const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
+  // Get artwork URL using albumId from track
+  const artworkUrl = activeTrack.albumId
+    ? `${baseUrl}/api/artwork?albumId=${activeTrack.albumId}&size=small`
+    : null;
 
   // Get artist names from artists array
   const artistNames = activeTrack.artists
@@ -44,15 +47,26 @@ export function WebPlayerBar() {
     <View className="fixed bottom-0 left-0 right-0 bg-card border-t border-border h-24 flex-row items-center px-4 py-3 gap-4 z-50">
       {/* Album Art & Track Info */}
       <View className="flex-row items-center gap-3 flex-1 min-w-0">
-        {artworkUrl ? (
-          <Image
-            source={{ uri: artworkUrl }}
-            className="w-14 h-14 rounded"
-            resizeMode="cover"
-          />
-        ) : (
-          <View className="w-14 h-14 rounded bg-muted" />
-        )}
+        <Tooltip delayDuration={200}>
+          <Link href={`/albums/${activeTrack.albumId}`} asChild>
+            <TooltipTrigger asChild>
+              <Pressable>
+                {artworkUrl ? (
+                  <Image
+                    source={{ uri: artworkUrl }}
+                    className="w-14 h-14 rounded"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="w-14 h-14 rounded bg-muted" />
+                )}
+              </Pressable>
+            </TooltipTrigger>
+          </Link>
+          <TooltipContent>
+            <Text>Go to Album</Text>
+          </TooltipContent>
+        </Tooltip>
         <View className="flex-1 min-w-0">
           <Text className="text-foreground font-medium select-none" numberOfLines={1}>
             {activeTrack.title}

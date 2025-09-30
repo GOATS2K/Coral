@@ -1,3 +1,4 @@
+using Coral.Database.Models;
 using Coral.Services;
 using Coral.Services.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,15 @@ public class ArtworkController : ControllerBase
     public ArtworkController(IArtworkService artworkService)
     {
         _artworkService = artworkService;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult> GetArtwork([FromQuery] Guid albumId, [FromQuery] ArtworkSize size)
+    {
+        var artworkPath = await _artworkService.GetAlbumArtwork(albumId, size);
+        if (artworkPath == null) return NotFound();
+        return new PhysicalFileResult(artworkPath,
+            MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));
     }
 
     [HttpGet]

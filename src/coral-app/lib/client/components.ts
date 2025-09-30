@@ -14,6 +14,95 @@ type QueryFnOptions = {
   signal?: AbortController["signal"];
 };
 
+export type GetArtworkQueryParams = {
+  /**
+   * @format uuid
+   */
+  albumId?: string;
+  size?: Schemas.ArtworkSize;
+};
+
+export type GetArtworkError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetArtworkVariables = {
+  queryParams?: GetArtworkQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchGetArtwork = (
+  variables: GetArtworkVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<undefined, GetArtworkError, undefined, {}, GetArtworkQueryParams, {}>({
+    url: "/api/Artwork",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getArtworkQuery(variables: GetArtworkVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<undefined>;
+};
+
+export function getArtworkQuery(
+  variables: GetArtworkVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<undefined>)
+    | reactQuery.SkipToken;
+};
+
+export function getArtworkQuery(
+  variables: GetArtworkVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Artwork",
+      operationId: "getArtwork",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchGetArtwork(variables, signal),
+  };
+}
+
+export const useSuspenseGetArtwork = <TData = undefined,>(
+  variables: GetArtworkVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, GetArtworkError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<undefined, GetArtworkError, TData>({
+    ...getArtworkQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetArtwork = <TData = undefined,>(
+  variables: GetArtworkVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, GetArtworkError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<undefined, GetArtworkError, TData>({
+    ...getArtworkQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type ArtworkFromIdPathParams = {
   /**
    * @format uuid
@@ -1266,6 +1355,107 @@ export const useAlbum = <TData = Schemas.AlbumDto,>(
   });
 };
 
+export type AlbumTracksPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type AlbumTracksError = Fetcher.ErrorWrapper<undefined>;
+
+export type AlbumTracksResponse = Schemas.SimpleTrackDto[];
+
+export type AlbumTracksVariables = {
+  pathParams: AlbumTracksPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchAlbumTracks = (
+  variables: AlbumTracksVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    AlbumTracksResponse,
+    AlbumTracksError,
+    undefined,
+    {},
+    {},
+    AlbumTracksPathParams
+  >({
+    url: "/api/Library/albums/{albumId}/tracks",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function albumTracksQuery(variables: AlbumTracksVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<AlbumTracksResponse>;
+};
+
+export function albumTracksQuery(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<AlbumTracksResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function albumTracksQuery(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/albums/{albumId}/tracks",
+      operationId: "albumTracks",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchAlbumTracks(variables, signal),
+  };
+}
+
+export const useSuspenseAlbumTracks = <TData = AlbumTracksResponse,>(
+  variables: AlbumTracksVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    AlbumTracksResponse,
+    AlbumTracksError,
+    TData
+  >({
+    ...albumTracksQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useAlbumTracks = <TData = AlbumTracksResponse,>(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<AlbumTracksResponse, AlbumTracksError, TData>({
+    ...albumTracksQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type ArtistPathParams = {
   /**
    * @format uuid
@@ -1766,6 +1956,11 @@ export const useUnloadPlugins = <TData = undefined,>(
 
 export type QueryOperation =
   | {
+      path: "/api/Artwork";
+      operationId: "getArtwork";
+      variables: GetArtworkVariables | reactQuery.SkipToken;
+    }
+  | {
       path: "/api/Artwork/{artworkId}";
       operationId: "artworkFromId";
       variables: ArtworkFromIdVariables | reactQuery.SkipToken;
@@ -1824,6 +2019,11 @@ export type QueryOperation =
       path: "/api/Library/albums/{albumId}";
       operationId: "album";
       variables: AlbumVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/albums/{albumId}/tracks";
+      operationId: "albumTracks";
+      variables: AlbumTracksVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/artists/{artistId}";

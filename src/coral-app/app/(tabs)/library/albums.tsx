@@ -1,10 +1,15 @@
 import { View, ScrollView, Image, Pressable, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { usePaginatedAlbums } from '@/lib/client/components';
+import { usePaginatedAlbums, useAlbumTracks } from '@/lib/client/components';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { useState, useEffect } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
+import { PlayIcon, MoreVerticalIcon, HeartIcon, ListPlusIcon } from 'lucide-react-native';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAtomValue } from 'jotai';
+import { themeAtom } from '@/lib/state';
+import { usePlayer } from '@/lib/player/use-player';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -14,20 +19,58 @@ interface AlbumCardProps {
 
 function AlbumCard({ album }: AlbumCardProps) {
   const isWeb = Platform.OS === 'web';
+  const theme = useAtomValue(themeAtom);
+  const { play, addToQueue } = usePlayer();
   const artworkSize = isWeb ? 150 : 180;
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
+  const [isHovered, setIsHovered] = useState(false);
+
+  const { data: tracks, refetch } = useAlbumTracks(
+    { pathParams: { albumId: album.id } },
+    { enabled: false }
+  );
 
   const artistNames = album.artists && album.artists.length > 4
     ? 'Various Artists'
     : album.artists?.map(a => a.name).join(', ') ?? 'Unknown Artist';
 
+  const handlePlayAlbum = async (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const result = tracks || (await refetch()).data;
+    if (result && result.length > 0) {
+      play(result, 0);
+    }
+  };
+
+  const handleLikeAlbum = () => {
+    // TODO: Implement like album functionality
+    console.log('Like album:', album.id);
+  };
+
+  const handleAddToQueue = async () => {
+    const result = tracks || (await refetch()).data;
+    if (result && result.length > 0) {
+      result.forEach((track) => addToQueue(track));
+    }
+  };
+
   return (
     <Link href={`/albums/${album.id}`} asChild>
-      <Pressable className="p-2" style={{ width: artworkSize + 16 }}>
+      <Pressable
+        className="p-2"
+        style={{ width: artworkSize + 16 }}
+      >
         <View className="gap-2" style={{ width: artworkSize }}>
           {/* Album Artwork */}
-          <View className="aspect-square rounded-lg overflow-hidden bg-muted" style={{ width: artworkSize, height: artworkSize }}>
+          <View
+            className="aspect-square rounded-lg overflow-hidden bg-muted relative"
+            style={{ width: artworkSize, height: artworkSize }}
+            onPointerEnter={isWeb ? () => setIsHovered(true) : undefined}
+            onPointerLeave={isWeb ? () => setIsHovered(false) : undefined}
+          >
             {artworkUrl ? (
               <Image
                 source={{ uri: artworkUrl }}
@@ -37,6 +80,46 @@ function AlbumCard({ album }: AlbumCardProps) {
             ) : (
               <View className="w-full h-full items-center justify-center">
                 <Text className="text-muted-foreground">No Cover</Text>
+              </View>
+            )}
+
+            {/* Hover Overlay (Web only) */}
+            {isWeb && isHovered && (
+              <View className="absolute inset-0 bg-black/40 items-center justify-center">
+                {/* Play Button */}
+                <Pressable
+                  onPress={handlePlayAlbum}
+                  className="bg-white rounded-full p-3 hover:scale-110 transition-transform"
+                >
+                  <PlayIcon size={32} color="#000" fill="#000" />
+                </Pressable>
+
+                {/* Dropdown Menu Button */}
+                <View className="absolute top-2 right-2" pointerEvents="box-none">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Pressable
+                        className="bg-black/50 rounded-full p-2 hover:bg-black/70"
+                        onPress={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreVerticalIcon size={20} color="#fff" />
+                      </Pressable>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48">
+                      <DropdownMenuItem onPress={handleLikeAlbum}>
+                        <HeartIcon size={16} color={theme === 'dark' ? '#fff' : '#000'} />
+                        <Text>Like Album</Text>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onPress={handleAddToQueue}>
+                        <ListPlusIcon size={16} color={theme === 'dark' ? '#fff' : '#000'} />
+                        <Text>Add to Queue</Text>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </View>
               </View>
             )}
           </View>
@@ -135,7 +218,7 @@ export default function AlbumsScreen() {
         scrollEventThrottle={400}
         className="flex-1"
       >
-        <View className="flex-row flex-wrap p-2 gap-5">
+        <View className="flex-row flex-wrap p-2">
           {allAlbums.map((album) => (
             <AlbumCard key={album.id} album={album} />
           ))}

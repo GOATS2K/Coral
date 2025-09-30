@@ -16,6 +16,10 @@ export type AlbumDto = {
    */
   releaseYear: number;
   artworks: ArtworkDto;
+  /**
+   * @format date-time
+   */
+  createdAt: string;
   tracks: SimpleTrackDto[];
   genres: GenreDto[];
 };
@@ -184,6 +188,10 @@ export type SimpleAlbumDto = {
    */
   releaseYear: number;
   artworks: ArtworkDto;
+  /**
+   * @format date-time
+   */
+  createdAt: string;
 };
 
 export type SimpleAlbumDtoPaginatedQuery = {

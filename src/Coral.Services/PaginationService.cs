@@ -52,7 +52,7 @@ namespace Coral.Services
         {
             var totalItemCount = await queryable.CountAsync();
             var query = queryable
-                .OrderBy(i => i.Id)
+                .OrderByDescending(i => i.Id)
                 .Skip(offset)
                 .Take(limit);
             var availableRecords = Math.Max(0, totalItemCount - (offset + limit));

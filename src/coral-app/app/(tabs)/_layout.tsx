@@ -48,10 +48,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="library"
+        name="library/albums"
         options={{
           title: 'Library',
           tabBarIcon: ({ color, size }) => <LibraryIcon color={color} size={size} />,
+          href: '/library/albums',
         }}
       />
     </Tabs>

@@ -65,3 +65,20 @@ export const playerStateAtom = atom<PlayerState>({
   queue: [],
   currentIndex: 0,
 })
+
+// Albums screen scroll state
+export interface AlbumsScrollState {
+  scrollPosition: number;
+  savedPageCount: number;
+  needsRestoration: boolean;
+  firstVisibleIndex: number;
+  savedFirstVisibleIndex: number;
+}
+
+export const albumsScrollStateAtom = atom<AlbumsScrollState>({
+  scrollPosition: 0,
+  savedPageCount: 1,
+  needsRestoration: false,
+  firstVisibleIndex: 0,
+  savedFirstVisibleIndex: 0,
+})

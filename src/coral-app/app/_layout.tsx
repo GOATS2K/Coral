@@ -21,7 +21,18 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Add logging for debugging
+      logger: {
+        log: (...args) => console.log('[QueryClient]', ...args),
+        warn: (...args) => console.warn('[QueryClient]', ...args),
+        error: (...args) => console.error('[QueryClient]', ...args),
+      },
+    },
+  },
+});
 
 export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();

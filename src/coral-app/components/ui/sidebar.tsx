@@ -73,7 +73,7 @@ export function Sidebar() {
   const navItems = [
     { href: '/', icon: HomeIcon, label: 'Home' },
     { href: '/search', icon: SearchIcon, label: 'Search' },
-    { href: '/library', icon: LibraryIcon, label: 'Library' },
+    { href: '/library/albums', icon: LibraryIcon, label: 'Library' },
   ];
 
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
@@ -108,7 +108,7 @@ export function Sidebar() {
               href={item.href}
               icon={item.icon}
               label={item.label}
-              isActive={pathname === item.href}
+              isActive={item.href === '/' ? pathname === item.href : pathname.startsWith(item.href)}
               collapsed={collapsed}
             />
           ))}

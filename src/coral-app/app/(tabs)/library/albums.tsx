@@ -1,15 +1,17 @@
-import { View, ScrollView, Image, Pressable, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent, Platform } from 'react-native';
+import { View, Image, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { usePaginatedAlbums, useAlbumTracks } from '@/lib/client/components';
+import { fetchPaginatedAlbums } from '@/lib/client/components';
 import { baseUrl } from '@/lib/client/fetcher';
-import { Link } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { PlayIcon, MoreVerticalIcon, HeartIcon, ListPlusIcon } from 'lucide-react-native';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
+import { useAtomValue, useAtom } from 'jotai';
+import { themeAtom, albumsScrollStateAtom } from '@/lib/state';
 import { usePlayer } from '@/lib/player/use-player';
+import { LegendList } from '@legendapp/list';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -26,34 +28,42 @@ function AlbumCard({ album }: AlbumCardProps) {
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
   const [isHovered, setIsHovered] = useState(false);
 
-  const { data: tracks, refetch } = useAlbumTracks(
-    { pathParams: { albumId: album.id } },
-    { enabled: false }
-  );
-
   const artistNames = album.artists && album.artists.length > 4
     ? 'Various Artists'
     : album.artists?.map(a => a.name).join(', ') ?? 'Unknown Artist';
+
+  const fetchAlbumTracks = async () => {
+    const response = await fetch(`${baseUrl}/api/library/albums/${album.id}/tracks`);
+    if (!response.ok) throw new Error('Failed to fetch tracks');
+    return await response.json();
+  };
 
   const handlePlayAlbum = async (e: any) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const result = tracks || (await refetch()).data;
-    if (result && result.length > 0) {
-      play(result, 0);
+    try {
+      const tracks = await fetchAlbumTracks();
+      if (tracks && tracks.length > 0) {
+        play(tracks, 0);
+      }
+    } catch (error) {
+      console.error('Error playing album:', error);
     }
   };
 
   const handleLikeAlbum = () => {
-    // TODO: Implement like album functionality
     console.log('Like album:', album.id);
   };
 
   const handleAddToQueue = async () => {
-    const result = tracks || (await refetch()).data;
-    if (result && result.length > 0) {
-      result.forEach((track) => addToQueue(track));
+    try {
+      const tracks = await fetchAlbumTracks();
+      if (tracks && tracks.length > 0) {
+        tracks.forEach((track) => addToQueue(track));
+      }
+    } catch (error) {
+      console.error('Error adding to queue:', error);
     }
   };
 
@@ -145,42 +155,130 @@ function AlbumCard({ album }: AlbumCardProps) {
 }
 
 export default function AlbumsScreen() {
-  const [offset, setOffset] = useState(0);
-  const [allAlbums, setAllAlbums] = useState<SimpleAlbumDto[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // Track if screen is focused to prevent background loading
+  const [isFocused, setIsFocused] = useState(false);
 
-  const { data, error, isLoading, refetch } = usePaginatedAlbums({
-    queryParams: {
-      limit: ITEMS_PER_PAGE,
-      offset,
+  // Scroll state for position restoration
+  const [scrollState, setScrollState] = useAtom(albumsScrollStateAtom);
+  const listRef = useRef<LegendList<SimpleAlbumDto>>(null);
+
+  // Prevent onEndReached from firing on mount
+  // See: https://stackoverflow.com/questions/47910127/flatlist-calls-onendreached-when-its-rendered
+  const onEndReachedCalledDuringMomentum = useRef(true);
+
+  const {
+    data,
+    error,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['albums', 'paginated'],
+    queryFn: ({ pageParam }) =>
+      fetchPaginatedAlbums({
+        queryParams: {
+          limit: ITEMS_PER_PAGE,
+          offset: pageParam,
+        },
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.availableRecords > 0) {
+        return allPages.length * ITEMS_PER_PAGE;
+      }
+      return undefined;
     },
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Append new data when it arrives
+  // Flatten all pages into a single array
+  const albums = data?.pages.flatMap((page) => page.data) ?? [];
+
+  // Manage focus state - allow loading only when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      onEndReachedCalledDuringMomentum.current = true;
+
+      return () => {
+        setIsFocused(false);
+        // Save current index and mark that we need restoration when we come back
+        setScrollState(prev => ({
+          ...prev,
+          needsRestoration: true,
+          savedFirstVisibleIndex: prev.firstVisibleIndex
+        }));
+      };
+    }, [setScrollState])
+  );
+
+  // Load pages until we reach saved page count (for scroll restoration)
   useEffect(() => {
-    if (data?.data && data.data.length > 0) {
-      setAllAlbums(prev => {
-        // Check if this data is already in our list
-        const firstNewId = data.data![0].id;
-        if (prev.find(a => a.id === firstNewId)) {
-          return prev;
-        }
-        return [...prev, ...data.data!];
-      });
-      setIsLoadingMore(false);
+    const currentPages = data?.pages.length ?? 0;
+
+    if (currentPages < scrollState.savedPageCount && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [data]);
+  }, [data?.pages.length, scrollState.savedPageCount, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const hasMore = data ? (data.availableRecords ?? 0) > 0 : false;
+  // Track first visible item for index-based scroll restoration
+  const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      const firstVisible = viewableItems[0];
+      const firstIndex = firstVisible.index ?? 0;
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 1500;
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+      // Update state with first visible index
+      setScrollState(prev => ({
+        ...prev,
+        firstVisibleIndex: firstIndex
+      }));
+    }
+  }, [setScrollState]);
 
-    if (isCloseToBottom && !isLoading && !isLoadingMore && hasMore) {
-      setIsLoadingMore(true);
-      setOffset(prev => prev + ITEMS_PER_PAGE);
+  // Restore scroll position once all pages are loaded
+  useEffect(() => {
+    const currentPages = data?.pages.length ?? 0;
+
+    // Calculate minimum pages needed to contain the saved index
+    const requiredPages = Math.ceil((scrollState.savedFirstVisibleIndex + 1) / ITEMS_PER_PAGE);
+    const minPages = Math.max(scrollState.savedPageCount, requiredPages);
+
+    // Load more pages if we don't have enough for the saved index
+    if (currentPages < minPages && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+      return;
+    }
+
+    if (isFocused &&
+        scrollState.needsRestoration &&
+        currentPages >= minPages &&
+        scrollState.savedFirstVisibleIndex >= 0 &&
+        albums.length > scrollState.savedFirstVisibleIndex) {
+      // Clear flag first to prevent re-triggering
+      setScrollState(prev => ({ ...prev, needsRestoration: false }));
+
+      // Use scrollToIndex for reliable item-based restoration
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({
+          index: scrollState.savedFirstVisibleIndex,
+          animated: false
+        });
+      });
+    }
+  }, [isFocused, data?.pages.length, scrollState, setScrollState, albums.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const loadMore = () => {
+    if (!isFocused) {
+      return;
+    }
+
+    if (!onEndReachedCalledDuringMomentum.current && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+      onEndReachedCalledDuringMomentum.current = true;
     }
   };
 
@@ -195,7 +293,7 @@ export default function AlbumsScreen() {
     );
   }
 
-  if (isLoading && allAlbums.length === 0) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" />
@@ -203,7 +301,7 @@ export default function AlbumsScreen() {
     );
   }
 
-  if (allAlbums.length === 0) {
+  if (albums.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-background p-4">
         <Text className="text-muted-foreground">No albums found</Text>
@@ -211,25 +309,65 @@ export default function AlbumsScreen() {
     );
   }
 
+  const isWeb = Platform.OS === 'web';
+  const numColumns = isWeb ? 6 : 2;
+
   return (
     <View className="flex-1 bg-background">
-      <ScrollView
-        onScroll={handleScroll}
-        scrollEventThrottle={400}
-        className="flex-1"
-      >
-        <View className="flex-row flex-wrap p-2">
-          {allAlbums.map((album) => (
-            <AlbumCard key={album.id} album={album} />
-          ))}
-        </View>
+      <LegendList
+        ref={listRef}
+        data={albums}
+        renderItem={({ item }) => <AlbumCard album={item} />}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        estimatedItemSize={isWeb ? 166 : 196}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        onScroll={(event) => {
+          const offset = event.nativeEvent.contentOffset.y;
+          const currentPages = data?.pages.length ?? 1;
 
-        {(isLoading || isLoadingMore) && hasMore && (
-          <View className="py-4">
-            <ActivityIndicator />
-          </View>
-        )}
-      </ScrollView>
+          // Only update index when focused to avoid pollution during navigation
+          if (isFocused) {
+            // Calculate approximate first visible index from scroll position
+            // For grid layouts: each row contains numColumns items
+            const estimatedRowHeight = isWeb ? 166 : 196;
+            const approximateRow = Math.floor(offset / estimatedRowHeight);
+            const approximateIndex = approximateRow * numColumns;
+
+            // If index exceeds loaded items, load next page
+            if (approximateIndex >= albums.length && hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+
+            // Save scroll position, page count, and approximate index (unclamped)
+            setScrollState(prev => ({
+              ...prev,
+              scrollPosition: offset,
+              savedPageCount: currentPages,
+              firstVisibleIndex: Math.max(0, approximateIndex)
+            }));
+          }
+
+          // Fallback for web - onMomentumScrollBegin doesn't fire with mouse wheel
+          if (onEndReachedCalledDuringMomentum.current) {
+            onEndReachedCalledDuringMomentum.current = false;
+          }
+        }}
+        onMomentumScrollBegin={() => {
+          onEndReachedCalledDuringMomentum.current = false;
+        }}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        contentContainerStyle={{ padding: 8 }}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator />
+            </View>
+          ) : null
+        }
+        recycleItems
+      />
     </View>
   );
 }

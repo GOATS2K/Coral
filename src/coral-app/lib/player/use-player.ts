@@ -10,6 +10,7 @@ export function usePlayer() {
   const { playerA, playerB } = useDualPlayers();
   const [state, setState] = useAtom(playerStateAtom);
   const [position, setPosition] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
 
   const activePlayer = state.activePlayer === 'A' ? playerA : playerB;
   const bufferPlayer = state.activePlayer === 'A' ? playerB : playerA;
@@ -129,6 +130,13 @@ export function usePlayer() {
     activePlayer.volume = volume;
   };
 
+  const toggleMute = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    activePlayer.muted = newMutedState;
+    bufferPlayer.muted = newMutedState;
+  };
+
   const reorderQueue = (fromIndex: number, toIndex: number) => {
     setState(prev => {
       const newQueue = [...prev.queue];
@@ -167,11 +175,13 @@ export function usePlayer() {
     queue: state.queue,
     currentIndex: state.currentIndex,
     volume: activePlayer.volume,
+    isMuted,
     play,
     togglePlayPause,
     skip,
     seekTo,
     setVolume,
+    toggleMute,
     addToQueue,
     reorderQueue,
   };

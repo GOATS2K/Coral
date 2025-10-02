@@ -1,12 +1,13 @@
-import { createContext, useContext, ReactNode, useRef, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useRef, useEffect, MutableRefObject } from 'react';
 import { useAudioPlayer, AudioPlayer } from 'expo-audio';
 import { useAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
-import { loadTrack } from './player-utils';
 
 interface DualPlayerContext {
   playerA: AudioPlayer;
   playerB: AudioPlayer;
+  playerATrackIdRef: MutableRefObject<string | null>;
+  playerBTrackIdRef: MutableRefObject<string | null>;
 }
 
 const PlayerContext = createContext<DualPlayerContext | null>(null);
@@ -16,15 +17,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playerB = useAudioPlayer();
   const [state, setState] = useAtom(playerStateAtom);
 
+  // Track which track ID is loaded in each player
+  const playerATrackIdRef = useRef<string | null>(null);
+  const playerBTrackIdRef = useRef<string | null>(null);
+
   const playersRef = useRef<DualPlayerContext>({
     playerA,
     playerB,
+    playerATrackIdRef,
+    playerBTrackIdRef,
   });
 
   // Keep ref updated with current players
   playersRef.current = {
     playerA,
     playerB,
+    playerATrackIdRef,
+    playerBTrackIdRef,
   };
 
   const stateRef = useRef(state);
@@ -50,10 +59,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           lastTransitionedRef.current.index === currentState.currentIndex;
 
         if (!alreadyTransitioned) {
+          console.log('[TRANSITION] Near end detected', {
+            currentIndex: currentState.currentIndex,
+            currentTrack: currentState.currentTrack?.title,
+            queueLength: currentState.queue.length,
+            isShuffled: currentState.isShuffled,
+            repeat: currentState.repeat,
+            activePlayer: currentState.activePlayer,
+          });
+
           lastTransitionedRef.current = { player: currentState.activePlayer, index: currentState.currentIndex };
 
           // Repeat one: seek to start
           if (currentState.repeat === 'one') {
+            console.log('[TRANSITION] Repeat one - seeking to start');
             activePlayer.seekTo(0);
             return;
           }
@@ -65,6 +84,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             if (currentState.repeat === 'all') {
               nextIndex = 0;
             } else {
+              console.log('[TRANSITION] End of queue, no repeat - stopping');
               return; // Stop playback
             }
           }
@@ -75,10 +95,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           const isSequential = nextIndex === currentState.currentIndex + 1 ||
                               (currentState.currentIndex === currentState.queue.length - 1 && nextIndex === 0);
 
+          console.log('[TRANSITION] Checking buffer', {
+            nextIndex,
+            nextTrack: nextTrack?.title,
+            nextTrackId: nextTrack?.id,
+            isSequential,
+            bufferIsLoaded: bufferPlayer.isLoaded,
+            bufferPlayer: currentState.activePlayer === 'A' ? 'B' : 'A',
+          });
+
           if (isSequential && bufferPlayer.isLoaded) {
+            console.log('[TRANSITION] ✓ Gapless transition to', nextTrack?.title);
 
             // Start buffer (overlap with active for gapless)
             bufferPlayer.play();
+
+            // Update ref: buffer player (which becomes active) already has nextTrack loaded
+            // This was set by the buffer effect in use-player.ts earlier
+            // No need to update refs here - they should already be correct
 
             // Update state
             setState({
@@ -92,17 +126,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             setTimeout(() => {
               activePlayer.pause();
               activePlayer.seekTo(0);
-
-              // Pre-load following track (with wrap-around)
-              let followingIndex = nextIndex + 1;
-              if (followingIndex >= currentState.queue.length && currentState.repeat === 'all') {
-                followingIndex = 0;
-              }
-              const followingTrack = currentState.queue[followingIndex];
-              if (followingTrack) {
-                loadTrack(activePlayer, followingTrack.id);
-              }
+              // Note: buffer loading is now handled by the effect in use-player.ts
             }, 150);
+          } else {
+            console.log('[TRANSITION] ✗ Cannot transition - buffer not ready', {
+              reason: !isSequential ? 'not sequential' : 'buffer not loaded',
+            });
           }
         }
       }

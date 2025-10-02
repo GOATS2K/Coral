@@ -7,7 +7,7 @@ import { useDualPlayers } from './player-provider';
 import { loadTrack, waitForPlayerLoaded } from './player-utils';
 
 export function usePlayer() {
-  const { playerA, playerB } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef } = useDualPlayers();
   const [state, setState] = useAtom(playerStateAtom);
   const [position, setPosition] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -37,12 +37,14 @@ export function usePlayer() {
       originalQueue: null,
     });
     loadTrack(playerA, track.id);
+    playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(playerA);
     playerA.play();
 
     const nextTrack = tracks[startIndex + 1];
     if (nextTrack) {
       loadTrack(playerB, nextTrack.id);
+      playerBTrackIdRef.current = nextTrack.id;
     }
   };
 
@@ -78,11 +80,13 @@ export function usePlayer() {
       currentActive.seekTo(0);
       currentBuffer.play();
 
+      const newActivePlayer = state.activePlayer === 'A' ? 'B' : 'A';
+
       setState({
         ...state,
         currentIndex: newIndex,
         currentTrack: track,
-        activePlayer: state.activePlayer === 'A' ? 'B' : 'A',
+        activePlayer: newActivePlayer,
       });
 
       // Load next track with wrapping
@@ -91,7 +95,15 @@ export function usePlayer() {
         nextIndex = 0;
       }
       const nextTrack = state.queue[nextIndex];
-      if (nextTrack) loadTrack(currentActive, nextTrack.id);
+      if (nextTrack) {
+        loadTrack(currentActive, nextTrack.id);
+        // currentActive becomes the new buffer after swap
+        if (state.activePlayer === 'A') {
+          playerATrackIdRef.current = nextTrack.id;
+        } else {
+          playerBTrackIdRef.current = nextTrack.id;
+        }
+      }
       return;
     }
 
@@ -100,6 +112,12 @@ export function usePlayer() {
       currentActive.pause();
       currentActive.seekTo(0);
       loadTrack(currentBuffer, track.id);
+      // currentBuffer becomes the new active after swap
+      if (state.activePlayer === 'A') {
+        playerBTrackIdRef.current = track.id;
+      } else {
+        playerATrackIdRef.current = track.id;
+      }
 
       setState({
         ...state,
@@ -118,7 +136,15 @@ export function usePlayer() {
           prevIndex = state.queue.length - 1;
         }
         const prevTrack = prevIndex >= 0 ? state.queue[prevIndex] : null;
-        if (prevTrack) loadTrack(currentActive, prevTrack.id);
+        if (prevTrack) {
+          loadTrack(currentActive, prevTrack.id);
+          // currentActive becomes the new buffer after swap
+          if (state.activePlayer === 'A') {
+            playerATrackIdRef.current = prevTrack.id;
+          } else {
+            playerBTrackIdRef.current = prevTrack.id;
+          }
+        }
       } catch (err) {
         console.error('Skip error:', err);
       }
@@ -127,6 +153,12 @@ export function usePlayer() {
 
     // Forward skip without buffer - load on active player
     loadTrack(currentActive, track.id);
+    // Update ref for active player (stays the same, no swap)
+    if (state.activePlayer === 'A') {
+      playerATrackIdRef.current = track.id;
+    } else {
+      playerBTrackIdRef.current = track.id;
+    }
 
     setState({
       ...state,
@@ -144,7 +176,15 @@ export function usePlayer() {
         nextIndex = 0;
       }
       const nextTrack = state.queue[nextIndex];
-      if (nextTrack) loadTrack(currentBuffer, nextTrack.id);
+      if (nextTrack) {
+        loadTrack(currentBuffer, nextTrack.id);
+        // Update ref for buffer player
+        if (state.activePlayer === 'A') {
+          playerBTrackIdRef.current = nextTrack.id;
+        } else {
+          playerATrackIdRef.current = nextTrack.id;
+        }
+      }
     } catch (err) {
       console.error('Skip error:', err);
     }
@@ -169,12 +209,14 @@ export function usePlayer() {
 
     setState({ ...state, currentIndex: index, currentTrack: track, activePlayer: 'A' });
     loadTrack(playerA, track.id);
+    playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(playerA);
     playerA.play();
 
     const nextTrack = state.queue[index + 1];
     if (nextTrack) {
       loadTrack(playerB, nextTrack.id);
+      playerBTrackIdRef.current = nextTrack.id;
     }
   };
 
@@ -199,6 +241,15 @@ export function usePlayer() {
 
   // Update buffer player when queue or current index changes
   useEffect(() => {
+    console.log('[BUFFER] Effect triggered', {
+      currentIndex: state.currentIndex,
+      currentTrack: state.currentTrack?.title,
+      queueLength: state.queue.length,
+      activePlayer: state.activePlayer,
+      isShuffled: state.isShuffled,
+      repeat: state.repeat,
+    });
+
     let nextIndex = state.currentIndex + 1;
 
     // Handle repeat-all wrapping
@@ -206,13 +257,35 @@ export function usePlayer() {
       if (state.repeat === 'all') {
         nextIndex = 0;
       } else {
+        console.log('[BUFFER] No next track to buffer');
         return; // No next track
       }
     }
 
     const nextTrack = state.queue[nextIndex];
     if (nextTrack) {
+      const bufferPlayerName = state.activePlayer === 'A' ? 'B' : 'A';
+      const bufferTrackIdRef = bufferPlayerName === 'A' ? playerATrackIdRef : playerBTrackIdRef;
+
+      // Skip if buffer already has this track
+      if (bufferTrackIdRef.current === nextTrack.id) {
+        console.log('[BUFFER] Buffer already has this track, skipping load', {
+          nextTrack: nextTrack.title,
+          nextTrackId: nextTrack.id,
+          bufferPlayer: bufferPlayerName,
+        });
+        return;
+      }
+
+      console.log('[BUFFER] Loading next track into buffer', {
+        nextIndex,
+        nextTrack: nextTrack.title,
+        nextTrackId: nextTrack.id,
+        bufferPlayer: bufferPlayerName,
+        previousTrackId: bufferTrackIdRef.current,
+      });
       loadTrack(bufferPlayer, nextTrack.id);
+      bufferTrackIdRef.current = nextTrack.id;
     }
   }, [state.queue, state.currentIndex, state.activePlayer, state.repeat]);
 

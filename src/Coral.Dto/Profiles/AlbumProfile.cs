@@ -12,5 +12,6 @@ public class AlbumProfile : Profile
             .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)));
         CreateMap<Album, SimpleAlbumDto>()
             .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)));
+        CreateMap<Album, SimpleTrackAlbumDto>();
     }
 }

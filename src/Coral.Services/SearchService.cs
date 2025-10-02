@@ -90,10 +90,15 @@ namespace Coral.Services
             var finalResults = new SearchResult()
             {
                 Albums = tracks.Select(t => t.Album)
-                    .Distinct(new SimpleAlbumDtoComparer())
+                    .DistinctBy(t => t.Id)
                     .ToList(),
                 Artists = artists
-                    .Distinct(new SimpleArtistDtoComparer())
+                    .DistinctBy(t => t.Id)
+                    .Select(t => new SimpleArtistDto()
+                    {
+                        Id = t.Id,
+                        Name = t.Name
+                    })
                     .ToList(),
                 Tracks = tracks
             };

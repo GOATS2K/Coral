@@ -236,15 +236,19 @@ export type SimpleArtistDtoPaginatedQuery = {
   data: SimpleArtistDto[];
 };
 
+export type SimpleTrackAlbumDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  name: string;
+};
+
 export type SimpleTrackDto = {
   /**
    * @format uuid
    */
   id: string;
-  /**
-   * @format uuid
-   */
-  albumId: string;
   title: string;
   /**
    * @format int32
@@ -258,6 +262,7 @@ export type SimpleTrackDto = {
    * @format int32
    */
   discNumber: number;
+  album: SimpleTrackAlbumDto;
   artists: ArtistWithRoleDto[];
   genre?: GenreDto;
 };

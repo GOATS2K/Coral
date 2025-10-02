@@ -1,67 +1,151 @@
 import { useAudioPlayerStatus } from 'expo-audio';
 import { useAtom } from 'jotai';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
-import { baseUrl } from '@/lib/client/fetcher';
 import { playerStateAtom } from '@/lib/state';
-import { useAudioPlayerInstance } from './player-provider';
+import { useDualPlayers } from './player-provider';
+import { getTrackUrl, loadTrack, waitForPlayerLoaded } from './player-utils';
 
 export function usePlayer() {
-  const player = useAudioPlayerInstance();
-  const status = useAudioPlayerStatus(player);
+  const { playerA, playerB } = useDualPlayers();
   const [state, setState] = useAtom(playerStateAtom);
+  const [position, setPosition] = useState(0);
 
-  const getTrackUrl = (trackId: string) => `${baseUrl}/api/library/tracks/${trackId}/original`;
+  const activePlayer = state.activePlayer === 'A' ? playerA : playerB;
+  const bufferPlayer = state.activePlayer === 'A' ? playerB : playerA;
+
+  const status = useAudioPlayerStatus(activePlayer);
+  const bufferStatus = useAudioPlayerStatus(bufferPlayer);
 
   const play = async (tracks: SimpleTrackDto[], startIndex: number = 0) => {
     const track = tracks[startIndex];
-    await player.pause();
-    await player.seekTo(0);
-    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track });
-    await player.replace(getTrackUrl(track.id));
-    await player.play();
-  };
+    setPosition(0);
 
-  const togglePlayPause = () => {
-    status.playing ? player.pause() : player.play();
-  };
+    playerA.pause();
+    playerB.pause();
+    playerA.seekTo(0);
+    playerB.seekTo(0);
 
-  const skip = async (direction: 1 | -1) => {
-    const newIndex = state.currentIndex + direction;
-    if (newIndex >= 0 && newIndex < state.queue.length) {
-      const track = state.queue[newIndex];
-      await player.pause();
-      await player.seekTo(0);
-      setState(prev => ({ ...prev, currentIndex: newIndex, currentTrack: track }));
-      await player.replace(getTrackUrl(track.id));
-      await player.play();
+    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track, activePlayer: 'A' });
+    loadTrack(playerA, track.id);
+    await waitForPlayerLoaded(playerA);
+    playerA.play();
+
+    const nextTrack = tracks[startIndex + 1];
+    if (nextTrack) {
+      loadTrack(playerB, nextTrack.id);
     }
   };
 
-  const seekTo = (position: number) => {
-    player.seekTo(position);
+  const togglePlayPause = () => {
+    status.playing ? activePlayer.pause() : activePlayer.play();
+  };
+
+  const skip = async (direction: 1 | -1) => {
+    setPosition(0);
+
+    setState(prev => {
+      const newIndex = prev.currentIndex + direction;
+
+      if (newIndex < 0 || newIndex >= prev.queue.length) return prev;
+
+      const track = prev.queue[newIndex];
+      const currentActive = prev.activePlayer === 'A' ? playerA : playerB;
+      const currentBuffer = prev.activePlayer === 'A' ? playerB : playerA;
+
+      // Gapless forward skip if buffer has next track ready
+      const bufferReady = direction === 1 && bufferStatus.isLoaded && currentBuffer === bufferPlayer && newIndex === prev.currentIndex + 1;
+
+      if (bufferReady) {
+        currentActive.pause();
+        currentActive.seekTo(0);
+        currentBuffer.play();
+
+        const nextTrack = prev.queue[newIndex + 1];
+        if (nextTrack) {
+          loadTrack(currentActive, nextTrack.id);
+        }
+
+        return {
+          ...prev,
+          currentIndex: newIndex,
+          currentTrack: track,
+          activePlayer: prev.activePlayer === 'A' ? 'B' : 'A',
+        };
+      }
+
+      // Backward skip or forward without buffer
+      const useBuffer = direction === -1;
+      const targetPlayer = useBuffer ? currentBuffer : currentActive;
+
+      if (useBuffer) {
+        currentActive.pause();
+        currentActive.seekTo(0);
+
+        loadTrack(targetPlayer, track.id);
+        waitForPlayerLoaded(targetPlayer)
+          .then(() => {
+            targetPlayer.play();
+            const adjacentIndex = newIndex + (direction === -1 ? -1 : 1);
+            const adjacentTrack = prev.queue[adjacentIndex];
+            if (adjacentTrack && adjacentIndex >= 0) {
+              loadTrack(currentActive, adjacentTrack.id);
+            }
+          })
+          .catch(err => console.error('Skip error:', err));
+
+        return {
+          ...prev,
+          currentIndex: newIndex,
+          currentTrack: track,
+          activePlayer: prev.activePlayer === 'A' ? 'B' : 'A',
+        };
+      } else {
+        loadTrack(targetPlayer, track.id);
+        waitForPlayerLoaded(targetPlayer)
+          .then(() => {
+            targetPlayer.play();
+            const nextTrack = prev.queue[newIndex + 1];
+            if (nextTrack) {
+              loadTrack(currentBuffer, nextTrack.id);
+            }
+          })
+          .catch(err => console.error('Skip error:', err));
+
+        return {
+          ...prev,
+          currentIndex: newIndex,
+          currentTrack: track,
+        };
+      }
+    });
+  };
+
+  const seekTo = async (newPosition: number) => {
+    setPosition(newPosition);
+    await activePlayer.seekTo(newPosition);
   };
 
   const addToQueue = (track: SimpleTrackDto) => {
     setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
   };
 
-  // Auto-skip to next track when current track finishes
+  // Sync position with actual player position
   useEffect(() => {
-    if (status.didJustFinish && state.currentIndex < state.queue.length - 1) {
-      skip(1);
+    if (!isNaN(status.currentTime)) {
+      setPosition(status.currentTime);
     }
-  }, [status.didJustFinish]);
+  }, [status.currentTime]);
 
   return {
     activeTrack: state.currentTrack,
     isPlaying: status.playing,
-    progress: { position: status.currentTime, duration: status.duration },
+    progress: { position, duration: status.duration },
     queue: state.queue,
     play,
     togglePlayPause,
     skip,
-    seekTo: (position: number) => player.seekTo(position),
+    seekTo,
     addToQueue,
   };
 }

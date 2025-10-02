@@ -58,12 +58,14 @@ export interface PlayerState {
   currentTrack: SimpleTrackDto | null;
   queue: SimpleTrackDto[];
   currentIndex: number;
+  activePlayer: 'A' | 'B';
 }
 
 export const playerStateAtom = atom<PlayerState>({
   currentTrack: null,
   queue: [],
   currentIndex: 0,
+  activePlayer: 'A',
 })
 
 // Albums screen scroll state

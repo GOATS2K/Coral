@@ -5,6 +5,7 @@ import { Play, Pause, SkipBack, SkipForward } from 'lucide-react-native';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useState } from 'react';
 
 export function WebPlayerBar() {
   // Only render on web
@@ -13,6 +14,8 @@ export function WebPlayerBar() {
   }
 
   const { activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo } = usePlayer();
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(0);
 
   // Don't show bar if no track is active
   if (!activeTrack) {
@@ -20,7 +23,7 @@ export function WebPlayerBar() {
   }
 
   const duration = progress.duration || activeTrack.durationInSeconds || 0;
-  const currentPosition = progress.position;
+  const currentPosition = isDragging ? dragPosition : progress.position;
 
   // Get artwork URL using albumId from track
   const artworkUrl = activeTrack.albumId
@@ -39,8 +42,18 @@ export function WebPlayerBar() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSeek = (e: any) => {
-    seekTo(parseFloat(e.target.value));
+  const handleSeekChange = (e: any) => {
+    setDragPosition(parseFloat(e.target.value));
+  };
+
+  const handleSeekStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleSeekEnd = (e: any) => {
+    const position = parseFloat(e.target.value);
+    setIsDragging(false);
+    seekTo(position);
   };
 
   return (
@@ -106,7 +119,11 @@ export function WebPlayerBar() {
             min={0}
             max={duration}
             value={currentPosition}
-            onChange={handleSeek}
+            onChange={handleSeekChange}
+            onMouseDown={handleSeekStart}
+            onMouseUp={handleSeekEnd}
+            onTouchStart={handleSeekStart}
+            onTouchEnd={handleSeekEnd}
             className="flex-1 h-1 accent-primary cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:transition-opacity hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:opacity-0 [&::-moz-range-thumb]:transition-opacity hover:[&::-moz-range-thumb]:opacity-100"
             style={{
               background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${(currentPosition / duration) * 100}%, hsl(var(--muted)) ${(currentPosition / duration) * 100}%, hsl(var(--muted)) 100%)`,

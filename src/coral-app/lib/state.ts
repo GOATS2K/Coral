@@ -54,11 +54,15 @@ export const themeAtom = atom<ResolvedTheme>((get) => {
   return preference
 })
 
+export type RepeatMode = 'off' | 'all' | 'one';
+
 export interface PlayerState {
   currentTrack: SimpleTrackDto | null;
   queue: SimpleTrackDto[];
   currentIndex: number;
   activePlayer: 'A' | 'B';
+  repeat: RepeatMode;
+  isShuffled: boolean;
 }
 
 export const playerStateAtom = atom<PlayerState>({
@@ -66,6 +70,8 @@ export const playerStateAtom = atom<PlayerState>({
   queue: [],
   currentIndex: 0,
   activePlayer: 'A',
+  repeat: 'off',
+  isShuffled: false,
 })
 
 // Albums screen scroll state

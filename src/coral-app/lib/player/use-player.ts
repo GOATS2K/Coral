@@ -241,15 +241,6 @@ export function usePlayer() {
 
   // Update buffer player when queue or current index changes
   useEffect(() => {
-    console.log('[BUFFER] Effect triggered', {
-      currentIndex: state.currentIndex,
-      currentTrack: state.currentTrack?.title,
-      queueLength: state.queue.length,
-      activePlayer: state.activePlayer,
-      isShuffled: state.isShuffled,
-      repeat: state.repeat,
-    });
-
     let nextIndex = state.currentIndex + 1;
 
     // Handle repeat-all wrapping
@@ -257,7 +248,6 @@ export function usePlayer() {
       if (state.repeat === 'all') {
         nextIndex = 0;
       } else {
-        console.log('[BUFFER] No next track to buffer');
         return; // No next track
       }
     }
@@ -269,21 +259,9 @@ export function usePlayer() {
 
       // Skip if buffer already has this track
       if (bufferTrackIdRef.current === nextTrack.id) {
-        console.log('[BUFFER] Buffer already has this track, skipping load', {
-          nextTrack: nextTrack.title,
-          nextTrackId: nextTrack.id,
-          bufferPlayer: bufferPlayerName,
-        });
         return;
       }
 
-      console.log('[BUFFER] Loading next track into buffer', {
-        nextIndex,
-        nextTrack: nextTrack.title,
-        nextTrackId: nextTrack.id,
-        bufferPlayer: bufferPlayerName,
-        previousTrackId: bufferTrackIdRef.current,
-      });
       loadTrack(bufferPlayer, nextTrack.id);
       bufferTrackIdRef.current = nextTrack.id;
     }

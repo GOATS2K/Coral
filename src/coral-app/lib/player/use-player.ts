@@ -44,81 +44,76 @@ export function usePlayer() {
   const skip = async (direction: 1 | -1) => {
     setPosition(0);
 
-    setState(prev => {
-      const newIndex = prev.currentIndex + direction;
+    const newIndex = state.currentIndex + direction;
+    if (newIndex < 0 || newIndex >= state.queue.length) return;
 
-      if (newIndex < 0 || newIndex >= prev.queue.length) return prev;
+    const track = state.queue[newIndex];
+    const currentActive = state.activePlayer === 'A' ? playerA : playerB;
+    const currentBuffer = state.activePlayer === 'A' ? playerB : playerA;
 
-      const track = prev.queue[newIndex];
-      const currentActive = prev.activePlayer === 'A' ? playerA : playerB;
-      const currentBuffer = prev.activePlayer === 'A' ? playerB : playerA;
+    // Gapless forward skip if buffer has next track ready
+    const bufferReady = direction === 1 && bufferStatus.isLoaded && currentBuffer === bufferPlayer && newIndex === state.currentIndex + 1;
 
-      // Gapless forward skip if buffer has next track ready
-      const bufferReady = direction === 1 && bufferStatus.isLoaded && currentBuffer === bufferPlayer && newIndex === prev.currentIndex + 1;
+    if (bufferReady) {
+      currentActive.pause();
+      currentActive.seekTo(0);
+      currentBuffer.play();
 
-      if (bufferReady) {
-        currentActive.pause();
-        currentActive.seekTo(0);
+      setState({
+        ...state,
+        currentIndex: newIndex,
+        currentTrack: track,
+        activePlayer: state.activePlayer === 'A' ? 'B' : 'A',
+      });
+
+      const nextTrack = state.queue[newIndex + 1];
+      if (nextTrack) loadTrack(currentActive, nextTrack.id);
+      return;
+    }
+
+    // Backward skip - load on buffer player
+    if (direction === -1) {
+      currentActive.pause();
+      currentActive.seekTo(0);
+      loadTrack(currentBuffer, track.id);
+
+      setState({
+        ...state,
+        currentIndex: newIndex,
+        currentTrack: track,
+        activePlayer: state.activePlayer === 'A' ? 'B' : 'A',
+      });
+
+      try {
+        await waitForPlayerLoaded(currentBuffer);
         currentBuffer.play();
 
-        const nextTrack = prev.queue[newIndex + 1];
-        if (nextTrack) {
-          loadTrack(currentActive, nextTrack.id);
-        }
-
-        return {
-          ...prev,
-          currentIndex: newIndex,
-          currentTrack: track,
-          activePlayer: prev.activePlayer === 'A' ? 'B' : 'A',
-        };
+        const prevTrack = state.queue[newIndex - 1];
+        if (prevTrack) loadTrack(currentActive, prevTrack.id);
+      } catch (err) {
+        console.error('Skip error:', err);
       }
+      return;
+    }
 
-      // Backward skip or forward without buffer
-      const useBuffer = direction === -1;
-      const targetPlayer = useBuffer ? currentBuffer : currentActive;
+    // Forward skip without buffer - load on active player
+    loadTrack(currentActive, track.id);
 
-      if (useBuffer) {
-        currentActive.pause();
-        currentActive.seekTo(0);
-
-        loadTrack(targetPlayer, track.id);
-        waitForPlayerLoaded(targetPlayer)
-          .then(() => {
-            targetPlayer.play();
-            const adjacentIndex = newIndex + (direction === -1 ? -1 : 1);
-            const adjacentTrack = prev.queue[adjacentIndex];
-            if (adjacentTrack && adjacentIndex >= 0) {
-              loadTrack(currentActive, adjacentTrack.id);
-            }
-          })
-          .catch(err => console.error('Skip error:', err));
-
-        return {
-          ...prev,
-          currentIndex: newIndex,
-          currentTrack: track,
-          activePlayer: prev.activePlayer === 'A' ? 'B' : 'A',
-        };
-      } else {
-        loadTrack(targetPlayer, track.id);
-        waitForPlayerLoaded(targetPlayer)
-          .then(() => {
-            targetPlayer.play();
-            const nextTrack = prev.queue[newIndex + 1];
-            if (nextTrack) {
-              loadTrack(currentBuffer, nextTrack.id);
-            }
-          })
-          .catch(err => console.error('Skip error:', err));
-
-        return {
-          ...prev,
-          currentIndex: newIndex,
-          currentTrack: track,
-        };
-      }
+    setState({
+      ...state,
+      currentIndex: newIndex,
+      currentTrack: track,
     });
+
+    try {
+      await waitForPlayerLoaded(currentActive);
+      currentActive.play();
+
+      const nextTrack = state.queue[newIndex + 1];
+      if (nextTrack) loadTrack(currentBuffer, nextTrack.id);
+    } catch (err) {
+      console.error('Skip error:', err);
+    }
   };
 
   const seekTo = async (newPosition: number) => {

@@ -6,6 +6,10 @@ import { PlayerControls } from './player-controls';
 import { PlayerProgress } from './player-progress';
 import { PlayerQueue } from './player-queue';
 import { PlayerVolume } from './player-volume';
+import { useSetAtom } from 'jotai';
+import { playerStateAtom } from '@/lib/state';
+import { reorderQueue, removeFromQueue, findSimilarAndAddToQueue, shuffleQueue, cycleRepeat } from '@/lib/player/player-queue-utils';
+import { useToast } from '@/lib/hooks/use-toast';
 
 export function WebPlayerBar() {
   if (Platform.OS !== 'web') {
@@ -27,13 +31,11 @@ export function WebPlayerBar() {
     seekTo,
     setVolume,
     toggleMute,
-    reorderQueue,
     playFromIndex,
-    removeFromQueue,
-    findSimilarAndAddToQueue,
-    shuffle,
-    cycleRepeat,
   } = usePlayer();
+
+  const setState = useSetAtom(playerStateAtom);
+  const { showToast } = useToast();
 
   useMediaSession({ activeTrack, togglePlayPause, skip, seekTo });
 
@@ -56,8 +58,8 @@ export function WebPlayerBar() {
           isShuffled={isShuffled}
           togglePlayPause={togglePlayPause}
           skip={skip}
-          shuffle={shuffle}
-          cycleRepeat={cycleRepeat}
+          shuffle={() => shuffleQueue(setState)}
+          cycleRepeat={() => cycleRepeat(setState)}
         />
         <PlayerProgress position={progress.position} duration={duration} seekTo={seekTo} />
       </View>
@@ -67,10 +69,10 @@ export function WebPlayerBar() {
         <PlayerQueue
           queue={queue}
           currentIndex={currentIndex}
-          reorderQueue={reorderQueue}
+          reorderQueue={(fromIndex, toIndex) => reorderQueue(setState, fromIndex, toIndex)}
           playFromIndex={playFromIndex}
-          removeFromQueue={removeFromQueue}
-          findSimilarAndAddToQueue={findSimilarAndAddToQueue}
+          removeFromQueue={(index) => removeFromQueue(setState, index)}
+          findSimilarAndAddToQueue={(trackId) => findSimilarAndAddToQueue(trackId, setState, showToast)}
         />
         <PlayerVolume volume={volume} isMuted={isMuted} setVolume={setVolume} toggleMute={toggleMute} />
       </View>

@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, Plus } from 'lucide-react-native';
 import { useToast } from '@/lib/hooks/use-toast';
+import { useSetAtom } from 'jotai';
+import { playerStateAtom } from '@/lib/state';
+import { addToQueue, findSimilarAndAddToQueue } from '@/lib/player/player-queue-utils';
 
 interface TrackListingProps {
   tracks: SimpleTrackDto[];
@@ -15,7 +18,8 @@ interface TrackListingProps {
 }
 
 export function TrackListing({ tracks, album, showTrackNumber = true, className }: TrackListingProps) {
-  const { play, activeTrack, addToQueue, findSimilarAndAddToQueue } = usePlayer();
+  const { play, activeTrack } = usePlayer();
+  const setState = useSetAtom(playerStateAtom);
   const { showToast } = useToast();
   const [contextMenu, setContextMenu] = useState<{ trackId: string; x: number; y: number } | null>(null);
 
@@ -39,12 +43,12 @@ export function TrackListing({ tracks, album, showTrackNumber = true, className 
   };
 
   const handleFindSimilar = async (trackId: string) => {
-    await findSimilarAndAddToQueue(trackId);
+    await findSimilarAndAddToQueue(trackId, setState, showToast);
     setContextMenu(null);
   };
 
   const handleAddToQueue = (track: SimpleTrackDto) => {
-    addToQueue(track);
+    addToQueue(setState, track);
     showToast(`Added "${track.title}" to queue`);
     setContextMenu(null);
   };

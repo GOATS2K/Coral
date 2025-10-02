@@ -7,10 +7,11 @@ import { useState, memo } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { PlayIcon, MoreVerticalIcon, HeartIcon, ListPlusIcon } from 'lucide-react-native';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { themeAtom, playerStateAtom } from '@/lib/state';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { addMultipleToQueue } from '@/lib/player/player-queue-utils';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -21,7 +22,8 @@ interface AlbumCardProps {
 const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
   const isWeb = Platform.OS === 'web';
   const theme = useAtomValue(themeAtom);
-  const { play, addToQueue } = usePlayerActions();
+  const { play } = usePlayerActions();
+  const setState = useSetAtom(playerStateAtom);
   const artworkSize = isWeb ? 150 : 180;
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
@@ -59,7 +61,7 @@ const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
     try {
       const tracks = await fetchAlbumTracks();
       if (tracks && tracks.length > 0) {
-        tracks.forEach((track) => addToQueue(track));
+        addMultipleToQueue(setState, tracks);
       }
     } catch (error) {
       console.error('Error adding to queue:', error);

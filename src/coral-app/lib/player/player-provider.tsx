@@ -11,27 +11,21 @@ interface DualPlayerContext {
 
 const PlayerContext = createContext<DualPlayerContext | null>(null);
 
-// Singleton player instances to persist across navigation
-let globalPlayerA: AudioPlayer | null = null;
-let globalPlayerB: AudioPlayer | null = null;
-
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const newPlayerA = useAudioPlayer();
-  const newPlayerB = useAudioPlayer();
+  const playerA = useAudioPlayer();
+  const playerB = useAudioPlayer();
   const [state, setState] = useAtom(playerStateAtom);
 
-  const playersRef = useRef<DualPlayerContext | null>(null);
+  const playersRef = useRef<DualPlayerContext>({
+    playerA,
+    playerB,
+  });
 
-  if (!globalPlayerA) globalPlayerA = newPlayerA;
-  if (!globalPlayerB) globalPlayerB = newPlayerB;
-
+  // Keep ref updated with current players
   playersRef.current = {
-    playerA: globalPlayerA,
-    playerB: globalPlayerB,
+    playerA,
+    playerB,
   };
-
-  const playerA = globalPlayerA;
-  const playerB = globalPlayerB;
 
   const stateRef = useRef(state);
   stateRef.current = state;

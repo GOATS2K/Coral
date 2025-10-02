@@ -1,5 +1,5 @@
 import { useAudioPlayerStatus } from 'expo-audio';
-import { useAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { playerStateAtom } from '@/lib/state';
@@ -125,6 +125,34 @@ export function usePlayer() {
     setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
   };
 
+  const setVolume = (volume: number) => {
+    activePlayer.volume = volume;
+  };
+
+  const reorderQueue = (fromIndex: number, toIndex: number) => {
+    setState(prev => {
+      const newQueue = [...prev.queue];
+      const [removed] = newQueue.splice(fromIndex, 1);
+      newQueue.splice(toIndex, 0, removed);
+
+      // Adjust currentIndex if the current track was moved
+      let newCurrentIndex = prev.currentIndex;
+      if (fromIndex === prev.currentIndex) {
+        newCurrentIndex = toIndex;
+      } else if (fromIndex < prev.currentIndex && toIndex >= prev.currentIndex) {
+        newCurrentIndex = prev.currentIndex - 1;
+      } else if (fromIndex > prev.currentIndex && toIndex <= prev.currentIndex) {
+        newCurrentIndex = prev.currentIndex + 1;
+      }
+
+      return {
+        ...prev,
+        queue: newQueue,
+        currentIndex: newCurrentIndex,
+      };
+    });
+  };
+
   // Sync position with actual player position
   useEffect(() => {
     if (!isNaN(status.currentTime)) {
@@ -137,10 +165,49 @@ export function usePlayer() {
     isPlaying: status.playing,
     progress: { position, duration: status.duration },
     queue: state.queue,
+    currentIndex: state.currentIndex,
+    volume: activePlayer.volume,
     play,
     togglePlayPause,
     skip,
     seekTo,
+    setVolume,
+    addToQueue,
+    reorderQueue,
+  };
+}
+
+// Hook that returns only player actions without subscribing to status updates
+// Use this in components that only need to trigger actions, not display player state
+export function usePlayerActions() {
+  const { playerA, playerB } = useDualPlayers();
+  const setState = useSetAtom(playerStateAtom);
+
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0) => {
+    const track = tracks[startIndex];
+
+    playerA.pause();
+    playerB.pause();
+    playerA.seekTo(0);
+    playerB.seekTo(0);
+
+    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track, activePlayer: 'A' });
+    loadTrack(playerA, track.id);
+    await waitForPlayerLoaded(playerA);
+    playerA.play();
+
+    const nextTrack = tracks[startIndex + 1];
+    if (nextTrack) {
+      loadTrack(playerB, nextTrack.id);
+    }
+  };
+
+  const addToQueue = (track: SimpleTrackDto) => {
+    setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
+  };
+
+  return {
+    play,
     addToQueue,
   };
 }

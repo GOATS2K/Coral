@@ -9,7 +9,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { Appearance, Platform } from 'react-native';
+import { Appearance, Platform, View } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
@@ -91,9 +91,13 @@ export default function RootLayout() {
       <PlayerProvider>
         <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Stack screenOptions={{ headerShown: false }} />
+          <View className="flex-1 flex-col">
+            <View className="flex-1">
+              <Stack screenOptions={{ headerShown: false }} />
+            </View>
+            {Platform.OS === 'web' && <WebPlayerBar />}
+          </View>
           <PortalHost />
-          {Platform.OS === 'web' && <WebPlayerBar />}
         </ThemeProvider>
       </PlayerProvider>
     </QueryClientProvider>

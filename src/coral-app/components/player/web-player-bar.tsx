@@ -1,7 +1,7 @@
 import { Platform, View, Image, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { usePlayer } from '@/lib/player/use-player';
-import { Play, Pause, SkipBack, SkipForward, Volume2, ListMusic } from 'lucide-react-native';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic } from 'lucide-react-native';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -14,7 +14,7 @@ export function WebPlayerBar() {
     return null;
   }
 
-  const { activeTrack, isPlaying, progress, volume, queue, currentIndex, togglePlayPause, skip, seekTo, setVolume, reorderQueue } = usePlayer();
+  const { activeTrack, isPlaying, progress, volume, isMuted, queue, currentIndex, togglePlayPause, skip, seekTo, setVolume, toggleMute, reorderQueue } = usePlayer();
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const [localVolume, setLocalVolume] = useState(1);
@@ -221,17 +221,12 @@ export function WebPlayerBar() {
       </View>
 
       {/* Queue & Volume Controls */}
-      <View className="flex-row items-center gap-3 flex-1 justify-end">
+      <View className="flex-row items-center gap-5 flex-1 justify-end">
         {/* Queue Button */}
         <Popover>
           <PopoverTrigger asChild>
-            <Pressable className="web:hover:opacity-70 active:opacity-50 relative">
+            <Pressable className="web:hover:opacity-70 active:opacity-50">
               <ListMusic size={20} className="text-foreground" />
-              {queue.length > 0 && (
-                <View className="absolute -top-1 -right-1 bg-primary rounded-full w-4 h-4 items-center justify-center">
-                  <Text className="text-primary-foreground text-[10px] font-bold">{queue.length}</Text>
-                </View>
-              )}
             </Pressable>
           </PopoverTrigger>
           <PopoverContent className="w-96 max-h-96 overflow-hidden p-0" align="end">
@@ -292,19 +287,28 @@ export function WebPlayerBar() {
           </PopoverContent>
         </Popover>
 
-        <Volume2 size={20} className="text-foreground" />
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={localVolume}
-          onChange={handleVolumeChange}
-          className="w-24 h-1 accent-primary cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:transition-opacity hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:opacity-0 [&::-moz-range-thumb]:transition-opacity hover:[&::-moz-range-thumb]:opacity-100"
-          style={{
-            background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${localVolume * 100}%, hsl(var(--muted)) ${localVolume * 100}%, hsl(var(--muted)) 100%)`,
-          }}
-        />
+        {/* Volume Controls */}
+        <View className="flex-row items-center gap-2">
+          <Pressable onPress={toggleMute} className="web:hover:opacity-70 active:opacity-50">
+            {isMuted ? (
+              <VolumeX size={20} className="text-muted-foreground" />
+            ) : (
+              <Volume2 size={20} className="text-foreground" />
+            )}
+          </Pressable>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={localVolume}
+            onChange={handleVolumeChange}
+            className={`w-24 h-1 accent-primary cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:transition-opacity hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:opacity-0 [&::-moz-range-thumb]:transition-opacity hover:[&::-moz-range-thumb]:opacity-100 ${isMuted ? 'opacity-40' : ''}`}
+            style={{
+              background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${localVolume * 100}%, hsl(var(--muted)) ${localVolume * 100}%, hsl(var(--muted)) 100%)`,
+            }}
+          />
+        </View>
       </View>
     </View>
   );

@@ -82,18 +82,9 @@ export function shuffleQueue(setState: SetState) {
   setState(prev => {
     const newShuffleState = !prev.isShuffled;
 
-    console.log('[SHUFFLE] Toggling shuffle', {
-      from: prev.isShuffled,
-      to: newShuffleState,
-      currentTrack: prev.currentTrack?.title,
-      currentIndex: prev.currentIndex,
-      queueLength: prev.queue.length,
-    });
-
     if (!newShuffleState) {
       // Turning shuffle off - restore original queue
       if (!prev.originalQueue || !prev.currentTrack) {
-        console.log('[SHUFFLE] Cannot restore - no original queue');
         return { ...prev, isShuffled: false, originalQueue: null };
       }
 
@@ -101,14 +92,8 @@ export function shuffleQueue(setState: SetState) {
       const newIndex = prev.originalQueue.findIndex(t => t.id === prev.currentTrack!.id);
       if (newIndex === -1) {
         // Current track not found in original queue, keep shuffled state
-        console.log('[SHUFFLE] Current track not in original queue');
         return { ...prev, isShuffled: false, originalQueue: null };
       }
-
-      console.log('[SHUFFLE] Restored original queue', {
-        newIndex,
-        currentTrack: prev.currentTrack.title,
-      });
 
       return {
         ...prev,
@@ -137,12 +122,6 @@ export function shuffleQueue(setState: SetState) {
 
     // Current track at top, shuffled tracks after
     const newQueue = [currentTrack, ...shuffled];
-
-    console.log('[SHUFFLE] Shuffled queue', {
-      newQueueLength: newQueue.length,
-      newCurrentIndex: 0,
-      nextTrack: newQueue[1]?.title,
-    });
 
     return {
       ...prev,

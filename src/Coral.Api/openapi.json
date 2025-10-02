@@ -1343,9 +1343,26 @@
         },
         "additionalProperties": false
       },
+      "SimpleTrackAlbumDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "SimpleTrackDto": {
         "required": [
-          "albumId",
+          "album",
           "artists",
           "discNumber",
           "durationInSeconds",
@@ -1356,10 +1373,6 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "albumId": {
             "type": "string",
             "format": "uuid"
           },
@@ -1377,6 +1390,9 @@
           "discNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "album": {
+            "$ref": "#/components/schemas/SimpleTrackAlbumDto"
           },
           "artists": {
             "type": "array",

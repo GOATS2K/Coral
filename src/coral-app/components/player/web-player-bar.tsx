@@ -1,12 +1,13 @@
 import { Platform, View, Image, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { usePlayer } from '@/lib/player/use-player';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic } from 'lucide-react-native';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, Trash2 } from 'lucide-react-native';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export function WebPlayerBar() {
   // Only render on web
@@ -14,12 +15,14 @@ export function WebPlayerBar() {
     return null;
   }
 
-  const { activeTrack, isPlaying, progress, volume, isMuted, queue, currentIndex, togglePlayPause, skip, seekTo, setVolume, toggleMute, reorderQueue } = usePlayer();
+  const { activeTrack, isPlaying, progress, volume, isMuted, queue, currentIndex, togglePlayPause, skip, seekTo, setVolume, toggleMute, reorderQueue, playFromIndex, removeFromQueue, findSimilarAndAddToQueue } = usePlayer();
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const [localVolume, setLocalVolume] = useState(1);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ index: number; x: number; y: number } | null>(null);
 
   // Initialize local volume from player once
   useEffect(() => {
@@ -77,6 +80,15 @@ export function WebPlayerBar() {
       }
     };
   }, [togglePlayPause, skip, seekTo]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
 
   // Don't show bar if no track is active
   if (!activeTrack) {
@@ -139,6 +151,21 @@ export function WebPlayerBar() {
     const position = parseFloat(e.target.value);
     setIsDragging(false);
     seekTo(position);
+  };
+
+  const handleContextMenu = (index: number) => (e: any) => {
+    e.preventDefault();
+    setContextMenu({ index, x: e.clientX, y: e.clientY });
+  };
+
+  const handleAddSimilar = async (trackId: string) => {
+    await findSimilarAndAddToQueue(trackId);
+    setContextMenu(null);
+  };
+
+  const handleRemoveFromQueue = (index: number) => {
+    removeFromQueue(index);
+    setContextMenu(null);
   };
 
   return (
@@ -229,11 +256,21 @@ export function WebPlayerBar() {
               <ListMusic size={20} className="text-foreground" />
             </Pressable>
           </PopoverTrigger>
-          <PopoverContent className="w-96 max-h-96 overflow-hidden p-0" align="end">
+          <PopoverContent
+            className="w-96 max-h-96 overflow-hidden p-0"
+            align="end"
+            onInteractOutside={(e) => {
+              // Don't close popover when clicking context menu
+              const target = e.target as HTMLElement;
+              if (target.closest('[data-queue-context-menu]')) {
+                e.preventDefault();
+              }
+            }}
+          >
             <View className="p-3 border-b border-border">
               <Text className="font-semibold">Queue ({queue.length})</Text>
             </View>
-            <View className="overflow-y-auto max-h-80">
+            <View className="overflow-y-auto max-h-80" onClick={() => setContextMenu(null)}>
               {queue.map((track, index) => {
                 const trackArtworkUrl = track.album?.id
                   ? `${baseUrl}/api/artwork?albumId=${track.album.id}&size=small`
@@ -253,6 +290,9 @@ export function WebPlayerBar() {
                     onDragOver={handleDragOver(index)}
                     onDrop={handleDrop(index)}
                     onDragEnd={handleDragEnd}
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    onContextMenu={handleContextMenu(index)}
                     className={`flex flex-row items-center gap-3 p-2 cursor-grab active:cursor-grabbing ${isCurrentTrack ? 'bg-accent/50' : ''} ${isDraggedOver ? 'border-t-2 border-primary' : ''} hover:bg-accent/30 transition-colors`}
                     style={{
                       opacity: draggedIndex === index ? 0.5 : 1,
@@ -260,15 +300,28 @@ export function WebPlayerBar() {
                       WebkitUserSelect: 'none',
                     }}
                   >
-                    {trackArtworkUrl ? (
-                      <Image
-                        source={{ uri: trackArtworkUrl }}
-                        className="w-10 h-10 rounded"
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View className="w-10 h-10 rounded bg-muted" />
-                    )}
+                    <div className="relative w-10 h-10">
+                      {trackArtworkUrl ? (
+                        <Image
+                          source={{ uri: trackArtworkUrl }}
+                          className="w-10 h-10 rounded"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-10 h-10 rounded bg-muted" />
+                      )}
+                      {hoveredIndex === index && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playFromIndex(index);
+                          }}
+                          className="absolute inset-0 bg-black/60 rounded flex items-center justify-center hover:bg-black/70 transition-colors"
+                        >
+                          <Play size={16} className="text-white" fill="white" />
+                        </button>
+                      )}
+                    </div>
                     <View className="flex-1 min-w-0">
                       <Text className="font-medium text-sm" numberOfLines={1}>
                         {track.title}
@@ -310,6 +363,35 @@ export function WebPlayerBar() {
           />
         </View>
       </View>
+
+      {/* Context Menu - rendered via portal to escape z-index stacking */}
+      {contextMenu && typeof document !== 'undefined' && createPortal(
+        <div
+          data-queue-context-menu
+          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-50"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            onClick={() => handleAddSimilar(queue[contextMenu.index].id)}
+          >
+            <ListMusic size={14} className="text-foreground" />
+            <span className="text-foreground">Add similar songs</span>
+          </button>
+          <button
+            className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            onClick={() => handleRemoveFromQueue(contextMenu.index)}
+          >
+            <Trash2 size={14} className="text-destructive" />
+            <span className="text-destructive">Remove from queue</span>
+          </button>
+        </div>,
+        document.body
+      )}
     </View>
   );
 }

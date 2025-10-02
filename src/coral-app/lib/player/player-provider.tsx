@@ -50,12 +50,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           lastTransitionedRef.current.index === currentState.currentIndex;
 
         if (!alreadyTransitioned) {
-          const nextIndex = currentState.currentIndex + 1;
+          lastTransitionedRef.current = { player: currentState.activePlayer, index: currentState.currentIndex };
 
-          if (nextIndex < currentState.queue.length && bufferPlayer.isLoaded) {
-            lastTransitionedRef.current = { player: currentState.activePlayer, index: currentState.currentIndex };
+          // Repeat one: seek to start
+          if (currentState.repeat === 'one') {
+            activePlayer.seekTo(0);
+            return;
+          }
 
-            const nextTrack = currentState.queue[nextIndex];
+          let nextIndex = currentState.currentIndex + 1;
+
+          // Repeat all: wrap to start
+          if (nextIndex >= currentState.queue.length) {
+            if (currentState.repeat === 'all') {
+              nextIndex = 0;
+            } else {
+              return; // Stop playback
+            }
+          }
+
+          const nextTrack = currentState.queue[nextIndex];
+
+          // Check if buffer has the next track ready (sequential or wrap-around)
+          const isSequential = nextIndex === currentState.currentIndex + 1 ||
+                              (currentState.currentIndex === currentState.queue.length - 1 && nextIndex === 0);
+
+          if (isSequential && bufferPlayer.isLoaded) {
 
             // Start buffer (overlap with active for gapless)
             bufferPlayer.play();
@@ -73,8 +93,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
               activePlayer.pause();
               activePlayer.seekTo(0);
 
-              // Pre-load following track
-              const followingTrack = currentState.queue[nextIndex + 1];
+              // Pre-load following track (with wrap-around)
+              let followingIndex = nextIndex + 1;
+              if (followingIndex >= currentState.queue.length && currentState.repeat === 'all') {
+                followingIndex = 0;
+              }
+              const followingTrack = currentState.queue[followingIndex];
               if (followingTrack) {
                 loadTrack(activePlayer, followingTrack.id);
               }

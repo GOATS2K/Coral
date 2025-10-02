@@ -48,15 +48,25 @@ export function usePlayer() {
   const skip = async (direction: 1 | -1) => {
     setPosition(0);
 
-    const newIndex = state.currentIndex + direction;
-    if (newIndex < 0 || newIndex >= state.queue.length) return;
+    let newIndex = state.currentIndex + direction;
+
+    // Wrap around with repeat-all
+    if (newIndex < 0) {
+      if (state.repeat !== 'all') return;
+      newIndex = state.queue.length - 1;
+    } else if (newIndex >= state.queue.length) {
+      if (state.repeat !== 'all') return;
+      newIndex = 0;
+    }
 
     const track = state.queue[newIndex];
     const currentActive = state.activePlayer === 'A' ? playerA : playerB;
     const currentBuffer = state.activePlayer === 'A' ? playerB : playerA;
 
-    // Gapless forward skip if buffer has next track ready
-    const bufferReady = direction === 1 && bufferStatus.isLoaded && currentBuffer === bufferPlayer && newIndex === state.currentIndex + 1;
+    // Gapless forward skip if buffer has next track ready (sequential or wrap-around)
+    const isSequential = (direction === 1 && newIndex === state.currentIndex + 1) ||
+                        (direction === 1 && state.currentIndex === state.queue.length - 1 && newIndex === 0);
+    const bufferReady = isSequential && bufferStatus.isLoaded && currentBuffer === bufferPlayer;
 
     if (bufferReady) {
       currentActive.pause();
@@ -70,7 +80,12 @@ export function usePlayer() {
         activePlayer: state.activePlayer === 'A' ? 'B' : 'A',
       });
 
-      const nextTrack = state.queue[newIndex + 1];
+      // Load next track with wrapping
+      let nextIndex = newIndex + 1;
+      if (nextIndex >= state.queue.length && state.repeat === 'all') {
+        nextIndex = 0;
+      }
+      const nextTrack = state.queue[nextIndex];
       if (nextTrack) loadTrack(currentActive, nextTrack.id);
       return;
     }
@@ -92,7 +107,12 @@ export function usePlayer() {
         await waitForPlayerLoaded(currentBuffer);
         currentBuffer.play();
 
-        const prevTrack = state.queue[newIndex - 1];
+        // Load previous track with wrapping
+        let prevIndex = newIndex - 1;
+        if (prevIndex < 0 && state.repeat === 'all') {
+          prevIndex = state.queue.length - 1;
+        }
+        const prevTrack = prevIndex >= 0 ? state.queue[prevIndex] : null;
         if (prevTrack) loadTrack(currentActive, prevTrack.id);
       } catch (err) {
         console.error('Skip error:', err);
@@ -113,7 +133,12 @@ export function usePlayer() {
       await waitForPlayerLoaded(currentActive);
       currentActive.play();
 
-      const nextTrack = state.queue[newIndex + 1];
+      // Load next track with wrapping
+      let nextIndex = newIndex + 1;
+      if (nextIndex >= state.queue.length && state.repeat === 'all') {
+        nextIndex = 0;
+      }
+      const nextTrack = state.queue[nextIndex];
       if (nextTrack) loadTrack(currentBuffer, nextTrack.id);
     } catch (err) {
       console.error('Skip error:', err);
@@ -229,6 +254,48 @@ export function usePlayer() {
     });
   };
 
+  const shuffle = () => {
+    setState(prev => {
+      const newShuffleState = !prev.isShuffled;
+
+      if (!newShuffleState) {
+        // Turning shuffle off - no queue transformation needed
+        return { ...prev, isShuffled: false };
+      }
+
+      // Turning shuffle on - shuffle tracks after current
+      const beforeCurrent = prev.queue.slice(0, prev.currentIndex + 1);
+      const afterCurrent = prev.queue.slice(prev.currentIndex + 1);
+
+      // Fisher-Yates shuffle on tracks after current
+      const shuffled = [...afterCurrent];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const newQueue = [...beforeCurrent, ...shuffled];
+
+      return { ...prev, queue: newQueue, isShuffled: true };
+    });
+
+    // Reload buffer with new next track
+    bufferPlayer.pause();
+    const nextTrack = state.queue[state.currentIndex + 1];
+    if (nextTrack) {
+      loadTrack(bufferPlayer, nextTrack.id);
+    }
+  };
+
+  const cycleRepeat = () => {
+    setState(prev => {
+      const modes: Array<'off' | 'all' | 'one'> = ['off', 'all', 'one'];
+      const currentIndex = modes.indexOf(prev.repeat);
+      const nextMode = modes[(currentIndex + 1) % modes.length];
+      return { ...prev, repeat: nextMode };
+    });
+  };
+
   // Sync position with actual player position
   useEffect(() => {
     if (!isNaN(status.currentTime)) {
@@ -244,6 +311,8 @@ export function usePlayer() {
     currentIndex: state.currentIndex,
     volume: activePlayer.volume,
     isMuted,
+    repeat: state.repeat,
+    isShuffled: state.isShuffled,
     play,
     togglePlayPause,
     skip,
@@ -256,6 +325,8 @@ export function usePlayer() {
     playFromIndex,
     findSimilarAndAddToQueue,
     reorderQueue,
+    shuffle,
+    cycleRepeat,
   };
 }
 

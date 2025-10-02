@@ -1,7 +1,7 @@
 import { Platform, View, Image, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { usePlayer } from '@/lib/player/use-player';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, Trash2 } from 'lucide-react-native';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, Trash2, Shuffle, Repeat, Repeat1 } from 'lucide-react-native';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -15,7 +15,7 @@ export function WebPlayerBar() {
     return null;
   }
 
-  const { activeTrack, isPlaying, progress, volume, isMuted, queue, currentIndex, togglePlayPause, skip, seekTo, setVolume, toggleMute, reorderQueue, playFromIndex, removeFromQueue, findSimilarAndAddToQueue } = usePlayer();
+  const { activeTrack, isPlaying, progress, volume, isMuted, queue, currentIndex, repeat, isShuffled, togglePlayPause, skip, seekTo, setVolume, toggleMute, reorderQueue, playFromIndex, removeFromQueue, findSimilarAndAddToQueue, shuffle, cycleRepeat } = usePlayer();
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const [localVolume, setLocalVolume] = useState(1);
@@ -206,6 +206,9 @@ export function WebPlayerBar() {
       <View className="flex-1 max-w-2xl flex-col gap-2">
         {/* Control Buttons */}
         <View className="flex-row items-center justify-center gap-4">
+          <Pressable onPress={shuffle} className="web:hover:opacity-70 active:opacity-50">
+            <Shuffle size={20} className={isShuffled ? "text-primary" : "text-muted-foreground"} />
+          </Pressable>
           <Pressable onPress={() => skip(-1)} className="web:hover:opacity-70 active:opacity-50">
             <SkipBack size={20} className="text-foreground" />
           </Pressable>
@@ -218,6 +221,13 @@ export function WebPlayerBar() {
           </Pressable>
           <Pressable onPress={() => skip(1)} className="web:hover:opacity-70 active:opacity-50">
             <SkipForward size={20} className="text-foreground" />
+          </Pressable>
+          <Pressable onPress={cycleRepeat} className="web:hover:opacity-70 active:opacity-50">
+            {repeat === 'one' ? (
+              <Repeat1 size={20} className="text-primary" />
+            ) : (
+              <Repeat size={20} className={repeat === 'all' ? "text-primary" : "text-muted-foreground"} />
+            )}
           </Pressable>
         </View>
 
@@ -281,10 +291,11 @@ export function WebPlayerBar() {
                   .join(', ') || 'Unknown Artist';
                 const isCurrentTrack = index === currentIndex;
                 const isDraggedOver = dragOverIndex === index;
+                const key = `${track.id}-${index}`
 
                 return (
                   <div
-                    key={track.id}
+                    key={key}
                     draggable
                     onDragStart={handleDragStart(index)}
                     onDragOver={handleDragOver(index)}

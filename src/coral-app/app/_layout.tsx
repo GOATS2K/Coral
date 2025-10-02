@@ -15,6 +15,7 @@ import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ToastContainer } from '@/components/toast-container';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -98,6 +99,7 @@ export default function RootLayout() {
             {Platform.OS === 'web' && <WebPlayerBar />}
           </View>
           <PortalHost />
+          <ToastContainer />
         </ThemeProvider>
       </PlayerProvider>
     </QueryClientProvider>

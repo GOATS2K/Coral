@@ -5,6 +5,10 @@ export const getTrackUrl = (trackId: string) =>
   `${baseUrl}/api/library/tracks/${trackId}/original`;
 
 export const loadTrack = (player: AudioPlayer, trackId: string) => {
+  console.log('[LOAD_TRACK] Loading track', {
+    trackId,
+    playerWasLoaded: player.isLoaded,
+  });
   player.pause();
   player.seekTo(0);
   player.replace(getTrackUrl(trackId));

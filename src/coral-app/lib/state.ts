@@ -63,6 +63,7 @@ export interface PlayerState {
   activePlayer: 'A' | 'B';
   repeat: RepeatMode;
   isShuffled: boolean;
+  originalQueue: SimpleTrackDto[] | null;
 }
 
 export const playerStateAtom = atom<PlayerState>({
@@ -72,6 +73,7 @@ export const playerStateAtom = atom<PlayerState>({
   activePlayer: 'A',
   repeat: 'off',
   isShuffled: false,
+  originalQueue: null,
 })
 
 // Albums screen scroll state

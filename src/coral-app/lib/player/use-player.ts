@@ -30,7 +30,15 @@ export function usePlayer() {
     playerA.seekTo(0);
     playerB.seekTo(0);
 
-    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track, activePlayer: 'A' });
+    setState({
+      queue: tracks,
+      currentIndex: startIndex,
+      currentTrack: track,
+      activePlayer: 'A',
+      repeat: 'off',
+      isShuffled: false,
+      originalQueue: null,
+    });
     loadTrack(playerA, track.id);
     await waitForPlayerLoaded(playerA);
     playerA.play();
@@ -151,17 +159,32 @@ export function usePlayer() {
   };
 
   const addToQueue = (track: SimpleTrackDto) => {
-    setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
+    setState(prev => ({
+      ...prev,
+      queue: [...prev.queue, track],
+      originalQueue: prev.originalQueue ? [...prev.originalQueue, track] : null,
+    }));
   };
 
   const addMultipleToQueue = (tracks: SimpleTrackDto[]) => {
-    setState(prev => ({ ...prev, queue: [...prev.queue, ...tracks] }));
+    setState(prev => ({
+      ...prev,
+      queue: [...prev.queue, ...tracks],
+      originalQueue: prev.originalQueue ? [...prev.originalQueue, ...tracks] : null,
+    }));
   };
 
   const removeFromQueue = (index: number) => {
     setState(prev => {
       const newQueue = [...prev.queue];
+      const removedTrack = newQueue[index];
       newQueue.splice(index, 1);
+
+      // Also remove from originalQueue if it exists
+      let newOriginalQueue = prev.originalQueue;
+      if (newOriginalQueue && removedTrack) {
+        newOriginalQueue = newOriginalQueue.filter(t => t.id !== removedTrack.id);
+      }
 
       // Adjust currentIndex if necessary
       let newCurrentIndex = prev.currentIndex;
@@ -180,6 +203,7 @@ export function usePlayer() {
         queue: newQueue,
         currentIndex: Math.max(0, newCurrentIndex),
         currentTrack: newQueue[newCurrentIndex] || prev.currentTrack,
+        originalQueue: newOriginalQueue,
       };
     });
   };
@@ -259,32 +283,54 @@ export function usePlayer() {
       const newShuffleState = !prev.isShuffled;
 
       if (!newShuffleState) {
-        // Turning shuffle off - no queue transformation needed
-        return { ...prev, isShuffled: false };
+        // Turning shuffle off - restore original queue
+        if (!prev.originalQueue || !prev.currentTrack) {
+          return { ...prev, isShuffled: false, originalQueue: null };
+        }
+
+        // Find current track in original queue
+        const newIndex = prev.originalQueue.findIndex(t => t.id === prev.currentTrack!.id);
+        if (newIndex === -1) {
+          // Current track not found in original queue, keep shuffled state
+          return { ...prev, isShuffled: false, originalQueue: null };
+        }
+
+        return {
+          ...prev,
+          queue: prev.originalQueue,
+          currentIndex: newIndex,
+          isShuffled: false,
+          originalQueue: null,
+        };
       }
 
-      // Turning shuffle on - shuffle tracks after current
-      const beforeCurrent = prev.queue.slice(0, prev.currentIndex + 1);
-      const afterCurrent = prev.queue.slice(prev.currentIndex + 1);
+      // Turning shuffle on - save original queue and shuffle
+      const currentTrack = prev.queue[prev.currentIndex];
 
-      // Fisher-Yates shuffle on tracks after current
-      const shuffled = [...afterCurrent];
+      // Get all tracks except current
+      const otherTracks = [
+        ...prev.queue.slice(0, prev.currentIndex),
+        ...prev.queue.slice(prev.currentIndex + 1)
+      ];
+
+      // Fisher-Yates shuffle on all other tracks
+      const shuffled = [...otherTracks];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
 
-      const newQueue = [...beforeCurrent, ...shuffled];
+      // Current track at top, shuffled tracks after
+      const newQueue = [currentTrack, ...shuffled];
 
-      return { ...prev, queue: newQueue, isShuffled: true };
+      return {
+        ...prev,
+        queue: newQueue,
+        currentIndex: 0,
+        isShuffled: true,
+        originalQueue: prev.queue,
+      };
     });
-
-    // Reload buffer with new next track
-    bufferPlayer.pause();
-    const nextTrack = state.queue[state.currentIndex + 1];
-    if (nextTrack) {
-      loadTrack(bufferPlayer, nextTrack.id);
-    }
   };
 
   const cycleRepeat = () => {
@@ -302,6 +348,25 @@ export function usePlayer() {
       setPosition(status.currentTime);
     }
   }, [status.currentTime]);
+
+  // Update buffer player when queue or current index changes
+  useEffect(() => {
+    let nextIndex = state.currentIndex + 1;
+
+    // Handle repeat-all wrapping
+    if (nextIndex >= state.queue.length) {
+      if (state.repeat === 'all') {
+        nextIndex = 0;
+      } else {
+        return; // No next track
+      }
+    }
+
+    const nextTrack = state.queue[nextIndex];
+    if (nextTrack) {
+      loadTrack(bufferPlayer, nextTrack.id);
+    }
+  }, [state.queue, state.currentIndex, state.activePlayer, state.repeat]);
 
   return {
     activeTrack: state.currentTrack,
@@ -344,7 +409,15 @@ export function usePlayerActions() {
     playerA.seekTo(0);
     playerB.seekTo(0);
 
-    setState({ queue: tracks, currentIndex: startIndex, currentTrack: track, activePlayer: 'A' });
+    setState({
+      queue: tracks,
+      currentIndex: startIndex,
+      currentTrack: track,
+      activePlayer: 'A',
+      repeat: 'off',
+      isShuffled: false,
+      originalQueue: null,
+    });
     loadTrack(playerA, track.id);
     await waitForPlayerLoaded(playerA);
     playerA.play();
@@ -356,7 +429,11 @@ export function usePlayerActions() {
   };
 
   const addToQueue = (track: SimpleTrackDto) => {
-    setState(prev => ({ ...prev, queue: [...prev.queue, track] }));
+    setState(prev => ({
+      ...prev,
+      queue: [...prev.queue, track],
+      originalQueue: prev.originalQueue ? [...prev.originalQueue, track] : null,
+    }));
   };
 
   return {

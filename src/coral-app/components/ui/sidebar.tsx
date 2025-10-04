@@ -1,6 +1,6 @@
 import { View, Pressable } from 'react-native';
 import { Link, usePathname } from 'expo-router';
-import { HomeIcon, SearchIcon, LibraryIcon, MenuIcon } from 'lucide-react-native';
+import { HomeIcon, SearchIcon, LibraryIcon, MenuIcon, Heart } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
@@ -76,6 +76,10 @@ export function Sidebar() {
     { href: '/library/albums', icon: LibraryIcon, label: 'Library' },
   ];
 
+  const playlistItems = [
+    { href: '/playlists/favorite-tracks', icon: Heart, label: 'Favorite Tracks' },
+  ];
+
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
 
   const hamburgerButton = (
@@ -101,7 +105,8 @@ export function Sidebar() {
         )}
       </View>
       <View className="flex-1">
-        <View className="gap-1">
+        {/* Main Navigation */}
+        <View className="gap-1 mb-6">
           {navItems.map((item) => (
             <NavItem
               key={item.href}
@@ -109,6 +114,25 @@ export function Sidebar() {
               icon={item.icon}
               label={item.label}
               isActive={item.href === '/' ? pathname === item.href : pathname.startsWith(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </View>
+
+        {/* Playlists Section */}
+        <View className="gap-1">
+          {!collapsed && (
+            <Text className="text-muted-foreground text-xs font-semibold uppercase px-4 mb-2">
+              Playlists
+            </Text>
+          )}
+          {playlistItems.map((item) => (
+            <NavItem
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              label={item.label}
+              isActive={pathname.startsWith(item.href)}
               collapsed={collapsed}
             />
           ))}

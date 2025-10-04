@@ -1,31 +1,27 @@
 import { View, ScrollView, ActivityIndicator, Pressable, Image } from 'react-native';
 import { Stack, Link } from 'expo-router';
 import { Text } from '@/components/ui/text';
-import { useFavoriteTracks, useFavoriteArtists, useFavoriteAlbums, usePaginatedAlbums } from '@/lib/client/components';
-import { TrackListing } from '@/components/track-listing';
+import { useFavoriteArtists, useFavoriteAlbums, usePaginatedAlbums } from '@/lib/client/components';
 import { AlbumCard } from '@/components/album-card';
 import { ArtistCard } from '@/components/artist-card';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Heart } from 'lucide-react-native';
-import { PlaybackSource } from '@/lib/state';
 
 const SCREEN_OPTIONS = {
   headerShown: false
 };
 
 export default function HomeScreen() {
-  const { data: favoriteTracks, isLoading: tracksLoading } = useFavoriteTracks({});
   const { data: favoriteArtists, isLoading: artistsLoading } = useFavoriteArtists({});
   const { data: favoriteAlbums, isLoading: albumsLoading } = useFavoriteAlbums({});
   const { data: recentAlbums, isLoading: recentAlbumsLoading } = usePaginatedAlbums({
     queryParams: { limit: 12, offset: 0 },
   });
 
-  const isLoading = tracksLoading || artistsLoading || albumsLoading || recentAlbumsLoading;
+  const isLoading = artistsLoading || albumsLoading || recentAlbumsLoading;
 
   const hasFavorites =
-    (favoriteTracks && favoriteTracks.length > 0) ||
     (favoriteArtists && favoriteArtists.length > 0) ||
     (favoriteAlbums && favoriteAlbums.length > 0);
 
@@ -132,19 +128,6 @@ export default function HomeScreen() {
                   </View>
                 ))}
               </ScrollView>
-            </View>
-          )}
-
-          {/* Favorite Tracks */}
-          {favoriteTracks && favoriteTracks.length > 0 && (
-            <View className="mb-8 px-4">
-              <Text variant="h3" className="mb-4">Favorite Tracks</Text>
-              <TrackListing
-                tracks={favoriteTracks}
-                showTrackNumber={false}
-                showCoverArt={true}
-                initializer={{ source: PlaybackSource.Favorites, id: 'tracks' }}
-              />
             </View>
           )}
 

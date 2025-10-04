@@ -23,19 +23,18 @@ function NavItem({ href, icon: Icon, label, isActive, collapsed }: NavItemProps)
     ? (theme === 'dark' ? '#fff' : '#000')
     : (theme === 'dark' ? '#71717a' : '#a1a1aa');
 
-  const button = (
-    <Link href={href} asChild>
-      <Pressable
-        className={cn(
-          'flex-row items-center rounded-lg transition-colors px-4 h-11',
-          collapsed ? 'gap-0 justify-center' : 'gap-3',
-          isActive
-            ? 'bg-accent'
-            : 'hover:bg-accent/50'
-        )}
-      >
-        <Icon size={20} color={iconColor} />
-        {!collapsed && (
+  if (!collapsed) {
+    return (
+      <Link href={href} asChild>
+        <Pressable
+          className={cn(
+            'flex-row items-center rounded-lg transition-colors px-4 h-11 gap-3',
+            isActive
+              ? 'bg-accent'
+              : 'hover:bg-accent/50'
+          )}
+        >
+          <Icon size={20} color={iconColor} />
           <Text
             className={cn(
               'text-base -mt-0.5',
@@ -46,18 +45,27 @@ function NavItem({ href, icon: Icon, label, isActive, collapsed }: NavItemProps)
           >
             {label}
           </Text>
-        )}
-      </Pressable>
-    </Link>
-  );
-
-  if (!collapsed) return button;
+        </Pressable>
+      </Link>
+    );
+  }
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        {button}
-      </TooltipTrigger>
+      <Link href={href} asChild>
+        <TooltipTrigger asChild>
+          <Pressable
+            className={cn(
+              'flex-row items-center rounded-lg transition-colors px-4 h-11 justify-center',
+              isActive
+                ? 'bg-accent'
+                : 'hover:bg-accent/50'
+            )}
+          >
+            <Icon size={20} color={iconColor} />
+          </Pressable>
+        </TooltipTrigger>
+      </Link>
       <TooltipContent side="right">
         <Text>{label}</Text>
       </TooltipContent>
@@ -82,26 +90,24 @@ export function Sidebar() {
 
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
 
-  const hamburgerButton = (
-    <Pressable onPress={() => setCollapsed(!collapsed)} className={cn("flex-row items-center rounded-lg hover:bg-accent/50 py-3", collapsed ? "justify-center px-4" : "px-4 -ml-0.5")}>
-      <MenuIcon size={20} color={iconColor} />
-    </Pressable>
-  );
-
   return (
     <View className={cn('bg-card border-r border-border pt-6 pb-4 flex-col h-full', collapsed ? 'w-20 px-2' : 'w-64 px-4')}>
       <View className={cn("mb-6 flex-row items-center", collapsed ? "justify-center" : "")}>
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              {hamburgerButton}
+              <Pressable onPress={() => setCollapsed(!collapsed)} className="flex-row items-center rounded-lg hover:bg-accent/50 py-3 justify-center px-4">
+                <MenuIcon size={20} color={iconColor} />
+              </Pressable>
             </TooltipTrigger>
             <TooltipContent side="right">
               <Text>Menu</Text>
             </TooltipContent>
           </Tooltip>
         ) : (
-          hamburgerButton
+          <Pressable onPress={() => setCollapsed(!collapsed)} className="flex-row items-center rounded-lg hover:bg-accent/50 py-3 px-4 -ml-0.5">
+            <MenuIcon size={20} color={iconColor} />
+          </Pressable>
         )}
       </View>
       <View className="flex-1">

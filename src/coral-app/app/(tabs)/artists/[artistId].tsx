@@ -1,9 +1,12 @@
-import { ScrollView, View, ActivityIndicator, Platform } from 'react-native';
+import { ScrollView, View, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useArtist } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import type { SimpleAlbumDto, AlbumType } from '@/lib/client/schemas';
 import { AlbumCard } from '@/components/album-card';
+import { Heart } from 'lucide-react-native';
+import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -28,9 +31,6 @@ interface AlbumSectionProps {
 }
 
 function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDivider }: AlbumSectionProps) {
-  const isWeb = Platform.OS === 'web';
-  const numColumns = isWeb ? 6 : 2;
-
   if (albums.length === 0 && (!albumsAfterDivider || albumsAfterDivider.length === 0)) return null;
 
   return (
@@ -38,12 +38,7 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
       <Text variant="h4" className="mb-4 px-4">{title}</Text>
       <View className="flex-row flex-wrap">
         {albums.map((album) => (
-          <View
-            key={album.id}
-            style={{ width: `${100 / numColumns}%` }}
-          >
-            <AlbumCard album={album} />
-          </View>
+          <AlbumCard key={album.id} album={album} />
         ))}
       </View>
 
@@ -57,12 +52,7 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
           </View>
           <View className="flex-row flex-wrap">
             {albumsAfterDivider.map((album) => (
-              <View
-                key={album.id}
-                style={{ width: `${100 / numColumns}%` }}
-              >
-                <AlbumCard album={album} />
-              </View>
+              <AlbumCard key={album.id} album={album} />
             ))}
           </View>
         </>
@@ -78,6 +68,7 @@ export default function ArtistScreen() {
       artistId: artistId as string,
     },
   });
+  const { toggleFavorite } = useToggleFavoriteArtist();
 
   if (error) {
     return (
@@ -137,11 +128,20 @@ export default function ArtistScreen() {
       <View className="flex-1 bg-background">
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Artist Header */}
-          <View className="bg-secondary px-4 pt-8 pb-6 items-start">
-            <Text variant="h1" className="font-bold text-secondary-foreground">{data.name}</Text>
-            <Text className="text-secondary-foreground/70 mt-2">
+          <View className="px-4 pt-8 pb-6 items-start border-b border-border">
+            <Text variant="h1" className="font-bold">{data.name}</Text>
+            <Text className="text-muted-foreground mt-2">
               {totalReleases} {totalReleases === 1 ? 'release' : 'releases'}
             </Text>
+            <View className="mt-4">
+              <Button
+                onPress={() => toggleFavorite(data)}
+                variant="outline"
+              >
+                <Heart size={18} className="text-foreground" fill={data.favorited ? "currentColor" : "none"} />
+                <Text className="font-medium">{data.favorited ? 'Unlike' : 'Like'}</Text>
+              </Button>
+            </View>
           </View>
 
           <View className="mt-6">

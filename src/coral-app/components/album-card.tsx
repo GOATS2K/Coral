@@ -51,10 +51,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
 
   return (
     <Link href={`/albums/${album.id}`} asChild>
-      <Pressable
-        className="p-2"
-        style={{ width: artworkSize + 16 }}
-      >
+      <Pressable className="p-2" style={{ width: artworkSize + 16 }}>
         <View className="gap-2" style={{ width: artworkSize }}>
           {/* Album Artwork */}
           <View

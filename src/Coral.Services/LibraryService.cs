@@ -122,6 +122,7 @@ namespace Coral.Services
             {
                 Id = artist.Id,
                 Name = artist.Name,
+                Favorited = artist.Favorited,
                 FeaturedIn = featured,
                 InCompilation = compilations,
                 Releases = mainReleases,

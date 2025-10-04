@@ -33,6 +33,7 @@ export type ArtistDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
   releases: SimpleAlbumDto[];
   featuredIn: SimpleAlbumDto[];
   remixerIn: SimpleAlbumDto[];

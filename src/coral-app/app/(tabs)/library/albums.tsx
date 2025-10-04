@@ -1,4 +1,4 @@
-import { View, Pressable, ActivityIndicator, Platform, FlatList } from 'react-native';
+import { View, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { fetchPaginatedAlbums } from '@/lib/client/components';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -36,8 +36,14 @@ export default function AlbumsScreen() {
 
   const albums = data?.pages.flatMap((page) => page.data) ?? [];
 
-  const loadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 200;
+    const isCloseToBottom =
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - paddingToBottom;
+
+    if (isCloseToBottom && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   };
@@ -69,27 +75,26 @@ export default function AlbumsScreen() {
     );
   }
 
-  const isWeb = Platform.OS === 'web';
-  const numColumns = isWeb ? 6 : 2;
-
   return (
     <View className="flex-1 bg-background">
-      <FlatList
-        data={albums}
-        renderItem={({ item }) => <AlbumCard album={item} />}
-        keyExtractor={(item) => item.id}
-        numColumns={numColumns}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        contentContainerStyle={{ padding: 8 }}
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View className="py-4">
-              <ActivityIndicator />
-            </View>
-          ) : null
-        }
-      />
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
+      >
+        <View className="flex-row flex-wrap">
+          {albums.map((album) => (
+            <AlbumCard key={album.id} album={album} />
+          ))}
+        </View>
+        {isFetchingNextPage && (
+          <View className="py-4 items-center">
+            <ActivityIndicator />
+          </View>
+        )}
+        <View className="pb-20" />
+      </ScrollView>
     </View>
   );
 }

@@ -41,8 +41,6 @@ export default function RootLayout() {
   const setSystemTheme = useSetAtom(systemThemeAtom);
   const setThemePreference = useSetAtom(themePreferenceAtom);
 
-  console.log('[RootLayout] Render - colorScheme:', colorScheme, 'resolvedTheme:', resolvedTheme);
-
   useEffect(() => {
     // On native platforms, load theme preference from AsyncStorage
     // (On web, it's already loaded synchronously in the atom)
@@ -50,7 +48,6 @@ export default function RootLayout() {
       AsyncStorage.getItem('theme-preference').then(stored => {
         if (stored) {
           const preference = JSON.parse(stored);
-          console.log('[RootLayout] Init (native) - loaded theme preference from storage:', preference);
           setThemePreference(preference);
         }
       }).catch(e => console.error('[RootLayout] Init (native) - error loading theme preference:', e));
@@ -58,7 +55,6 @@ export default function RootLayout() {
 
     // Initialize system theme
     const systemTheme = getPrefferedColor();
-    console.log('[RootLayout] Init - setting system theme to:', systemTheme);
     setSystemTheme(systemTheme);
 
     // wire up event listeners for platform changes
@@ -66,7 +62,6 @@ export default function RootLayout() {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = (e: MediaQueryListEvent) => {
         const newTheme = e.matches ? 'dark' : 'light';
-        console.log('[RootLayout] Web media query change - setting system theme to:', newTheme);
         setSystemTheme(newTheme);
       };
       mediaQuery.addEventListener('change', handler);
@@ -74,7 +69,6 @@ export default function RootLayout() {
     } else {
       const subscription = Appearance.addChangeListener((ch) => {
         const newTheme = ch.colorScheme === 'dark' ? 'dark' : 'light';
-        console.log('[RootLayout] Native appearance change - setting system theme to:', newTheme);
         setSystemTheme(newTheme);
       });
       return () => subscription.remove();
@@ -83,7 +77,6 @@ export default function RootLayout() {
 
   // Apply resolved theme to NativeWind
   useEffect(() => {
-    console.log('[RootLayout] Resolved theme effect - setting colorScheme from', colorScheme, 'to', resolvedTheme);
     setColorScheme(resolvedTheme);
   }, [resolvedTheme]);
 

@@ -12,7 +12,6 @@ function getInitialThemePreference(): ThemePreference {
       const stored = localStorage.getItem('theme-preference');
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('[themePreferenceAtom] Initial value from localStorage:', parsed);
         return parsed;
       }
     } catch (e) {
@@ -26,7 +25,6 @@ function getInitialThemePreference(): ThemePreference {
 export const themePreferenceAtom = atom<ThemePreference>(
   getInitialThemePreference(), // Load initial value synchronously
   (get, set, newValue: ThemePreference) => {
-    console.log('[themePreferenceAtom] Setting to:', newValue);
     set(themePreferenceAtom, newValue);
     // Persist to storage
     AsyncStorage.setItem('theme-preference', JSON.stringify(newValue)).catch(e =>
@@ -44,13 +42,10 @@ export const systemThemeAtom = atom<ResolvedTheme>(
 export const themeAtom = atom<ResolvedTheme>((get) => {
   const preference = get(themePreferenceAtom)
   const system = get(systemThemeAtom)
-  console.log('[themeAtom] Computing - preference:', preference, 'system:', system);
 
   if (preference === 'system') {
-    console.log('[themeAtom] Returning system theme:', system);
     return system
   }
-  console.log('[themeAtom] Returning preference:', preference);
   return preference
 })
 

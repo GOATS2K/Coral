@@ -31,7 +31,7 @@ export default function SearchScreen() {
   const theme = useAtomValue(themeAtom);
 
   const INITIAL_LIMIT = 5;
-  const INITIAL_ALBUMS_LIMIT = 9;
+  const INITIAL_ALBUMS_LIMIT = 12;
   const ITEMS_PER_PAGE = 50;
 
   // Sync URL param changes to local state (browser back/forward)

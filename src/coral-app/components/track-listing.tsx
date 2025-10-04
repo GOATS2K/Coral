@@ -12,6 +12,7 @@ import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { useRouter } from 'expo-router';
 import { useFavoriteTrack, useRemoveFavoriteTrack } from '@/lib/client/components';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -29,6 +30,23 @@ interface TrackListingProps {
   showCoverArt?: boolean;
   className?: string;
   initializer?: PlaybackInitializer;
+}
+
+function TrackArtwork({ albumId }: { albumId: string }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError || !albumId) {
+    return <MissingAlbumCover size={16} />;
+  }
+
+  return (
+    <Image
+      source={{ uri: `${baseUrl}/api/artwork?albumId=${albumId}&size=small` }}
+      className="w-full h-full"
+      resizeMode="cover"
+      onError={() => setImageError(true)}
+    />
+  );
 }
 
 export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
@@ -93,7 +111,6 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
       <View className={className}>
         {tracks.map((track, index) => {
           const isActive = activeTrack?.id === track.id;
-          const mainArtists = track.artists.filter(a => a.role === 'Main');
 
           return (
             <ContextMenu key={track.id}>
@@ -104,15 +121,7 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
                 >
                   {showCoverArt ? (
                     <View className="w-10 h-10 rounded overflow-hidden">
-                      {track.album?.artworks?.small ? (
-                        <Image
-                          source={{ uri: `${baseUrl}${track.album.artworks.small}` }}
-                          className="w-full h-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <MissingAlbumCover size={16} />
-                      )}
+                      <TrackArtwork albumId={track.album?.id || ''} />
                     </View>
                   ) : showTrackNumber ? (
                     <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
@@ -149,27 +158,22 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
                   <Text>Add to queue</Text>
                 </ContextMenuItem>
 
-                {/* Go to Artist - with submenu if multiple artists */}
-                {mainArtists.length === 1 ? (
-                  <ContextMenuItem onPress={() => handleGoToArtist(mainArtists[0].id)}>
-                    <User size={14} className="text-foreground" />
-                    <Text>Go to artist</Text>
-                  </ContextMenuItem>
-                ) : mainArtists.length > 1 ? (
+                {/* Artists */}
+                {track.artists && track.artists.length > 0 && (
                   <ContextMenuSub>
                     <ContextMenuSubTrigger>
                       <User size={14} className="text-foreground" />
-                      <Text>Go to artist</Text>
+                      <Text>Artists</Text>
                     </ContextMenuSubTrigger>
                     <ContextMenuSubContent>
-                      {mainArtists.map((artist) => (
+                      {track.artists.map((artist) => (
                         <ContextMenuItem key={artist.id} onPress={() => handleGoToArtist(artist.id)}>
-                          <Text>{artist.name}</Text>
+                          <Text>{artist.name} ({artist.role})</Text>
                         </ContextMenuItem>
                       ))}
                     </ContextMenuSubContent>
                   </ContextMenuSub>
-                ) : null}
+                )}
               </ContextMenuContent>
             </ContextMenu>
           );

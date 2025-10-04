@@ -19,6 +19,11 @@ public class CoralDbContext : DbContext
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
     public DbSet<RecordLabel> RecordLabels { get; set; } = null!;
     public DbSet<TrackEmbedding> TrackEmbeddings { get; set; } = null!;
+    public DbSet<FavoriteTrack> FavoriteTracks { get; set; } = null!;
+    public DbSet<FavoriteArtist> FavoriteArtists { get; set; } = null!;
+    public DbSet<FavoriteAlbum> FavoriteAlbums { get; set; } = null!;
+    public DbSet<Playlist> Playlists { get; set; } = null!;
+    public DbSet<PlaylistTrack> PlaylistTracks { get; set; } = null!;
 
 
     public CoralDbContext(DbContextOptions<CoralDbContext> options)

@@ -18,8 +18,12 @@ namespace Coral.Api.Controllers
         private readonly IIndexerService _indexerService;
         private readonly IPaginationService _paginationService;
         private readonly IPlaybackService _playbackService;
+        private readonly IFavoritesService _favoritesService;
 
-        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService, ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService, TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService)
+        public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
+            ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService,
+            TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
+            IFavoritesService favoritesService)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
@@ -27,6 +31,7 @@ namespace Coral.Api.Controllers
             _indexerService = indexerService;
             _paginationService = paginationService;
             _playbackService = playbackService;
+            _favoritesService = favoritesService;
         }
 
         [HttpPost]
@@ -39,7 +44,8 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("search")]
-        public async Task<ActionResult<PaginatedCustomData<SearchResult>>> Search([FromQuery] string query, [FromQuery] int offset = 0, [FromQuery] int limit = 100)
+        public async Task<ActionResult<PaginatedCustomData<SearchResult>>> Search([FromQuery] string query,
+            [FromQuery] int offset = 0, [FromQuery] int limit = 100)
         {
             var searchResult = await _searchService.Search(query, offset, limit);
             return Ok(searchResult);
@@ -55,6 +61,7 @@ namespace Coral.Api.Controllers
                 _playbackService.RegisterPlayback(track);
                 return Ok();
             }
+
             return NotFound();
         }
 
@@ -95,7 +102,7 @@ namespace Coral.Api.Controllers
                 opt.Bitrate = bitrate;
                 opt.RequestType = TranscodeRequestType.HLS;
             });
-            
+
             var streamData = new StreamDto()
             {
                 // this will require some baseurl modifications via the web server
@@ -144,6 +151,75 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("tracks/favorites")]
+        public async Task<ActionResult<List<SimpleTrackDto>>> FavoriteTracks()
+        {
+            var tracks = await _favoritesService.GetAllTracks();
+            return Ok(tracks);
+        }
+
+        [HttpGet]
+        [Route("/albums/favorites")]
+        public async Task<ActionResult<List<SimpleAlbumDto>>> FavoriteAlbums()
+        {
+            var albums = await _favoritesService.GetAllAlbums();
+            return Ok(albums);
+        }
+
+        [HttpGet]
+        [Route("artists/favorites")]
+        public async Task<ActionResult<List<SimpleArtistDto>>> FavoriteArtists()
+        {
+            var artists = await _favoritesService.GetAllArtists();
+            return Ok(artists);
+        }
+
+        [HttpPost]
+        [Route("tracks/{trackId}/favorite")]
+        public async Task<ActionResult> FavoriteTrack(Guid trackId)
+        {
+            try
+            {
+                await _favoritesService.AddTrack(trackId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+
+        [HttpPost]
+        [Route("artists/{artistId}/favorite")]
+        public async Task<ActionResult> FavoriteArtist(Guid artistId)
+        {
+            try
+            {
+                await _favoritesService.AddArtist(artistId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+
+        [HttpPost]
+        [Route("albums/{albumId}/favorite")]
+        public async Task<ActionResult> FavoriteAlbum(Guid albumId)
+        {
+            try
+            {
+                await _favoritesService.AddAlbum(albumId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+
+        [HttpGet]
         [Route("tracks")]
         public async IAsyncEnumerable<TrackDto> Tracks()
         {
@@ -165,7 +241,8 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("albums/paginated")]
-        public async Task<ActionResult<PaginatedQuery<SimpleAlbumDto>>> PaginatedAlbums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedQuery<SimpleAlbumDto>>> PaginatedAlbums([FromQuery] int limit = 10,
+            [FromQuery] int offset = 0)
         {
             var result = await _paginationService.PaginateQuery<Album, SimpleAlbumDto>(offset, limit);
             return Ok(result);
@@ -173,7 +250,8 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("artists/paginated")]
-        public async Task<ActionResult<PaginatedQuery<SimpleArtistDto>>> PaginatedArtists([FromQuery] int limit = 10, [FromQuery] int offset = 0)
+        public async Task<ActionResult<PaginatedQuery<SimpleArtistDto>>> PaginatedArtists([FromQuery] int limit = 10,
+            [FromQuery] int offset = 0)
         {
             var result = await _paginationService.PaginateQuery<Artist, SimpleArtistDto>(offset, limit);
             return Ok(result);

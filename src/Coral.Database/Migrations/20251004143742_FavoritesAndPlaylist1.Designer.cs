@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004143742_FavoritesAndPlaylist1")]
+    partial class FavoritesAndPlaylist1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

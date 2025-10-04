@@ -356,6 +356,261 @@
         }
       }
     },
+    "/api/Library/tracks/favorites": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteTracks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleTrackDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleTrackDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleTrackDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/albums/favorites": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteAlbums",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleAlbumDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Library/artists/favorites": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteArtists",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleArtistDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleArtistDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleArtistDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Library/tracks/{trackId}/favorite": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "RemoveFavoriteTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Library/artists/{artistId}/favorite": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteArtist",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "RemoveFavoriteArtist",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Library/albums/{albumId}/favorite": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "FavoriteAlbum",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "RemoveFavoriteAlbum",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Library/tracks": {
       "get": {
         "tags": [
@@ -826,6 +1081,7 @@
           "artists",
           "artworks",
           "createdAt",
+          "favorited",
           "genres",
           "id",
           "name",
@@ -860,6 +1116,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "favorited": {
+            "type": "boolean"
           },
           "tracks": {
             "type": "array",
@@ -941,6 +1200,7 @@
       },
       "ArtistWithRoleDto": {
         "required": [
+          "favorited",
           "id",
           "name",
           "role"
@@ -953,6 +1213,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "favorited": {
+            "type": "boolean"
           },
           "role": {
             "$ref": "#/components/schemas/ArtistRole"
@@ -1230,6 +1493,7 @@
           "artists",
           "artworks",
           "createdAt",
+          "favorited",
           "id",
           "name",
           "releaseYear"
@@ -1262,6 +1526,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "favorited": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1298,6 +1565,7 @@
       },
       "SimpleArtistDto": {
         "required": [
+          "favorited",
           "id",
           "name"
         ],
@@ -1309,6 +1577,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "favorited": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1366,6 +1637,7 @@
           "artists",
           "discNumber",
           "durationInSeconds",
+          "favorited",
           "id",
           "title",
           "trackNumber"
@@ -1402,6 +1674,9 @@
           },
           "genre": {
             "$ref": "#/components/schemas/GenreDto"
+          },
+          "favorited": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1431,6 +1706,7 @@
           "artists",
           "discNumber",
           "durationInSeconds",
+          "favorited",
           "id",
           "title",
           "trackNumber"
@@ -1471,6 +1747,9 @@
           },
           "genre": {
             "$ref": "#/components/schemas/GenreDto"
+          },
+          "favorited": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

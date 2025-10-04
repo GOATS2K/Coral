@@ -10,4 +10,5 @@ public class SimpleTrackDto
     public SimpleTrackAlbumDto Album { get; set; } = null!;
     public List<ArtistWithRoleDto> Artists { get; set; } = null!;
     public GenreDto? Genre { get; init; }
+    public bool Favorited { get; set; }
 }

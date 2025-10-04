@@ -188,6 +188,21 @@ namespace Coral.Api.Controllers
                 return StatusCode(500, ex);
             }
         }
+        
+        [HttpDelete]
+        [Route("tracks/{trackId}/favorite")]
+        public async Task<ActionResult> RemoveFavoriteTrack(Guid trackId)
+        {
+            try
+            {
+                await _favoritesService.RemoveTrack(trackId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
 
         [HttpPost]
         [Route("artists/{artistId}/favorite")]
@@ -203,6 +218,21 @@ namespace Coral.Api.Controllers
                 return StatusCode(500, ex);
             }
         }
+        
+        [HttpDelete]
+        [Route("artists/{artistId}/favorite")]
+        public async Task<ActionResult> RemoveFavoriteArtist(Guid artistId)
+        {
+            try
+            {
+                await _favoritesService.RemoveArtist(artistId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
 
         [HttpPost]
         [Route("albums/{albumId}/favorite")]
@@ -211,6 +241,21 @@ namespace Coral.Api.Controllers
             try
             {
                 await _favoritesService.AddAlbum(albumId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+        
+        [HttpDelete]
+        [Route("albums/{albumId}/favorite")]
+        public async Task<ActionResult> RemoveFavoriteAlbum(Guid albumId)
+        {
+            try
+            {
+                await _favoritesService.RemoveAlbum(albumId);
                 return Ok();
             }
             catch (Exception ex)

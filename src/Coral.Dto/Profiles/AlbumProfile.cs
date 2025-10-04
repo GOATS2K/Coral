@@ -9,9 +9,11 @@ public class AlbumProfile : Profile
     public AlbumProfile()
     {
         CreateMap<Album, AlbumDto>()
-            .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)));
+            .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)))
+            .ForMember(dest => dest.Favorited, opt => opt.MapFrom(src => src.Favorite != null));
         CreateMap<Album, SimpleAlbumDto>()
-            .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)));
+            .ForMember(des => des.Artists, opt => opt.MapFrom(src => src.Artists.Where(a => a.Role == ArtistRole.Main)))
+            .ForMember(dest => dest.Favorited, opt => opt.MapFrom(src => src.Favorite != null));
         CreateMap<Album, SimpleTrackAlbumDto>();
     }
 }

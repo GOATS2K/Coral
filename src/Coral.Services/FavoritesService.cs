@@ -35,18 +35,27 @@ public class FavoritesService : IFavoritesService
 
     public async Task AddAlbum(Guid albumId)
     {
+        if (await _context.FavoriteAlbums.AnyAsync(a => a.AlbumId == albumId))
+            return;
+        
         await _context.FavoriteAlbums.AddAsync(new FavoriteAlbum {AlbumId = albumId});
         await _context.SaveChangesAsync();
     }
 
     public async Task AddTrack(Guid trackId)
     {
+        if (await _context.FavoriteTracks.AnyAsync(a => a.TrackId == trackId))
+            return;
+        
         await _context.FavoriteTracks.AddAsync(new FavoriteTrack {TrackId = trackId});
         await _context.SaveChangesAsync();
     }
 
     public async Task AddArtist(Guid artistId)
     {
+        if (await _context.FavoriteArtists.AnyAsync(a => a.ArtistId == artistId))
+            return;
+        
         await _context.FavoriteArtists.AddAsync(new FavoriteArtist {ArtistId = artistId});
         await _context.SaveChangesAsync();
     }

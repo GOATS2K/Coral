@@ -870,6 +870,618 @@ export const useRecommendationsForTrack = <
   });
 };
 
+export type FavoriteTracksError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteTracksResponse = Schemas.SimpleTrackDto[];
+
+export type FavoriteTracksVariables = Context["fetcherOptions"];
+
+export const fetchFavoriteTracks = (
+  variables: FavoriteTracksVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<FavoriteTracksResponse, FavoriteTracksError, undefined, {}, {}, {}>({
+    url: "/api/Library/tracks/favorites",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function favoriteTracksQuery(variables: FavoriteTracksVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<FavoriteTracksResponse>;
+};
+
+export function favoriteTracksQuery(
+  variables: FavoriteTracksVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<FavoriteTracksResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function favoriteTracksQuery(
+  variables: FavoriteTracksVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/tracks/favorites",
+      operationId: "favoriteTracks",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchFavoriteTracks(variables, signal),
+  };
+}
+
+export const useSuspenseFavoriteTracks = <TData = FavoriteTracksResponse,>(
+  variables: FavoriteTracksVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteTracksResponse,
+      FavoriteTracksError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    FavoriteTracksResponse,
+    FavoriteTracksError,
+    TData
+  >({
+    ...favoriteTracksQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useFavoriteTracks = <TData = FavoriteTracksResponse,>(
+  variables: FavoriteTracksVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteTracksResponse,
+      FavoriteTracksError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    FavoriteTracksResponse,
+    FavoriteTracksError,
+    TData
+  >({
+    ...favoriteTracksQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type FavoriteAlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteAlbumsResponse = Schemas.SimpleAlbumDto[];
+
+export type FavoriteAlbumsVariables = Context["fetcherOptions"];
+
+export const fetchFavoriteAlbums = (
+  variables: FavoriteAlbumsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<FavoriteAlbumsResponse, FavoriteAlbumsError, undefined, {}, {}, {}>({
+    url: "/albums/favorites",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function favoriteAlbumsQuery(variables: FavoriteAlbumsVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<FavoriteAlbumsResponse>;
+};
+
+export function favoriteAlbumsQuery(
+  variables: FavoriteAlbumsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<FavoriteAlbumsResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function favoriteAlbumsQuery(
+  variables: FavoriteAlbumsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/albums/favorites",
+      operationId: "favoriteAlbums",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchFavoriteAlbums(variables, signal),
+  };
+}
+
+export const useSuspenseFavoriteAlbums = <TData = FavoriteAlbumsResponse,>(
+  variables: FavoriteAlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteAlbumsResponse,
+      FavoriteAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    FavoriteAlbumsResponse,
+    FavoriteAlbumsError,
+    TData
+  >({
+    ...favoriteAlbumsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useFavoriteAlbums = <TData = FavoriteAlbumsResponse,>(
+  variables: FavoriteAlbumsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteAlbumsResponse,
+      FavoriteAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    FavoriteAlbumsResponse,
+    FavoriteAlbumsError,
+    TData
+  >({
+    ...favoriteAlbumsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type FavoriteArtistsError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteArtistsResponse = Schemas.SimpleArtistDto[];
+
+export type FavoriteArtistsVariables = Context["fetcherOptions"];
+
+export const fetchFavoriteArtists = (
+  variables: FavoriteArtistsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<FavoriteArtistsResponse, FavoriteArtistsError, undefined, {}, {}, {}>({
+    url: "/api/Library/artists/favorites",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function favoriteArtistsQuery(variables: FavoriteArtistsVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<FavoriteArtistsResponse>;
+};
+
+export function favoriteArtistsQuery(
+  variables: FavoriteArtistsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<FavoriteArtistsResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function favoriteArtistsQuery(
+  variables: FavoriteArtistsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/artists/favorites",
+      operationId: "favoriteArtists",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchFavoriteArtists(variables, signal),
+  };
+}
+
+export const useSuspenseFavoriteArtists = <TData = FavoriteArtistsResponse,>(
+  variables: FavoriteArtistsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteArtistsResponse,
+      FavoriteArtistsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    FavoriteArtistsResponse,
+    FavoriteArtistsError,
+    TData
+  >({
+    ...favoriteArtistsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useFavoriteArtists = <TData = FavoriteArtistsResponse,>(
+  variables: FavoriteArtistsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      FavoriteArtistsResponse,
+      FavoriteArtistsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    FavoriteArtistsResponse,
+    FavoriteArtistsError,
+    TData
+  >({
+    ...favoriteArtistsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type FavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type FavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteTrackVariables = {
+  pathParams: FavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchFavoriteTrack = (
+  variables: FavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    FavoriteTrackError,
+    undefined,
+    {},
+    {},
+    FavoriteTrackPathParams
+  >({
+    url: "/api/Library/tracks/{trackId}/favorite",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      FavoriteTrackError,
+      FavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    FavoriteTrackError,
+    FavoriteTrackVariables
+  >({
+    mutationFn: (variables: FavoriteTrackVariables) =>
+      fetchFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type RemoveFavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type RemoveFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type RemoveFavoriteTrackVariables = {
+  pathParams: RemoveFavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRemoveFavoriteTrack = (
+  variables: RemoveFavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    RemoveFavoriteTrackError,
+    undefined,
+    {},
+    {},
+    RemoveFavoriteTrackPathParams
+  >({
+    url: "/api/Library/tracks/{trackId}/favorite",
+    method: "delete",
+    ...variables,
+    signal,
+  });
+
+export const useRemoveFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      RemoveFavoriteTrackError,
+      RemoveFavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RemoveFavoriteTrackError,
+    RemoveFavoriteTrackVariables
+  >({
+    mutationFn: (variables: RemoveFavoriteTrackVariables) =>
+      fetchRemoveFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type FavoriteArtistPathParams = {
+  /**
+   * @format uuid
+   */
+  artistId: string;
+};
+
+export type FavoriteArtistError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteArtistVariables = {
+  pathParams: FavoriteArtistPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchFavoriteArtist = (
+  variables: FavoriteArtistVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    FavoriteArtistError,
+    undefined,
+    {},
+    {},
+    FavoriteArtistPathParams
+  >({
+    url: "/api/Library/artists/{artistId}/favorite",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useFavoriteArtist = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      FavoriteArtistError,
+      FavoriteArtistVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    FavoriteArtistError,
+    FavoriteArtistVariables
+  >({
+    mutationFn: (variables: FavoriteArtistVariables) =>
+      fetchFavoriteArtist(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type RemoveFavoriteArtistPathParams = {
+  /**
+   * @format uuid
+   */
+  artistId: string;
+};
+
+export type RemoveFavoriteArtistError = Fetcher.ErrorWrapper<undefined>;
+
+export type RemoveFavoriteArtistVariables = {
+  pathParams: RemoveFavoriteArtistPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRemoveFavoriteArtist = (
+  variables: RemoveFavoriteArtistVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    RemoveFavoriteArtistError,
+    undefined,
+    {},
+    {},
+    RemoveFavoriteArtistPathParams
+  >({
+    url: "/api/Library/artists/{artistId}/favorite",
+    method: "delete",
+    ...variables,
+    signal,
+  });
+
+export const useRemoveFavoriteArtist = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      RemoveFavoriteArtistError,
+      RemoveFavoriteArtistVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RemoveFavoriteArtistError,
+    RemoveFavoriteArtistVariables
+  >({
+    mutationFn: (variables: RemoveFavoriteArtistVariables) =>
+      fetchRemoveFavoriteArtist(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type FavoriteAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type FavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteAlbumVariables = {
+  pathParams: FavoriteAlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchFavoriteAlbum = (
+  variables: FavoriteAlbumVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    FavoriteAlbumError,
+    undefined,
+    {},
+    {},
+    FavoriteAlbumPathParams
+  >({
+    url: "/api/Library/albums/{albumId}/favorite",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useFavoriteAlbum = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      FavoriteAlbumError,
+      FavoriteAlbumVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    FavoriteAlbumError,
+    FavoriteAlbumVariables
+  >({
+    mutationFn: (variables: FavoriteAlbumVariables) =>
+      fetchFavoriteAlbum(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type RemoveFavoriteAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type RemoveFavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type RemoveFavoriteAlbumVariables = {
+  pathParams: RemoveFavoriteAlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRemoveFavoriteAlbum = (
+  variables: RemoveFavoriteAlbumVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    RemoveFavoriteAlbumError,
+    undefined,
+    {},
+    {},
+    RemoveFavoriteAlbumPathParams
+  >({
+    url: "/api/Library/albums/{albumId}/favorite",
+    method: "delete",
+    ...variables,
+    signal,
+  });
+
+export const useRemoveFavoriteAlbum = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      RemoveFavoriteAlbumError,
+      RemoveFavoriteAlbumVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RemoveFavoriteAlbumError,
+    RemoveFavoriteAlbumVariables
+  >({
+    mutationFn: (variables: RemoveFavoriteAlbumVariables) =>
+      fetchRemoveFavoriteAlbum(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
 export type TracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type TracksResponse = Schemas.TrackDto[];
@@ -1994,6 +2606,21 @@ export type QueryOperation =
       path: "/api/Library/tracks/{trackId}/recommendations";
       operationId: "recommendationsForTrack";
       variables: RecommendationsForTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/tracks/favorites";
+      operationId: "favoriteTracks";
+      variables: FavoriteTracksVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/albums/favorites";
+      operationId: "favoriteAlbums";
+      variables: FavoriteAlbumsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/artists/favorites";
+      operationId: "favoriteArtists";
+      variables: FavoriteArtistsVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/tracks";

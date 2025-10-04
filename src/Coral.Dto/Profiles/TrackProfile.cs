@@ -8,7 +8,9 @@ public class TrackProfile : Profile
 {
     public TrackProfile()
     {
-        CreateMap<Track, TrackDto>();
-        CreateMap<Track, SimpleTrackDto>();
+        CreateMap<Track, TrackDto>()
+            .ForMember(dest => dest.Favorited, opt => opt.MapFrom(src => src.Favorite != null));
+        CreateMap<Track, SimpleTrackDto>()
+            .ForMember(dest => dest.Favorited, opt => opt.MapFrom(src => src.Favorite != null));
     }
 }

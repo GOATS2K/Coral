@@ -56,6 +56,18 @@ export const themeAtom = atom<ResolvedTheme>((get) => {
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
+export enum PlaybackSource {
+  Album = 'album',
+  Search = 'search',
+  Favorites = 'favorites',
+  Home = 'home',
+}
+
+export interface PlaybackInitializer {
+  source: PlaybackSource;
+  id: string; // Album ID, search query, etc.
+}
+
 export interface PlayerState {
   currentTrack: SimpleTrackDto | null;
   queue: SimpleTrackDto[];
@@ -64,6 +76,7 @@ export interface PlayerState {
   repeat: RepeatMode;
   isShuffled: boolean;
   originalQueue: SimpleTrackDto[] | null;
+  initializer: PlaybackInitializer | null;
 }
 
 export const playerStateAtom = atom<PlayerState>({
@@ -74,6 +87,7 @@ export const playerStateAtom = atom<PlayerState>({
   repeat: 'off',
   isShuffled: false,
   originalQueue: null,
+  initializer: null,
 })
 
 // Albums screen scroll state
@@ -92,3 +106,6 @@ export const albumsScrollStateAtom = atom<AlbumsScrollState>({
   firstVisibleIndex: 0,
   savedFirstVisibleIndex: 0,
 })
+
+// Search state - stores last search query for restoration
+export const lastSearchQueryAtom = atom<string>('')

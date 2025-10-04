@@ -20,6 +20,7 @@ export type AlbumDto = {
    * @format date-time
    */
   createdAt: string;
+  favorited: boolean;
   tracks: SimpleTrackDto[];
   genres: GenreDto[];
 };
@@ -46,6 +47,7 @@ export type ArtistWithRoleDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
   role: ArtistRole;
 };
 
@@ -194,6 +196,7 @@ export type SimpleAlbumDto = {
    * @format date-time
    */
   createdAt: string;
+  favorited: boolean;
 };
 
 export type SimpleAlbumDtoPaginatedQuery = {
@@ -218,6 +221,7 @@ export type SimpleArtistDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
 };
 
 export type SimpleArtistDtoPaginatedQuery = {
@@ -265,6 +269,7 @@ export type SimpleTrackDto = {
   album: SimpleTrackAlbumDto;
   artists: ArtistWithRoleDto[];
   genre?: GenreDto;
+  favorited: boolean;
 };
 
 export type StreamDto = {
@@ -295,6 +300,7 @@ export type TrackDto = {
   artists: ArtistWithRoleDto[];
   album: SimpleAlbumDto;
   genre?: GenreDto;
+  favorited: boolean;
 };
 
 export type TranscodeInfoDto = {

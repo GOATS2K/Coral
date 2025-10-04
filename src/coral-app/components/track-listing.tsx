@@ -2,14 +2,16 @@ import { Pressable, View, Platform, Image } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
 import { usePlayer } from '@/lib/player/use-player';
-import { Sparkles, Plus, User } from 'lucide-react-native';
+import { Sparkles, Plus, User, Heart } from 'lucide-react-native';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useSetAtom } from 'jotai';
-import { playerStateAtom } from '@/lib/state';
+import { playerStateAtom, PlaybackInitializer } from '@/lib/state';
 import { addToQueue, findSimilarAndAddToQueue } from '@/lib/player/player-queue-utils';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { useRouter } from 'expo-router';
+import { useFavoriteTrack, useRemoveFavoriteTrack } from '@/lib/client/components';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -26,13 +28,17 @@ interface TrackListingProps {
   showTrackNumber?: boolean;
   showCoverArt?: boolean;
   className?: string;
+  initializer?: PlaybackInitializer;
 }
 
-export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className }: TrackListingProps) {
+export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
   const { play, activeTrack } = usePlayer();
   const setState = useSetAtom(playerStateAtom);
   const { showToast } = useToast();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const favoriteMutation = useFavoriteTrack();
+  const removeFavoriteMutation = useRemoveFavoriteTrack();
 
   const hasMultipleDiscs = new Set(tracks.map(t => t.discNumber || 1)).size > 1;
 
@@ -60,6 +66,28 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
     router.push(`/artists/${artistId}`);
   };
 
+  const handleLikeTrack = async (trackId: string, trackTitle: string, isFavorited: boolean) => {
+    try {
+      if (isFavorited) {
+        await removeFavoriteMutation.mutateAsync({
+          pathParams: { trackId },
+        });
+        showToast(`Removed "${trackTitle}" from favorites`);
+      } else {
+        await favoriteMutation.mutateAsync({
+          pathParams: { trackId },
+        });
+        showToast(`Liked "${trackTitle}"`);
+      }
+
+      // Invalidate all queries that might contain this track
+      await queryClient.invalidateQueries();
+    } catch (error) {
+      showToast(isFavorited ? 'Failed to remove favorite' : 'Failed to like track');
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
   return (
     <>
       <View className={className}>
@@ -71,7 +99,7 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
             <ContextMenu key={track.id}>
               <ContextMenuTrigger>
                 <Pressable
-                  onPress={() => play(tracks, index)}
+                  onPress={() => play(tracks, index, initializer)}
                   className={`flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30 rounded-md -mx-2 px-2 ${isActive ? 'bg-primary/10' : ''}`}
                 >
                   {showCoverArt ? (
@@ -106,6 +134,11 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
               </ContextMenuTrigger>
 
               <ContextMenuContent className="w-56">
+                <ContextMenuItem onPress={() => handleLikeTrack(track.id, track.title, track.favorited)}>
+                  <Heart size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
+                  <Text>{track.favorited ? 'Remove from favorites' : 'Like'}</Text>
+                </ContextMenuItem>
+
                 <ContextMenuItem onPress={() => handleFindSimilar(track.id)}>
                   <Sparkles size={14} className="text-foreground" />
                   <Text>Find similar songs</Text>

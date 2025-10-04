@@ -151,7 +151,6 @@ export default function ArtistScreen() {
               title="EPs"
               albums={eps}
               showDivider={miniAlbums.length > 0}
-              dividerLabel="Mini Albums"
               albumsAfterDivider={miniAlbums}
             />
             <AlbumSection title="Singles" albums={singles} />

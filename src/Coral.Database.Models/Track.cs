@@ -17,6 +17,7 @@ public class Track : BaseTable
 
     public AudioFile AudioFile { get; set; } = null!;
     public List<Keyword> Keywords { get; set; } = null!;
+    public FavoriteTrack? Favorite { get; set; }
 
     public override string ToString()
     {

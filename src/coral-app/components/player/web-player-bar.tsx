@@ -6,7 +6,7 @@ import { PlayerControls } from './player-controls';
 import { PlayerProgress } from './player-progress';
 import { PlayerQueue } from './player-queue';
 import { PlayerVolume } from './player-volume';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
 import { reorderQueue, removeFromQueue, findSimilarAndAddToQueue, shuffleQueue, cycleRepeat } from '@/lib/player/player-queue-utils';
 import { useToast } from '@/lib/hooks/use-toast';
@@ -35,6 +35,7 @@ export function WebPlayerBar() {
   } = usePlayer();
 
   const setState = useSetAtom(playerStateAtom);
+  const playerState = useAtomValue(playerStateAtom);
   const { showToast } = useToast();
 
   useMediaSession({ activeTrack, togglePlayPause, skip, seekTo });
@@ -48,7 +49,7 @@ export function WebPlayerBar() {
   return (
     <View className="bg-card border-t border-border h-24 flex-row items-center px-4 py-3 gap-4">
       {/* Album Art & Track Info */}
-      <PlayerTrackInfo track={activeTrack} />
+      <PlayerTrackInfo track={activeTrack} initializer={playerState.initializer} />
 
       {/* Playback Controls & Progress */}
       <View className="flex-1 max-w-2xl flex-col gap-2">

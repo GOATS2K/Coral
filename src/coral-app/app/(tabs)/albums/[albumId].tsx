@@ -1,15 +1,19 @@
 import { ColorValue, Image, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useAlbum } from '@/lib/client/components';
+import { useAlbum, useFavoriteAlbum, useRemoveFavoriteAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { AlbumDto } from '@/lib/client/schemas';
 import { baseUrl } from '@/lib/client/fetcher';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
+import { themeAtom, playerStateAtom, PlaybackSource } from '@/lib/state';
 import { TrackListing } from '@/components/track-listing';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
+import { useQueryClient } from '@tanstack/react-query';
+import { Heart, Play, Pause } from 'lucide-react-native';
+import { usePlayer } from '@/lib/player/use-player';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -23,6 +27,52 @@ interface AlbumHeaderCardProps {
 }
 
 function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundColor }: AlbumHeaderCardProps) {
+  const queryClient = useQueryClient();
+  const favoriteMutation = useFavoriteAlbum();
+  const removeFavoriteMutation = useRemoveFavoriteAlbum();
+  const { play, togglePlayPause, isPlaying } = usePlayer();
+  const playerState = useAtomValue(playerStateAtom);
+
+  // Check if this album is currently playing using the initializer
+  const isThisAlbumPlaying =
+    playerState.initializer?.source === PlaybackSource.Album &&
+    playerState.initializer?.id === album.id &&
+    isPlaying;
+
+  const handlePlayPause = () => {
+    if (playerState.initializer?.source === PlaybackSource.Album && playerState.initializer?.id === album.id) {
+      // Same album - toggle play/pause
+      togglePlayPause();
+    } else {
+      // Different album or nothing playing - start from beginning
+      if (album.tracks && album.tracks.length > 0) {
+        play(album.tracks, 0, {
+          source: PlaybackSource.Album,
+          id: album.id,
+        });
+      }
+    }
+  };
+
+  const handleLikeAlbum = async () => {
+    try {
+      if (album.favorited) {
+        await removeFavoriteMutation.mutateAsync({
+          pathParams: { albumId: album.id },
+        });
+      } else {
+        await favoriteMutation.mutateAsync({
+          pathParams: { albumId: album.id },
+        });
+      }
+
+      // Invalidate queries to update favorited state
+      await queryClient.invalidateQueries();
+    } catch (error) {
+      console.error('Error toggling favorite album:', error);
+    }
+  };
+
   // Get the medium artwork URL, fallback to small if not available
   const artworkPath = album.artworks?.medium ?? "";
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
@@ -51,7 +101,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
   if (allGenres.length > 0) infoParts.push(allGenres.join(', '));
 
   return (
-    <View className="h-[350px] sm:h-[250px] overflow-hidden">
+    <View className="overflow-hidden">
       <LinearGradient
         colors={gradientColors as ColorValue[]}
         locations={gradientLocations}
@@ -60,9 +110,9 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
       <BlurView
         intensity={60}
         tint="dark"
-        className="flex-1 flex justify-center"
+        className="flex-1"
       >
-        <View className="flex-col sm:flex-row gap-4 px-4 items-center sm:items-start">
+        <View className="flex-col sm:flex-row gap-4 px-4 py-6 items-center sm:items-start">
           {/* Album Cover */}
           <View className="mx-auto sm:mx-0 w-[200px] h-[200px]">
             {artworkUrl ? (
@@ -79,8 +129,8 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
           </View>
 
           {/* Album Info */}
-          <View className="flex-1 flex-col justify-center items-center sm:items-start">
-            <View className="gap-2">
+          <View className="flex-1 flex-col items-center sm:items-start sm:h-[200px] sm:justify-between">
+            <View className="gap-1">
               {/* Album Title */}
               <Text variant="h4" className="text-white font-bold text-center sm:text-left drop-shadow-lg">
                 {album.name}
@@ -90,16 +140,42 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
               <Text variant="small" className="text-white text-center sm:text-left drop-shadow-md">
                 {artistNames}
               </Text>
-            </View>
 
-            {/* Metadata */}
-            {infoParts.length > 0 && (
-              <View className="mt-3">
-                <Text variant="small" className="text-white/90 text-center sm:text-left drop-shadow-md">
+              {/* Metadata */}
+              {infoParts.length > 0 && (
+                <Text variant="small" className="text-white/90 text-center sm:text-left drop-shadow-md mt-1">
                   {infoParts.join(' • ')}
                 </Text>
-              </View>
-            )}
+              )}
+            </View>
+
+            {/* Action Buttons */}
+            <View className="mt-4 flex-row gap-2">
+              <Button
+                onPress={handlePlayPause}
+                className="bg-white web:hover:bg-white/90 active:bg-white/80"
+              >
+                {isThisAlbumPlaying ? (
+                  <>
+                    <Pause size={18} color="#000" fill="#000" />
+                    <Text className="text-black font-medium">Pause</Text>
+                  </>
+                ) : (
+                  <>
+                    <Play size={18} color="#000" fill="#000" />
+                    <Text className="text-black font-medium">Play</Text>
+                  </>
+                )}
+              </Button>
+              <Button
+                onPress={handleLikeAlbum}
+                variant="outline"
+                className="border-white bg-white/10 web:hover:bg-white/20 active:bg-white/30"
+              >
+                <Heart size={18} className="text-white" fill={album.favorited ? "white" : "none"} />
+                <Text className="text-white font-medium">{album.favorited ? 'Unlike' : 'Like'}</Text>
+              </Button>
+            </View>
           </View>
         </View>
       </BlurView>
@@ -210,6 +286,7 @@ export default function Screen() {
             album={data}
             showTrackNumber={true}
             className="px-4 sm:px-6 pb-20 mt-6"
+            initializer={{ source: PlaybackSource.Album, id: data.id }}
           />
         </ScrollView>
       </View>

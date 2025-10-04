@@ -1,20 +1,28 @@
 import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform } from 'react-native';
-import { Stack, Link } from 'expo-router';
+import { Stack, Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchSearch } from '@/lib/client/components';
 import { TrackListing } from '@/components/track-listing';
+import { ArtistCard } from '@/components/artist-card';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Music2 } from 'lucide-react-native';
-import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
+import { useAtom, useAtomValue } from 'jotai';
+import { lastSearchQueryAtom, PlaybackSource, themeAtom } from '@/lib/state';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 
 export default function SearchScreen() {
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const params = useLocalSearchParams();
+  const router = useRouter();
+  const [lastSearchQuery, setLastSearchQuery] = useAtom(lastSearchQueryAtom);
+  const isUpdatingUrlRef = useRef(false);
+
+  // Initialize from URL param, fallback to atom
+  const initialQuery = (params.q as string) || lastSearchQuery;
+  const [query, setQuery] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [expandedSections, setExpandedSections] = useState({
     artists: false,
     albums: false,
@@ -26,6 +34,17 @@ export default function SearchScreen() {
   const INITIAL_ALBUMS_LIMIT = 9;
   const ITEMS_PER_PAGE = 50;
 
+  // Sync URL param changes to local state (browser back/forward)
+  useEffect(() => {
+    if (isUpdatingUrlRef.current) {
+      isUpdatingUrlRef.current = false;
+      return;
+    }
+    const urlQuery = params.q as string || '';
+    setQuery(urlQuery);
+    setDebouncedQuery(urlQuery);
+  }, [params.q]);
+
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -33,6 +52,23 @@ export default function SearchScreen() {
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Save debounced query to atom and URL parameter
+  useEffect(() => {
+    if (debouncedQuery) {
+      setLastSearchQuery(debouncedQuery);
+      // Only update URL if it's different from current param
+      if (params.q !== debouncedQuery) {
+        isUpdatingUrlRef.current = true;
+        router.setParams({ q: debouncedQuery });
+      }
+    } else {
+      if (params.q) {
+        isUpdatingUrlRef.current = true;
+        router.setParams({ q: undefined });
+      }
+    }
+  }, [debouncedQuery, setLastSearchQuery, router, params.q]);
 
   // Reset expanded sections when query changes
   useEffect(() => {
@@ -150,11 +186,7 @@ export default function SearchScreen() {
                     {artists
                       .slice(0, expandedSections.artists ? undefined : INITIAL_LIMIT)
                       .map((artist) => (
-                        <Link key={artist.id} href={`/artists/${artist.id}`} asChild>
-                          <Pressable className="py-3 px-4 bg-muted/30 rounded-lg web:hover:bg-muted/50 active:bg-muted/60">
-                            <Text className="font-medium">{artist.name}</Text>
-                          </Pressable>
-                        </Link>
+                        <ArtistCard key={artist.id} artist={artist} />
                       ))}
                   </View>
                   {artists.length > INITIAL_LIMIT && !expandedSections.artists && (
@@ -233,6 +265,7 @@ export default function SearchScreen() {
                     tracks={tracks}
                     showTrackNumber={false}
                     showCoverArt={true}
+                    initializer={{ source: PlaybackSource.Search, id: debouncedQuery }}
                   />
                 </View>
               )}

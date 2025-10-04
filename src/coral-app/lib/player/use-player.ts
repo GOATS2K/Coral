@@ -2,7 +2,7 @@ import { useAudioPlayerStatus } from 'expo-audio';
 import { useAtom, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
-import { playerStateAtom } from '@/lib/state';
+import { playerStateAtom, PlaybackInitializer } from '@/lib/state';
 import { useDualPlayers } from './player-provider';
 import { loadTrack, waitForPlayerLoaded } from './player-utils';
 
@@ -18,7 +18,7 @@ export function usePlayer() {
   const status = useAudioPlayerStatus(activePlayer);
   const bufferStatus = useAudioPlayerStatus(bufferPlayer);
 
-  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0) => {
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
     setPosition(0);
 
@@ -35,6 +35,7 @@ export function usePlayer() {
       repeat: 'off',
       isShuffled: false,
       originalQueue: null,
+      initializer: initializer || null,
     });
     loadTrack(playerA, track.id);
     playerATrackIdRef.current = track.id;
@@ -293,7 +294,7 @@ export function usePlayerActions() {
   const { playerA, playerB } = useDualPlayers();
   const setState = useSetAtom(playerStateAtom);
 
-  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0) => {
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
 
     playerA.pause();
@@ -309,6 +310,7 @@ export function usePlayerActions() {
       repeat: 'off',
       isShuffled: false,
       originalQueue: null,
+      initializer: initializer || null,
     });
     loadTrack(playerA, track.id);
     await waitForPlayerLoaded(playerA);

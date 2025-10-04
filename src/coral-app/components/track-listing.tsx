@@ -2,25 +2,21 @@ import { Pressable, View, Platform, Image } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
 import { usePlayer } from '@/lib/player/use-player';
-import { Sparkles, Plus, User, Heart } from 'lucide-react-native';
-import { useToast } from '@/lib/hooks/use-toast';
-import { useSetAtom } from 'jotai';
-import { playerStateAtom, PlaybackInitializer } from '@/lib/state';
-import { addToQueue, findSimilarAndAddToQueue } from '@/lib/player/player-queue-utils';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useRouter } from 'expo-router';
-import { useToggleFavoriteTrack } from '@/lib/hooks/use-toggle-favorite-track';
 import { useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { TrackMenuItems } from '@/components/menu-items/track-menu-items';
+import { PlaybackInitializer } from '@/lib/state';
 
 interface TrackListingProps {
   tracks: SimpleTrackDto[];
@@ -50,10 +46,6 @@ function TrackArtwork({ albumId }: { albumId: string }) {
 
 export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
   const { play, activeTrack } = usePlayer();
-  const setState = useSetAtom(playerStateAtom);
-  const { showToast } = useToast();
-  const router = useRouter();
-  const { toggleFavorite } = useToggleFavoriteTrack();
 
   const hasMultipleDiscs = new Set(tracks.map(t => t.discNumber || 1)).size > 1;
 
@@ -66,19 +58,6 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
   const formatTrackNumber = (track: SimpleTrackDto) => {
     const num = track.trackNumber.toString().padStart(2, '0');
     return hasMultipleDiscs ? `${track.discNumber || 1}.${num}` : num;
-  };
-
-  const handleFindSimilar = async (trackId: string) => {
-    await findSimilarAndAddToQueue(trackId, setState, showToast);
-  };
-
-  const handleAddToQueue = (track: SimpleTrackDto) => {
-    addToQueue(setState, track);
-    showToast(`Added "${track.title}" to queue`);
-  };
-
-  const handleGoToArtist = (artistId: string) => {
-    router.push(`/artists/${artistId}`);
   };
 
   return (
@@ -118,37 +97,16 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
               </ContextMenuTrigger>
 
               <ContextMenuContent className="w-56">
-                <ContextMenuItem onPress={() => toggleFavorite(track)}>
-                  <Heart size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
-                  <Text>{track.favorited ? 'Remove from favorites' : 'Like'}</Text>
-                </ContextMenuItem>
-
-                <ContextMenuItem onPress={() => handleFindSimilar(track.id)}>
-                  <Sparkles size={14} className="text-foreground" />
-                  <Text>Find similar songs</Text>
-                </ContextMenuItem>
-
-                <ContextMenuItem onPress={() => handleAddToQueue(track)}>
-                  <Plus size={14} className="text-foreground" />
-                  <Text>Add to queue</Text>
-                </ContextMenuItem>
-
-                {/* Artists */}
-                {track.artists && track.artists.length > 0 && (
-                  <ContextMenuSub>
-                    <ContextMenuSubTrigger>
-                      <User size={14} className="text-foreground" />
-                      <Text>Artists</Text>
-                    </ContextMenuSubTrigger>
-                    <ContextMenuSubContent>
-                      {track.artists.map((artist) => (
-                        <ContextMenuItem key={artist.id} onPress={() => handleGoToArtist(artist.id)}>
-                          <Text>{artist.name} ({artist.role})</Text>
-                        </ContextMenuItem>
-                      ))}
-                    </ContextMenuSubContent>
-                  </ContextMenuSub>
-                )}
+                <TrackMenuItems
+                  track={track}
+                  components={{
+                    MenuItem: ContextMenuItem,
+                    MenuSub: ContextMenuSub,
+                    MenuSubTrigger: ContextMenuSubTrigger,
+                    MenuSubContent: ContextMenuSubContent,
+                    MenuSeparator: ContextMenuSeparator,
+                  }}
+                />
               </ContextMenuContent>
             </ContextMenu>
           );

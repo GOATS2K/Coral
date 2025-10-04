@@ -4,14 +4,13 @@ import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
 import { useState, memo } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
-import { PlayIcon, MoreVerticalIcon, HeartIcon, ListPlusIcon } from 'lucide-react-native';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { themeAtom, playerStateAtom } from '@/lib/state';
+import { PlayIcon, MoreVerticalIcon } from 'lucide-react-native';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAtomValue } from 'jotai';
+import { themeAtom } from '@/lib/state';
 import { usePlayerActions } from '@/lib/player/use-player';
-import { addMultipleToQueue } from '@/lib/player/player-queue-utils';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
+import { AlbumMenuItems } from '@/components/menu-items/album-menu-items';
 
 interface AlbumCardProps {
   album: SimpleAlbumDto;
@@ -21,8 +20,6 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
   const isWeb = Platform.OS === 'web';
   const theme = useAtomValue(themeAtom);
   const { play } = usePlayerActions();
-  const setState = useSetAtom(playerStateAtom);
-  const { toggleFavorite } = useToggleFavoriteAlbum();
   const artworkSize = isWeb ? 150 : 180;
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
@@ -49,17 +46,6 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
       }
     } catch (error) {
       console.error('Error playing album:', error);
-    }
-  };
-
-  const handleAddToQueue = async () => {
-    try {
-      const tracks = await fetchAlbumTracks();
-      if (tracks && tracks.length > 0) {
-        addMultipleToQueue(setState, tracks);
-      }
-    } catch (error) {
-      console.error('Error adding to queue:', error);
     }
   };
 
@@ -113,18 +99,16 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
                       </Pressable>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48">
-                      <DropdownMenuItem onPress={() => toggleFavorite(album)}>
-                        <HeartIcon
-                          size={16}
-                          color={theme === 'dark' ? '#fff' : '#000'}
-                          fill={album.favorited ? (theme === 'dark' ? '#fff' : '#000') : 'none'}
-                        />
-                        <Text>{album.favorited ? 'Remove from favorites' : 'Like Album'}</Text>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onPress={handleAddToQueue}>
-                        <ListPlusIcon size={16} color={theme === 'dark' ? '#fff' : '#000'} />
-                        <Text>Add to Queue</Text>
-                      </DropdownMenuItem>
+                      <AlbumMenuItems
+                        album={album}
+                        components={{
+                          MenuItem: DropdownMenuItem,
+                          MenuSub: DropdownMenuSub,
+                          MenuSubTrigger: DropdownMenuSubTrigger,
+                          MenuSubContent: DropdownMenuSubContent,
+                          MenuSeparator: DropdownMenuSeparator,
+                        }}
+                      />
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </View>

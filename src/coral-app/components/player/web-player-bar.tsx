@@ -8,8 +8,7 @@ import { PlayerQueue } from './player-queue';
 import { PlayerVolume } from './player-volume';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
-import { reorderQueue, removeFromQueue, findSimilarAndAddToQueue, shuffleQueue, cycleRepeat } from '@/lib/player/player-queue-utils';
-import { useToast } from '@/lib/hooks/use-toast';
+import { reorderQueue, shuffleQueue, cycleRepeat } from '@/lib/player/player-queue-utils';
 
 export function WebPlayerBar() {
   if (Platform.OS !== 'web') {
@@ -36,7 +35,6 @@ export function WebPlayerBar() {
 
   const setState = useSetAtom(playerStateAtom);
   const playerState = useAtomValue(playerStateAtom);
-  const { showToast } = useToast();
 
   useMediaSession({ activeTrack, togglePlayPause, skip, seekTo });
 
@@ -72,8 +70,6 @@ export function WebPlayerBar() {
           currentIndex={currentIndex}
           reorderQueue={(fromIndex, toIndex) => reorderQueue(setState, fromIndex, toIndex)}
           playFromIndex={playFromIndex}
-          removeFromQueue={(index) => removeFromQueue(setState, index)}
-          findSimilarAndAddToQueue={(trackId) => findSimilarAndAddToQueue(trackId, setState, showToast)}
         />
         <PlayerVolume volume={volume} isMuted={isMuted} setVolume={setVolume} toggleMute={toggleMute} />
       </View>

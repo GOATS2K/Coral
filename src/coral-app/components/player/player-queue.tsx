@@ -2,23 +2,26 @@ import { useState } from 'react';
 import { View, Image, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ListMusic, Trash2, Play, Sparkles } from 'lucide-react-native';
+import { ListMusic, Play } from 'lucide-react-native';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { getArtistNames, getArtworkUrl } from '@/lib/player/player-format-utils';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { TrackMenuItems } from '@/components/menu-items/track-menu-items';
 
 interface PlayerQueueProps {
   queue: SimpleTrackDto[];
   currentIndex: number;
   reorderQueue: (fromIndex: number, toIndex: number) => void;
   playFromIndex: (index: number) => void;
-  removeFromQueue: (index: number) => void;
-  findSimilarAndAddToQueue: (trackId: string) => Promise<void>;
 }
 
 export function PlayerQueue({
@@ -26,8 +29,6 @@ export function PlayerQueue({
   currentIndex,
   reorderQueue,
   playFromIndex,
-  removeFromQueue,
-  findSimilarAndAddToQueue,
 }: PlayerQueueProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -135,15 +136,17 @@ export function PlayerQueue({
                   </ContextMenuTrigger>
 
                   <ContextMenuContent className="w-56">
-                    <ContextMenuItem onPress={() => findSimilarAndAddToQueue(track.id)}>
-                      <Sparkles size={14} className="text-foreground" />
-                      <Text>Add similar songs</Text>
-                    </ContextMenuItem>
-
-                    <ContextMenuItem variant="destructive" onPress={() => removeFromQueue(index)}>
-                      <Trash2 size={14} className="text-destructive" />
-                      <Text>Remove from queue</Text>
-                    </ContextMenuItem>
+                    <TrackMenuItems
+                      track={track}
+                      components={{
+                        MenuItem: ContextMenuItem,
+                        MenuSub: ContextMenuSub,
+                        MenuSubTrigger: ContextMenuSubTrigger,
+                        MenuSubContent: ContextMenuSubContent,
+                        MenuSeparator: ContextMenuSeparator,
+                      }}
+                      isQueueContext={true}
+                    />
                   </ContextMenuContent>
                 </ContextMenu>
               );

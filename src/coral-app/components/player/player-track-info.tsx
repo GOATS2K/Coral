@@ -5,19 +5,20 @@ import { Link, useRouter } from 'expo-router';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { getArtworkUrl } from '@/lib/player/player-format-utils';
 import { PlaybackInitializer, PlaybackSource } from '@/lib/state';
-import { MoreVertical, Heart, User } from 'lucide-react-native';
+import { MoreVertical } from 'lucide-react-native';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
-import { useToggleFavoriteTrack } from '@/lib/hooks/use-toggle-favorite-track';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TrackMenuItems } from '@/components/menu-items/track-menu-items';
 
 interface PlayerTrackInfoProps {
   track: SimpleTrackDto;
@@ -29,7 +30,6 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
   const mainArtists = track.artists.filter(a => a.role === 'Main');
   const router = useRouter();
   const theme = useAtomValue(themeAtom);
-  const { toggleFavorite } = useToggleFavoriteTrack();
 
   const handleTrackTitleClick = () => {
     if (!initializer) return;
@@ -46,10 +46,6 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
         router.push('/');
         break;
     }
-  };
-
-  const handleGoToArtist = (artistId: string) => {
-    router.push(`/artists/${artistId}`);
   };
 
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
@@ -108,28 +104,16 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
           </Pressable>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
-          {/* Like Track */}
-          <DropdownMenuItem onPress={() => toggleFavorite(track)}>
-            <Heart size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
-            <Text>{track.favorited ? 'Remove from favorites' : 'Like'}</Text>
-          </DropdownMenuItem>
-
-          {/* Artists */}
-          {track.artists && track.artists.length > 0 && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <User size={14} className="text-foreground" />
-                <Text>Artists</Text>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {track.artists.map((artist) => (
-                  <DropdownMenuItem key={artist.id} onPress={() => handleGoToArtist(artist.id)}>
-                    <Text>{artist.name} ({artist.role})</Text>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
+          <TrackMenuItems
+            track={track}
+            components={{
+              MenuItem: DropdownMenuItem,
+              MenuSub: DropdownMenuSub,
+              MenuSubTrigger: DropdownMenuSubTrigger,
+              MenuSubContent: DropdownMenuSubContent,
+              MenuSeparator: DropdownMenuSeparator,
+            }}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
     </View>

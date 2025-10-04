@@ -4,38 +4,19 @@ import { Link } from 'expo-router';
 import { memo } from 'react';
 import type { SimpleArtistDto } from '@/lib/client/schemas';
 import { Heart } from 'lucide-react-native';
-import { useFavoriteArtist, useRemoveFavoriteArtist } from '@/lib/client/components';
-import { useQueryClient } from '@tanstack/react-query';
+import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
 
 interface ArtistCardProps {
   artist: SimpleArtistDto;
 }
 
 export const ArtistCard = memo(function ArtistCard({ artist }: ArtistCardProps) {
-  const queryClient = useQueryClient();
-  const favoriteMutation = useFavoriteArtist();
-  const removeFavoriteMutation = useRemoveFavoriteArtist();
+  const { toggleFavorite } = useToggleFavoriteArtist();
 
   const handleLikeArtist = async (e: any) => {
     e.preventDefault();
     e.stopPropagation();
-
-    try {
-      if (artist.favorited) {
-        await removeFavoriteMutation.mutateAsync({
-          pathParams: { artistId: artist.id },
-        });
-      } else {
-        await favoriteMutation.mutateAsync({
-          pathParams: { artistId: artist.id },
-        });
-      }
-
-      // Invalidate queries to update favorited state
-      await queryClient.invalidateQueries();
-    } catch (error) {
-      console.error('Error toggling favorite artist:', error);
-    }
+    await toggleFavorite(artist);
   };
 
   return (

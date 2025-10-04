@@ -11,8 +11,7 @@ import { themeAtom, playerStateAtom } from '@/lib/state';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { addMultipleToQueue } from '@/lib/player/player-queue-utils';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useFavoriteAlbum, useRemoveFavoriteAlbum } from '@/lib/client/components';
-import { useQueryClient } from '@tanstack/react-query';
+import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 
 interface AlbumCardProps {
   album: SimpleAlbumDto;
@@ -23,9 +22,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
   const theme = useAtomValue(themeAtom);
   const { play } = usePlayerActions();
   const setState = useSetAtom(playerStateAtom);
-  const queryClient = useQueryClient();
-  const favoriteMutation = useFavoriteAlbum();
-  const removeFavoriteMutation = useRemoveFavoriteAlbum();
+  const { toggleFavorite } = useToggleFavoriteAlbum();
   const artworkSize = isWeb ? 150 : 180;
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
@@ -52,25 +49,6 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
       }
     } catch (error) {
       console.error('Error playing album:', error);
-    }
-  };
-
-  const handleLikeAlbum = async () => {
-    try {
-      if (album.favorited) {
-        await removeFavoriteMutation.mutateAsync({
-          pathParams: { albumId: album.id },
-        });
-      } else {
-        await favoriteMutation.mutateAsync({
-          pathParams: { albumId: album.id },
-        });
-      }
-
-      // Invalidate queries to update favorited state
-      await queryClient.invalidateQueries();
-    } catch (error) {
-      console.error('Error toggling favorite album:', error);
     }
   };
 
@@ -135,7 +113,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
                       </Pressable>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48">
-                      <DropdownMenuItem onPress={handleLikeAlbum}>
+                      <DropdownMenuItem onPress={() => toggleFavorite(album)}>
                         <HeartIcon
                           size={16}
                           color={theme === 'dark' ? '#fff' : '#000'}

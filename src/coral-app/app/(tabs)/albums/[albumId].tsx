@@ -1,6 +1,6 @@
 import { ColorValue, Image, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useAlbum, useFavoriteAlbum, useRemoveFavoriteAlbum } from '@/lib/client/components';
+import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { AlbumDto } from '@/lib/client/schemas';
@@ -11,9 +11,9 @@ import { useAtomValue } from 'jotai';
 import { themeAtom, playerStateAtom, PlaybackSource } from '@/lib/state';
 import { TrackListing } from '@/components/track-listing';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useQueryClient } from '@tanstack/react-query';
 import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
+import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -27,9 +27,7 @@ interface AlbumHeaderCardProps {
 }
 
 function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundColor }: AlbumHeaderCardProps) {
-  const queryClient = useQueryClient();
-  const favoriteMutation = useFavoriteAlbum();
-  const removeFavoriteMutation = useRemoveFavoriteAlbum();
+  const { toggleFavorite } = useToggleFavoriteAlbum();
   const { play, togglePlayPause, isPlaying } = usePlayer();
   const playerState = useAtomValue(playerStateAtom);
 
@@ -51,25 +49,6 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
           id: album.id,
         });
       }
-    }
-  };
-
-  const handleLikeAlbum = async () => {
-    try {
-      if (album.favorited) {
-        await removeFavoriteMutation.mutateAsync({
-          pathParams: { albumId: album.id },
-        });
-      } else {
-        await favoriteMutation.mutateAsync({
-          pathParams: { albumId: album.id },
-        });
-      }
-
-      // Invalidate queries to update favorited state
-      await queryClient.invalidateQueries();
-    } catch (error) {
-      console.error('Error toggling favorite album:', error);
     }
   };
 
@@ -168,7 +147,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
                 )}
               </Button>
               <Button
-                onPress={handleLikeAlbum}
+                onPress={() => toggleFavorite(album)}
                 variant="outline"
                 className="border-white bg-white/10 web:hover:bg-white/20 active:bg-white/30"
               >

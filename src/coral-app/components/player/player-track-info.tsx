@@ -8,9 +8,7 @@ import { PlaybackInitializer, PlaybackSource } from '@/lib/state';
 import { MoreVertical, Heart, User } from 'lucide-react-native';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
-import { useFavoriteTrack, useRemoveFavoriteTrack } from '@/lib/client/components';
-import { useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useToggleFavoriteTrack } from '@/lib/hooks/use-toggle-favorite-track';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,10 +29,7 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
   const mainArtists = track.artists.filter(a => a.role === 'Main');
   const router = useRouter();
   const theme = useAtomValue(themeAtom);
-  const queryClient = useQueryClient();
-  const favoriteMutation = useFavoriteTrack();
-  const removeFavoriteMutation = useRemoveFavoriteTrack();
-  const { showToast } = useToast();
+  const { toggleFavorite } = useToggleFavoriteTrack();
 
   const handleTrackTitleClick = () => {
     if (!initializer) return;
@@ -50,26 +45,6 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
       case PlaybackSource.Home:
         router.push('/');
         break;
-    }
-  };
-
-  const handleLikeTrack = async () => {
-    try {
-      if (track.favorited) {
-        await removeFavoriteMutation.mutateAsync({
-          pathParams: { trackId: track.id },
-        });
-        showToast(`Removed "${track.title}" from favorites`);
-      } else {
-        await favoriteMutation.mutateAsync({
-          pathParams: { trackId: track.id },
-        });
-        showToast(`Liked "${track.title}"`);
-      }
-      await queryClient.invalidateQueries();
-    } catch (error) {
-      showToast(track.favorited ? 'Failed to remove favorite' : 'Failed to like track');
-      console.error('Error toggling favorite:', error);
     }
   };
 
@@ -134,7 +109,7 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           {/* Like Track */}
-          <DropdownMenuItem onPress={handleLikeTrack}>
+          <DropdownMenuItem onPress={() => toggleFavorite(track)}>
             <Heart size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
             <Text>{track.favorited ? 'Remove from favorites' : 'Like'}</Text>
           </DropdownMenuItem>

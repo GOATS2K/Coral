@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
 import { TrackListing } from '@/components/track-listing';
+import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -71,8 +72,8 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
                 resizeMode="cover"
               />
             ) : (
-              <View className="w-full h-full rounded-lg bg-muted items-center justify-center">
-                <Text variant="muted" className="text-white/70">No Cover</Text>
+              <View className="w-full h-full rounded-lg overflow-hidden">
+                <MissingAlbumCover size={80} />
               </View>
             )}
           </View>

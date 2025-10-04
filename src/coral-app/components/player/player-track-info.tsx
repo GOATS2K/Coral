@@ -3,7 +3,7 @@ import { Text } from '@/components/ui/text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'expo-router';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
-import { getArtistNames, getArtworkUrl } from '@/lib/player/player-format-utils';
+import { getArtworkUrl } from '@/lib/player/player-format-utils';
 
 interface PlayerTrackInfoProps {
   track: SimpleTrackDto;
@@ -11,7 +11,7 @@ interface PlayerTrackInfoProps {
 
 export function PlayerTrackInfo({ track }: PlayerTrackInfoProps) {
   const artworkUrl = getArtworkUrl(track.album?.id);
-  const artistNames = getArtistNames(track);
+  const mainArtists = track.artists.filter(a => a.role === 'Main');
 
   return (
     <View className="flex-row items-center gap-3 flex-1 min-w-0">
@@ -39,9 +39,22 @@ export function PlayerTrackInfo({ track }: PlayerTrackInfoProps) {
         <Text className="text-foreground font-medium select-none" numberOfLines={1}>
           {track.title}
         </Text>
-        <Text className="text-muted-foreground text-sm select-none" numberOfLines={1}>
-          {artistNames}
-        </Text>
+        <View className="flex-row flex-wrap gap-1">
+          {mainArtists.map((artist, index) => (
+            <View key={artist.id} className="flex-row items-center">
+              <Link href={`/artists/${artist.id}`} asChild>
+                <Pressable>
+                  <Text className="text-muted-foreground text-sm select-none web:hover:underline">
+                    {artist.name}
+                  </Text>
+                </Pressable>
+              </Link>
+              {index < mainArtists.length - 1 && (
+                <Text className="text-muted-foreground text-sm select-none">, </Text>
+              )}
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );

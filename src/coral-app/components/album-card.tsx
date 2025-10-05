@@ -2,7 +2,7 @@ import { View, Image, Pressable, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
-import { useState, memo } from 'react';
+import { useState } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { PlayIcon, MoreVerticalIcon } from 'lucide-react-native';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,7 +16,7 @@ interface AlbumCardProps {
   album: SimpleAlbumDto;
 }
 
-export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
+export function AlbumCard({ album }: AlbumCardProps) {
   const isWeb = Platform.OS === 'web';
   const theme = useAtomValue(themeAtom);
   const { play } = usePlayerActions();
@@ -27,7 +27,9 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
 
   const artistNames = album.artists && album.artists.length > 4
     ? 'Various Artists'
-    : album.artists?.map(a => a.name).join(', ') ?? 'Unknown Artist';
+    : (album.artists && album.artists.length > 0
+        ? album.artists.map(a => a.name).join(', ')
+        : 'Unknown Artist');
 
   const fetchAlbumTracks = async () => {
     const response = await fetch(`${baseUrl}/api/library/albums/${album.id}/tracks`);
@@ -121,14 +123,14 @@ export const AlbumCard = memo(function AlbumCard({ album }: AlbumCardProps) {
             <Text className="text-muted-foreground text-xs" numberOfLines={1}>
               {artistNames}
             </Text>
-            {album.releaseYear && (
+            {album.releaseYear ? (
               <Text className="text-muted-foreground text-xs">
                 {album.releaseYear}
               </Text>
-            )}
+            ) : null}
           </View>
         </View>
       </Pressable>
     </Link>
   );
-});
+}

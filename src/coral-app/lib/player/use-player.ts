@@ -7,7 +7,7 @@ import { useDualPlayers } from './player-provider';
 import { loadTrack, waitForPlayerLoaded } from './player-utils';
 
 export function usePlayer() {
-  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef } = useDualPlayers();
   const [state, setState] = useAtom(playerStateAtom);
   const [position, setPosition] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -21,6 +21,9 @@ export function usePlayer() {
   const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
     setPosition(0);
+
+    // Reset transition tracking on manual play
+    lastTransitionedRef.current = { player: '', index: -1 };
 
     playerA.pause();
     playerB.pause();
@@ -55,6 +58,9 @@ export function usePlayer() {
 
   const skip = useCallback(async (direction: 1 | -1) => {
     setPosition(0);
+
+    // Reset transition tracking on manual skip
+    lastTransitionedRef.current = { player: '', index: -1 };
 
     let newIndex = state.currentIndex + direction;
 
@@ -131,19 +137,19 @@ export function usePlayer() {
         await waitForPlayerLoaded(currentBuffer);
         currentBuffer.play();
 
-        // Load previous track with wrapping
-        let prevIndex = newIndex - 1;
-        if (prevIndex < 0 && state.repeat === 'all') {
-          prevIndex = state.queue.length - 1;
+        // Load next track into buffer (playback always continues forward)
+        let nextIndex = newIndex + 1;
+        if (nextIndex >= state.queue.length && state.repeat === 'all') {
+          nextIndex = 0;
         }
-        const prevTrack = prevIndex >= 0 ? state.queue[prevIndex] : null;
-        if (prevTrack) {
-          loadTrack(currentActive, prevTrack.id);
+        const nextTrack = nextIndex < state.queue.length ? state.queue[nextIndex] : null;
+        if (nextTrack) {
+          loadTrack(currentActive, nextTrack.id);
           // currentActive becomes the new buffer after swap
           if (state.activePlayer === 'A') {
-            playerATrackIdRef.current = prevTrack.id;
+            playerATrackIdRef.current = nextTrack.id;
           } else {
-            playerBTrackIdRef.current = prevTrack.id;
+            playerBTrackIdRef.current = nextTrack.id;
           }
         }
       } catch (err) {
@@ -189,12 +195,14 @@ export function usePlayer() {
     } catch (err) {
       console.error('Skip error:', err);
     }
-  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef]);
+  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef]);
 
   const seekTo = useCallback(async (newPosition: number) => {
     setPosition(newPosition);
+    // Reset transition tracking on seek (user might seek past the transition point)
+    lastTransitionedRef.current = { player: '', index: -1 };
     await activePlayer.seekTo(newPosition);
-  }, [activePlayer]);
+  }, [activePlayer, lastTransitionedRef]);
 
 
   const playFromIndex = async (index: number) => {
@@ -202,6 +210,9 @@ export function usePlayer() {
 
     const track = state.queue[index];
     setPosition(0);
+
+    // Reset transition tracking on manual track selection
+    lastTransitionedRef.current = { player: '', index: -1 };
 
     activePlayer.pause();
     bufferPlayer.pause();
@@ -280,6 +291,20 @@ export function usePlayer() {
         return;
       }
 
+      // CRITICAL: Don't load into buffer if it's still playing the previous track
+      // This happens during gapless transitions when we swap active/buffer
+      // The old active player needs time to finish before we can load the next track
+      if (bufferPlayer.playing) {
+        const timeRemaining = bufferPlayer.duration - bufferPlayer.currentTime;
+        // Retry loading after the track should be finished
+        const retryDelay = Math.max((timeRemaining * 1000) + 100, 500);
+        setTimeout(() => {
+          loadTrack(bufferPlayer, nextTrack.id);
+          bufferTrackIdRef.current = nextTrack.id;
+        }, retryDelay);
+        return;
+      }
+
       loadTrack(bufferPlayer, nextTrack.id);
       bufferTrackIdRef.current = nextTrack.id;
     }
@@ -308,11 +333,14 @@ export function usePlayer() {
 // Hook that returns only player actions without subscribing to status updates
 // Use this in components that only need to trigger actions, not display player state
 export function usePlayerActions() {
-  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef } = useDualPlayers();
   const setState = useSetAtom(playerStateAtom);
 
   const play = useCallback(async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
+
+    // Reset transition tracking on manual play
+    lastTransitionedRef.current = { player: '', index: -1 };
 
     playerA.pause();
     playerB.pause();
@@ -339,7 +367,7 @@ export function usePlayerActions() {
       loadTrack(playerB, nextTrack.id);
       playerBTrackIdRef.current = nextTrack.id;
     }
-  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, setState]);
+  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef, setState]);
 
   return { play };
 }

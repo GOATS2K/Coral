@@ -5,8 +5,13 @@ export const getTrackUrl = (trackId: string) =>
   `${baseUrl}/api/library/tracks/${trackId}/original`;
 
 export const loadTrack = (player: AudioPlayer, trackId: string) => {
-  player.pause();
-  player.seekTo(0);
+  // Don't interrupt a currently playing track - let it finish naturally
+  // Only pause/seek if the player is NOT playing
+  if (!player.playing) {
+    player.pause();
+    player.seekTo(0);
+  }
+
   player.replace(getTrackUrl(trackId));
 };
 

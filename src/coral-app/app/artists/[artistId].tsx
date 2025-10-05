@@ -153,9 +153,9 @@ export default function ArtistScreen() {
             <AlbumSection title="Albums" albums={albums} />
             <AlbumSection
               title="EPs"
-              albums={eps}
-              showDivider={miniAlbums.length > 0}
-              albumsAfterDivider={miniAlbums}
+              albums={miniAlbums}
+              showDivider={eps.length > 0}
+              albumsAfterDivider={eps}
             />
             <AlbumSection title="Singles" albums={singles} />
             <AlbumSection title="Featured In" albums={featuredIn} />

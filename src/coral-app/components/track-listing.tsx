@@ -5,17 +5,7 @@ import { usePlayer } from '@/lib/player/use-player';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { useState } from 'react';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
-import { TrackMenuItems } from '@/components/menu-items/track-menu-items';
+import { TrackMenu } from '@/components/track-menu';
 import { PlaybackInitializer } from '@/lib/state';
 
 interface TrackListingProps {
@@ -67,48 +57,33 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
           const isActive = activeTrack?.id === track.id;
 
           return (
-            <ContextMenu key={track.id}>
-              <ContextMenuTrigger>
-                <Pressable
-                  onPress={() => play(tracks, index, initializer)}
-                  className={`flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30 rounded-md -mx-2 px-2 ${isActive ? 'bg-primary/10' : ''}`}
-                >
-                  {showCoverArt ? (
-                    <View className="w-10 h-10 rounded overflow-hidden">
-                      <TrackArtwork albumId={track.album?.id || ''} />
-                    </View>
-                  ) : showTrackNumber ? (
-                    <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                      {formatTrackNumber(track)}
-                    </Text>
-                  ) : null}
-                  <View className="flex-1 min-w-0">
-                    <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-primary font-medium' : 'text-foreground'}`} numberOfLines={1}>
-                      {track.title}
-                    </Text>
-                    <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-primary/80' : 'text-muted-foreground'}`} numberOfLines={1}>
-                      {track.artists.filter(a => a.role === 'Main').map(a => a.name).join(', ')}
-                    </Text>
+            <TrackMenu key={track.id} track={track} isActive={isActive}>
+              <Pressable
+                onPress={() => play(tracks, index, initializer)}
+                className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30"
+              >
+                {showCoverArt ? (
+                  <View className="w-10 h-10 rounded overflow-hidden">
+                    <TrackArtwork albumId={track.album?.id || ''} />
                   </View>
-                  <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                    {formatDuration(track.durationInSeconds)}
+                ) : showTrackNumber ? (
+                  <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                    {formatTrackNumber(track)}
                   </Text>
-                </Pressable>
-              </ContextMenuTrigger>
-
-              <ContextMenuContent className="w-56">
-                <TrackMenuItems
-                  track={track}
-                  components={{
-                    MenuItem: ContextMenuItem,
-                    MenuSub: ContextMenuSub,
-                    MenuSubTrigger: ContextMenuSubTrigger,
-                    MenuSubContent: ContextMenuSubContent,
-                    MenuSeparator: ContextMenuSeparator,
-                  }}
-                />
-              </ContextMenuContent>
-            </ContextMenu>
+                ) : null}
+                <View className="flex-1 min-w-0">
+                  <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-primary font-medium' : 'text-foreground'}`} numberOfLines={1}>
+                    {track.title}
+                  </Text>
+                  <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-primary/80' : 'text-muted-foreground'}`} numberOfLines={1}>
+                    {track.artists.filter(a => a.role === 'Main').map(a => a.name).join(', ')}
+                  </Text>
+                </View>
+                <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                  {formatDuration(track.durationInSeconds)}
+                </Text>
+              </Pressable>
+            </TrackMenu>
           );
         })}
       </View>

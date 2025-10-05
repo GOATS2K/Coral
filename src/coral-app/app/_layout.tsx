@@ -10,12 +10,16 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { Appearance, Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ToastContainer } from '@/components/toast-container';
+import { Sidebar } from '@/components/ui/sidebar';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -81,20 +85,39 @@ export default function RootLayout() {
   }, [resolvedTheme]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <PlayerProvider>
-        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <View className="flex-1 flex-col">
-            <View className="flex-1">
-              <Stack screenOptions={{ headerShown: false }} />
-            </View>
-            {Platform.OS === 'web' && <WebPlayerBar />}
-          </View>
-          <PortalHost />
-          <ToastContainer />
-        </ThemeProvider>
-      </PlayerProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <QueryClientProvider client={queryClient}>
+            <PlayerProvider>
+              <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                {Platform.OS === 'web' ? (
+                  // Web: Sidebar + Content layout
+                  <View className="flex-1 flex-row">
+                    <Sidebar />
+                    <View className="flex-1 flex-col">
+                      <View className="flex-1">
+                        <Stack screenOptions={{ headerShown: false }} />
+                      </View>
+                      <WebPlayerBar />
+                    </View>
+                  </View>
+                ) : (
+                  // Mobile: Full-screen Stack
+                  <View className="flex-1 flex-col">
+                    <View className="flex-1">
+                      <Stack screenOptions={{ headerShown: false }} />
+                    </View>
+                  </View>
+                )}
+                <PortalHost />
+                <ToastContainer />
+              </ThemeProvider>
+            </PlayerProvider>
+          </QueryClientProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

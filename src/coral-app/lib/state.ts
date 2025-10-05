@@ -1,6 +1,7 @@
 import { atom } from 'jotai'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SimpleTrackDto } from './client/schemas'
+import { Appearance, Platform } from 'react-native'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
@@ -21,6 +22,18 @@ function getInitialThemePreference(): ThemePreference {
   return 'system';
 }
 
+// Get initial system theme
+function getInitialSystemTheme(): ResolvedTheme {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+  } else {
+    return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+  }
+  return 'dark';
+}
+
 // Simple writable atom with manual persistence
 export const themePreferenceAtom = atom<ThemePreference>(
   getInitialThemePreference(), // Load initial value synchronously
@@ -35,7 +48,7 @@ export const themePreferenceAtom = atom<ThemePreference>(
 
 // Current system theme (from OS) - writable atom
 export const systemThemeAtom = atom<ResolvedTheme>(
-  'dark' // default value
+  getInitialSystemTheme() // Read actual system theme at initialization
 )
 
 // Resolved theme (combines preference + system theme) - read-only computed atom

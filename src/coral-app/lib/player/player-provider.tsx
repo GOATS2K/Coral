@@ -72,10 +72,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  // Interval-based polling for gapless transitions (100ms = 10Hz)
-  // Much more CPU-efficient than RAF (60+ Hz) while still precise enough
+  // Adaptive interval-based polling for gapless transitions
+  // Slow polling (1s) when far from end, fast polling (25ms) when close
   useEffect(() => {
-    console.log('🎵 [PlayerProvider] Creating interval', new Date().toISOString());
+    let intervalId: ReturnType<typeof setInterval>;
+    const pollingRateRef = { current: 1000 }; // Start with slow polling
 
     const checkTransition = () => {
       const currentState = stateRef.current;
@@ -90,45 +91,40 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const timeRemaining = activePlayer.duration - activePlayer.currentTime;
       const currentTime = activePlayer.currentTime;
       const duration = activePlayer.duration;
+      const timeRemainingLimit = 5.0;
+
+      // Adaptive polling: switch to fast mode when close to end
+      if (activePlayer.playing && !isNaN(timeRemaining) && timeRemaining < timeRemainingLimit && pollingRateRef.current === 1000) {
+        pollingRateRef.current = 25;
+        clearInterval(intervalId);
+        intervalId = setInterval(checkTransition, 25);
+        return; // Let next tick at fast rate handle the check
+      }
+
+      // Reset to slow polling when far from end
+      if ((!activePlayer.playing || timeRemaining > timeRemainingLimit) && pollingRateRef.current === 25) {
+        pollingRateRef.current = 1000;
+        clearInterval(intervalId);
+        intervalId = setInterval(checkTransition, 1000);
+        return;
+      }
 
       // Check if track has ended (either naturally or we're very close)
       const trackEnded = !activePlayer.playing && !isNaN(duration) && duration > 0 &&
                         (currentTime >= duration - 0.05); // Within 50ms of end
 
-      // Start buffer 500ms before track ends - larger window to avoid missing transitions
-      // 25ms polling can be delayed by browser, so wider window ensures detection
+      // Start buffer 200ms before track ends - sweet spot for minimal gap/overlap
+      // 25ms fast polling ensures we catch this window reliably
       // Accounts for browser audio startup latency (~50-100ms)
-      const nearEnd = activePlayer.playing && !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.185;
+      const nearEnd = activePlayer.playing && !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.2;
 
       if (nearEnd || trackEnded) {
-        if (nearEnd) {
-          const bufferPlayerName = currentState.activePlayer === 'A' ? 'B' : 'A';
-          const bufferTrackIdRef = bufferPlayerName === 'A' ? playerATrackIdRef : playerBTrackIdRef;
-          console.log('⏰ [Near End] Detected at', timeRemaining.toFixed(3), 's remaining', {
-            bufferPlayer: {
-              isLoaded: bufferPlayer.isLoaded,
-              playing: bufferPlayer.playing,
-              duration: bufferPlayer.duration,
-              trackId: bufferTrackIdRef.current,
-            },
-          });
-        }
-
-        if (trackEnded) {
-          console.log('🔚 [Track End] Natural end detected', {
-            currentTime,
-            duration,
-            timeRemaining,
-          });
-        }
-
         const alreadyTransitioned =
           !trackEnded && // If track ended, always try to advance
           lastTransitionedRef.current.player === currentState.activePlayer &&
           lastTransitionedRef.current.index === currentState.currentIndex;
 
         if (alreadyTransitioned) {
-          console.log('⚠️ [Already Transitioned] Skipping duplicate transition attempt');
           return;
         }
 
@@ -158,7 +154,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
         if (isSequential && bufferPlayer.isLoaded && !trackEnded) {
           // Gapless transition: Start buffer (overlap with active)
-          console.log('✨ [Gapless] Smooth transition to next track');
           lastTransitionedRef.current = { player: currentState.activePlayer, index: currentState.currentIndex };
           bufferPlayer.play();
 
@@ -192,22 +187,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             // The track will stop on its own when it reaches the end
           } else {
             // Fallback: Load next track when gapless not possible
-            const bufferPlayerName = currentState.activePlayer === 'A' ? 'B' : 'A';
-            const bufferTrackIdRef = bufferPlayerName === 'A' ? playerATrackIdRef : playerBTrackIdRef;
-            console.log('⏭️ [Fallback] Gapless not available, loading next track normally', {
-              reason: trackEnded ? 'Track already ended' : (!isSequential ? 'Not sequential' : 'Buffer not loaded'),
-              trackEnded,
-              isSequential,
-              bufferState: {
-                isLoaded: bufferPlayer.isLoaded,
-                playing: bufferPlayer.playing,
-                duration: bufferPlayer.duration,
-                currentTime: bufferPlayer.currentTime,
-                trackId: bufferTrackIdRef.current,
-                expectedTrackId: nextTrack.id,
-              },
-            });
-
             // Mark as transitioned before starting to avoid retries
             lastTransitionedRef.current = { player: currentState.activePlayer, index: currentState.currentIndex };
 
@@ -240,8 +219,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Check every 50ms (20 times per second) for better transition timing accuracy
-    const intervalId = setInterval(checkTransition, 25);
+    // Start with slow polling (500ms) - will automatically switch to fast (25ms) when needed
+    intervalId = setInterval(checkTransition, 500);
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerA.id, playerB.id]);

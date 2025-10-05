@@ -1,4 +1,4 @@
-import { ScrollView, View, ActivityIndicator } from 'react-native';
+import { Platform, ScrollView, View, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useArtist } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
@@ -10,6 +10,7 @@ import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist'
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
 import { Icon } from '@/components/ui/icon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -73,6 +74,7 @@ export default function ArtistScreen() {
     },
   });
   const { toggleFavorite } = useToggleFavoriteArtist();
+  const insets = useSafeAreaInsets();
 
   if (error) {
     return (
@@ -129,7 +131,7 @@ export default function ArtistScreen() {
   return (
     <>
       <Stack.Screen options={SCREEN_OPTIONS} />
-      <View className="flex-1 bg-background">
+      <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'web' ? 0 : insets.top }}>
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Artist Header */}
           <View className="px-4 pt-8 pb-6 items-start border-b border-border">

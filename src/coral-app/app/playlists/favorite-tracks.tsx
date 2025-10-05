@@ -1,4 +1,4 @@
-import { ColorValue, ScrollView, View } from 'react-native';
+import { ColorValue, Platform, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useFavoriteTracks } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
@@ -11,6 +11,7 @@ import { TrackListing } from '@/components/track-listing';
 import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
 import { Icon } from '@/components/ui/icon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -114,6 +115,7 @@ function FavoriteTracksHeader() {
 
 export default function FavoriteTracksScreen() {
   const { data: favoriteTracks, isLoading, error } = useFavoriteTracks({});
+  const insets = useSafeAreaInsets();
 
   if (error) {
     return (
@@ -142,7 +144,7 @@ export default function FavoriteTracksScreen() {
   return (
     <>
       <Stack.Screen options={SCREEN_OPTIONS} />
-      <View className="flex-1 bg-background">
+      <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'web' ? 0 : insets.top }}>
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <FavoriteTracksHeader />
           {hasTracks ? (

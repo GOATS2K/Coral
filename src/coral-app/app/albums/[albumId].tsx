@@ -1,4 +1,4 @@
-import { ColorValue, Image, ScrollView, View } from 'react-native';
+import { ColorValue, Image, Platform, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
@@ -15,6 +15,7 @@ import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
 import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { Icon } from '@/components/ui/icon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -171,6 +172,7 @@ export default function Screen() {
     },
   });
   const theme = useAtomValue(themeAtom);
+  const insets = useSafeAreaInsets();
 
   if (error) {
     return (
@@ -253,7 +255,7 @@ export default function Screen() {
   return (
     <>
       <Stack.Screen options={SCREEN_OPTIONS} />
-      <View className="flex-1 bg-background">
+      <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'web' ? 0 : insets.top }}>
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <AlbumHeaderCard
             album={data}

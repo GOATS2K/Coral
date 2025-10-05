@@ -14,6 +14,7 @@ import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
 import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
+import { Icon } from '@/components/ui/icon';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -136,12 +137,12 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
               >
                 {isThisAlbumPlaying ? (
                   <>
-                    <Pause size={18} color="#000" fill="#000" />
+                    <Icon as={Pause} size={18} className="text-black" fill="currentColor" />
                     <Text className="text-black font-medium">Pause</Text>
                   </>
                 ) : (
                   <>
-                    <Play size={18} color="#000" fill="#000" />
+                    <Icon as={Play} size={18} className="text-black" fill="currentColor" />
                     <Text className="text-black font-medium">Play</Text>
                   </>
                 )}
@@ -151,7 +152,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
                 variant="outline"
                 className="border-white bg-white/10 web:hover:bg-white/20 active:bg-white/30"
               >
-                <Heart size={18} className="text-white" fill={album.favorited ? "white" : "none"} />
+                <Icon as={Heart} size={18} className="text-white" fill={album.favorited ? "currentColor" : "none"} />
                 <Text className="text-white font-medium">{album.favorited ? 'Unlike' : 'Like'}</Text>
               </Button>
             </View>

@@ -5,6 +5,7 @@ import { memo } from 'react';
 import type { SimpleArtistDto } from '@/lib/client/schemas';
 import { Heart } from 'lucide-react-native';
 import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
+import { Icon } from '@/components/ui/icon';
 
 interface ArtistCardProps {
   artist: SimpleArtistDto;
@@ -27,7 +28,8 @@ export const ArtistCard = memo(function ArtistCard({ artist }: ArtistCardProps) 
           onPress={handleLikeArtist}
           className="ml-2 p-2 web:hover:bg-muted/70 active:bg-muted/80 rounded-full"
         >
-          <Heart
+          <Icon
+            as={Heart}
             size={20}
             className="text-foreground"
             fill={artist.favorited ? "currentColor" : "none"}

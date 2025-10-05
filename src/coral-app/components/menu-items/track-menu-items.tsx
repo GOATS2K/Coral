@@ -1,6 +1,7 @@
 import { ComponentType } from 'react';
 import { Heart, Sparkles, Plus, User, Trash2, Disc3 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { Icon } from '@/components/ui/icon';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { useToggleFavoriteTrack } from '@/lib/hooks/use-toggle-favorite-track';
 import { useRouter } from 'expo-router';
@@ -70,7 +71,7 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
     <>
       {/* Like Track */}
       <MenuItem onPress={handleLike}>
-        <Heart size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
+        <Icon as={Heart} size={14} className="text-foreground" fill={track.favorited ? "currentColor" : "none"} />
         <Text>{track.favorited ? 'Remove from favorites' : 'Like'}</Text>
       </MenuItem>
 
@@ -78,14 +79,14 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
 
       {/* Find Similar */}
       <MenuItem onPress={handleFindSimilar}>
-        <Sparkles size={14} className="text-foreground" />
+        <Icon as={Sparkles} size={14} className="text-foreground" />
         <Text>Find similar songs</Text>
       </MenuItem>
 
       {/* Add to Queue */}
       {showAddToQueue && (
         <MenuItem onPress={handleAddToQueue}>
-          <Plus size={14} className="text-foreground" />
+          <Icon as={Plus} size={14} className="text-foreground" />
           <Text>Add to queue</Text>
         </MenuItem>
       )}
@@ -93,7 +94,7 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
       {/* Remove from Queue */}
       {showRemoveFromQueue && (
         <MenuItem onPress={handleRemoveFromQueue}>
-          <Trash2 size={14} className="text-foreground" />
+          <Icon as={Trash2} size={14} className="text-foreground" />
           <Text>Remove from queue</Text>
         </MenuItem>
       )}
@@ -103,7 +104,7 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
       {/* Go to Album */}
       {track.album?.id && (
         <MenuItem onPress={handleGoToAlbum}>
-          <Disc3 size={14} className="text-foreground" />
+          <Icon as={Disc3} size={14} className="text-foreground" />
           <Text>Go to album</Text>
         </MenuItem>
       )}
@@ -112,7 +113,7 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
       {track.artists && track.artists.length > 0 && (
         <MenuSub>
           <MenuSubTrigger>
-            <User size={14} className="text-foreground" />
+            <Icon as={User} size={14} className="text-foreground" />
             <Text>Artists</Text>
           </MenuSubTrigger>
           <MenuSubContent>

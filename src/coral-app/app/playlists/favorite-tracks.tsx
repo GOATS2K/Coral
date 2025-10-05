@@ -10,6 +10,7 @@ import { themeAtom, playerStateAtom, PlaybackSource } from '@/lib/state';
 import { TrackListing } from '@/components/track-listing';
 import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
+import { Icon } from '@/components/ui/icon';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -66,7 +67,7 @@ function FavoriteTracksHeader() {
           {/* Heart Icon */}
           <View className="mx-auto sm:mx-0 w-[200px] h-[200px] rounded-lg overflow-hidden">
             <View className="w-full h-full items-center justify-center bg-muted">
-              <Heart size={100} className="text-muted-foreground opacity-40" fill="currentColor" />
+              <Icon as={Heart} size={100} className="text-muted-foreground opacity-40" fill="currentColor" />
             </View>
           </View>
 
@@ -93,12 +94,12 @@ function FavoriteTracksHeader() {
               >
                 {isFavoritesPlaying ? (
                   <>
-                    <Pause size={18} color="#000" fill="#000" />
+                    <Icon as={Pause} size={18} className="text-black" fill="currentColor" />
                     <Text className="text-black font-medium">Pause</Text>
                   </>
                 ) : (
                   <>
-                    <Play size={18} color="#000" fill="#000" />
+                    <Icon as={Play} size={18} className="text-black" fill="currentColor" />
                     <Text className="text-black font-medium">Play</Text>
                   </>
                 )}
@@ -154,7 +155,7 @@ export default function FavoriteTracksScreen() {
             />
           ) : (
             <View className="flex-1 items-center justify-center py-16 px-4">
-              <Heart size={64} className="text-muted-foreground mb-4" />
+              <Icon as={Heart} size={64} className="text-muted-foreground mb-4" />
               <Text variant="h3" className="text-center mb-2">No favorite tracks yet</Text>
               <Text className="text-muted-foreground text-center">
                 Start liking tracks to see them here

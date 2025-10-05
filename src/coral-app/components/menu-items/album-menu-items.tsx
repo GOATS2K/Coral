@@ -1,6 +1,7 @@
 import { ComponentType } from 'react';
 import { Heart, ListPlus, User } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { Icon } from '@/components/ui/icon';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { useRouter } from 'expo-router';
@@ -53,7 +54,7 @@ export function AlbumMenuItems({ album, components }: AlbumMenuItemsProps) {
     <>
       {/* Like Album */}
       <MenuItem onPress={handleLike}>
-        <Heart size={14} className="text-foreground" fill={album.favorited ? "currentColor" : "none"} />
+        <Icon as={Heart} size={14} className="text-foreground" fill={album.favorited ? "currentColor" : "none"} />
         <Text>{album.favorited ? 'Remove from favorites' : 'Like album'}</Text>
       </MenuItem>
 
@@ -61,7 +62,7 @@ export function AlbumMenuItems({ album, components }: AlbumMenuItemsProps) {
 
       {/* Add to Queue */}
       <MenuItem onPress={handleAddToQueue}>
-        <ListPlus size={14} className="text-foreground" />
+        <Icon as={ListPlus} size={14} className="text-foreground" />
         <Text>Add to queue</Text>
       </MenuItem>
 
@@ -71,7 +72,7 @@ export function AlbumMenuItems({ album, components }: AlbumMenuItemsProps) {
       {album.artists && album.artists.length > 0 && (
         <MenuSub>
           <MenuSubTrigger>
-            <User size={14} className="text-foreground" />
+            <Icon as={User} size={14} className="text-foreground" />
             <Text>Artists</Text>
           </MenuSubTrigger>
           <MenuSubContent>

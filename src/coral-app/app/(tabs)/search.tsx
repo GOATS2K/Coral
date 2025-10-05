@@ -11,6 +11,7 @@ import { Music2 } from 'lucide-react-native';
 import { useAtom, useAtomValue } from 'jotai';
 import { lastSearchQueryAtom, PlaybackSource, themeAtom } from '@/lib/state';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Icon } from '@/components/ui/icon';
 
 export default function SearchScreen() {
   const theme = useAtomValue(themeAtom);
@@ -170,7 +171,7 @@ export default function SearchScreen() {
 
           {!isLoading && debouncedQuery.trim().length > 0 && !hasResults && (
             <View className="py-8 items-center">
-              <Music2 size={48} color={theme === 'dark' ? '#71717a' : '#a1a1aa'} className="mb-2" />
+              <Icon as={Music2} size={48} className="text-muted-foreground mb-2" />
               <Text className="text-muted-foreground">No results found</Text>
             </View>
           )}
@@ -242,7 +243,7 @@ export default function SearchScreen() {
 
           {debouncedQuery.trim().length === 0 && (
             <View className="py-8 items-center">
-              <Music2 size={48} color={theme === 'dark' ? '#71717a' : '#a1a1aa'} className="mb-2" />
+              <Icon as={Music2} size={48} className="text-muted-foreground mb-2" />
               <Text className="text-muted-foreground">Start typing to search</Text>
             </View>
           )}

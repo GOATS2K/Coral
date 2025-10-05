@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ListMusic, Play } from 'lucide-react-native';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { getArtistNames, getArtworkUrl } from '@/lib/player/player-format-utils';
+import { Icon } from '@/components/ui/icon';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -63,7 +64,7 @@ export function PlayerQueue({
       <Popover>
         <PopoverTrigger asChild>
           <Pressable className="web:hover:opacity-70 active:opacity-50">
-            <ListMusic size={20} className="text-foreground" />
+            <Icon as={ListMusic} size={20} className="text-foreground" />
           </Pressable>
         </PopoverTrigger>
         <PopoverContent
@@ -117,7 +118,7 @@ export function PlayerQueue({
                             }}
                             className="absolute inset-0 bg-black/60 rounded flex items-center justify-center hover:bg-black/70 transition-colors"
                           >
-                            <Play size={16} className="text-white" fill="white" />
+                            <Icon as={Play} size={16} className="text-white" fill="currentColor" />
                           </button>
                         )}
                       </div>

@@ -7,6 +7,7 @@ import { ArtistCard } from '@/components/artist-card';
 import { Heart } from 'lucide-react-native';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
+import { Icon } from '@/components/ui/icon';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -63,7 +64,7 @@ export default function HomeScreen() {
 
           {!hasFavorites && !recentAlbums?.data.length && (
             <View className="flex-1 items-center justify-center py-16 px-2">
-              <Heart size={64} color={theme === 'dark' ? '#71717a' : '#a1a1aa'} className="mb-4" />
+              <Icon as={Heart} size={64} className="text-muted-foreground mb-4" />
               <Text variant="h3" className="text-center mb-2">No favorites yet</Text>
               <Text className="text-muted-foreground text-center">
                 Start liking tracks, albums, and artists to see them here

@@ -9,6 +9,7 @@ import { Heart } from 'lucide-react-native';
 import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
+import { Icon } from '@/components/ui/icon';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -141,7 +142,7 @@ export default function ArtistScreen() {
                 onPress={() => toggleFavorite(data)}
                 variant="outline"
               >
-                <Heart size={18} color={theme === 'dark' ? '#fff' : '#000'} fill={data.favorited ? "currentColor" : "none"} />
+                <Icon as={Heart} size={18} className="text-foreground" fill={data.favorited ? "currentColor" : "none"} />
                 <Text className="font-medium">{data.favorited ? 'Unlike' : 'Like'}</Text>
               </Button>
             </View>

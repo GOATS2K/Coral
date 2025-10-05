@@ -7,7 +7,7 @@ import { useDualPlayers } from './player-provider';
 import { loadTrack, waitForPlayerLoaded } from './player-utils';
 
 export function usePlayer() {
-  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef } = useDualPlayers();
   const [state, setState] = useAtom(playerStateAtom);
   const [position, setPosition] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -23,7 +23,7 @@ export function usePlayer() {
     setPosition(0);
 
     // Reset transition tracking on manual play
-    lastTransitionedRef.current = { player: '', index: -1 };
+    lastTransitionedIndexRef.current = -1;
 
     playerA.pause();
     playerB.pause();
@@ -60,7 +60,7 @@ export function usePlayer() {
     setPosition(0);
 
     // Reset transition tracking on manual skip
-    lastTransitionedRef.current = { player: '', index: -1 };
+    lastTransitionedIndexRef.current = -1;
 
     let newIndex = state.currentIndex + direction;
 
@@ -195,14 +195,14 @@ export function usePlayer() {
     } catch (err) {
       console.error('Skip error:', err);
     }
-  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef]);
+  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef]);
 
   const seekTo = useCallback(async (newPosition: number) => {
     setPosition(newPosition);
     // Reset transition tracking on seek (user might seek past the transition point)
-    lastTransitionedRef.current = { player: '', index: -1 };
+    lastTransitionedIndexRef.current = -1;
     await activePlayer.seekTo(newPosition);
-  }, [activePlayer, lastTransitionedRef]);
+  }, [activePlayer, lastTransitionedIndexRef]);
 
 
   const playFromIndex = async (index: number) => {
@@ -212,7 +212,7 @@ export function usePlayer() {
     setPosition(0);
 
     // Reset transition tracking on manual track selection
-    lastTransitionedRef.current = { player: '', index: -1 };
+    lastTransitionedIndexRef.current = -1;
 
     activePlayer.pause();
     bufferPlayer.pause();
@@ -308,7 +308,7 @@ export function usePlayer() {
       loadTrack(bufferPlayer, nextTrack.id);
       bufferTrackIdRef.current = nextTrack.id;
     }
-  }, [state.queue, state.currentIndex, state.activePlayer, state.repeat]);
+  }, [state.queue, state.currentIndex, state.activePlayer, state.repeat, bufferPlayer]);
 
   return {
     activeTrack: state.currentTrack,
@@ -333,14 +333,14 @@ export function usePlayer() {
 // Hook that returns only player actions without subscribing to status updates
 // Use this in components that only need to trigger actions, not display player state
 export function usePlayerActions() {
-  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef } = useDualPlayers();
   const setState = useSetAtom(playerStateAtom);
 
   const play = useCallback(async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
 
     // Reset transition tracking on manual play
-    lastTransitionedRef.current = { player: '', index: -1 };
+    lastTransitionedIndexRef.current = -1;
 
     playerA.pause();
     playerB.pause();
@@ -367,7 +367,7 @@ export function usePlayerActions() {
       loadTrack(playerB, nextTrack.id);
       playerBTrackIdRef.current = nextTrack.id;
     }
-  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedRef, setState]);
+  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef, setState]);
 
   return { play };
 }

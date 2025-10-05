@@ -20,6 +20,7 @@ public interface IArtworkService
     Task<string?> GetArtworkPath(Guid artworkId);
     Task DeleteArtwork(Artwork artwork);
     Task<string[]> GetProminentColors(Guid artworkId);
+    Task<string?> GetAlbumArtwork(Guid albumId, ArtworkSize size);
 }
 
 internal record PixelColor(Rgba32 Color, int Brightness);
@@ -137,6 +138,12 @@ public class ArtworkService : IArtworkService
             return [];
 
         return await GetProminentColorsForImage(artwork.Path);
+    }
+
+    public async Task<string?> GetAlbumArtwork(Guid albumId, ArtworkSize size)
+    {
+        var artwork = await _context.Artworks.FirstOrDefaultAsync(t => t.AlbumId == albumId && t.Size == size);
+        return artwork?.Path;
     }
 
     private async Task<string[]> GetProminentColorsForImage(string filePath)

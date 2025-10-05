@@ -120,6 +120,18 @@ ipch/
 *.VC.db
 *.VC.VC.opendb
 
+# CMake
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+*.cmake.in
+
+# Unix build artifacts
+*.o
+*.out
+
 # Visual Studio profiler
 *.psess
 *.vsp
@@ -570,6 +582,8 @@ src/Coral.Essentia.Bindings/wrapper/include/
 src/Coral.Essentia.Bindings/wrapper/bin/
 src/Coral.Essentia.Bindings/wrapper/lib/
 src/Coral.Essentia.Bindings/wrapper/build/
-src/Coral.Essentia.Bindings/wrapper/Coral.Es.c12bdce7/
+src/Coral.Essentia.Bindings/wrapper/Coral.Es.*/
 src/Coral.Essentia.Cli/lib
 src/Coral.Essentia.Cli/include
+src/Coral.Essentia.Cli/bin
+src/Coral.Essentia.Cli/Coral.Es.*/

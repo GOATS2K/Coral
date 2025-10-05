@@ -16,6 +16,11 @@ export type AlbumDto = {
    */
   releaseYear: number;
   artworks: ArtworkDto;
+  /**
+   * @format date-time
+   */
+  createdAt: string;
+  favorited: boolean;
   tracks: SimpleTrackDto[];
   genres: GenreDto[];
 };
@@ -28,6 +33,7 @@ export type ArtistDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
   releases: SimpleAlbumDto[];
   featuredIn: SimpleAlbumDto[];
   remixerIn: SimpleAlbumDto[];
@@ -42,6 +48,7 @@ export type ArtistWithRoleDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
   role: ArtistRole;
 };
 
@@ -51,6 +58,8 @@ export type ArtworkDto = {
   original: string;
   colors: string[];
 };
+
+export type ArtworkSize = "Small" | "Medium" | "Original";
 
 export type AudioFile = {
   /**
@@ -184,6 +193,11 @@ export type SimpleAlbumDto = {
    */
   releaseYear: number;
   artworks: ArtworkDto;
+  /**
+   * @format date-time
+   */
+  createdAt: string;
+  favorited: boolean;
 };
 
 export type SimpleAlbumDtoPaginatedQuery = {
@@ -208,6 +222,7 @@ export type SimpleArtistDto = {
    */
   id: string;
   name: string;
+  favorited: boolean;
 };
 
 export type SimpleArtistDtoPaginatedQuery = {
@@ -224,6 +239,14 @@ export type SimpleArtistDtoPaginatedQuery = {
    */
   resultCount: number;
   data: SimpleArtistDto[];
+};
+
+export type SimpleTrackAlbumDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  name: string;
 };
 
 export type SimpleTrackDto = {
@@ -244,8 +267,10 @@ export type SimpleTrackDto = {
    * @format int32
    */
   discNumber: number;
+  album: SimpleTrackAlbumDto;
   artists: ArtistWithRoleDto[];
   genre?: GenreDto;
+  favorited: boolean;
 };
 
 export type StreamDto = {
@@ -276,6 +301,7 @@ export type TrackDto = {
   artists: ArtistWithRoleDto[];
   album: SimpleAlbumDto;
   genre?: GenreDto;
+  favorited: boolean;
 };
 
 export type TranscodeInfoDto = {

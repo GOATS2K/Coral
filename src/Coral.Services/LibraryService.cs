@@ -122,6 +122,7 @@ namespace Coral.Services
             {
                 Id = artist.Id,
                 Name = artist.Name,
+                Favorited = artist.Favorited,
                 FeaturedIn = featured,
                 InCompilation = compilations,
                 Releases = mainReleases,
@@ -173,7 +174,10 @@ namespace Coral.Services
             
             var trackIds = recs
                 .Where(t => t.Distance < 0.3)
-                .Select(t => t.Entity.TrackId).Distinct().ToList();
+                // tracks with identical distance are duplicates
+                .DistinctBy(t => t.Distance)
+                .Select(t => t.Entity.TrackId)
+                .Distinct().ToList();
             
             var tracks = await _context.Tracks
                 .Where(t => trackIds.Contains(t.Id))
@@ -190,7 +194,7 @@ namespace Coral.Services
             } 
             
             
-            return orderedTracks;
+            return orderedTracks.DistinctBy(t => t.Title).ToList();
         }
     }
 }

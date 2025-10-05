@@ -1,0 +1,119 @@
+import { atom } from 'jotai'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { SimpleTrackDto } from './client/schemas'
+import { Appearance, Platform } from 'react-native'
+
+export type ThemePreference = 'light' | 'dark' | 'system'
+export type ResolvedTheme = 'light' | 'dark'
+
+// Get initial value from localStorage (web) synchronously
+function getInitialThemePreference(): ThemePreference {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('theme-preference');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed;
+      }
+    } catch (e) {
+      console.error('[themePreferenceAtom] Error reading initial value:', e);
+    }
+  }
+  return 'system';
+}
+
+// Get initial system theme
+function getInitialSystemTheme(): ResolvedTheme {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+  } else {
+    return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+  }
+  return 'dark';
+}
+
+// Simple writable atom with manual persistence
+export const themePreferenceAtom = atom<ThemePreference>(
+  getInitialThemePreference(), // Load initial value synchronously
+  (get, set, newValue: ThemePreference) => {
+    set(themePreferenceAtom, newValue);
+    // Persist to storage
+    AsyncStorage.setItem('theme-preference', JSON.stringify(newValue)).catch(e =>
+      console.error('[themePreferenceAtom] Save error:', e)
+    );
+  }
+)
+
+// Current system theme (from OS) - writable atom
+export const systemThemeAtom = atom<ResolvedTheme>(
+  getInitialSystemTheme() // Read actual system theme at initialization
+)
+
+// Resolved theme (combines preference + system theme) - read-only computed atom
+export const themeAtom = atom<ResolvedTheme>((get) => {
+  const preference = get(themePreferenceAtom)
+  const system = get(systemThemeAtom)
+
+  if (preference === 'system') {
+    return system
+  }
+  return preference
+})
+
+export type RepeatMode = 'off' | 'all' | 'one';
+
+export enum PlaybackSource {
+  Album = 'album',
+  Search = 'search',
+  Favorites = 'favorites',
+  Home = 'home',
+}
+
+export interface PlaybackInitializer {
+  source: PlaybackSource;
+  id: string; // Album ID, search query, etc.
+}
+
+export interface PlayerState {
+  currentTrack: SimpleTrackDto | null;
+  queue: SimpleTrackDto[];
+  currentIndex: number;
+  activePlayer: 'A' | 'B';
+  repeat: RepeatMode;
+  isShuffled: boolean;
+  originalQueue: SimpleTrackDto[] | null;
+  initializer: PlaybackInitializer | null;
+}
+
+export const playerStateAtom = atom<PlayerState>({
+  currentTrack: null,
+  queue: [],
+  currentIndex: 0,
+  activePlayer: 'A',
+  repeat: 'off',
+  isShuffled: false,
+  originalQueue: null,
+  initializer: null,
+})
+
+// Albums screen scroll state
+export interface AlbumsScrollState {
+  scrollPosition: number;
+  savedPageCount: number;
+  needsRestoration: boolean;
+  firstVisibleIndex: number;
+  savedFirstVisibleIndex: number;
+}
+
+export const albumsScrollStateAtom = atom<AlbumsScrollState>({
+  scrollPosition: 0,
+  savedPageCount: 1,
+  needsRestoration: false,
+  firstVisibleIndex: 0,
+  savedFirstVisibleIndex: 0,
+})
+
+// Search state - stores last search query for restoration
+export const lastSearchQueryAtom = atom<string>('')

@@ -8,6 +8,7 @@ public class Track : BaseTable
 
     public string Title { get; set; } = null!;
     public List<ArtistWithRole> Artists { get; set; } = null!;
+    public Guid AlbumId { get; set; }
     public Album Album { get; set; } = null!;
     public Genre? Genre { get; set; }
 
@@ -16,6 +17,7 @@ public class Track : BaseTable
 
     public AudioFile AudioFile { get; set; } = null!;
     public List<Keyword> Keywords { get; set; } = null!;
+    public FavoriteTrack? Favorite { get; set; }
 
     public override string ToString()
     {

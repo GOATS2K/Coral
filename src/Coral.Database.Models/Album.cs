@@ -30,4 +30,6 @@ public class Album : BaseTable
     public string? Upc { get; set; }
 
     public List<Artwork> Artworks { get; set; } = null!;
+
+    public FavoriteAlbum? Favorite { get; set; }
 }

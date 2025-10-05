@@ -20,6 +20,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.goats2k.coral",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -32,7 +33,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

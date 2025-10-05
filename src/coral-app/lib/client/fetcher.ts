@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Context } from './context';
 
-const baseUrl = 'http://localhost:5031'; // TODO add your baseUrl
+export const baseUrl = 'http://192.168.7.161:5031'; // TODO add your baseUrl
 
 export type ErrorWrapper<TError> = TError | { status: 'unknown'; payload: string };
 

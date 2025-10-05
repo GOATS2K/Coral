@@ -253,6 +253,75 @@ namespace Coral.Database.Migrations
                     b.ToTable("AudioMetadata");
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.FavoriteAlbum", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlbumId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteAlbums");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.FavoriteArtist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteArtists");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.FavoriteTrack", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrackId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteTracks");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Genre", b =>
                 {
                     b.Property<Guid>("Id")
@@ -317,6 +386,61 @@ namespace Coral.Database.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("MusicLibraries");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Playlist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Playlists");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.PlaylistTrack", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PlaylistId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaylistId");
+
+                    b.HasIndex("TrackId");
+
+                    b.ToTable("PlaylistTracks");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
@@ -519,6 +643,58 @@ namespace Coral.Database.Migrations
                     b.Navigation("Library");
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.FavoriteAlbum", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Album", "Album")
+                        .WithOne("Favorite")
+                        .HasForeignKey("Coral.Database.Models.FavoriteAlbum", "AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.FavoriteArtist", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Artist", "Artist")
+                        .WithOne("Favorite")
+                        .HasForeignKey("Coral.Database.Models.FavoriteArtist", "ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.FavoriteTrack", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Track", "Track")
+                        .WithOne("Favorite")
+                        .HasForeignKey("Coral.Database.Models.FavoriteTrack", "TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.PlaylistTrack", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Playlist", "Playlist")
+                        .WithMany("Tracks")
+                        .HasForeignKey("PlaylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Coral.Database.Models.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Playlist");
+
+                    b.Navigation("Track");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.Track", b =>
                 {
                     b.HasOne("Coral.Database.Models.Album", "Album")
@@ -574,11 +750,15 @@ namespace Coral.Database.Migrations
                 {
                     b.Navigation("Artworks");
 
+                    b.Navigation("Favorite");
+
                     b.Navigation("Tracks");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Artist", b =>
                 {
+                    b.Navigation("Favorite");
+
                     b.Navigation("Roles");
                 });
 
@@ -592,9 +772,19 @@ namespace Coral.Database.Migrations
                     b.Navigation("AudioFiles");
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.Playlist", b =>
+                {
+                    b.Navigation("Tracks");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.RecordLabel", b =>
                 {
                     b.Navigation("Releases");
+                });
+
+            modelBuilder.Entity("Coral.Database.Models.Track", b =>
+                {
+                    b.Navigation("Favorite");
                 });
 #pragma warning restore 612, 618
         }

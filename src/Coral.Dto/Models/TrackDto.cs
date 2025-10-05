@@ -11,5 +11,6 @@ public record TrackDto
     public List<ArtistWithRoleDto> Artists { get; set; } = null!;
     public SimpleAlbumDto Album { get; init; } = null!;
     public GenreDto? Genre { get; init; }
+    public bool Favorited { get; set; }
 
 }

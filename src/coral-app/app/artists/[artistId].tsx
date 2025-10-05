@@ -4,9 +4,11 @@ import { useArtist } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import type { SimpleAlbumDto, AlbumType } from '@/lib/client/schemas';
-import { AlbumCard } from '@/components/album-card';
+import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { Heart } from 'lucide-react-native';
 import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
+import { useAtomValue } from 'jotai';
+import { themeAtom } from '@/lib/state';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -36,9 +38,9 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
   return (
     <View className="mb-8">
       <Text variant="h4" className="mb-4 px-4">{title}</Text>
-      <View className="flex-row flex-wrap">
+      <View className="flex-row flex-wrap px-4">
         {albums.map((album) => (
-          <AlbumCard key={album.id} album={album} />
+          <UniversalAlbumCard key={album.id} album={album} />
         ))}
       </View>
 
@@ -50,9 +52,9 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
               <Text className="text-muted-foreground text-sm mt-2">{dividerLabel}</Text>
             )}
           </View>
-          <View className="flex-row flex-wrap">
+          <View className="flex-row flex-wrap px-4">
             {albumsAfterDivider.map((album) => (
-              <AlbumCard key={album.id} album={album} />
+              <UniversalAlbumCard key={album.id} album={album} />
             ))}
           </View>
         </>
@@ -62,6 +64,7 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
 }
 
 export default function ArtistScreen() {
+  const theme = useAtomValue(themeAtom);
   const { artistId } = useLocalSearchParams();
   const { data, error, isLoading } = useArtist({
     pathParams: {
@@ -138,7 +141,7 @@ export default function ArtistScreen() {
                 onPress={() => toggleFavorite(data)}
                 variant="outline"
               >
-                <Heart size={18} className="text-foreground" fill={data.favorited ? "currentColor" : "none"} />
+                <Heart size={18} color={theme === 'dark' ? '#fff' : '#000'} fill={data.favorited ? "currentColor" : "none"} />
                 <Text className="font-medium">{data.favorited ? 'Unlike' : 'Like'}</Text>
               </Button>
             </View>

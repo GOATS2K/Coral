@@ -9,16 +9,23 @@ export default function TabsLayout() {
   const theme = useAtomValue(themeAtom);
   const insets = useSafeAreaInsets();
 
+  const tabBarColors = {
+    active: theme === 'dark' ? '#fff' : '#000',
+    inactive: theme === 'dark' ? '#71717a' : '#a1a1aa',
+    background: theme === 'dark' ? '#09090b' : '#ffffff',
+    border: theme === 'dark' ? '#27272a' : '#e4e4e7',
+  };
+
   return (
     <View className="flex-1" style={{ paddingTop: Platform.OS === 'web' ? 0 : insets.top }}>
       <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme === 'dark' ? '#fff' : '#000',
-        tabBarInactiveTintColor: theme === 'dark' ? '#71717a' : '#a1a1aa',
+        tabBarActiveTintColor: tabBarColors.active,
+        tabBarInactiveTintColor: tabBarColors.inactive,
         tabBarStyle: Platform.OS === 'web' ? { display: 'none' } : {
-          backgroundColor: theme === 'dark' ? '#09090b' : '#ffffff',
-          borderTopColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
+          backgroundColor: tabBarColors.background,
+          borderTopColor: tabBarColors.border,
         },
       }}
     >

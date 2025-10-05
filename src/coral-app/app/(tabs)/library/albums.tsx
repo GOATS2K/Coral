@@ -2,7 +2,7 @@ import { View, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { fetchPaginatedAlbums } from '@/lib/client/components';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { AlbumCard } from '@/components/album-card';
+import { UniversalAlbumCard } from '@/components/universal-album-card';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -83,9 +83,9 @@ export default function AlbumsScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={400}
       >
-        <View className="flex-row flex-wrap">
+        <View className="flex-row flex-wrap px-2 py-2">
           {albums.map((album) => (
-            <AlbumCard key={album.id} album={album} />
+            <UniversalAlbumCard key={album.id} album={album} />
           ))}
         </View>
         {isFetchingNextPage && (

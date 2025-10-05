@@ -1,18 +1,19 @@
-import { View, ScrollView, ActivityIndicator, Pressable, Image } from 'react-native';
-import { Stack, Link } from 'expo-router';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
+import { Stack } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { useFavoriteArtists, useFavoriteAlbums, usePaginatedAlbums } from '@/lib/client/components';
-import { AlbumCard } from '@/components/album-card';
+import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { ArtistCard } from '@/components/artist-card';
-import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { baseUrl } from '@/lib/client/fetcher';
 import { Heart } from 'lucide-react-native';
+import { useAtomValue } from 'jotai';
+import { themeAtom } from '@/lib/state';
 
 const SCREEN_OPTIONS = {
   headerShown: false
 };
 
 export default function HomeScreen() {
+  const theme = useAtomValue(themeAtom);
   const { data: favoriteArtists, isLoading: artistsLoading } = useFavoriteArtists({});
   const { data: favoriteAlbums, isLoading: albumsLoading } = useFavoriteAlbums({});
   const { data: recentAlbums, isLoading: recentAlbumsLoading } = usePaginatedAlbums({
@@ -45,41 +46,10 @@ export default function HomeScreen() {
           {recentAlbums && recentAlbums.data.length > 0 && (
             <View className="mb-8">
               <Text variant="h2" className="px-4 pt-8 mb-4 font-bold">Recently Added</Text>
-              <View className="px-4 flex-row flex-wrap -mx-1">
-                {recentAlbums.data.map((album) => {
-                  const artworkPath = album.artworks?.small ?? '';
-                  const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
-                  const artistNames = album.artists && album.artists.length > 4
-                    ? 'Various Artists'
-                    : album.artists?.map(a => a.name).join(', ') ?? 'Unknown Artist';
-
-                  return (
-                    <View key={album.id} className="basis-full md:basis-1/2 lg:basis-1/3 px-1 mb-2">
-                      <Link href={`/albums/${album.id}`} asChild>
-                        <Pressable className="flex-row gap-2.5 web:hover:bg-muted/30 active:bg-muted/50 rounded-lg p-1">
-                          <View className="w-12 h-12 rounded overflow-hidden flex-shrink-0">
-                            {artworkUrl ? (
-                              <Image
-                                source={{ uri: artworkUrl }}
-                                className="w-full h-full"
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <MissingAlbumCover size={20} />
-                            )}
-                          </View>
-                          <View className="flex-1 justify-center min-w-0">
-                            <Text className="font-medium text-sm" numberOfLines={1}>{album.name}</Text>
-                            <Text className="text-muted-foreground text-xs" numberOfLines={1}>{artistNames}</Text>
-                            {album.releaseYear && (
-                              <Text className="text-muted-foreground text-xs">{album.releaseYear}</Text>
-                            )}
-                          </View>
-                        </Pressable>
-                      </Link>
-                    </View>
-                  );
-                })}
+              <View className="px-2 flex-row flex-wrap">
+                {recentAlbums.data.map((album) => (
+                  <UniversalAlbumCard key={album.id} album={album} />
+                ))}
               </View>
             </View>
           )}
@@ -92,8 +62,8 @@ export default function HomeScreen() {
           )}
 
           {!hasFavorites && !recentAlbums?.data.length && (
-            <View className="flex-1 items-center justify-center py-16 px-4">
-              <Heart size={64} className="text-muted-foreground mb-4" />
+            <View className="flex-1 items-center justify-center py-16 px-2">
+              <Heart size={64} color={theme === 'dark' ? '#71717a' : '#a1a1aa'} className="mb-4" />
               <Text variant="h3" className="text-center mb-2">No favorites yet</Text>
               <Text className="text-muted-foreground text-center">
                 Start liking tracks, albums, and artists to see them here
@@ -117,17 +87,11 @@ export default function HomeScreen() {
           {favoriteAlbums && favoriteAlbums.length > 0 && (
             <View className="mb-8">
               <Text variant="h3" className="px-4 mb-4">Favorite Albums</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 8 }}
-              >
+              <View className="px-2 flex-row flex-wrap">
                 {favoriteAlbums.map((album) => (
-                  <View key={album.id} style={{ width: 198 }}>
-                    <AlbumCard album={album} />
-                  </View>
+                  <UniversalAlbumCard key={album.id} album={album} />
                 ))}
-              </ScrollView>
+              </View>
             </View>
           )}
 

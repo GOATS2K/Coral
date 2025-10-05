@@ -240,6 +240,23 @@ export function usePlayer() {
     }
   }, [status.currentTime]);
 
+  // Validation: check currentTrack matches queue[currentIndex]
+  useEffect(() => {
+    if (state.queue.length > 0 && state.currentTrack) {
+      const expectedTrack = state.queue[state.currentIndex];
+      if (expectedTrack && expectedTrack.id !== state.currentTrack.id) {
+        console.error('❌ [Player] State inconsistency detected!', {
+          currentTrackId: state.currentTrack.id,
+          currentTrackTitle: state.currentTrack.title,
+          expectedTrackId: expectedTrack.id,
+          expectedTrackTitle: expectedTrack.title,
+          currentIndex: state.currentIndex,
+          queueLength: state.queue.length,
+        });
+      }
+    }
+  }, [state.currentTrack, state.currentIndex, state.queue]);
+
   // Update buffer player when queue or current index changes
   useEffect(() => {
     let nextIndex = state.currentIndex + 1;

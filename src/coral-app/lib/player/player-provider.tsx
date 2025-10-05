@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useRef, useEffect, MutableRefObject } from 'react';
-import { useAudioPlayer, AudioPlayer } from 'expo-audio';
+import { useAudioPlayer, AudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { useAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
 
@@ -16,6 +16,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playerA = useAudioPlayer();
   const playerB = useAudioPlayer();
   const [state, setState] = useAtom(playerStateAtom);
+
+  // Configure audio mode for background playback
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+    });
+  }, []);
 
   // Track which track ID is loaded in each player
   const playerATrackIdRef = useRef<string | null>(null);
@@ -94,12 +102,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             // Start buffer (overlap with active for gapless)
             bufferPlayer.play();
 
-            // Update state
-            setState({
-              ...currentState,
-              currentIndex: nextIndex,
-              currentTrack: nextTrack,
-              activePlayer: currentState.activePlayer === 'A' ? 'B' : 'A',
+            // Update state with fresh track reference from queue to avoid stale objects
+            setState((latestState) => {
+              const freshTrack = latestState.queue[nextIndex];
+
+              // Defensive check: verify track exists and matches expected ID
+              if (!freshTrack) {
+                console.warn('⚠️ [Gapless] Track not found at index', nextIndex);
+                return latestState;
+              }
+
+              if (freshTrack.id !== nextTrack.id) {
+                console.warn('⚠️ [Gapless] Track mismatch!', {
+                  expected: nextTrack.id,
+                  actual: freshTrack.id,
+                  index: nextIndex,
+                });
+              }
+
+              return {
+                ...latestState,
+                currentIndex: nextIndex,
+                currentTrack: freshTrack,
+                activePlayer: currentState.activePlayer === 'A' ? 'B' : 'A',
+              };
             });
 
             // Stop active player after it finishes

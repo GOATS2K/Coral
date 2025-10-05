@@ -5,19 +5,37 @@ import { fetchRecommendationsForTrack } from '@/lib/client/components';
 type SetState = (update: PlayerState | ((prev: PlayerState) => PlayerState)) => void;
 
 export function addToQueue(setState: SetState, track: SimpleTrackDto) {
-  setState(prev => ({
-    ...prev,
-    queue: [...prev.queue, track],
-    originalQueue: prev.originalQueue ? [...prev.originalQueue, track] : null,
-  }));
+  setState(prev => {
+    const newQueue = [...prev.queue, track];
+    const newOriginalQueue = prev.originalQueue ? [...prev.originalQueue, track] : null;
+
+    // Refresh currentTrack reference from the new queue to avoid stale object references
+    const freshCurrentTrack = newQueue[prev.currentIndex];
+
+    return {
+      ...prev,
+      queue: newQueue,
+      originalQueue: newOriginalQueue,
+      currentTrack: freshCurrentTrack || prev.currentTrack,
+    };
+  });
 }
 
 export function addMultipleToQueue(setState: SetState, tracks: SimpleTrackDto[]) {
-  setState(prev => ({
-    ...prev,
-    queue: [...prev.queue, ...tracks],
-    originalQueue: prev.originalQueue ? [...prev.originalQueue, ...tracks] : null,
-  }));
+  setState(prev => {
+    const newQueue = [...prev.queue, ...tracks];
+    const newOriginalQueue = prev.originalQueue ? [...prev.originalQueue, ...tracks] : null;
+
+    // Refresh currentTrack reference from the new queue to avoid stale object references
+    const freshCurrentTrack = newQueue[prev.currentIndex];
+
+    return {
+      ...prev,
+      queue: newQueue,
+      originalQueue: newOriginalQueue,
+      currentTrack: freshCurrentTrack || prev.currentTrack,
+    };
+  });
 }
 
 export function removeFromQueue(setState: SetState, index: number) {
@@ -70,10 +88,14 @@ export function reorderQueue(setState: SetState, fromIndex: number, toIndex: num
       newCurrentIndex = prev.currentIndex + 1;
     }
 
+    // Refresh currentTrack from the reordered queue
+    const freshCurrentTrack = newQueue[newCurrentIndex];
+
     return {
       ...prev,
       queue: newQueue,
       currentIndex: newCurrentIndex,
+      currentTrack: freshCurrentTrack || prev.currentTrack,
     };
   });
 }
@@ -95,10 +117,14 @@ export function shuffleQueue(setState: SetState) {
         return { ...prev, isShuffled: false, originalQueue: null };
       }
 
+      // Get fresh reference from original queue to avoid stale objects
+      const freshCurrentTrack = prev.originalQueue[newIndex];
+
       return {
         ...prev,
         queue: prev.originalQueue,
         currentIndex: newIndex,
+        currentTrack: freshCurrentTrack,
         isShuffled: false,
         originalQueue: null,
       };

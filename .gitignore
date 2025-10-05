@@ -587,3 +587,4 @@ src/Coral.Essentia.Cli/lib
 src/Coral.Essentia.Cli/include
 src/Coral.Essentia.Cli/bin
 src/Coral.Essentia.Cli/Coral.Es.*/
+.claude/settings.local.json

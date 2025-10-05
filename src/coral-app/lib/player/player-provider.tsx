@@ -138,13 +138,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
 
       // Reset transition window flag when far from end
-      if (timeRemaining > 0.2) {
+      if (timeRemaining > 0.15) {
         inTransitionWindowRef.current = false;
       }
 
-      // Start buffer 150ms before track ends - but ONLY on the first poll that detects it
-      // This guarantees we trigger at 125-150ms (first poll) instead of randomly within the window
-      const enteredTransitionWindow = activePlayer.playing && !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.15;
+      // Start buffer 100ms before track ends - but ONLY on the first poll that detects it
+      // This guarantees we trigger at 75-100ms (first poll) instead of randomly within the window
+      // Tight timing to minimize overlap while ensuring enough time for browser audio startup
+      const enteredTransitionWindow = activePlayer.playing && !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.1;
       const nearEnd = enteredTransitionWindow && !inTransitionWindowRef.current;
 
       // Mark that we've entered the window to prevent retriggering

@@ -32,6 +32,12 @@ if(WIN32)
     # Find Essentia (has CMake config)
     find_package(Essentia REQUIRED)
 
+    # Workaround: Manually set IMPORTED_LOCATION since EssentiaTargets-*.cmake is missing
+    set_target_properties(Essentia::essentia PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/essentia.dll"
+        IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/essentia.lib"
+    )
+
     # Link Essentia
     target_link_libraries(Coral.Essentia.Cli PRIVATE Essentia::essentia)
 
@@ -68,6 +74,21 @@ else()
 
     # Find Essentia
     find_package(Essentia REQUIRED)
+
+    # Workaround: Manually set IMPORTED_LOCATION since EssentiaTargets-*.cmake is missing
+    # Also clear INTERFACE_LINK_LIBRARIES to avoid dependency chain issues (we handle deps separately)
+    if(APPLE)
+        set_target_properties(Essentia::essentia PROPERTIES
+            IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/libessentia.dylib"
+            INTERFACE_LINK_LIBRARIES ""
+        )
+    else()
+        # Linux
+        set_target_properties(Essentia::essentia PROPERTIES
+            IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/libessentia.so"
+            INTERFACE_LINK_LIBRARIES ""
+        )
+    endif()
 
     # Include Eigen3 (header-only)
     find_path(EIGEN3_INCLUDE_DIR
@@ -116,6 +137,18 @@ else()
             ${TAGLIB_LIBRARIES}
             ${CHROMAPRINT_LIBRARIES}
             ${YAML_LIBRARIES}
+        )
+
+        target_link_directories(Coral.Essentia.Cli PRIVATE
+            ${LIBAVCODEC_LIBRARY_DIRS}
+            ${LIBAVFORMAT_LIBRARY_DIRS}
+            ${LIBAVUTIL_LIBRARY_DIRS}
+            ${LIBSWRESAMPLE_LIBRARY_DIRS}
+            ${FFTW3F_LIBRARY_DIRS}
+            ${SAMPLERATE_LIBRARY_DIRS}
+            ${TAGLIB_LIBRARY_DIRS}
+            ${CHROMAPRINT_LIBRARY_DIRS}
+            ${YAML_LIBRARY_DIRS}
         )
 
         target_include_directories(Coral.Essentia.Cli PRIVATE

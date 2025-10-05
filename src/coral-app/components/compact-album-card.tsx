@@ -19,7 +19,7 @@ export const CompactAlbumCard = memo(function CompactAlbumCard({ album }: Compac
 
   return (
     <Link href={`/albums/${album.id}`} asChild>
-      <Pressable className="w-full flex-row items-center gap-2.5 web:hover:bg-muted/30 active:bg-muted/50 rounded-lg p-1">
+      <Pressable className="native:w-full web:w-[calc(50%-0.25rem)] flex-row items-center gap-2.5 web:hover:bg-muted/30 active:bg-muted/50 rounded-lg p-1">
         <View className="w-12 h-12 rounded overflow-hidden flex-shrink-0">
           {artworkUrl ? (
             <Image

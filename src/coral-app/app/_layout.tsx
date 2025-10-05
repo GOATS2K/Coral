@@ -93,15 +93,15 @@ export default function RootLayout() {
               <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 {Platform.OS === 'web' ? (
-                  // Web: Sidebar + Content layout
-                  <View className="flex-1 flex-row">
-                    <Sidebar />
-                    <View className="flex-1 flex-col">
+                  // Web: Sidebar + Content layout with player bar at bottom
+                  <View className="flex-1 flex-col">
+                    <View className="flex-1 flex-row">
+                      <Sidebar />
                       <View className="flex-1">
                         <Stack screenOptions={{ headerShown: false }} />
                       </View>
-                      <WebPlayerBar />
                     </View>
+                    <WebPlayerBar />
                   </View>
                 ) : (
                   // Mobile: Full-screen Stack

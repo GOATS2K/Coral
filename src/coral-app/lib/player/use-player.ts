@@ -1,6 +1,6 @@
 import { useAudioPlayerStatus } from 'expo-audio';
 import { useAtom, useSetAtom } from 'jotai';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { playerStateAtom, PlaybackInitializer } from '@/lib/state';
 import { useDualPlayers } from './player-provider';
@@ -49,11 +49,11 @@ export function usePlayer() {
     }
   };
 
-  const togglePlayPause = () => {
+  const togglePlayPause = useCallback(() => {
     status.playing ? activePlayer.pause() : activePlayer.play();
-  };
+  }, [status.playing, activePlayer]);
 
-  const skip = async (direction: 1 | -1) => {
+  const skip = useCallback(async (direction: 1 | -1) => {
     setPosition(0);
 
     let newIndex = state.currentIndex + direction;
@@ -189,12 +189,12 @@ export function usePlayer() {
     } catch (err) {
       console.error('Skip error:', err);
     }
-  };
+  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef]);
 
-  const seekTo = async (newPosition: number) => {
+  const seekTo = useCallback(async (newPosition: number) => {
     setPosition(newPosition);
     await activePlayer.seekTo(newPosition);
-  };
+  }, [activePlayer]);
 
 
   const playFromIndex = async (index: number) => {
@@ -291,10 +291,10 @@ export function usePlayer() {
 // Hook that returns only player actions without subscribing to status updates
 // Use this in components that only need to trigger actions, not display player state
 export function usePlayerActions() {
-  const { playerA, playerB } = useDualPlayers();
+  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef } = useDualPlayers();
   const setState = useSetAtom(playerStateAtom);
 
-  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
+  const play = useCallback(async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
 
     playerA.pause();
@@ -313,16 +313,16 @@ export function usePlayerActions() {
       initializer: initializer || null,
     });
     loadTrack(playerA, track.id);
+    playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(playerA);
     playerA.play();
 
     const nextTrack = tracks[startIndex + 1];
     if (nextTrack) {
       loadTrack(playerB, nextTrack.id);
+      playerBTrackIdRef.current = nextTrack.id;
     }
-  };
+  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, setState]);
 
-  return {
-    play,
-  };
+  return { play };
 }

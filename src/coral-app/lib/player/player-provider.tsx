@@ -41,17 +41,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const lastTransitionedRef = useRef({ player: '', index: -1 });
 
-  // High-frequency polling for precise gapless transitions
+  // Interval-based polling for gapless transitions (100ms = 10Hz)
+  // Much more CPU-efficient than RAF (60+ Hz) while still precise enough
   useEffect(() => {
-    let rafId: number;
+    console.log('🎵 [PlayerProvider] Creating interval', new Date().toISOString());
 
     const checkTransition = () => {
       const currentState = stateRef.current;
       const activePlayer = currentState.activePlayer === 'A' ? playerA : playerB;
       const bufferPlayer = currentState.activePlayer === 'A' ? playerB : playerA;
 
+      // Early return if not playing or no queue
+      if (!activePlayer.playing || currentState.queue.length === 0) {
+        return;
+      }
+
       const timeRemaining = activePlayer.duration - activePlayer.currentTime;
-      const nearEnd = !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.1;
+      const nearEnd = !isNaN(timeRemaining) && timeRemaining > 0 && timeRemaining < 0.15;
 
       if (nearEnd) {
         const alreadyTransitioned =
@@ -104,12 +110,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           }
         }
       }
-
-      rafId = requestAnimationFrame(checkTransition);
     };
 
-    rafId = requestAnimationFrame(checkTransition);
-    return () => cancelAnimationFrame(rafId);
+    // Check every 100ms (10 times per second) instead of 60+ times
+    const intervalId = setInterval(checkTransition, 100);
+    return () => {
+      console.log('🛑 [PlayerProvider] Clearing interval', new Date().toISOString());
+      clearInterval(intervalId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerA.id, playerB.id]);
 

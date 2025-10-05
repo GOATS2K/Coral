@@ -1,12 +1,13 @@
 import { Pressable, View, Platform, Image } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
-import { usePlayer } from '@/lib/player/use-player';
+import { usePlayerActions } from '@/lib/player/use-player';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useState } from 'react';
+import { useState, memo, useCallback, useMemo } from 'react';
 import { TrackMenu } from '@/components/track-menu';
-import { PlaybackInitializer } from '@/lib/state';
+import { PlaybackInitializer, playerStateAtom } from '@/lib/state';
+import { useAtomValue } from 'jotai';
 
 interface TrackListingProps {
   tracks: SimpleTrackDto[];
@@ -17,7 +18,7 @@ interface TrackListingProps {
   initializer?: PlaybackInitializer;
 }
 
-function TrackArtwork({ albumId }: { albumId: string }) {
+const TrackArtwork = memo(function TrackArtwork({ albumId }: { albumId: string }) {
   const [imageError, setImageError] = useState(false);
 
   if (imageError || !albumId) {
@@ -32,13 +33,27 @@ function TrackArtwork({ albumId }: { albumId: string }) {
       onError={() => setImageError(true)}
     />
   );
+});
+
+interface TrackRowProps {
+  track: SimpleTrackDto;
+  index: number;
+  isActive: boolean;
+  showCoverArt: boolean;
+  showTrackNumber: boolean;
+  hasMultipleDiscs: boolean;
+  onPlay: (index: number) => void;
 }
 
-export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
-  const { play, activeTrack } = usePlayer();
-
-  const hasMultipleDiscs = new Set(tracks.map(t => t.discNumber || 1)).size > 1;
-
+const TrackRow = memo(function TrackRow({
+  track,
+  index,
+  isActive,
+  showCoverArt,
+  showTrackNumber,
+  hasMultipleDiscs,
+  onPlay
+}: TrackRowProps) {
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -51,42 +66,69 @@ export function TrackListing({ tracks, album, showTrackNumber = true, showCoverA
   };
 
   return (
+    <TrackMenu key={track.id} track={track} isActive={isActive}>
+      <Pressable
+        onPress={() => onPlay(index)}
+        className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30"
+      >
+        {showCoverArt ? (
+          <View className="w-10 h-10 rounded overflow-hidden">
+            <TrackArtwork albumId={track.album?.id || ''} />
+          </View>
+        ) : showTrackNumber ? (
+          <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+            {formatTrackNumber(track)}
+          </Text>
+        ) : null}
+        <View className="flex-1 min-w-0">
+          <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-primary font-medium' : 'text-foreground'}`} numberOfLines={1}>
+            {track.title}
+          </Text>
+          <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-primary/80' : 'text-muted-foreground'}`} numberOfLines={1}>
+            {track.artists.filter(a => a.role === 'Main').map(a => a.name).join(', ')}
+          </Text>
+        </View>
+        <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+          {formatDuration(track.durationInSeconds)}
+        </Text>
+      </Pressable>
+    </TrackMenu>
+  );
+});
+
+export const TrackListing = memo(function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
+  const { play } = usePlayerActions();
+  const activeTrack = useAtomValue(playerStateAtom).currentTrack;
+
+  const hasMultipleDiscs = useMemo(() =>
+    new Set(tracks.map(t => t.discNumber || 1)).size > 1,
+    [tracks]
+  );
+
+  const handlePlay = useCallback((index: number) => {
+    play(tracks, index, initializer);
+  }, [play, tracks, initializer]);
+
+  return (
     <>
       <View className={className}>
         {tracks.map((track, index) => {
           const isActive = activeTrack?.id === track.id;
 
           return (
-            <TrackMenu key={track.id} track={track} isActive={isActive}>
-              <Pressable
-                onPress={() => play(tracks, index, initializer)}
-                className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30"
-              >
-                {showCoverArt ? (
-                  <View className="w-10 h-10 rounded overflow-hidden">
-                    <TrackArtwork albumId={track.album?.id || ''} />
-                  </View>
-                ) : showTrackNumber ? (
-                  <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                    {formatTrackNumber(track)}
-                  </Text>
-                ) : null}
-                <View className="flex-1 min-w-0">
-                  <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-primary font-medium' : 'text-foreground'}`} numberOfLines={1}>
-                    {track.title}
-                  </Text>
-                  <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-primary/80' : 'text-muted-foreground'}`} numberOfLines={1}>
-                    {track.artists.filter(a => a.role === 'Main').map(a => a.name).join(', ')}
-                  </Text>
-                </View>
-                <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                  {formatDuration(track.durationInSeconds)}
-                </Text>
-              </Pressable>
-            </TrackMenu>
+            <TrackRow
+              key={track.id}
+              track={track}
+              index={index}
+              isActive={isActive}
+              showCoverArt={showCoverArt}
+              showTrackNumber={showTrackNumber}
+              hasMultipleDiscs={hasMultipleDiscs}
+              onPlay={handlePlay}
+            />
           );
         })}
       </View>
     </>
   );
-}
+});

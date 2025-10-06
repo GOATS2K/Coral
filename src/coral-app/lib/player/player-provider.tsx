@@ -93,7 +93,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const timeRemaining = activePlayer.duration - activePlayer.currentTime;
       const currentTime = activePlayer.currentTime;
       const duration = activePlayer.duration;
-      const timeRemainingLimit = 1.0; // Switch to fast polling at 1s remaining
+      const timeRemainingLimit = 5.0; // Switch to fast polling at 5s remaining (early enough to guarantee catching transition window)
 
       // Adaptive polling: switch to fast mode when close to end
       if (activePlayer.playing && !isNaN(timeRemaining) && timeRemaining < timeRemainingLimit && pollingRateRef.current !== 25) {

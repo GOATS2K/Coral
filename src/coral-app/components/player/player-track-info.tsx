@@ -78,7 +78,7 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
             {track.title}
           </Text>
         </Pressable>
-        <View className="flex-row flex-wrap gap-1">
+        <View className="flex-row flex-wrap">
           {mainArtists.map((artist, index) => (
             <View key={artist.id} className="flex-row items-center">
               <Link href={`/artists/${artist.id}`} asChild>

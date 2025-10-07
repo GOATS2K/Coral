@@ -36,7 +36,7 @@ export function WebPlayerBar() {
   const setState = useSetAtom(playerStateAtom);
   const playerState = useAtomValue(playerStateAtom);
 
-  useMediaSession({ activeTrack, togglePlayPause, skip, seekTo });
+  useMediaSession({ activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo });
 
   if (!activeTrack) {
     return null;

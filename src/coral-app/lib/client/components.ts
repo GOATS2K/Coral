@@ -4,7 +4,7 @@
  * @version v1
  */
 import * as reactQuery from "@tanstack/react-query";
-import { useContext, Context, queryKeyFn } from "./context";
+import { type Context, useContext, queryKeyFn } from "./context";
 import { deepMerge } from "./utils";
 import type * as Fetcher from "./fetcher";
 import { fetch } from "./fetcher";

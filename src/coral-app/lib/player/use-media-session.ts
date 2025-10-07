@@ -4,12 +4,14 @@ import { getArtistNames, getArtworkUrl } from './player-format-utils';
 
 interface UseMediaSessionProps {
   activeTrack: SimpleTrackDto | null;
+  isPlaying: boolean;
+  progress: { position: number; duration: number };
   togglePlayPause: () => void;
   skip: (direction: 1 | -1) => void;
   seekTo: (position: number) => void;
 }
 
-export function useMediaSession({ activeTrack, togglePlayPause, skip, seekTo }: UseMediaSessionProps) {
+export function useMediaSession({ activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo }: UseMediaSessionProps) {
   // Create refs for handler functions
   const togglePlayPauseRef = useRef(togglePlayPause);
   const skipRef = useRef(skip);
@@ -62,4 +64,37 @@ export function useMediaSession({ activeTrack, togglePlayPause, skip, seekTo }: 
       }
     };
   }, []); // Empty deps - run once on mount, cleanup once on unmount
+
+  // Update playback state when playing/paused changes
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
+
+  // Update position state when track or position changes
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !activeTrack) return;
+
+    // Check if setPositionState is supported (not all browsers support it)
+    if (typeof navigator.mediaSession.setPositionState !== 'function') {
+      return;
+    }
+
+    const duration = progress.duration || activeTrack.durationInSeconds || 0;
+
+    // Only update if we have valid duration
+    if (duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration,
+          position: Math.min(progress.position, duration),
+          playbackRate: 1.0,
+        });
+      } catch (error) {
+        // Some browsers may throw errors with certain values
+        console.warn('[MediaSession] Failed to set position state:', error);
+      }
+    }
+  }, [activeTrack, progress.position, progress.duration]);
 }

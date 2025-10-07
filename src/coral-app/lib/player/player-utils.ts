@@ -1,8 +1,11 @@
 import type { AudioPlayer } from 'expo-audio';
+import { Platform } from 'react-native';
 import { baseUrl } from '@/lib/client/fetcher';
 
-export const getTrackUrl = (trackId: string) =>
-  `${baseUrl}/api/library/tracks/${trackId}/original`;
+export const getTrackUrl = (trackId: string) => {
+  // Both web (Web Audio API) and native (expo-audio) use original files
+  return `${baseUrl}/api/library/tracks/${trackId}/original`;
+};
 
 export const loadTrack = (player: AudioPlayer, trackId: string) => {
   // Don't interrupt a currently playing track - let it finish naturally

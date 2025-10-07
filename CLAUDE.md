@@ -183,3 +183,5 @@ The backend uses custom operation IDs based on controller method names for clean
 - When you are repeatedly struggling with fixing the same bug, take a step back, evaluate your implementation from top to bottom and focus on any architectural issues that may be the cause - rather than applying quick band-aid fixes.
 - When bugs re-appear, immediately start adding logging to the problematic areas of the codebase.
 - Follow the KISS principle whereever possible.
+- When analyzing libraries, clone the repository to a temporary directory and read the source code from there.
+- Use `console.info` instead of `console.log` for logging.

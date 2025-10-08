@@ -84,6 +84,36 @@ export class WebAudioPlayer {
     }
   }
 
+  private pruneOldCacheEntries() {
+    const keepTrackIds = new Set<string>();
+
+    // Keep previous track (if exists)
+    if (this.currentTrackIndex > 0) {
+      const prevTrack = this.tracks[this.currentTrackIndex - 1];
+      if (prevTrack) keepTrackIds.add(prevTrack.id);
+    }
+
+    // Keep current track
+    const currentTrack = this.tracks[this.currentTrackIndex];
+    if (currentTrack) keepTrackIds.add(currentTrack.id);
+
+    // Keep next track (if exists)
+    if (this.currentTrackIndex < this.tracks.length - 1) {
+      const nextTrack = this.tracks[this.currentTrackIndex + 1];
+      if (nextTrack) keepTrackIds.add(nextTrack.id);
+    }
+
+    // Evict everything else
+    const cachedIds = Array.from(this.audioBuffers.keys());
+    for (const cachedId of cachedIds) {
+      if (!keepTrackIds.has(cachedId)) {
+        console.info('[WebAudio] Evicting cache for old track:', cachedId);
+        this.audioBuffers.delete(cachedId);
+        this.prefetchInProgress.delete(cachedId);
+      }
+    }
+  }
+
   private async scheduleTrack(trackIndex: number, startTime: number) {
     if (trackIndex >= this.tracks.length) return;
 
@@ -272,6 +302,9 @@ export class WebAudioPlayer {
     this.clearScheduledSources();
     this.currentTrackIndex = index;
 
+    // Clean up old cache entries
+    this.pruneOldCacheEntries();
+
     await this.scheduleTrack(index, this.audioContext.currentTime);
 
     if (this.trackChangeCallback) {
@@ -400,6 +433,9 @@ export class WebAudioPlayer {
     // Move to next track
     this.currentTrackIndex = nextIndex;
     const nextTrack = this.tracks[nextIndex];
+
+    // Clean up old cache entries
+    this.pruneOldCacheEntries();
 
     // Wait for scheduling to complete if in progress
     await this.waitForSchedulingComplete(nextIndex, nextTrack?.title);

@@ -1,11 +1,11 @@
-import { ComponentType } from 'react';
+import { ComponentType, useMemo } from 'react';
 import { Heart, Sparkles, Plus, User, Trash2, Disc3 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { useToggleFavoriteTrack } from '@/lib/hooks/use-toggle-favorite-track';
 import { useRouter } from 'expo-router';
-import { useSetAtom, useAtomValue } from 'jotai';
+import { useSetAtom, useAtomValue, atom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
 import { useToast } from '@/lib/hooks/use-toast';
 import { addToQueue, findSimilarAndAddToQueue } from '@/lib/player/player-queue-utils';
@@ -29,10 +29,18 @@ export function TrackMenuItems({ track, components, isQueueContext = false }: Tr
   const { toggleFavorite } = useToggleFavoriteTrack();
   const router = useRouter();
   const setState = useSetAtom(playerStateAtom);
-  const playerState = useAtomValue(playerStateAtom);
   const { showToast } = useToast();
 
-  const isInQueue = playerState.queue.some(t => t.id === track.id);
+  // Only subscribe to queue (not entire playerState) to minimize re-renders
+  const queue = useAtomValue(useMemo(() =>
+    atom(get => get(playerStateAtom).queue),
+    []
+  ));
+
+  const isInQueue = useMemo(() =>
+    queue.some(t => t.id === track.id),
+    [queue, track.id]
+  );
   const showRemoveFromQueue = isQueueContext && isInQueue;
   const showAddToQueue = !isQueueContext && !isInQueue;
 

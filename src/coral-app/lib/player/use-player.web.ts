@@ -19,14 +19,30 @@ export function usePlayer() {
     if (!player) return;
 
     const interval = setInterval(() => {
-      if (player.getIsPlaying()) {
-        setPosition(player.getCurrentTime());
-        setDuration(player.getDuration());
-        setIsPlaying(true);
-      } else {
+      const playing = player.getIsPlaying();
+
+      if (playing) {
+        const newPosition = player.getCurrentTime();
+        const newDuration = player.getDuration();
+
+        // Only update if position changed significantly (>0.2s) to reduce re-renders
+        if (Math.abs(newPosition - position) > 0.2 ||
+            newDuration !== duration ||
+            !isPlaying) {
+          setPosition(newPosition);
+          setDuration(newDuration);
+          setIsPlaying(true);
+        }
+
+        // Schedule next track when 15s remaining (check once in 14.5-15s window)
+        const remaining = newDuration - newPosition;
+        if (remaining > 0 && remaining <= 15 && remaining > 14.5) {
+          player.checkAndScheduleNext();
+        }
+      } else if (isPlaying) {
         setIsPlaying(false);
       }
-    }, 100); // Update 10 times per second
+    }, 250); // Update 4 times per second (reduced from 10x for better performance)
 
     // Set up track change callback to update UI state
     player.setTrackChangeCallback((newIndex: number) => {
@@ -44,7 +60,7 @@ export function usePlayer() {
     return () => {
       clearInterval(interval);
     };
-  }, [player, setState]);
+  }, [player, setState, position, duration, isPlaying]);
 
   // Sync repeat mode with player
   useEffect(() => {
@@ -62,9 +78,12 @@ export function usePlayer() {
       lastQueueRef.current = state.queue;
 
       // Update the player's internal queue without restarting playback
+      // Note: We intentionally don't depend on state.currentIndex to avoid
+      // triggering this effect on every index change. The player will use
+      // the latest currentIndex value when updateQueue is called.
       player.updateQueue(state.queue, state.currentIndex);
     }
-  }, [player, state.queue, state.currentIndex]);
+  }, [player, state.queue]);
 
   const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     console.info('[usePlayer] play called', { player: !!player, trackCount: tracks.length, startIndex });
@@ -91,10 +110,6 @@ export function usePlayer() {
 
     // Update ref to prevent duplicate sync in useEffect
     lastQueueRef.current = tracks;
-
-    // Synchronously update repeat mode before loading queue to prevent race condition
-    // where a track might end with stale repeat mode before the effect updates it
-    player.setRepeatMode('off');
 
     console.info('[usePlayer] Calling loadQueue...');
     await player.loadQueue(tracks, startIndex);

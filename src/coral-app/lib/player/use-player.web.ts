@@ -92,6 +92,10 @@ export function usePlayer() {
     // Update ref to prevent duplicate sync in useEffect
     lastQueueRef.current = tracks;
 
+    // Synchronously update repeat mode before loading queue to prevent race condition
+    // where a track might end with stale repeat mode before the effect updates it
+    player.setRepeatMode('off');
+
     console.info('[usePlayer] Calling loadQueue...');
     await player.loadQueue(tracks, startIndex);
     console.info('[usePlayer] loadQueue completed');

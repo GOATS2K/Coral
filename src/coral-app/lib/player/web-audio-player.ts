@@ -2,8 +2,12 @@ import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { baseUrl } from '@/lib/client/fetcher';
 import type { RepeatMode } from '@/lib/state';
 
+type AudioSourceType = 'buffer' | 'element';
+
 interface ScheduledSource {
-  source: AudioBufferSourceNode;
+  source: AudioBufferSourceNode | MediaElementAudioSourceNode;
+  sourceType: AudioSourceType;
+  audioElement?: HTMLAudioElement; // For MediaElement sources
   startTime: number;
   duration: number;
   trackIndex: number;
@@ -24,6 +28,7 @@ export class WebAudioPlayer {
   private audioBuffers: Map<string, AudioBuffer> = new Map();
   private schedulingInProgress: Set<number> = new Set();
   private prefetchInProgress: Set<string> = new Set(); // Track IDs being prefetched
+  private bufferDecodeInProgress: Set<string> = new Set(); // Track IDs being decoded for caching
 
   constructor() {
     this.audioContext = new AudioContext();
@@ -57,6 +62,20 @@ export class WebAudioPlayer {
     this.tracks = tracks;
     this.currentTrackIndex = currentIndex;
 
+    // Clear pre-scheduled tracks to prevent wrong tracks from playing after queue changes
+    // (e.g., shuffle/reorder operations)
+    const hadScheduledSources = this.scheduledSources.length > 1;
+    if (hadScheduledSources) {
+      console.info('[WebAudio] Queue changed - clearing', this.scheduledSources.length - 1, 'pre-scheduled track(s)');
+      // Keep only the currently playing track (index 0)
+      const currentlyPlaying = this.scheduledSources[0];
+      this.clearScheduledSources();
+      if (currentlyPlaying && this.isPlaying) {
+        this.scheduledSources = [currentlyPlaying];
+        console.info('[WebAudio] Preserved currently playing track, will re-schedule upcoming tracks');
+      }
+    }
+
     // Remove cached tracks that are no longer in the queue
     const trackIdsInQueue = new Set(tracks.map(t => t.id));
     const cachedTrackIds = Array.from(this.audioBuffers.keys());
@@ -84,7 +103,31 @@ export class WebAudioPlayer {
     }
   }
 
-  private async scheduleTrack(trackIndex: number, startTime: number) {
+  private createMediaElementSource(url: string, track: SimpleTrackDto): {
+    audioElement: HTMLAudioElement;
+    source: MediaElementAudioSourceNode;
+    duration: Promise<number>;
+  } {
+    const audioElement = new Audio(url);
+    audioElement.crossOrigin = 'anonymous';
+    audioElement.preload = 'auto';
+
+    const source = this.audioContext.createMediaElementSource(audioElement);
+    source.connect(this.gainNode);
+
+    // Return promise that resolves to duration once loaded
+    const durationPromise = new Promise<number>((resolve) => {
+      const onLoadedMetadata = () => {
+        resolve(audioElement.duration);
+        audioElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+      };
+      audioElement.addEventListener('loadedmetadata', onLoadedMetadata);
+    });
+
+    return { audioElement, source, duration: durationPromise };
+  }
+
+  private async scheduleTrack(trackIndex: number, startTime: number, preferBuffer: boolean = false) {
     if (trackIndex >= this.tracks.length) return;
 
     // Check if already scheduling this track
@@ -103,50 +146,113 @@ export class WebAudioPlayer {
       // Fetch original audio file URL
       const fileUrl = `${baseUrl}/api/library/tracks/${track.id}/original`;
 
-      // Fetch and decode the complete audio file
-      const audioBuffer = await this.fetchAndDecode(fileUrl, track.id);
-
-      // Create source node
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.gainNode);
-
-      // Check for gaps - if startTime is in the past, we'll have a gap
+      // Check if we have a cached buffer
+      const cachedBuffer = this.audioBuffers.get(track.id);
       const currentTime = this.audioContext.currentTime;
       const timeDelta = startTime - currentTime;
 
-      if (startTime < currentTime) {
-        const gap = currentTime - startTime;
-        console.warn('[WebAudio] ⚠️  GAP DETECTED:', gap.toFixed(3), 's - scheduled start time was in the past!');
-        console.warn('[WebAudio] Track', trackIndex, 'will start immediately instead of at scheduled time');
-      } else if (timeDelta < 0.5) {
-        console.warn('[WebAudio] ⚠️  TIGHT TIMING:', timeDelta.toFixed(3), 's until scheduled start - may cause gap');
+      // Use cached buffer if available, or if explicitly requested and we have time
+      if (cachedBuffer || (preferBuffer && timeDelta > 2)) {
+        console.info('[WebAudio] Using AudioBuffer source (cached or preferred)');
+        const audioBuffer = cachedBuffer || await this.fetchAndDecode(fileUrl, track.id);
+
+        // Create source node
+        const source = this.audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.gainNode);
+
+        // Check for gaps
+        if (startTime < currentTime) {
+          const gap = currentTime - startTime;
+          console.warn('[WebAudio] ⚠️  GAP DETECTED:', gap.toFixed(3), 's - scheduled start time was in the past!');
+        } else if (timeDelta < 0.5) {
+          console.warn('[WebAudio] ⚠️  TIGHT TIMING:', timeDelta.toFixed(3), 's until scheduled start');
+        } else {
+          console.info('[WebAudio] ✓ Good timing:', timeDelta.toFixed(3), 's until scheduled start');
+        }
+
+        // Schedule playback
+        const actualStartTime = Math.max(startTime, currentTime);
+        source.start(actualStartTime);
+        console.info('[WebAudio] ▶️  Track', trackIndex, 'playback started (buffer) at', actualStartTime.toFixed(3));
+
+        // Track when this source will end
+        const scheduledSource: ScheduledSource = {
+          source,
+          sourceType: 'buffer',
+          startTime,
+          duration: audioBuffer.duration,
+          trackIndex
+        };
+
+        this.scheduledSources.push(scheduledSource);
+
+        // Handle track end
+        source.onended = () => {
+          console.info('[WebAudio] Track', trackIndex, 'ended');
+          this.handleTrackEnd(scheduledSource);
+        };
+
+        console.info('[WebAudio] Scheduled track', trackIndex, 'duration:', audioBuffer.duration.toFixed(2), 's');
       } else {
-        console.info('[WebAudio] ✓ Good timing:', timeDelta.toFixed(3), 's until scheduled start');
+        // Use MediaElement for fast startup (streaming)
+        console.info('[WebAudio] Using MediaElement source (streaming for fast startup)');
+
+        const { audioElement, source, duration } = this.createMediaElementSource(fileUrl, track);
+
+        // Start playback immediately or at scheduled time
+        const actualStartTime = Math.max(startTime, currentTime);
+        const playDelay = Math.max(0, actualStartTime - currentTime);
+
+        if (playDelay > 0) {
+          setTimeout(() => {
+            audioElement.play().catch(err => console.error('[WebAudio] MediaElement play failed:', err));
+          }, playDelay * 1000);
+        } else {
+          audioElement.play().catch(err => console.error('[WebAudio] MediaElement play failed:', err));
+        }
+
+        console.info('[WebAudio] ▶️  Track', trackIndex, 'playback started (streaming) at', actualStartTime.toFixed(3));
+
+        // Get duration
+        const trackDuration = await duration;
+
+        // Track when this source will end
+        const scheduledSource: ScheduledSource = {
+          source,
+          sourceType: 'element',
+          audioElement,
+          startTime: actualStartTime,
+          duration: trackDuration,
+          trackIndex
+        };
+
+        this.scheduledSources.push(scheduledSource);
+
+        // Handle track end
+        audioElement.addEventListener('ended', () => {
+          console.info('[WebAudio] Track', trackIndex, 'ended (streaming)');
+          this.handleTrackEnd(scheduledSource);
+        });
+
+        console.info('[WebAudio] Scheduled track', trackIndex, 'duration:', trackDuration.toFixed(2), 's (streaming)');
+
+        // Start decoding buffer in background for future gapless playback
+        if (!this.bufferDecodeInProgress.has(track.id)) {
+          console.info('[WebAudio] Starting background decode for gapless capability');
+          this.bufferDecodeInProgress.add(track.id);
+
+          this.fetchAndDecode(fileUrl, track.id)
+            .then(() => {
+              console.info('[WebAudio] ✓ Background decode complete for track:', track.id);
+              this.bufferDecodeInProgress.delete(track.id);
+            })
+            .catch(err => {
+              console.warn('[WebAudio] Background decode failed:', err);
+              this.bufferDecodeInProgress.delete(track.id);
+            });
+        }
       }
-
-      // Schedule playback
-      const actualStartTime = Math.max(startTime, currentTime);
-      source.start(actualStartTime);
-      console.info('[WebAudio] ▶️  Track', trackIndex, 'playback started at', actualStartTime.toFixed(3));
-
-      // Track when this source will end
-      const scheduledSource: ScheduledSource = {
-        source,
-        startTime,
-        duration: audioBuffer.duration,
-        trackIndex
-      };
-
-      this.scheduledSources.push(scheduledSource);
-
-      // Handle track end
-      source.onended = () => {
-        console.info('[WebAudio] Track', trackIndex, 'ended');
-        this.handleTrackEnd(scheduledSource);
-      };
-
-      console.info('[WebAudio] Scheduled track', trackIndex, 'duration:', audioBuffer.duration.toFixed(2), 's');
     } finally {
       // Always remove from in-progress set
       this.schedulingInProgress.delete(trackIndex);
@@ -232,7 +338,7 @@ export class WebAudioPlayer {
     // Handle repeat one mode
     if (this.repeatMode === 'one') {
       console.info('[WebAudio] Repeat one - restarting track');
-      await this.scheduleTrack(this.currentTrackIndex, this.audioContext.currentTime);
+      await this.scheduleTrack(this.currentTrackIndex, this.audioContext.currentTime, true); // Prefer buffer for repeat
       return;
     }
 
@@ -272,32 +378,20 @@ export class WebAudioPlayer {
     // Check if next track is already scheduled
     const existingSchedule = this.scheduledSources.find(s => s.trackIndex === nextIndex);
     if (existingSchedule) {
-      // If scheduled to start in the future (gapless preload), clear it and reschedule immediately
+      // Next track is already scheduled - let Web Audio's sample-accurate scheduling handle it
+      // No need to reschedule - the AudioBufferSourceNode will start at the exact scheduled time
       const currentTime = this.audioContext.currentTime;
-      if (existingSchedule.startTime > currentTime) {
-        console.info('[WebAudio] Track ended early, rescheduling next track immediately (was scheduled for:', existingSchedule.startTime.toFixed(3), ')');
-        // Clear the pre-scheduled source
-        existingSchedule.source.onended = null;
-        try {
-          existingSchedule.source.stop();
-        } catch (e) {
-          // Already stopped
-        }
-        const index = this.scheduledSources.indexOf(existingSchedule);
-        if (index > -1) {
-          this.scheduledSources.splice(index, 1);
-        }
-        // Schedule immediately
-        await this.scheduleTrack(nextIndex, currentTime);
+      const timeUntilStart = existingSchedule.startTime - currentTime;
+
+      if (timeUntilStart > 0) {
+        console.info(`[WebAudio] ✓ Track ${nextIndex} already scheduled, will start in ${(timeUntilStart * 1000).toFixed(0)}ms`);
       } else {
-        // Already playing (gapless transition worked)
-        const transitionQuality = (currentTime >= existingSchedule.startTime && currentTime < existingSchedule.startTime + 0.05) ? '✓ PERFECT' : '✓ GOOD';
-        console.info(`[WebAudio] ${transitionQuality} gapless transition to track`, nextIndex);
+        console.info(`[WebAudio] ✓ Track ${nextIndex} already playing (sample-accurate transition)`);
       }
     } else {
-      // Not scheduled yet, schedule immediately
+      // Not scheduled yet, schedule immediately, try to use buffer if available
       console.info('[WebAudio] Track ended, scheduling next track:', nextIndex);
-      await this.scheduleTrack(nextIndex, this.audioContext.currentTime);
+      await this.scheduleTrack(nextIndex, this.audioContext.currentTime, true);
     }
 
     // Notify UI
@@ -321,7 +415,16 @@ export class WebAudioPlayer {
       // Check if we need to schedule the next track
       const lastScheduled = this.scheduledSources[this.scheduledSources.length - 1];
       if (lastScheduled) {
-        const endTime = lastScheduled.startTime + lastScheduled.duration;
+        // Calculate end time based on source type
+        let endTime: number;
+        if (lastScheduled.sourceType === 'element' && lastScheduled.audioElement) {
+          // For MediaElement: calculate based on element's current position and remaining time
+          const remainingTime = lastScheduled.audioElement.duration - lastScheduled.audioElement.currentTime;
+          endTime = currentTime + remainingTime;
+        } else {
+          // For AudioBuffer: use scheduled start time + duration
+          endTime = lastScheduled.startTime + lastScheduled.duration;
+        }
         const timeUntilEnd = endTime - currentTime;
 
         // Determine next index based on repeat mode
@@ -347,8 +450,8 @@ export class WebAudioPlayer {
           if (!alreadyScheduled && !schedulingInProgress) {
             console.info('[WebAudio] Scheduling next track, time until current ends:', timeUntilEnd.toFixed(3), 's');
 
-            // Schedule in background - don't await to avoid blocking the loop
-            this.scheduleTrack(nextIndex, endTime).catch(err => {
+            // Prefer buffer for gapless transitions (we have time to decode)
+            this.scheduleTrack(nextIndex, endTime, true).catch(err => {
               console.error('[WebAudio] Failed to schedule track', nextIndex, err);
               // Remove from in-progress on error
               this.schedulingInProgress.delete(nextIndex);
@@ -377,9 +480,19 @@ export class WebAudioPlayer {
     // Stop all scheduled sources
     this.scheduledSources.forEach(s => {
       try {
-        // Remove the onended callback to prevent it from firing during cleanup
-        s.source.onended = null;
-        s.source.stop();
+        if (s.sourceType === 'buffer') {
+          // AudioBufferSourceNode
+          (s.source as AudioBufferSourceNode).onended = null;
+          (s.source as AudioBufferSourceNode).stop();
+        } else {
+          // MediaElementAudioSourceNode
+          if (s.audioElement) {
+            s.audioElement.pause();
+            s.audioElement.currentTime = 0;
+            s.audioElement.src = ''; // Release resources
+          }
+        }
+        s.source.disconnect();
       } catch (e) {
         // Already stopped
       }
@@ -391,6 +504,14 @@ export class WebAudioPlayer {
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
+
+    // Resume any MediaElement sources
+    this.scheduledSources.forEach(s => {
+      if (s.sourceType === 'element' && s.audioElement && s.trackIndex === this.currentTrackIndex) {
+        s.audioElement.play().catch(err => console.error('[WebAudio] MediaElement play failed:', err));
+      }
+    });
+
     this.isPlaying = true;
     this.startSchedulingLoop();
   }
@@ -398,6 +519,14 @@ export class WebAudioPlayer {
   pause() {
     this.isPlaying = false;
     this.stopSchedulingLoop();
+
+    // Pause any MediaElement sources
+    this.scheduledSources.forEach(s => {
+      if (s.sourceType === 'element' && s.audioElement) {
+        s.audioElement.pause();
+      }
+    });
+
     this.audioContext.suspend();
   }
 
@@ -412,6 +541,18 @@ export class WebAudioPlayer {
   async seekTo(position: number) {
     console.info('[WebAudio] Seeking to position:', position.toFixed(2), 's');
 
+    // Find current source
+    const currentSource = this.scheduledSources.find(s => s.trackIndex === this.currentTrackIndex);
+
+    // If using MediaElement, just seek within it
+    if (currentSource?.sourceType === 'element' && currentSource.audioElement) {
+      const clampedPosition = Math.max(0, Math.min(position, currentSource.duration));
+      currentSource.audioElement.currentTime = clampedPosition;
+      console.info('[WebAudio] Seek completed (MediaElement) to:', clampedPosition.toFixed(2), 's');
+      return;
+    }
+
+    // For AudioBuffer sources or if not found, recreate the source
     // Stop all scheduled sources
     this.clearScheduledSources();
 
@@ -441,6 +582,7 @@ export class WebAudioPlayer {
     // Track the scheduled source
     const scheduledSource: ScheduledSource = {
       source,
+      sourceType: 'buffer',
       startTime: startTime - clampedPosition, // Adjust startTime to account for seek offset
       duration: audioBuffer.duration,
       trackIndex: this.currentTrackIndex
@@ -519,11 +661,17 @@ export class WebAudioPlayer {
 
     const currentTime = this.audioContext.currentTime;
     const currentSource = this.scheduledSources.find(s =>
-      currentTime >= s.startTime && currentTime < s.startTime + s.duration
+      s.trackIndex === this.currentTrackIndex
     );
 
     if (currentSource) {
-      return currentTime - currentSource.startTime;
+      if (currentSource.sourceType === 'element' && currentSource.audioElement) {
+        // For MediaElement, use the element's currentTime directly
+        return currentSource.audioElement.currentTime;
+      } else {
+        // For AudioBuffer, calculate from Web Audio context time
+        return currentTime - currentSource.startTime;
+      }
     }
 
     return 0;
@@ -569,6 +717,7 @@ export class WebAudioPlayer {
     this.audioBuffers.clear();
     this.prefetchInProgress.clear();
     this.schedulingInProgress.clear();
+    this.bufferDecodeInProgress.clear();
     this.audioContext.close();
   }
 }

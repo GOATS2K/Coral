@@ -1,4 +1,5 @@
 import { ColorValue, Image, Platform, ScrollView, View } from 'react-native';
+import { useMemo, useEffect } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
@@ -164,21 +165,101 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
   );
 }
 
+// Helper to reduce color intensity
+const reduceColorIntensity = (color: string) => {
+  return color.includes('rgba') ? color : `${color}70`;
+};
+
+// Create smooth gradient with more stops to reduce banding (defined outside component for stability)
+const createSmoothGradient = (colors: string[], bgColor: string) => {
+  const gradientStops: string[] = [];
+  const locations: number[] = [];
+
+  // Start with first color at top
+  gradientStops.push(colors[0]);
+  locations.push(0);
+
+  // If multiple artwork colors, space them out in the top portion
+  if (colors.length > 1) {
+    for (let i = 1; i < colors.length; i++) {
+      const position = 0.15 + (i / colors.length) * 0.15;
+      gradientStops.push(colors[i]);
+      locations.push(position);
+    }
+  }
+
+  // Add many intermediate stops for ultra-smooth transition to background
+  const lastColor = colors[colors.length - 1];
+  const startPos = colors.length > 1 ? 0.3 : 0.15;
+  const numIntermediateStops = 8;
+
+  for (let i = 1; i <= numIntermediateStops; i++) {
+    const ratio = i / (numIntermediateStops + 1);
+    // Use easing function for smoother transition
+    const easedRatio = ratio * ratio * (3 - 2 * ratio); // Smoothstep
+    gradientStops.push(lastColor);
+    locations.push(startPos + easedRatio * (0.85 - startPos));
+  }
+
+  // Final transition to background
+  gradientStops.push(lastColor);
+  locations.push(0.9);
+
+  gradientStops.push(bgColor);
+  locations.push(1.0);
+
+  return { colors: gradientStops, locations };
+};
+
 export default function Screen() {
+  const renderTime = Date.now();
   const { albumId } = useLocalSearchParams();
+
+  console.log('[Album] Component render start at:', renderTime, '- albumId:', albumId);
+
   const { data, error } = useAlbum({
     pathParams: {
       albumId: albumId as string,
     },
   });
+
   const theme = useAtomValue(themeAtom);
+  console.log('[Album] Theme value:', theme, 'at:', Date.now() - renderTime, 'ms from render start');
+
   const insets = useSafeAreaInsets();
 
+  // Calculate colors with null safety (must be before early returns to satisfy hooks rules)
+  const colorCalcStart = Date.now();
+  const artworkColors = data?.artworks?.colors?.length > 0
+    ? data.artworks.colors.map(reduceColorIntensity)
+    : ['#6366f1', '#8b5cf6'].map(reduceColorIntensity);
+  console.log('[Album] Color calculation took:', Date.now() - colorCalcStart, 'ms, data exists:', !!data);
+
+  const backgroundColor = theme === 'dark' ? 'hsl(0, 0%, 3.9%)' : 'hsl(0, 0%, 100%)';
+
+  // Memoize gradient calculation (must be called on every render)
+  const gradientStart = Date.now();
+  const { colors: gradientColors, locations: gradientLocations } = useMemo(
+    () => {
+      console.log('[Album] Creating gradient...');
+      const result = createSmoothGradient(artworkColors, backgroundColor);
+      console.log('[Album] Gradient created in:', Date.now() - gradientStart, 'ms');
+      return result;
+    },
+    [artworkColors, backgroundColor]
+  );
+
+  // Log after paint
+  useEffect(() => {
+    console.log('[Album] useEffect (after paint) at:', Date.now() - renderTime, 'ms from render start, theme:', theme, 'data exists:', !!data);
+  });
+
+  // Now safe to do early returns
   if (error) {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center gap-8 p-4">
+        <View className="flex-1 items-center justify-center gap-8 p-4 bg-background">
           <Text className="text-destructive">Error loading album</Text>
         </View>
       </>
@@ -189,68 +270,14 @@ export default function Screen() {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center gap-8 p-4">
+        <View className="flex-1 items-center justify-center gap-8 p-4 bg-background">
           <Text className="text-muted-foreground">Loading...</Text>
         </View>
       </>
     );
   }
 
-  // Get colors from artwork for gradient with reduced intensity
-  const reduceColorIntensity = (color: string) => {
-    // Add transparency to reduce intensity
-    return color.includes('rgba') ? color : `${color}70`;
-  };
-
-  const artworkColors = data?.artworks?.colors?.length > 0
-    ? data.artworks.colors.map(reduceColorIntensity)
-    : ['#6366f1', '#8b5cf6'].map(reduceColorIntensity);
-
-  // Get background color based on theme
-  const backgroundColor = theme === 'dark' ? 'hsl(0, 0%, 3.9%)' : 'hsl(0, 0%, 100%)';
-
-  // Create smooth gradient with more stops to reduce banding
-  const createSmoothGradient = (colors: string[], bgColor: string) => {
-    const gradientStops: string[] = [];
-    const locations: number[] = [];
-
-    // Start with first color at top
-    gradientStops.push(colors[0]);
-    locations.push(0);
-
-    // If multiple artwork colors, space them out in the top portion
-    if (colors.length > 1) {
-      for (let i = 1; i < colors.length; i++) {
-        const position = 0.15 + (i / colors.length) * 0.15;
-        gradientStops.push(colors[i]);
-        locations.push(position);
-      }
-    }
-
-    // Add many intermediate stops for ultra-smooth transition to background
-    const lastColor = colors[colors.length - 1];
-    const startPos = colors.length > 1 ? 0.3 : 0.15;
-    const numIntermediateStops = 8;
-
-    for (let i = 1; i <= numIntermediateStops; i++) {
-      const ratio = i / (numIntermediateStops + 1);
-      // Use easing function for smoother transition
-      const easedRatio = ratio * ratio * (3 - 2 * ratio); // Smoothstep
-      gradientStops.push(lastColor);
-      locations.push(startPos + easedRatio * (0.85 - startPos));
-    }
-
-    // Final transition to background
-    gradientStops.push(lastColor);
-    locations.push(0.9);
-
-    gradientStops.push(bgColor);
-    locations.push(1.0);
-
-    return { colors: gradientStops, locations };
-  };
-
-  const { colors: gradientColors, locations: gradientLocations } = createSmoothGradient(artworkColors, backgroundColor);
+  console.log('[Album] Rendering JSX at:', Date.now() - renderTime, 'ms from render start');
 
   return (
     <>

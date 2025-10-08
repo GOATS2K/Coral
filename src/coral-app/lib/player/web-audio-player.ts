@@ -16,8 +16,6 @@ export class WebAudioPlayer {
   private currentTrackIndex = 0;
   private scheduledSources: ScheduledSource[] = [];
   private isPlaying = false;
-  private startTime = 0;
-  private pauseTime = 0;
   private trackChangeCallback: ((index: number) => void) | null = null;
   private repeatMode: RepeatMode = 'off';
   private audioBuffers: Map<string, AudioBuffer> = new Map();
@@ -57,15 +55,7 @@ export class WebAudioPlayer {
 
     // Remove cached tracks that are no longer in the queue
     const trackIdsInQueue = new Set(tracks.map(t => t.id));
-    const cachedTrackIds = Array.from(this.audioBuffers.keys());
-
-    for (const cachedId of cachedTrackIds) {
-      if (!trackIdsInQueue.has(cachedId)) {
-        console.info('[WebAudio] Removing cached track no longer in queue:', cachedId);
-        this.audioBuffers.delete(cachedId);
-        this.prefetchInProgress.delete(cachedId);
-      }
-    }
+    this.pruneCache(trackIdsInQueue);
 
     // If currently playing, prefetch upcoming tracks in the new queue order
     if (this.isPlaying) {
@@ -79,6 +69,18 @@ export class WebAudioPlayer {
       console.info('[WebAudio] Clearing audio cache, removing', cacheSize, 'cached tracks');
       this.audioBuffers.clear();
       this.prefetchInProgress.clear();
+    }
+  }
+
+  private pruneCache(validTrackIds: Set<string>) {
+    const cachedTrackIds = Array.from(this.audioBuffers.keys());
+
+    for (const cachedId of cachedTrackIds) {
+      if (!validTrackIds.has(cachedId)) {
+        console.info('[WebAudio] Removing cached track no longer in queue:', cachedId);
+        this.audioBuffers.delete(cachedId);
+        this.prefetchInProgress.delete(cachedId);
+      }
     }
   }
 
@@ -175,17 +177,117 @@ export class WebAudioPlayer {
     return audioBuffer;
   }
 
-  private scheduleNextTrackIfNeeded(currentIndex: number) {
-    let nextIndex = currentIndex + 1;
+  private getNextIndex(currentIndex: number, direction: 1 | -1 = 1): number | null {
+    let nextIndex = currentIndex + direction;
 
-    // Handle repeat mode
+    // Handle backward wrapping
+    if (nextIndex < 0) {
+      if (this.repeatMode === 'all') {
+        return this.tracks.length - 1;
+      }
+      return null; // Can't skip backward from first track
+    }
+
+    // Handle forward wrapping
     if (nextIndex >= this.tracks.length) {
       if (this.repeatMode === 'all') {
-        nextIndex = 0;
-      } else {
-        console.info('[WebAudio] End of queue, no next track to schedule');
-        return; // End of queue
+        return 0;
       }
+      return null; // Can't skip forward from last track
+    }
+
+    return nextIndex;
+  }
+
+  private removeScheduledSource(scheduledSource: ScheduledSource) {
+    const index = this.scheduledSources.indexOf(scheduledSource);
+    if (index > -1) {
+      this.scheduledSources.splice(index, 1);
+    }
+  }
+
+  private async waitForSchedulingComplete(trackIndex: number, trackTitle?: string): Promise<void> {
+    if (!this.schedulingInProgress.has(trackIndex)) {
+      return;
+    }
+
+    console.info('[WebAudio] ⏳ Next track', trackIndex, trackTitle, 'is being scheduled, waiting...');
+
+    // Wait up to 500ms for scheduling to complete
+    const maxWait = 500;
+    const startWait = Date.now();
+
+    while (this.schedulingInProgress.has(trackIndex) && (Date.now() - startWait) < maxWait) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    if (this.schedulingInProgress.has(trackIndex)) {
+      console.warn('[WebAudio] ⚠️  Next track', trackIndex, 'still being scheduled after timeout');
+    }
+  }
+
+  private async handleGaplessTransition(nextIndex: number, existingSchedule: ScheduledSource | undefined): Promise<void> {
+    const currentTime = this.audioContext.currentTime;
+    const nextTrack = this.tracks[nextIndex];
+
+    if (existingSchedule) {
+      // If scheduled to start in the future (gapless preload), clear it and reschedule immediately
+      if (existingSchedule.startTime > currentTime) {
+        const scheduledGap = existingSchedule.startTime - currentTime;
+        console.warn('[WebAudio] ⚠️  Track ended EARLY! Next was scheduled for', existingSchedule.startTime.toFixed(3), 's, but it\'s only', currentTime.toFixed(3), 's now');
+        console.warn('[WebAudio]   ⏸️  Gap would be:', scheduledGap.toFixed(3), 's - rescheduling immediately');
+
+        // Clear the pre-scheduled source
+        existingSchedule.source.onended = null;
+        try {
+          existingSchedule.source.stop();
+        } catch (e) {
+          // Already stopped
+        }
+        this.removeScheduledSource(existingSchedule);
+
+        // Schedule immediately
+        await this.scheduleTrack(nextIndex, currentTime);
+      } else {
+        // Already playing (gapless transition worked)
+        const transitionTiming = currentTime - existingSchedule.startTime;
+        let transitionQuality = '✅ PERFECT';
+        if (transitionTiming > 0.05) {
+          transitionQuality = '✅ GOOD';
+        }
+        if (transitionTiming > 0.1) {
+          transitionQuality = '⚠️  LATE';
+        }
+        console.info(`[WebAudio] ${transitionQuality} gapless transition to track`, nextIndex, nextTrack?.title);
+        console.info('[WebAudio]   🎵 Next track started:', existingSchedule.startTime.toFixed(3), 's, now:', currentTime.toFixed(3), 's, timing:', transitionTiming.toFixed(3), 's');
+      }
+    } else {
+      // Not scheduled yet, schedule immediately - this indicates a GAP
+      console.warn('[WebAudio] ⚠️  GAP! Next track', nextIndex, 'was NOT pre-scheduled, scheduling now');
+      await this.scheduleTrack(nextIndex, this.audioContext.currentTime);
+    }
+  }
+
+  private async playTrackAtIndex(index: number): Promise<void> {
+    this.clearScheduledSources();
+    this.currentTrackIndex = index;
+
+    await this.scheduleTrack(index, this.audioContext.currentTime);
+
+    if (this.trackChangeCallback) {
+      this.trackChangeCallback(index);
+    }
+
+    // Prefetch upcoming tracks
+    this.prefetchUpcomingTracks(index);
+  }
+
+  private scheduleNextTrackIfNeeded(currentIndex: number) {
+    const nextIndex = this.getNextIndex(currentIndex);
+
+    if (nextIndex === null) {
+      console.info('[WebAudio] End of queue, no next track to schedule');
+      return;
     }
 
     // Don't schedule if already scheduled
@@ -267,10 +369,7 @@ export class WebAudioPlayer {
     console.info('[WebAudio]   ⏱️  Expected end:', expectedEndTime.toFixed(3), 's, Actual:', currentTime.toFixed(3), 's, Delta:', timingDelta.toFixed(3), 's');
 
     // Remove from scheduled sources
-    const index = this.scheduledSources.indexOf(scheduledSource);
-    if (index > -1) {
-      this.scheduledSources.splice(index, 1);
-    }
+    this.removeScheduledSource(scheduledSource);
 
     // Only handle if this was the currently playing track
     if (scheduledSource.trackIndex !== this.currentTrackIndex) {
@@ -286,77 +385,28 @@ export class WebAudioPlayer {
     }
 
     // Calculate next index
-    let nextIndex = this.currentTrackIndex + 1;
+    const nextIndex = this.getNextIndex(this.currentTrackIndex);
 
-    // Handle end of queue
-    if (nextIndex >= this.tracks.length) {
-      if (this.repeatMode === 'all') {
-        console.info('[WebAudio] 🔁 Repeat all - wrapping to start');
-        nextIndex = 0;
-      } else {
-        console.info('[WebAudio] 🛑 End of queue, stopping playback');
-        this.isPlaying = false;
-        return;
-      }
+    if (nextIndex === null) {
+      console.info('[WebAudio] 🛑 End of queue, stopping playback');
+      this.isPlaying = false;
+      return;
+    }
+
+    if (nextIndex === 0 && this.repeatMode === 'all') {
+      console.info('[WebAudio] 🔁 Repeat all - wrapping to start');
     }
 
     // Move to next track
     this.currentTrackIndex = nextIndex;
     const nextTrack = this.tracks[nextIndex];
 
-    // If next track is being scheduled, wait briefly for it to complete
-    if (this.schedulingInProgress.has(nextIndex)) {
-      console.info('[WebAudio] ⏳ Next track', nextIndex, nextTrack?.title, 'is being scheduled, waiting...');
-      // Wait up to 500ms for scheduling to complete
-      const maxWait = 500;
-      const startWait = Date.now();
-      while (this.schedulingInProgress.has(nextIndex) && (Date.now() - startWait) < maxWait) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-      if (this.schedulingInProgress.has(nextIndex)) {
-        console.warn('[WebAudio] ⚠️  Next track', nextIndex, 'still being scheduled after timeout');
-      }
-    }
+    // Wait for scheduling to complete if in progress
+    await this.waitForSchedulingComplete(nextIndex, nextTrack?.title);
 
-    // Check if next track is already scheduled
+    // Handle gapless transition
     const existingSchedule = this.scheduledSources.find(s => s.trackIndex === nextIndex);
-    if (existingSchedule) {
-      // If scheduled to start in the future (gapless preload), clear it and reschedule immediately
-      if (existingSchedule.startTime > currentTime) {
-        const scheduledGap = existingSchedule.startTime - currentTime;
-        console.warn('[WebAudio] ⚠️  Track ended EARLY! Next was scheduled for', existingSchedule.startTime.toFixed(3), 's, but it\'s only', currentTime.toFixed(3), 's now');
-        console.warn('[WebAudio]   ⏸️  Gap would be:', scheduledGap.toFixed(3), 's - rescheduling immediately');
-        // Clear the pre-scheduled source
-        existingSchedule.source.onended = null;
-        try {
-          existingSchedule.source.stop();
-        } catch (e) {
-          // Already stopped
-        }
-        const idx = this.scheduledSources.indexOf(existingSchedule);
-        if (idx > -1) {
-          this.scheduledSources.splice(idx, 1);
-        }
-        // Schedule immediately
-        await this.scheduleTrack(nextIndex, currentTime);
-      } else {
-        // Already playing (gapless transition worked)
-        const transitionTiming = currentTime - existingSchedule.startTime;
-        let transitionQuality = '✅ PERFECT';
-        if (transitionTiming > 0.05) {
-          transitionQuality = '✅ GOOD';
-        }
-        if (transitionTiming > 0.1) {
-          transitionQuality = '⚠️  LATE';
-        }
-        console.info(`[WebAudio] ${transitionQuality} gapless transition to track`, nextIndex, nextTrack?.title);
-        console.info('[WebAudio]   🎵 Next track started:', existingSchedule.startTime.toFixed(3), 's, now:', currentTime.toFixed(3), 's, timing:', transitionTiming.toFixed(3), 's');
-      }
-    } else {
-      // Not scheduled yet, schedule immediately - this indicates a GAP
-      console.warn('[WebAudio] ⚠️  GAP! Next track', nextIndex, 'was NOT pre-scheduled, scheduling now');
-      await this.scheduleTrack(nextIndex, this.audioContext.currentTime);
-    }
+    await this.handleGaplessTransition(nextIndex, existingSchedule);
 
     // Notify UI
     if (this.trackChangeCallback) {
@@ -451,50 +501,19 @@ export class WebAudioPlayer {
   }
 
   async skip(direction: 1 | -1) {
-    let newIndex = this.currentTrackIndex + direction;
+    const newIndex = this.getNextIndex(this.currentTrackIndex, direction);
 
-    // Handle wrapping with repeat-all mode
-    if (newIndex < 0) {
-      if (this.repeatMode === 'all') {
-        newIndex = this.tracks.length - 1;
-      } else {
-        return; // Can't skip backward from first track
-      }
-    } else if (newIndex >= this.tracks.length) {
-      if (this.repeatMode === 'all') {
-        newIndex = 0;
-      } else {
-        return; // Can't skip forward from last track
-      }
+    if (newIndex === null) {
+      return; // Can't skip in this direction
     }
 
-    this.clearScheduledSources();
-    this.currentTrackIndex = newIndex;
-
-    await this.scheduleTrack(newIndex, this.audioContext.currentTime);
-
-    if (this.trackChangeCallback) {
-      this.trackChangeCallback(newIndex);
-    }
-
-    // Prefetch upcoming tracks
-    this.prefetchUpcomingTracks(newIndex);
+    await this.playTrackAtIndex(newIndex);
   }
 
   async playFromIndex(index: number) {
     if (index < 0 || index >= this.tracks.length) return;
 
-    this.clearScheduledSources();
-    this.currentTrackIndex = index;
-
-    await this.scheduleTrack(index, this.audioContext.currentTime);
-
-    if (this.trackChangeCallback) {
-      this.trackChangeCallback(index);
-    }
-
-    // Prefetch upcoming tracks
-    this.prefetchUpcomingTracks(index);
+    await this.playTrackAtIndex(index);
   }
 
   getIsPlaying(): boolean {

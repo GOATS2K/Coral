@@ -212,10 +212,7 @@ const createSmoothGradient = (colors: string[], bgColor: string) => {
 };
 
 export default function Screen() {
-  const renderTime = Date.now();
   const { albumId } = useLocalSearchParams();
-
-  console.log('[Album] Component render start at:', renderTime, '- albumId:', albumId);
 
   const { data, error } = useAlbum({
     pathParams: {
@@ -224,35 +221,21 @@ export default function Screen() {
   });
 
   const theme = useAtomValue(themeAtom);
-  console.log('[Album] Theme value:', theme, 'at:', Date.now() - renderTime, 'ms from render start');
 
   const insets = useSafeAreaInsets();
 
   // Calculate colors with null safety (must be before early returns to satisfy hooks rules)
-  const colorCalcStart = Date.now();
   const artworkColors = data?.artworks?.colors?.length > 0
     ? data.artworks.colors.map(reduceColorIntensity)
     : ['#6366f1', '#8b5cf6'].map(reduceColorIntensity);
-  console.log('[Album] Color calculation took:', Date.now() - colorCalcStart, 'ms, data exists:', !!data);
 
   const backgroundColor = theme === 'dark' ? 'hsl(0, 0%, 3.9%)' : 'hsl(0, 0%, 100%)';
 
   // Memoize gradient calculation (must be called on every render)
-  const gradientStart = Date.now();
   const { colors: gradientColors, locations: gradientLocations } = useMemo(
-    () => {
-      console.log('[Album] Creating gradient...');
-      const result = createSmoothGradient(artworkColors, backgroundColor);
-      console.log('[Album] Gradient created in:', Date.now() - gradientStart, 'ms');
-      return result;
-    },
+    () => createSmoothGradient(artworkColors, backgroundColor),
     [artworkColors, backgroundColor]
   );
-
-  // Log after paint
-  useEffect(() => {
-    console.log('[Album] useEffect (after paint) at:', Date.now() - renderTime, 'ms from render start, theme:', theme, 'data exists:', !!data);
-  });
 
   // Now safe to do early returns
   if (error) {
@@ -276,8 +259,6 @@ export default function Screen() {
       </>
     );
   }
-
-  console.log('[Album] Rendering JSX at:', Date.now() - renderTime, 'ms from render start');
 
   return (
     <>

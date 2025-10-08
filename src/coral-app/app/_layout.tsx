@@ -13,7 +13,7 @@ import { Appearance, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { Provider, useAtomValue, useSetAtom } from 'jotai';
 import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
@@ -123,8 +123,10 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AppContent />
-    </SafeAreaProvider>
+    <Provider>
+      <SafeAreaProvider>
+        <AppContent />
+      </SafeAreaProvider>
+    </Provider>
   );
 }

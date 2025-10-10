@@ -24,9 +24,19 @@ $ bun install
 ```
 
 ### Backend
+You will need to have a C++ toolchain setup to compile the inference program. 
+
+On Windows, you can [install MSVC](https://code.visualstudio.com/docs/cpp/config-msvc#_prerequisites) to do that. 
+
+On Linux, you should be fine with the `build-essential` package.
+
+ On macOS, you'll need `brew` installed.
+
 ```bash
 $ cd src/Coral.Essentia.Cli
-$ make install-deps && make configure && make build
+$ make install-deps 
+$ make configure
+$ make build
 $ cd ../Coral.Api
 $ dotnet run --
 ```

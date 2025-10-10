@@ -112,15 +112,17 @@ install-deps-macos:
 # Windows dependency installation (download if not present)
 install-deps-windows:
 	@echo "Checking Windows dependencies..."
-	@if not exist "lib" ( \
-		echo Downloading Essentia from releases...; \
-		powershell -Command "Invoke-WebRequest -Uri '$(ESSENTIA_RELEASE_URL)' -OutFile 'essentia.zip'"; \
-		powershell -Command "Expand-Archive -Path 'essentia.zip' -DestinationPath '.' -Force"; \
-		del essentia.zip; \
-		echo Windows dependencies installed successfully!; \
-	) else ( \
-		echo Dependencies already present. Skipping download.; \
-	)
+	@powershell -Command " \
+		if (-Not (Test-Path 'lib')) { \
+			Write-Host 'Downloading Essentia from releases...'; \
+			Start-BitsTransfer -Source '$(ESSENTIA_RELEASE_URL)' -Destination 'essentia.zip' -Description 'Downloading Essentia'; \
+			Write-Host 'Extracting archive...'; \
+			Expand-Archive -Path 'essentia.zip' -DestinationPath '.' -Force; \
+			Remove-Item 'essentia.zip'; \
+			Write-Host 'Windows dependencies installed successfully!'; \
+		} else { \
+			Write-Host 'Dependencies already present. Skipping download.'; \
+		}"
 
 # Configure CMake build
 configure:

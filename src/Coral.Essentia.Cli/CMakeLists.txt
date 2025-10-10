@@ -33,9 +33,11 @@ if(WIN32)
     find_package(Essentia REQUIRED)
 
     # Workaround: Manually set IMPORTED_LOCATION since EssentiaTargets-*.cmake is missing
+    # Also clear INTERFACE_LINK_LIBRARIES to avoid dependency chain issues (we handle deps separately)
     set_target_properties(Essentia::essentia PROPERTIES
         IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/essentia.dll"
         IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/essentia.lib"
+        INTERFACE_LINK_LIBRARIES ""
     )
 
     # Link Essentia

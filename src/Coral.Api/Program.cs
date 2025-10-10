@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddServices();
+builder.Services.AddHttpClient();
 builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHostedService<IndexerWorker>();
 builder.Services.AddHostedService<EmbeddingWorker>();

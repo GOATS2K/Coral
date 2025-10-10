@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using CliWrap;
 using CliWrap.Exceptions;
+using Coral.Configuration;
 using NumSharp;
 
 namespace Coral.Services;
@@ -12,18 +13,44 @@ internal class Embeddings
     public int Count { get; set; }
 }
 
-public static class InferenceService
+public class InferenceService
 {
-    private static readonly string Executable = "Coral.Essentia.Cli.exe";
+    private const string Executable = "Coral.Essentia.Cli.exe";
+    private const string ModelUrl = "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs_track_embeddings-effnet-bs64-1.pb";
+    private const string ModelFileName = "discogs_track_embeddings-effnet-bs64-1.pb";
+    private readonly HttpClient _httpClient;
+    private readonly string _modelPath;
 
-    public static async Task<float[]> RunInference(string filePath)
+    public InferenceService(HttpClient httpClient)
     {
-        var modelPath = @"C:\Users\bootie-\Downloads\discogs_track_embeddings-effnet-bs64-1.pb";
+        _httpClient = httpClient;
+        _modelPath = Path.Combine(ApplicationConfiguration.Models, ModelFileName);
+    }
+
+    public async Task EnsureModelExists()
+    {
+        if (File.Exists(_modelPath))
+        {
+            return;
+        }
+
+        Console.WriteLine($"Model not found at {_modelPath}, downloading from {ModelUrl}...");
+
+        var modelFile = File.Create(_modelPath);
+        var response = await _httpClient.GetStreamAsync(ModelUrl);
+        await response.CopyToAsync(modelFile);
+        await modelFile.DisposeAsync();
+
+        Console.WriteLine($"Model downloaded successfully to {_modelPath}");
+    }
+
+    public async Task<float[]> RunInference(string filePath)
+    {
         var outputFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
         var cmd = Cli.Wrap(Executable)
-            .WithArguments([filePath, modelPath, outputFile], escape: true)
+            .WithArguments([filePath, _modelPath, outputFile], escape: true)
             .WithValidation(CommandResultValidation.ZeroExitCode)
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr));

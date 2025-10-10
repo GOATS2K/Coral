@@ -13,19 +13,24 @@ public class EmbeddingWorker : BackgroundService
     private readonly IEmbeddingChannel _channel;
     private readonly ILogger<EmbeddingWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly InferenceService _inferenceService;
     private readonly SemaphoreSlim _semaphore = new(10);
 
     public EmbeddingWorker(IEmbeddingChannel channel, ILogger<EmbeddingWorker> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory, InferenceService inferenceService)
     {
         _channel = channel;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _inferenceService = inferenceService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Embedding worker started!");
+
+        await _inferenceService.EnsureModelExists();
+
         while (!stoppingToken.IsCancellationRequested)
         {
             await foreach (var track in _channel.GetReader().ReadAllAsync(stoppingToken))
@@ -57,7 +62,7 @@ public class EmbeddingWorker : BackgroundService
         await _semaphore.WaitAsync(stoppingToken);
         try
         {
-            var embeddings = await InferenceService.RunInference(track.AudioFile.FilePath);
+            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
             await using var scope = _scopeFactory.CreateAsyncScope();
             await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
             await context.TrackEmbeddings.AddAsync(new TrackEmbedding()

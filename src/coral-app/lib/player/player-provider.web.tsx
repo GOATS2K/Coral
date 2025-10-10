@@ -39,7 +39,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!player) return;
 
-    console.info('[PlayerProvider] Setting up polling interval');
     const interval = setInterval(() => {
       const isPlaying = player.getIsPlaying();
 
@@ -61,17 +60,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
     }, 250);
 
-    return () => {
-      console.info('[PlayerProvider] Clearing polling interval');
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [player, setPlaybackState]); // Stable - never re-runs!
 
   // Atom → Player sync
   useEffect(() => {
     if (!player || state.queue.length === 0) return;
-
-    console.info('[PlayerProvider] Syncing atom → player');
     player.updateQueue(state.queue, state.currentIndex);
   }, [player, state.queue, state.currentIndex]);
 
@@ -86,12 +80,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!player) return;
 
     const handleTrackChange = (data: { index: number }) => {
-      console.info('[PlayerProvider] Player event: trackChanged to', data.index);
       setState({ type: 'setCurrentIndex', index: data.index });
     };
 
     const handlePlaybackStateChange = (data: { isPlaying: boolean }) => {
-      console.info('[PlayerProvider] Player event: playbackStateChanged to', data.isPlaying);
       setPlaybackState((prev) => ({
         ...prev,
         isPlaying: data.isPlaying

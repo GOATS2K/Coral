@@ -16,19 +16,13 @@ export function usePlayer() {
   const currentTrack = state.queue[state.currentIndex] || null;
 
   const play = useCallback(async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
-    console.info('[usePlayer] play called', { player: !!player, trackCount: tracks.length, startIndex });
-
     if (!player) {
       console.warn('[usePlayer] player is null, cannot play');
       return;
     }
 
-    console.info('[usePlayer] Setting player state...');
     setState({ type: 'setQueue', queue: tracks, index: startIndex, initializer });
-
-    console.info('[usePlayer] Calling loadQueue...');
     await player.loadQueue(tracks, startIndex);
-    console.info('[usePlayer] loadQueue completed');
   }, [player, setState]);
 
   const togglePlayPause = useCallback(async () => {

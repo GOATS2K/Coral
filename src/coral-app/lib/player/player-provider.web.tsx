@@ -49,15 +49,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         duration,
         isPlaying
       }));
-
-      if (isPlaying) {
-        const remaining = duration - position;
-        // Schedule next track when there's 20 seconds remaining (earlier than before)
-        if (remaining > 0 && remaining <= 20 && remaining > 19.5) {
-          console.info('[PlayerProvider] Triggering next track schedule, remaining:', remaining.toFixed(2), 's');
-          player.checkAndScheduleNext();
-        }
-      }
     }, 250);
 
     return () => clearInterval(interval);

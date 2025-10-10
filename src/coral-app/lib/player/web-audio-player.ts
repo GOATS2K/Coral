@@ -339,11 +339,21 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
         }
         console.info(`[WebAudio] ${transitionQuality} gapless transition to track`, nextIndex, nextTrack?.title);
         console.info('[WebAudio]   🎵 Next track started:', existingSchedule.startTime.toFixed(3), 's, now:', currentTime.toFixed(3), 's, timing:', transitionTiming.toFixed(3), 's');
+
+        // Schedule the next track to maintain gapless playback chain
+        console.info('[WebAudio] 🔄 Gapless transition successful, prefetching and scheduling next track');
+        this.prefetchUpcomingTracks(nextIndex);
+        this.scheduleNextTrackIfNeeded(nextIndex);
       }
     } else {
       // Not scheduled yet, schedule immediately - this indicates a GAP
       console.warn('[WebAudio] ⚠️  GAP! Next track', nextIndex, 'was NOT pre-scheduled, scheduling now');
       await this.scheduleTrack(nextIndex, this.audioContext.currentTime);
+
+      // After reactive scheduling, ensure we schedule the next track
+      console.info('[WebAudio] 🔄 Reactive scheduling complete, prefetching and scheduling next track');
+      this.prefetchUpcomingTracks(nextIndex);
+      this.scheduleNextTrackIfNeeded(nextIndex);
     }
   }
 

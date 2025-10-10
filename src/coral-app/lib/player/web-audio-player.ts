@@ -13,12 +13,14 @@ interface ScheduledSource {
 export interface PlayerEvents {
   playbackStateChanged: { isPlaying: boolean };
   trackChanged: { index: number };
+  bufferingStateChanged: { isBuffering: boolean };
 }
 
 // Event name constants
 export const PlayerEventNames = {
   PLAYBACK_STATE_CHANGED: 'playbackStateChanged',
   TRACK_CHANGED: 'trackChanged',
+  BUFFERING_STATE_CHANGED: 'bufferingStateChanged',
 } as const;
 
 export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
@@ -33,6 +35,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   private audioBuffers: Map<string, AudioBuffer> = new Map();
   private schedulingInProgress: Set<number> = new Set();
   private prefetchInProgress: Set<string> = new Set(); // Track IDs being prefetched
+  private currentTrackLoaded: boolean = false; // Whether current track has finished loading/decoding
 
   constructor() {
     super(); // Initialize EventEmitter
@@ -56,8 +59,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     this.isPlaying = true;
     this.emit('playbackStateChanged', { isPlaying: true });
 
-    // Prefetch next 2 tracks in background to avoid gaps
-    this.prefetchUpcomingTracks(startIndex);
+    // Prefetch will be triggered automatically once playback starts (in scheduleTrack)
   }
 
   updateQueue(tracks: SimpleTrackDto[], currentIndex: number) {
@@ -71,10 +73,8 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     const trackIdsInQueue = new Set(tracks.map(t => t.id));
     this.pruneCache(trackIdsInQueue);
 
-    // If currently playing, prefetch upcoming tracks in the new queue order
-    if (this.isPlaying) {
-      this.prefetchUpcomingTracks(currentIndex);
-    }
+    // Prefetch is handled automatically when tracks are scheduled/playing
+    // Don't prefetch here as the current track may not have started yet
   }
 
   clearAudioCache() {
@@ -140,6 +140,12 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     // Mark as in progress
     this.schedulingInProgress.add(trackIndex);
 
+    // Mark current track as not loaded yet and emit buffering event
+    if (trackIndex === this.currentTrackIndex) {
+      this.currentTrackLoaded = false;
+      this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: true });
+    }
+
     try {
       const track = this.tracks[trackIndex];
       console.info('[WebAudio] Scheduling track', trackIndex, track.title, 'at', startTime.toFixed(3));
@@ -191,6 +197,14 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
       };
 
       console.info('[WebAudio] Scheduled track', trackIndex, 'duration:', audioBuffer.duration.toFixed(2), 's');
+
+      // Mark current track as loaded, emit event, and trigger prefetch
+      if (trackIndex === this.currentTrackIndex) {
+        this.currentTrackLoaded = true;
+        this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
+        console.info('[WebAudio] 🔄 Current track loaded, prefetching upcoming tracks');
+        this.prefetchUpcomingTracks(trackIndex);
+      }
     } finally {
       // Always remove from in-progress set
       this.schedulingInProgress.delete(trackIndex);
@@ -329,8 +343,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     // ADD new event emission
     this.emit(PlayerEventNames.TRACK_CHANGED, { index });
 
-    // Prefetch upcoming tracks
-    this.prefetchUpcomingTracks(index);
+    // Prefetch is handled automatically in scheduleTrack()
   }
 
   private scheduleNextTrackIfNeeded(currentIndex: number) {
@@ -471,8 +484,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     // Emit trackChanged event
     this.emit('trackChanged', { index: this.currentTrackIndex });
 
-    // Prefetch upcoming tracks for smooth transitions
-    this.prefetchUpcomingTracks(this.currentTrackIndex);
+    // Prefetch is handled automatically when track loads
   }
 
 

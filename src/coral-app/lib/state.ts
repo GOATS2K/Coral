@@ -323,10 +323,12 @@ export interface PlaybackState {
   position: number;
   duration: number;
   isPlaying: boolean;
+  isBuffering: boolean;
 }
 
 export const playbackStateAtom = atom<PlaybackState>({
   position: 0,
   duration: 0,
-  isPlaying: false
+  isPlaying: false,
+  isBuffering: false
 })

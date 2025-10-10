@@ -90,12 +90,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }));
     };
 
+    const handleBufferingStateChange = (data: { isBuffering: boolean }) => {
+      setPlaybackState((prev) => ({
+        ...prev,
+        isBuffering: data.isBuffering
+      }));
+    };
+
     player.on(PlayerEventNames.TRACK_CHANGED, handleTrackChange);
     player.on(PlayerEventNames.PLAYBACK_STATE_CHANGED, handlePlaybackStateChange);
+    player.on(PlayerEventNames.BUFFERING_STATE_CHANGED, handleBufferingStateChange);
 
     return () => {
       player.off(PlayerEventNames.TRACK_CHANGED, handleTrackChange);
       player.off(PlayerEventNames.PLAYBACK_STATE_CHANGED, handlePlaybackStateChange);
+      player.off(PlayerEventNames.BUFFERING_STATE_CHANGED, handleBufferingStateChange);
     };
   }, [player, setState, setPlaybackState]);
 

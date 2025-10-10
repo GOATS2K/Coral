@@ -7,7 +7,7 @@ import { PlayerProgress } from './player-progress';
 import { PlayerQueue } from './player-queue';
 import { PlayerVolume } from './player-volume';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { playerStateAtom } from '@/lib/state';
+import { playerStateAtom, playbackStateAtom } from '@/lib/state';
 
 export function WebPlayerBar() {
   // Hooks must be called unconditionally, before any early returns
@@ -31,6 +31,7 @@ export function WebPlayerBar() {
 
   const setState = useSetAtom(playerStateAtom);
   const playerState = useAtomValue(playerStateAtom);
+  const playbackState = useAtomValue(playbackStateAtom);
 
   useMediaSession({ activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo });
 
@@ -61,7 +62,12 @@ export function WebPlayerBar() {
           shuffle={() => setState({ type: 'shuffle' })}
           cycleRepeat={() => setState({ type: 'cycleRepeat' })}
         />
-        <PlayerProgress position={progress.position} duration={duration} seekTo={seekTo} />
+        <PlayerProgress
+          position={progress.position}
+          duration={duration}
+          seekTo={seekTo}
+          isBuffering={playbackState.isBuffering}
+        />
       </View>
 
       {/* Queue & Volume Controls */}

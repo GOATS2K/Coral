@@ -578,6 +578,10 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     source.onended = () => {
       this.handleTrackEnd(scheduledSource);
     };
+
+    // Immediately reschedule the next track for gapless playback after seek
+    console.info('[WebAudio] 🔄 Seek completed, rescheduling next track for gapless playback');
+    this.scheduleNextTrackIfNeeded(this.currentTrackIndex);
   }
 
   async skip(direction: 1 | -1) {

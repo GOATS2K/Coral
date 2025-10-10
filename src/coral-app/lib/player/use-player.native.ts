@@ -53,7 +53,11 @@ export function usePlayer() {
   };
 
   const togglePlayPause = useCallback(() => {
-    status.playing ? activePlayer.pause() : activePlayer.play();
+    if (status.playing) {
+      activePlayer.pause();
+    } else {
+      activePlayer.play();
+    }
   }, [status.playing, activePlayer]);
 
   const skip = useCallback(async (direction: 1 | -1) => {
@@ -308,7 +312,7 @@ export function usePlayer() {
       loadTrack(bufferPlayer, nextTrack.id);
       bufferTrackIdRef.current = nextTrack.id;
     }
-  }, [state.queue, state.currentIndex, state.activePlayer, state.repeat, bufferPlayer]);
+  }, [state.queue, state.currentIndex, state.activePlayer, state.repeat, bufferPlayer, playerATrackIdRef, playerBTrackIdRef]);
 
   return {
     activeTrack: state.currentTrack,

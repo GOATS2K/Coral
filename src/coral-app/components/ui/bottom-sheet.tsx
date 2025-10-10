@@ -1,4 +1,4 @@
-import BottomSheet, {
+import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
   BottomSheetModal,
@@ -8,7 +8,6 @@ import { useAtomValue } from 'jotai';
 import React, { forwardRef, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { themeAtom } from '@/lib/state';
-import { Text } from '@/components/ui/text';
 
 interface MenuBottomSheetProps {
   children: React.ReactNode;

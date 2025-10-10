@@ -5,8 +5,6 @@ import { useFavoriteArtists, useFavoriteAlbums, usePaginatedAlbums } from '@/lib
 import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { ArtistCard } from '@/components/artist-card';
 import { Heart } from 'lucide-react-native';
-import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
 import { Icon } from '@/components/ui/icon';
 
 const SCREEN_OPTIONS = {
@@ -14,7 +12,6 @@ const SCREEN_OPTIONS = {
 };
 
 export default function HomeScreen() {
-  const theme = useAtomValue(themeAtom);
   const { data: favoriteArtists, isLoading: artistsLoading } = useFavoriteArtists({});
   const { data: favoriteAlbums, isLoading: albumsLoading } = useFavoriteAlbums({});
   const { data: recentAlbums, isLoading: recentAlbumsLoading } = usePaginatedAlbums({

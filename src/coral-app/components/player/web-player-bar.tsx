@@ -10,10 +10,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
 
 export function WebPlayerBar() {
-  if (Platform.OS !== 'web') {
-    return null;
-  }
-
+  // Hooks must be called unconditionally, before any early returns
   const {
     activeTrack,
     isPlaying,
@@ -36,6 +33,11 @@ export function WebPlayerBar() {
   const playerState = useAtomValue(playerStateAtom);
 
   useMediaSession({ activeTrack, isPlaying, progress, togglePlayPause, skip, seekTo });
+
+  // Early returns after all hooks
+  if (Platform.OS !== 'web') {
+    return null;
+  }
 
   if (!activeTrack) {
     return null;

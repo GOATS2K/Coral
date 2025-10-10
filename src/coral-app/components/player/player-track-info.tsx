@@ -4,10 +4,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Link, useRouter } from 'expo-router';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { getArtworkUrl } from '@/lib/player/player-format-utils';
-import { PlaybackInitializer, PlaybackSource } from '@/lib/state';
+import { PlaybackInitializer, PlaybackSource, themeAtom } from '@/lib/state';
 import { MoreVertical } from 'lucide-react-native';
 import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,4 +1,4 @@
-import { Pressable, View, Platform, Image } from 'react-native';
+import { Pressable, View, Image } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
 import { usePlayerActions } from '@/lib/player/use-player';

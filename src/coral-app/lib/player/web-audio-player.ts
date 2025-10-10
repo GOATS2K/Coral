@@ -285,7 +285,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
         existingSchedule.source.onended = null;
         try {
           existingSchedule.source.stop();
-        } catch (e) {
+        } catch {
           // Already stopped
         }
         this.removeScheduledSource(existingSchedule);
@@ -483,7 +483,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
         // Remove the onended callback to prevent it from firing during cleanup
         s.source.onended = null;
         s.source.stop();
-      } catch (e) {
+      } catch {
         // Already stopped
       }
     });

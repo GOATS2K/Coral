@@ -8,13 +8,12 @@ import { TrackListing } from '@/components/track-listing';
 import { ArtistCard } from '@/components/artist-card';
 import { CompactAlbumCard } from '@/components/compact-album-card';
 import { Music2 } from 'lucide-react-native';
-import { useAtom, useAtomValue } from 'jotai';
-import { lastSearchQueryAtom, PlaybackSource, themeAtom } from '@/lib/state';
+import { useAtom } from 'jotai';
+import { lastSearchQueryAtom, PlaybackSource } from '@/lib/state';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/icon';
 
 export default function SearchScreen() {
-  const theme = useAtomValue(themeAtom);
   const params = useLocalSearchParams();
   const router = useRouter();
   const [lastSearchQuery, setLastSearchQuery] = useAtom(lastSearchQueryAtom);

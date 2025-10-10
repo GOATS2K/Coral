@@ -6,8 +6,6 @@ import { useState } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { PlayIcon, MoreVerticalIcon } from 'lucide-react-native';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAtomValue } from 'jotai';
-import { themeAtom } from '@/lib/state';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { AlbumMenuItems } from '@/components/menu-items/album-menu-items';
@@ -18,7 +16,6 @@ interface AlbumCardProps {
 
 export function AlbumCard({ album }: AlbumCardProps) {
   const isWeb = Platform.OS === 'web';
-  const theme = useAtomValue(themeAtom);
   const { play } = usePlayerActions();
   const artworkSize = isWeb ? 150 : 180;
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';

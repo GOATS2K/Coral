@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 import { Appearance, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useAtomValue, useSetAtom } from 'jotai';
 import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
@@ -44,7 +44,6 @@ function AppContent() {
   const resolvedTheme = useAtomValue(themeAtom);
   const setSystemTheme = useSetAtom(systemThemeAtom);
   const setThemePreference = useSetAtom(themePreferenceAtom);
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // On native platforms, load theme preference from AsyncStorage
@@ -78,12 +77,12 @@ function AppContent() {
       });
       return () => subscription.remove();
     }
-  }, [])
+  }, [setSystemTheme, setThemePreference])
 
   // Apply resolved theme to NativeWind
   useEffect(() => {
     setColorScheme(resolvedTheme);
-  }, [resolvedTheme]);
+  }, [resolvedTheme, setColorScheme]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

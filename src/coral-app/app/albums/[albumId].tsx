@@ -1,5 +1,5 @@
 import { ColorValue, Image, Platform, ScrollView, View } from 'react-native';
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';

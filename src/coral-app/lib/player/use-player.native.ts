@@ -1,6 +1,8 @@
+'use no memo';
+
 import { useAudioPlayerStatus } from 'expo-audio';
 import { useAtom, useSetAtom } from 'jotai';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { playerStateAtom, PlaybackInitializer } from '@/lib/state';
 import { useNativePlayerContext } from './player-provider.native';
@@ -52,15 +54,15 @@ export function usePlayer() {
     }
   };
 
-  const togglePlayPause = useCallback(() => {
+  const togglePlayPause = () => {
     if (status.playing) {
       activePlayer.pause();
     } else {
       activePlayer.play();
     }
-  }, [status.playing, activePlayer]);
+  };
 
-  const skip = useCallback(async (direction: 1 | -1) => {
+  const skip = async (direction: 1 | -1) => {
     setPosition(0);
 
     // Reset transition tracking on manual skip
@@ -199,14 +201,14 @@ export function usePlayer() {
     } catch (err) {
       console.error('Skip error:', err);
     }
-  }, [state, playerA, playerB, bufferPlayer, bufferStatus, setState, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef]);
+  };
 
-  const seekTo = useCallback(async (newPosition: number) => {
+  const seekTo = async (newPosition: number) => {
     setPosition(newPosition);
     // Reset transition tracking on seek (user might seek past the transition point)
     lastTransitionedIndexRef.current = -1;
     await activePlayer.seekTo(newPosition);
-  }, [activePlayer, lastTransitionedIndexRef]);
+  };
 
 
   const playFromIndex = async (index: number) => {
@@ -302,9 +304,16 @@ export function usePlayer() {
         const timeRemaining = bufferPlayer.duration - bufferPlayer.currentTime;
         // Retry loading after the track should be finished
         const retryDelay = Math.max((timeRemaining * 1000) + 100, 500);
+        const trackIdToLoad = nextTrack.id;
+        const targetBufferName = bufferPlayerName;
         setTimeout(() => {
-          loadTrack(bufferPlayer, nextTrack.id);
-          bufferTrackIdRef.current = nextTrack.id;
+          loadTrack(bufferPlayer, trackIdToLoad);
+          if (targetBufferName === 'A') {
+            // eslint-disable-next-line react-compiler/react-compiler
+            playerATrackIdRef.current = trackIdToLoad;
+          } else {
+            playerBTrackIdRef.current = trackIdToLoad;
+          }
         }, retryDelay);
         return;
       }
@@ -337,19 +346,20 @@ export function usePlayer() {
 // Hook that returns only player actions without subscribing to status updates
 // Use this in components that only need to trigger actions, not display player state
 export function usePlayerActions() {
-  const { playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef } = useNativePlayerContext();
+  const context = useNativePlayerContext();
   const setState = useSetAtom(playerStateAtom);
 
-  const play = useCallback(async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
     const track = tracks[startIndex];
 
     // Reset transition tracking on manual play
-    lastTransitionedIndexRef.current = -1;
+    // eslint-disable-next-line react-compiler/react-compiler
+    context.lastTransitionedIndexRef.current = -1;
 
-    playerA.pause();
-    playerB.pause();
-    playerA.seekTo(0);
-    playerB.seekTo(0);
+    context.playerA.pause();
+    context.playerB.pause();
+    context.playerA.seekTo(0);
+    context.playerB.seekTo(0);
 
     setState({
       queue: tracks,
@@ -361,17 +371,17 @@ export function usePlayerActions() {
       originalQueue: null,
       initializer: initializer || null,
     });
-    loadTrack(playerA, track.id);
-    playerATrackIdRef.current = track.id;
-    await waitForPlayerLoaded(playerA);
-    playerA.play();
+    loadTrack(context.playerA, track.id);
+    context.playerATrackIdRef.current = track.id;
+    await waitForPlayerLoaded(context.playerA);
+    context.playerA.play();
 
     const nextTrack = tracks[startIndex + 1];
     if (nextTrack) {
-      loadTrack(playerB, nextTrack.id);
-      playerBTrackIdRef.current = nextTrack.id;
+      loadTrack(context.playerB, nextTrack.id);
+      context.playerBTrackIdRef.current = nextTrack.id;
     }
-  }, [playerA, playerB, playerATrackIdRef, playerBTrackIdRef, lastTransitionedIndexRef, setState]);
+  };
 
   return { play };
 }

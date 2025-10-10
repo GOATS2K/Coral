@@ -1,7 +1,6 @@
 import { Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Link } from 'expo-router';
-import { memo } from 'react';
 import type { SimpleArtistDto } from '@/lib/client/schemas';
 import { Heart } from 'lucide-react-native';
 import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
@@ -11,7 +10,7 @@ interface ArtistCardProps {
   artist: SimpleArtistDto;
 }
 
-export const ArtistCard = memo(function ArtistCard({ artist }: ArtistCardProps) {
+export function ArtistCard({ artist }: ArtistCardProps) {
   const { toggleFavorite } = useToggleFavoriteArtist();
 
   const handleLikeArtist = async (e: any) => {
@@ -38,4 +37,4 @@ export const ArtistCard = memo(function ArtistCard({ artist }: ArtistCardProps) 
       </Pressable>
     </Link>
   );
-});
+}

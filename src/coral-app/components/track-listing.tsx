@@ -4,7 +4,7 @@ import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
-import { useState, memo, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { TrackMenu } from '@/components/track-menu';
 import { PlaybackInitializer, playerStateAtom } from '@/lib/state';
 import { useAtomValue } from 'jotai';
@@ -18,7 +18,7 @@ interface TrackListingProps {
   initializer?: PlaybackInitializer;
 }
 
-const TrackArtwork = memo(function TrackArtwork({ albumId }: { albumId: string }) {
+function TrackArtwork({ albumId }: { albumId: string }) {
   const [imageError, setImageError] = useState(false);
 
   if (imageError || !albumId) {
@@ -33,7 +33,7 @@ const TrackArtwork = memo(function TrackArtwork({ albumId }: { albumId: string }
       onError={() => setImageError(true)}
     />
   );
-});
+}
 
 interface TrackRowProps {
   track: SimpleTrackDto;
@@ -45,7 +45,7 @@ interface TrackRowProps {
   onPlay: (index: number) => void;
 }
 
-const TrackRow = memo(function TrackRow({
+function TrackRow({
   track,
   index,
   isActive,
@@ -94,20 +94,17 @@ const TrackRow = memo(function TrackRow({
       </Pressable>
     </TrackMenu>
   );
-});
+}
 
-export const TrackListing = memo(function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
+export function TrackListing({ tracks, album, showTrackNumber = true, showCoverArt = false, className, initializer }: TrackListingProps) {
   const { play } = usePlayerActions();
   const activeTrack = useAtomValue(playerStateAtom).currentTrack;
 
-  const hasMultipleDiscs = useMemo(() =>
-    new Set(tracks.map(t => t.discNumber || 1)).size > 1,
-    [tracks]
-  );
+  const hasMultipleDiscs = new Set(tracks.map(t => t.discNumber || 1)).size > 1;
 
-  const handlePlay = useCallback((index: number) => {
+  const handlePlay = (index: number) => {
     play(tracks, index, initializer);
-  }, [play, tracks, initializer]);
+  };
 
   return (
     <>
@@ -131,4 +128,4 @@ export const TrackListing = memo(function TrackListing({ tracks, album, showTrac
       </View>
     </>
   );
-});
+}

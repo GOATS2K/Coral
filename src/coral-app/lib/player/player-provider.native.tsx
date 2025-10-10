@@ -344,8 +344,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // Start with slow polling (500ms) - will automatically switch to fast (25ms) when needed
     intervalId = setInterval(checkTransition, 500);
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerA.id, playerB.id]);
+  }, [playerA, playerB, setState]);
 
   return (
     <PlayerContext.Provider value={playersRef.current}>

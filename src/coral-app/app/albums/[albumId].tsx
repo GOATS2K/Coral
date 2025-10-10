@@ -1,5 +1,4 @@
 import { ColorValue, Image, Platform, ScrollView, View } from 'react-native';
-import { useMemo } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAlbum } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
@@ -231,11 +230,8 @@ export default function Screen() {
 
   const backgroundColor = theme === 'dark' ? 'hsl(0, 0%, 3.9%)' : 'hsl(0, 0%, 100%)';
 
-  // Memoize gradient calculation (must be called on every render)
-  const { colors: gradientColors, locations: gradientLocations } = useMemo(
-    () => createSmoothGradient(artworkColors, backgroundColor),
-    [artworkColors, backgroundColor]
-  );
+  // Calculate gradient
+  const { colors: gradientColors, locations: gradientLocations } = createSmoothGradient(artworkColors, backgroundColor);
 
   // Now safe to do early returns
   if (error) {

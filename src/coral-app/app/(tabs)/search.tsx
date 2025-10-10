@@ -2,7 +2,7 @@ import { View, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchSearch } from '@/lib/client/components';
 import { TrackListing } from '@/components/track-listing';
 import { ArtistCard } from '@/components/artist-card';
@@ -117,38 +117,23 @@ export default function SearchScreen() {
     }
   }, [isLoading]);
 
-  // Flatten paginated data - memoized to prevent re-flattening on every render
-  const artists = useMemo(() =>
-    data?.pages.flatMap((page) => page.data.artists) ?? [],
-    [data?.pages]
-  );
-  const albums = useMemo(() =>
-    data?.pages.flatMap((page) => page.data.albums) ?? [],
-    [data?.pages]
-  );
-  const tracks = useMemo(() =>
-    data?.pages.flatMap((page) => page.data.tracks) ?? [],
-    [data?.pages]
-  );
+  // Flatten paginated data
+  const artists = data?.pages.flatMap((page) => page.data.artists) ?? [];
+  const albums = data?.pages.flatMap((page) => page.data.albums) ?? [];
+  const tracks = data?.pages.flatMap((page) => page.data.tracks) ?? [];
 
   const hasResults = artists.length > 0 || albums.length > 0 || tracks.length > 0;
 
-  // Sliced display arrays - memoized to prevent re-slicing on every render
-  const displayedArtists = useMemo(() => {
-    if (!expandedSections.artists) {
-      return artists.slice(0, INITIAL_LIMIT);
-    }
-    return artists.slice(0, EXPANDED_ARTISTS_CAP);
-  }, [artists, expandedSections.artists]);
+  // Sliced display arrays
+  const displayedArtists = !expandedSections.artists
+    ? artists.slice(0, INITIAL_LIMIT)
+    : artists.slice(0, EXPANDED_ARTISTS_CAP);
 
-  const displayedAlbums = useMemo(() => {
-    if (!expandedSections.albums) {
-      return albums.slice(0, INITIAL_ALBUMS_LIMIT);
-    }
-    return albums.slice(0, EXPANDED_ALBUMS_CAP);
-  }, [albums, expandedSections.albums]);
+  const displayedAlbums = !expandedSections.albums
+    ? albums.slice(0, INITIAL_ALBUMS_LIMIT)
+    : albums.slice(0, EXPANDED_ALBUMS_CAP);
 
-  const handleScroll = useCallback((event: any) => {
+  const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 200;
     const isCloseToBottom =
@@ -158,15 +143,15 @@ export default function SearchScreen() {
     if (isCloseToBottom && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  };
 
-  const toggleArtistsExpanded = useCallback(() => {
+  const toggleArtistsExpanded = () => {
     setExpandedSections((prev) => ({ ...prev, artists: true }));
-  }, []);
+  };
 
-  const toggleAlbumsExpanded = useCallback(() => {
+  const toggleAlbumsExpanded = () => {
     setExpandedSections((prev) => ({ ...prev, albums: true }));
-  }, []);
+  };
 
   return (
     <>

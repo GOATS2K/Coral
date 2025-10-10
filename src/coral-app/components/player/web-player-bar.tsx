@@ -8,7 +8,6 @@ import { PlayerQueue } from './player-queue';
 import { PlayerVolume } from './player-volume';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
-import { reorderQueue, shuffleQueue, cycleRepeat } from '@/lib/player/player-queue-utils';
 
 export function WebPlayerBar() {
   if (Platform.OS !== 'web') {
@@ -57,8 +56,8 @@ export function WebPlayerBar() {
           isShuffled={isShuffled}
           togglePlayPause={togglePlayPause}
           skip={skip}
-          shuffle={() => shuffleQueue(setState)}
-          cycleRepeat={() => cycleRepeat(setState)}
+          shuffle={() => setState({ type: 'shuffle' })}
+          cycleRepeat={() => setState({ type: 'cycleRepeat' })}
         />
         <PlayerProgress position={progress.position} duration={duration} seekTo={seekTo} />
       </View>
@@ -68,7 +67,7 @@ export function WebPlayerBar() {
         <PlayerQueue
           queue={queue}
           currentIndex={currentIndex}
-          reorderQueue={(fromIndex, toIndex) => reorderQueue(setState, fromIndex, toIndex)}
+          reorderQueue={(fromIndex, toIndex) => setState({ type: 'reorder', from: fromIndex, to: toIndex })}
           playFromIndex={playFromIndex}
         />
         <PlayerVolume volume={volume} isMuted={isMuted} setVolume={setVolume} toggleMute={toggleMute} />

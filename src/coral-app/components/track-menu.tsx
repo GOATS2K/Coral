@@ -21,7 +21,7 @@ import { useRouter } from 'expo-router';
 import { useSetAtom, useAtomValue } from 'jotai';
 import { playerStateAtom, themeAtom } from '@/lib/state';
 import { useToast } from '@/lib/hooks/use-toast';
-import { addToQueue, findSimilarAndAddToQueue } from '@/lib/player/player-queue-utils';
+import { fetchRecommendationsForTrack } from '@/lib/client/components';
 
 interface TrackMenuProps {
   track: SimpleTrackDto;
@@ -52,21 +52,31 @@ export function TrackMenu({ track, children, isQueueContext = false, isActive = 
 
   const handleFindSimilar = async () => {
     bottomSheetRef.current?.dismiss();
-    await findSimilarAndAddToQueue(track.id, setState, showToast);
+    try {
+      const recommendations = await fetchRecommendationsForTrack({ pathParams: { trackId: track.id } });
+      // Skip first track as it's the track we're getting recommendations for
+      const tracksToAdd = recommendations.slice(1);
+      setState({ type: 'addMultipleToQueue', tracks: tracksToAdd });
+      showToast(`Added ${tracksToAdd.length} similar songs to queue`);
+    } catch (err) {
+      console.error('Failed to fetch recommendations:', err);
+      showToast('Failed to fetch recommendations');
+    }
   };
 
   const handleAddToQueue = () => {
-    addToQueue(setState, track);
+    setState({ type: 'addToQueue', track });
     showToast(`Added "${track.title}" to queue`);
     bottomSheetRef.current?.dismiss();
   };
 
   const handleRemoveFromQueue = () => {
-    setState(state => ({
-      ...state,
-      queue: state.queue.filter(t => t.id !== track.id)
-    }));
-    showToast(`Removed "${track.title}" from queue`);
+    // Find the index of the track in the queue
+    const index = playerState.queue.findIndex(t => t.id === track.id);
+    if (index !== -1) {
+      setState({ type: 'removeFromQueue', index });
+      showToast(`Removed "${track.title}" from queue`);
+    }
     bottomSheetRef.current?.dismiss();
   };
 

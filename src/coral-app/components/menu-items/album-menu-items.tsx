@@ -7,7 +7,6 @@ import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { useRouter } from 'expo-router';
 import { useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
-import { addMultipleToQueue } from '@/lib/player/player-queue-utils';
 import { baseUrl } from '@/lib/client/fetcher';
 
 interface MenuComponents {
@@ -39,7 +38,7 @@ export function AlbumMenuItems({ album, components }: AlbumMenuItemsProps) {
       if (!response.ok) throw new Error('Failed to fetch tracks');
       const tracks = await response.json();
       if (tracks && tracks.length > 0) {
-        addMultipleToQueue(setState, tracks);
+        setState({ type: 'addMultipleToQueue', tracks });
       }
     } catch (error) {
       console.error('Error adding to queue:', error);

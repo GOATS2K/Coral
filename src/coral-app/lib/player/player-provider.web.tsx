@@ -87,10 +87,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     const handleTrackChange = (data: { index: number }) => {
       console.info('[PlayerProvider] Player event: trackChanged to', data.index);
-      setState((prev) => ({
-        ...prev,
-        currentIndex: data.index
-      }));
+      setState({ type: 'setCurrentIndex', index: data.index });
     };
 
     const handlePlaybackStateChange = (data: { isPlaying: boolean }) => {

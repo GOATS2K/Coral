@@ -24,15 +24,7 @@ export function usePlayer() {
     }
 
     console.info('[usePlayer] Setting player state...');
-    setState({
-      queue: tracks,
-      currentIndex: startIndex,
-      activePlayer: 'A',
-      repeat: 'off',
-      isShuffled: false,
-      originalQueue: null,
-      initializer: initializer || null,
-    });
+    setState({ type: 'setQueue', queue: tracks, index: startIndex, initializer });
 
     console.info('[usePlayer] Calling loadQueue...');
     await player.loadQueue(tracks, startIndex);
@@ -68,7 +60,7 @@ export function usePlayer() {
   const playFromIndex = useCallback(async (index: number) => {
     if (!player || index < 0 || index >= state.queue.length) return;
 
-    setState((prev) => ({ ...prev, currentIndex: index }));
+    setState({ type: 'setCurrentIndex', index });
     await player.playFromIndex(index);
   }, [player, state.queue.length, setState]);
 

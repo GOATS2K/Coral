@@ -35,33 +35,33 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ONE polling interval for entire app
   useEffect(() => {
     if (!player) return;
 
     const interval = setInterval(() => {
       const isPlaying = player.getIsPlaying();
+      const position = player.getCurrentTime();
+      const duration = player.getDuration();
+
+      setPlaybackState((prev) => ({
+        ...prev,
+        position,
+        duration,
+        isPlaying
+      }));
 
       if (isPlaying) {
-        const position = player.getCurrentTime();
-        const duration = player.getDuration();
-
-        setPlaybackState({
-          position,
-          duration,
-          isPlaying: true
-        });
-
-        // Schedule next track when 15s remaining (check once in 14.5-15s window)
         const remaining = duration - position;
-        if (remaining > 0 && remaining <= 15 && remaining > 14.5) {
+        // Schedule next track when there's 20 seconds remaining (earlier than before)
+        if (remaining > 0 && remaining <= 20 && remaining > 19.5) {
+          console.info('[PlayerProvider] Triggering next track schedule, remaining:', remaining.toFixed(2), 's');
           player.checkAndScheduleNext();
         }
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [player, setPlaybackState]); // Stable - never re-runs!
+  }, [player, setPlaybackState]);
 
   // Atom → Player sync
   useEffect(() => {

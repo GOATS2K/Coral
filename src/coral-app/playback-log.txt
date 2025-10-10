@@ -1,0 +1,85 @@
+[usePlayer] play called 
+Object { player: true, trackCount: 21, startIndex: 0 }
+entry.bundle:133509:15
+[usePlayer] Setting player state... entry.bundle:133518:15
+[usePlayer] Calling loadQueue... entry.bundle:133528:15
+[WebAudio] Scheduling track 0 DWFY (Dub) (Mixed) at 22.660 entry.bundle:133891:17
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/87950f00-302c-4f2c-9917-a06cdc362708/original entry.bundle:133949:15
+[PlayerProvider] Syncing atom → player &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:81:15
+[WebAudio] Updating queue, new length: 21 current index: 0 entry.bundle:133816:15
+[WebAudio] Decoding audio, size: 9.27 MB entry.bundle:133954:15
+[WebAudio] Decoded, duration: 87.27 s entry.bundle:133956:15
+[WebAudio] ▶️  Track 0 playback started at 22.962 entry.bundle:133920:17
+[WebAudio] Scheduled track 0 duration: 87.27 s entry.bundle:133936:17
+[PlayerProvider] Player event: playbackStateChanged to true &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:101:17
+[WebAudio] Prefetching track 1 Strings Track (Apex Remix) (Mixed) entry.bundle:134118:19
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/1356de14-4d15-4056-84ab-e251cd8d14c4/original entry.bundle:133949:15
+[WebAudio] Prefetching track 2 No Ordinary Love (LSB Bootleg) (Mixed) entry.bundle:134118:19
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/061657fd-4e1b-454b-a3cb-cb0330e116f0/original entry.bundle:133949:15
+[usePlayer] loadQueue completed entry.bundle:133530:15
+[WebAudio] Decoding audio, size: 13.61 MB entry.bundle:133954:15
+[WebAudio] Decoding audio, size: 12.75 MB entry.bundle:133954:15
+[WebAudio] Decoded, duration: 109.09 s 2 entry.bundle:133956:15
+[WebAudio] Seeking to position: 61.00 s entry.bundle:134234:15
+[WebAudio] Seek completed to: 61.00 s entry.bundle:134277:15
+[WebAudio] 📅 Timer triggered: scheduling next track 1 Strings Track (Apex Remix) (Mixed) to start at 51.913 s entry.bundle:134090:15
+[WebAudio] Scheduling track 1 Strings Track (Apex Remix) (Mixed) at 51.913 entry.bundle:133891:17
+[WebAudio] Using cached audio buffer for track: 1356de14-4d15-4056-84ab-e251cd8d14c4 entry.bundle:133946:17
+[WebAudio] ✓ Good timing: 14.793 s until scheduled start entry.bundle:133914:19
+[WebAudio] ▶️  Track 1 playback started at 51.913 entry.bundle:133920:17
+[WebAudio] Scheduled track 1 duration: 109.09 s entry.bundle:133936:17
+[WebAudio] Track 1 already scheduled, skipping entry.bundle:134074:17
+[WebAudio] Track 0 ended after seek entry.bundle:134274:17
+[WebAudio] 🏁 Track 0 ended entry.bundle:134137:15
+[WebAudio]   ⏱️  Expected end: 51.913 s, Actual: 51.981 s, Delta: 0.067 s entry.bundle:134138:15
+[WebAudio] ✅ GOOD gapless transition to track 1 Strings Track (Apex Remix) (Mixed) entry.bundle:134035:19
+[WebAudio]   🎵 Next track started: 51.913 s, now: 51.981 s, timing: 0.067 s entry.bundle:134036:19
+[PlayerProvider] Player event: trackChanged to 1 &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:95:17
+[WebAudio] Prefetching track 3 Saviour (Mixed) entry.bundle:134118:19
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/2380ebcb-5e96-4814-9bf0-f38ed6b76e22/original entry.bundle:133949:15
+[PlayerProvider] Syncing atom → player &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:81:15
+[WebAudio] Updating queue, new length: 21 current index: 1 entry.bundle:133816:15
+[WebAudio] Decoding audio, size: 21.26 MB entry.bundle:133954:15
+[WebAudio] Decoded, duration: 174.54 s entry.bundle:133956:15
+[WebAudio] Seeking to position: 91.00 s entry.bundle:134234:15
+[WebAudio] Seek completed to: 91.00 s entry.bundle:134277:15
+[WebAudio] 📅 Timer triggered: scheduling next track 2 No Ordinary Love (LSB Bootleg) (Mixed) to start at 80.042 s entry.bundle:134090:15
+[WebAudio] Scheduling track 2 No Ordinary Love (LSB Bootleg) (Mixed) at 80.042 entry.bundle:133891:17
+[WebAudio] Using cached audio buffer for track: 061657fd-4e1b-454b-a3cb-cb0330e116f0 entry.bundle:133946:17
+[WebAudio] ✓ Good timing: 14.982 s until scheduled start entry.bundle:133914:19
+[WebAudio] ▶️  Track 2 playback started at 80.042 entry.bundle:133920:17
+[WebAudio] Scheduled track 2 duration: 109.09 s entry.bundle:133936:17
+[WebAudio] Track 2 already scheduled, skipping entry.bundle:134074:17
+[WebAudio] Track 1 ended after seek entry.bundle:134274:17
+[WebAudio] 🏁 Track 1 ended entry.bundle:134137:15
+[WebAudio]   ⏱️  Expected end: 80.042 s, Actual: 80.112 s, Delta: 0.070 s entry.bundle:134138:15
+[WebAudio] Evicting cache for old track: 87950f00-302c-4f2c-9917-a06cdc362708 entry.bundle:133872:19
+[WebAudio] ✅ GOOD gapless transition to track 2 No Ordinary Love (LSB Bootleg) (Mixed) entry.bundle:134035:19
+[WebAudio]   🎵 Next track started: 80.042 s, now: 80.112 s, timing: 0.070 s entry.bundle:134036:19
+[PlayerProvider] Player event: trackChanged to 2 &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:95:17
+[WebAudio] Prefetching track 4 Playing With Fire (feat. Key) (Mixed) entry.bundle:134118:19
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/816f10f0-972c-4c3c-a385-6220aa783453/original entry.bundle:133949:15
+[PlayerProvider] Syncing atom → player &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:81:15
+[WebAudio] Updating queue, new length: 21 current index: 2 entry.bundle:133816:15
+[WebAudio] Decoding audio, size: 8.35 MB entry.bundle:133954:15
+[WebAudio] Decoded, duration: 65.45 s entry.bundle:133956:15
+[WebAudio] 📅 Timer triggered: scheduling next track 3 Saviour (Mixed) to start at 189.133 s entry.bundle:134090:15
+[WebAudio] Scheduling track 3 Saviour (Mixed) at 189.133 entry.bundle:133891:17
+[WebAudio] Using cached audio buffer for track: 2380ebcb-5e96-4814-9bf0-f38ed6b76e22 entry.bundle:133946:17
+[WebAudio] ✓ Good timing: 14.963 s until scheduled start entry.bundle:133914:19
+[WebAudio] ▶️  Track 3 playback started at 189.133 entry.bundle:133920:17
+[WebAudio] Scheduled track 3 duration: 174.54 s entry.bundle:133936:17
+[WebAudio] Track 3 already scheduled, skipping entry.bundle:134074:17
+[WebAudio] Track 2 ended entry.bundle:133933:19
+[WebAudio] 🏁 Track 2 ended entry.bundle:134137:15
+[WebAudio]   ⏱️  Expected end: 189.133 s, Actual: 189.141 s, Delta: 0.008 s entry.bundle:134138:15
+[WebAudio] Evicting cache for old track: 1356de14-4d15-4056-84ab-e251cd8d14c4 entry.bundle:133872:19
+[WebAudio] ✅ PERFECT gapless transition to track 3 Saviour (Mixed) entry.bundle:134035:19
+[WebAudio]   🎵 Next track started: 189.133 s, now: 189.141 s, timing: 0.008 s entry.bundle:134036:19
+[PlayerProvider] Player event: trackChanged to 3 &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:95:17
+[WebAudio] Prefetching track 5 Colours of My Mind (feat. Pola & Bryson) (Mixed) entry.bundle:134118:19
+[WebAudio] Fetching audio file: http://192.168.7.161:5031/api/library/tracks/b05591c8-45a2-40d4-9baf-738ae4ab2633/original entry.bundle:133949:15
+[PlayerProvider] Syncing atom → player &platform=web&hot=false&lazy=true&transform.routerRoot=app&dev=true&minify=false&modulesOnly=true&runModule=false&shallow=true:81:15
+[WebAudio] Updating queue, new length: 21 current index: 3 entry.bundle:133816:15
+[WebAudio] Decoding audio, size: 14.42 MB entry.bundle:133954:15
+[WebAudio] Decoded, duration: 109.09 s entry.bundle:133956:15

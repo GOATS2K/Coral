@@ -1,6 +1,7 @@
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { baseUrl } from '@/lib/client/fetcher';
 import type { RepeatMode } from '@/lib/state';
+import EventEmitter from 'eventemitter3';
 
 interface ScheduledSource {
   source: AudioBufferSourceNode;
@@ -9,7 +10,18 @@ interface ScheduledSource {
   trackIndex: number;
 }
 
-export class WebAudioPlayer {
+export interface PlayerEvents {
+  playbackStateChanged: { isPlaying: boolean };
+  trackChanged: { index: number };
+}
+
+// Event name constants
+export const PlayerEventNames = {
+  PLAYBACK_STATE_CHANGED: 'playbackStateChanged',
+  TRACK_CHANGED: 'trackChanged',
+} as const;
+
+export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   private audioContext: AudioContext;
   private gainNode: GainNode;
   private tracks: SimpleTrackDto[] = [];
@@ -23,6 +35,7 @@ export class WebAudioPlayer {
   private prefetchInProgress: Set<string> = new Set(); // Track IDs being prefetched
 
   constructor() {
+    super(); // Initialize EventEmitter
     this.audioContext = new AudioContext();
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
@@ -41,6 +54,7 @@ export class WebAudioPlayer {
     // Start playback from the specified track
     await this.scheduleTrack(startIndex, this.audioContext.currentTime);
     this.isPlaying = true;
+    this.emit('playbackStateChanged', { isPlaying: true });
 
     // Prefetch next 2 tracks in background to avoid gaps
     this.prefetchUpcomingTracks(startIndex);
@@ -307,9 +321,13 @@ export class WebAudioPlayer {
 
     await this.scheduleTrack(index, this.audioContext.currentTime);
 
+    // KEEP old callback for compatibility
     if (this.trackChangeCallback) {
       this.trackChangeCallback(index);
     }
+
+    // ADD new event emission
+    this.emit(PlayerEventNames.TRACK_CHANGED, { index });
 
     // Prefetch upcoming tracks
     this.prefetchUpcomingTracks(index);
@@ -423,6 +441,7 @@ export class WebAudioPlayer {
     if (nextIndex === null) {
       console.info('[WebAudio] 🛑 End of queue, stopping playback');
       this.isPlaying = false;
+      this.emit('playbackStateChanged', { isPlaying: false });
       return;
     }
 
@@ -449,6 +468,9 @@ export class WebAudioPlayer {
       this.trackChangeCallback(this.currentTrackIndex);
     }
 
+    // Emit trackChanged event
+    this.emit('trackChanged', { index: this.currentTrackIndex });
+
     // Prefetch upcoming tracks for smooth transitions
     this.prefetchUpcomingTracks(this.currentTrackIndex);
   }
@@ -473,11 +495,13 @@ export class WebAudioPlayer {
       this.audioContext.resume();
     }
     this.isPlaying = true;
+    this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: true });
   }
 
   pause() {
     this.isPlaying = false;
     this.audioContext.suspend();
+    this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: false });
   }
 
   async togglePlayPause() {

@@ -117,3 +117,16 @@ export const albumsScrollStateAtom = atom<AlbumsScrollState>({
 
 // Search state - stores last search query for restoration
 export const lastSearchQueryAtom = atom<string>('')
+
+// Ephemeral playback state (updates 4x/sec)
+export interface PlaybackState {
+  position: number;
+  duration: number;
+  isPlaying: boolean;
+}
+
+export const playbackStateAtom = atom<PlaybackState>({
+  position: 0,
+  duration: 0,
+  isPlaying: false
+})

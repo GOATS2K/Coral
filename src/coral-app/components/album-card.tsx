@@ -2,7 +2,7 @@ import { View, Image, Pressable, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { baseUrl } from '@/lib/client/fetcher';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
 import { PlayIcon, MoreVerticalIcon } from 'lucide-react-native';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,20 +21,25 @@ export function AlbumCard({ album }: AlbumCardProps) {
   const artworkPath = album.artworks?.medium ?? album.artworks?.small ?? '';
   const artworkUrl = artworkPath ? `${baseUrl}${artworkPath}` : null;
   const [isHovered, setIsHovered] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const artistNames = album.artists && album.artists.length > 4
-    ? 'Various Artists'
-    : (album.artists && album.artists.length > 0
-        ? album.artists.map(a => a.name).join(', ')
-        : 'Unknown Artist');
+  const artistNames = useMemo(() => {
+    if (album.artists && album.artists.length > 4) {
+      return 'Various Artists';
+    }
+    if (album.artists && album.artists.length > 0) {
+      return album.artists.map(a => a.name).join(', ');
+    }
+    return 'Unknown Artist';
+  }, [album.artists]);
 
-  const fetchAlbumTracks = async () => {
+  const fetchAlbumTracks = useCallback(async () => {
     const response = await fetch(`${baseUrl}/api/library/albums/${album.id}/tracks`);
     if (!response.ok) throw new Error('Failed to fetch tracks');
     return await response.json();
-  };
+  }, [album.id]);
 
-  const handlePlayAlbum = async (e: any) => {
+  const handlePlayAlbum = useCallback(async (e: any) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -46,7 +51,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
     } catch (error) {
       console.error('Error playing album:', error);
     }
-  };
+  }, [fetchAlbumTracks, play]);
 
   return (
     <Link href={`/albums/${album.id}`} asChild>
@@ -80,9 +85,9 @@ export function AlbumCard({ album }: AlbumCardProps) {
                   <PlayIcon size={32} color="#000" fill="#000" />
                 </Pressable>
 
-                {/* Dropdown Menu Button */}
+                {/* Dropdown Menu Button - only render when hovered */}
                 <View className="absolute top-2 right-2" pointerEvents="box-none">
-                  <DropdownMenu>
+                  <DropdownMenu onOpenChange={setIsMenuOpen}>
                     <DropdownMenuTrigger asChild>
                       <Pressable
                         className="bg-black/50 rounded-full p-2 hover:bg-black/70"
@@ -94,18 +99,21 @@ export function AlbumCard({ album }: AlbumCardProps) {
                         <MoreVerticalIcon size={20} color="#fff" />
                       </Pressable>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48">
-                      <AlbumMenuItems
-                        album={album}
-                        components={{
-                          MenuItem: DropdownMenuItem,
-                          MenuSub: DropdownMenuSub,
-                          MenuSubTrigger: DropdownMenuSubTrigger,
-                          MenuSubContent: DropdownMenuSubContent,
-                          MenuSeparator: DropdownMenuSeparator,
-                        }}
-                      />
-                    </DropdownMenuContent>
+                    {/* Only render menu content when dropdown is open */}
+                    {isMenuOpen && (
+                      <DropdownMenuContent className="w-48">
+                        <AlbumMenuItems
+                          album={album}
+                          components={{
+                            MenuItem: DropdownMenuItem,
+                            MenuSub: DropdownMenuSub,
+                            MenuSubTrigger: DropdownMenuSubTrigger,
+                            MenuSubContent: DropdownMenuSubContent,
+                            MenuSeparator: DropdownMenuSeparator,
+                          }}
+                        />
+                      </DropdownMenuContent>
+                    )}
                   </DropdownMenu>
                 </View>
               </View>

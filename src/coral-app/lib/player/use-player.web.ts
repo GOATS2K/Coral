@@ -100,5 +100,69 @@ export function usePlayer() {
   };
 }
 
-// Web doesn't need separate actions hook
-export const usePlayerActions = usePlayer;
+// Actions-only hook - no state subscriptions, prevents unnecessary re-renders
+export function usePlayerActions() {
+  const { player } = usePlayerContext() as WebPlayerContext;
+  const setState = useSetAtom(playerStateAtom);
+  const setPlaybackState = useSetAtom(playbackStateAtom);
+
+  const play = async (tracks: SimpleTrackDto[], startIndex: number = 0, initializer?: PlaybackInitializer) => {
+    if (!player) {
+      console.warn('[usePlayerActions] player is null, cannot play');
+      return;
+    }
+
+    setState({ type: 'setQueue', queue: tracks, index: startIndex, initializer });
+    await player.loadQueue(tracks, startIndex);
+  };
+
+  const togglePlayPause = async () => {
+    if (!player) return;
+    await player.togglePlayPause();
+  };
+
+  const skip = async (direction: 1 | -1) => {
+    if (!player) return;
+    await player.skip(direction);
+  };
+
+  const seekTo = async (newPosition: number) => {
+    if (!player) return;
+
+    // Optimistically update position to avoid visual bounce
+    setPlaybackState((prev) => ({
+      ...prev,
+      position: newPosition
+    }));
+
+    player.seekTo(newPosition);
+  };
+
+  const playFromIndex = async (index: number) => {
+    if (!player) return;
+    // Can't check queue length without subscribing to state
+    setState({ type: 'setCurrentIndex', index });
+    await player.playFromIndex(index);
+  };
+
+  const setVolume = (volume: number) => {
+    if (!player) return;
+    player.setVolume(volume);
+  };
+
+  const toggleMute = () => {
+    if (!player) return;
+    const currentVolume = player.getVolume();
+    player.setVolume(currentVolume > 0 ? 0 : 1);
+  };
+
+  return {
+    play,
+    togglePlayPause,
+    skip,
+    seekTo,
+    setVolume,
+    toggleMute,
+    playFromIndex,
+  };
+}

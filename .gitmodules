@@ -1,0 +1,3 @@
+[submodule "src/coral-app/lib/vendor/hls.js"]
+	path = src/coral-app/lib/vendor/hls.js
+	url = git@github.com:video-dev/hls.js.git

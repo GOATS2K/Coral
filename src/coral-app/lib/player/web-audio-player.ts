@@ -1,13 +1,24 @@
 import type { SimpleTrackDto } from '@/lib/client/schemas';
-import { baseUrl } from '@/lib/client/fetcher';
 import type { RepeatMode } from '@/lib/state';
 import EventEmitter from 'eventemitter3';
+import { ProgressiveAudioLoader } from './progressive-audio-loader';
 
 interface ScheduledSource {
   source: AudioBufferSourceNode;
   startTime: number;
   duration: number;
   trackIndex: number;
+  trackId: string; // Stable track identifier
+  chunkIndex: number;
+  isLastChunk: boolean;
+}
+
+interface ScheduledTrackMetadata {
+  trackId: string;
+  trackIndex: number;
+  startTime: number; // AudioContext time when first chunk starts
+  duration: number; // Total duration from HLS playlist (sum of all fragment durations)
+  isPlaylistComplete: boolean; // True when #EXT-X-ENDLIST is present (live: false)
 }
 
 export interface PlayerEvents {
@@ -29,20 +40,20 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   private tracks: SimpleTrackDto[] = [];
   private currentTrackIndex = 0;
   private scheduledSources: ScheduledSource[] = [];
+  private scheduledTracks: Map<string, ScheduledTrackMetadata> = new Map(); // Track metadata by trackId
   private isPlaying = false;
   private trackChangeCallback: ((index: number) => void) | null = null;
   private repeatMode: RepeatMode = 'off';
-  private audioBuffers: Map<string, AudioBuffer> = new Map();
+  private progressiveLoader: ProgressiveAudioLoader;
   private schedulingInProgress: Set<number> = new Set();
-  private prefetchInProgress: Set<string> = new Set();
   private currentTrackLoaded: boolean = false;
-  private abortControllers: Map<string, AbortController> = new Map();
 
   constructor() {
     super(); // Initialize EventEmitter
     this.audioContext = new AudioContext();
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
+    this.progressiveLoader = new ProgressiveAudioLoader(this.audioContext);
   }
 
   async loadQueue(tracks: SimpleTrackDto[], startIndex: number = 0, clearCache: boolean = true) {
@@ -51,7 +62,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     this.clearScheduledSources();
 
     if (clearCache) {
-      this.clearAudioCache();
+      this.progressiveLoader.clearAllCaches();
     }
 
     this.isPlaying = false;
@@ -67,60 +78,6 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   updateQueue(tracks: SimpleTrackDto[], currentIndex: number) {
     this.tracks = tracks;
     this.currentTrackIndex = currentIndex;
-
-    const trackIdsInQueue = new Set(tracks.map(t => t.id));
-    this.pruneCache(trackIdsInQueue);
-  }
-
-  clearAudioCache() {
-    const cacheSize = this.audioBuffers.size;
-    if (cacheSize > 0) {
-      console.info('[WebAudio] Clearing audio cache, removing', cacheSize, 'cached tracks');
-      this.audioBuffers.clear();
-      this.prefetchInProgress.clear();
-    }
-  }
-
-  private pruneCache(validTrackIds: Set<string>) {
-    const cachedTrackIds = Array.from(this.audioBuffers.keys());
-
-    for (const cachedId of cachedTrackIds) {
-      if (!validTrackIds.has(cachedId)) {
-        console.info('[WebAudio] Removing cached track no longer in queue:', cachedId);
-        this.audioBuffers.delete(cachedId);
-        this.prefetchInProgress.delete(cachedId);
-      }
-    }
-  }
-
-  private pruneOldCacheEntries() {
-    const keepTrackIds = new Set<string>();
-
-    // Keep previous track (if exists)
-    if (this.currentTrackIndex > 0) {
-      const prevTrack = this.tracks[this.currentTrackIndex - 1];
-      if (prevTrack) keepTrackIds.add(prevTrack.id);
-    }
-
-    // Keep current track
-    const currentTrack = this.tracks[this.currentTrackIndex];
-    if (currentTrack) keepTrackIds.add(currentTrack.id);
-
-    // Keep next track (if exists)
-    if (this.currentTrackIndex < this.tracks.length - 1) {
-      const nextTrack = this.tracks[this.currentTrackIndex + 1];
-      if (nextTrack) keepTrackIds.add(nextTrack.id);
-    }
-
-    // Evict everything else
-    const cachedIds = Array.from(this.audioBuffers.keys());
-    for (const cachedId of cachedIds) {
-      if (!keepTrackIds.has(cachedId)) {
-        console.info('[WebAudio] Evicting cache for old track:', cachedId);
-        this.audioBuffers.delete(cachedId);
-        this.prefetchInProgress.delete(cachedId);
-      }
-    }
   }
 
   private async scheduleTrack(trackIndex: number, startTime: number) {
@@ -144,119 +101,150 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
       const track = this.tracks[trackIndex];
       console.info('[WebAudio] Scheduling track', trackIndex, track.title, 'at', startTime.toFixed(3));
 
-      const fileUrl = `${baseUrl}/api/library/tracks/${track.id}/original`;
-      const audioBuffer = await this.fetchAndDecode(fileUrl, track.id);
+      // Initialize track metadata
+      const initialDuration = this.progressiveLoader.getTrackDuration(track.id) || 0;
+      const isComplete = this.progressiveLoader.isPlaylistComplete(track.id);
 
-      // Only abort if we were scheduling the current track and it changed
-      // Allow pre-scheduling of next tracks even if current index changes
-      if (isCurrentTrack && trackIndex !== this.currentTrackIndex) {
-        console.info('[WebAudio] Current track changed during fetch (was scheduling', trackIndex, ', now at', this.currentTrackIndex, '), aborting');
-        return;
+      this.scheduledTracks.set(track.id, {
+        trackId: track.id,
+        trackIndex,
+        startTime,
+        duration: initialDuration,
+        isPlaylistComplete: isComplete,
+      });
+
+      console.info('[WebAudio] 📊 Initial metadata: duration', initialDuration.toFixed(2), 's, complete:', isComplete);
+
+      let chunkIndex = 0;
+      let currentChunkStartTime = startTime;
+      let firstChunkScheduled = false;
+
+      // Load and schedule chunks progressively
+      for await (const audioBuffer of this.progressiveLoader.loadTrack(track.id)) {
+        // Check if scheduling was aborted
+        if (isCurrentTrack && trackIndex !== this.currentTrackIndex) {
+          console.info('[WebAudio] Current track changed during fetch (was scheduling', trackIndex, ', now at', this.currentTrackIndex, '), aborting');
+          return;
+        }
+
+        if (this.tracks[trackIndex]?.id !== track.id) {
+          console.info('[WebAudio] Track at index', trackIndex, 'changed during fetch, aborting');
+          return;
+        }
+
+        // Create and schedule chunk source
+        const source = this.audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.gainNode);
+
+        // Resume audio context on first chunk
+        if (!firstChunkScheduled && this.audioContext.state === 'suspended') {
+          await this.audioContext.resume();
+          this.isPlaying = true;
+          this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: true });
+        }
+
+        // Check timing on first chunk
+        if (!firstChunkScheduled) {
+          const currentTime = this.audioContext.currentTime;
+          const timeDelta = currentChunkStartTime - currentTime;
+
+          if (currentChunkStartTime < currentTime) {
+            const gap = currentTime - currentChunkStartTime;
+            console.warn('[WebAudio] ⚠️  GAP DETECTED:', gap.toFixed(3), 's - scheduled start time was in the past!');
+            console.warn('[WebAudio] Track', trackIndex, 'will start immediately instead of at scheduled time');
+          } else if (timeDelta < 0.5) {
+            console.warn('[WebAudio] ⚠️  TIGHT TIMING:', timeDelta.toFixed(3), 's until scheduled start - may cause gap');
+          } else {
+            console.info('[WebAudio] ✓ Good timing:', timeDelta.toFixed(3), 's until scheduled start');
+          }
+        }
+
+        const actualStartTime = Math.max(currentChunkStartTime, this.audioContext.currentTime);
+        source.start(actualStartTime);
+
+        if (!firstChunkScheduled) {
+          console.info('[WebAudio] ▶️  Track', trackIndex, 'chunk', chunkIndex, 'playback started at', actualStartTime.toFixed(3));
+          firstChunkScheduled = true;
+        }
+
+        // We don't know if this is the last chunk yet, so we'll mark it false for now
+        // and update it after the loop if needed
+        const scheduledSource: ScheduledSource = {
+          source,
+          startTime: actualStartTime,
+          duration: audioBuffer.duration,
+          trackIndex,
+          trackId: track.id,
+          chunkIndex,
+          isLastChunk: false, // Will be updated for last chunk
+        };
+
+        this.scheduledSources.push(scheduledSource);
+
+        // Update start time for next chunk
+        currentChunkStartTime = actualStartTime + audioBuffer.duration;
+        chunkIndex++;
+
+        // Emit buffering complete after first chunk
+        if (chunkIndex === 1 && isCurrentTrack) {
+          this.currentTrackLoaded = true;
+          this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
+          console.info('[WebAudio] 🔄 First chunk loaded');
+        }
       }
 
-      // Check if the track at this index is still the same track (in case queue was modified)
-      if (this.tracks[trackIndex]?.id !== track.id) {
-        console.info('[WebAudio] Track at index', trackIndex, 'changed during fetch, aborting');
-        return;
+      // Mark the last chunk
+      const trackSources = this.scheduledSources.filter(s => s.trackIndex === trackIndex);
+      if (trackSources.length > 0) {
+        const lastSource = trackSources[trackSources.length - 1];
+        lastSource.isLastChunk = true;
+
+        // Add onended handler only to last chunk
+        lastSource.source.onended = () => {
+          this.handleTrackEnd(lastSource);
+        };
+
+        const totalDuration = currentChunkStartTime - startTime;
+        console.info('[WebAudio] ✅ Scheduled track', trackIndex, 'with', chunkIndex, 'chunks');
+        console.info('[WebAudio]   📊 Total duration:', totalDuration.toFixed(2), 's (~' + (totalDuration / 60).toFixed(1), 'min)');
+        console.info('[WebAudio]   ⏰ Starts at:', startTime.toFixed(3), 's, ends at:', currentChunkStartTime.toFixed(3), 's');
       }
 
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.gainNode);
+      // Update metadata with final duration and playlist completion status
+      const finalDuration = this.progressiveLoader.getTrackDuration(track.id) || 0;
+      const playlistComplete = this.progressiveLoader.isPlaylistComplete(track.id);
 
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-        this.isPlaying = true;
-        this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: true });
-      }
+      this.scheduledTracks.set(track.id, {
+        trackId: track.id,
+        trackIndex,
+        startTime,
+        duration: finalDuration,
+        isPlaylistComplete: playlistComplete,
+      });
 
-      // Check for gaps - if startTime is in the past, we'll have a gap
-      const currentTime = this.audioContext.currentTime;
-      const timeDelta = startTime - currentTime;
-
-      if (startTime < currentTime) {
-        const gap = currentTime - startTime;
-        console.warn('[WebAudio] ⚠️  GAP DETECTED:', gap.toFixed(3), 's - scheduled start time was in the past!');
-        console.warn('[WebAudio] Track', trackIndex, 'will start immediately instead of at scheduled time');
-      } else if (timeDelta < 0.5) {
-        console.warn('[WebAudio] ⚠️  TIGHT TIMING:', timeDelta.toFixed(3), 's until scheduled start - may cause gap');
-      } else {
-        console.info('[WebAudio] ✓ Good timing:', timeDelta.toFixed(3), 's until scheduled start');
-      }
-
-      const actualStartTime = Math.max(startTime, this.audioContext.currentTime);
-      source.start(actualStartTime);
-      console.info('[WebAudio] ▶️  Track', trackIndex, 'playback started at', actualStartTime.toFixed(3));
-
-      const scheduledSource: ScheduledSource = {
-        source,
-        startTime: actualStartTime,
-        duration: audioBuffer.duration,
-        trackIndex
-      };
-
-      this.scheduledSources.push(scheduledSource);
-
-      source.onended = () => {
-        this.handleTrackEnd(scheduledSource);
-      };
-
-      console.info('[WebAudio] Scheduled track', trackIndex, 'duration:', audioBuffer.duration.toFixed(2), 's');
+      console.info('[WebAudio] 📊 Final metadata: duration', finalDuration.toFixed(2), 's, playlist complete:', playlistComplete);
 
       if (trackIndex === this.currentTrackIndex) {
-        this.currentTrackLoaded = true;
-        this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
-        console.info('[WebAudio] 🔄 Current track loaded, prefetching upcoming tracks');
-        this.prefetchUpcomingTracks(trackIndex);
+        // Start prefetching upcoming tracks in background
+        console.info('[WebAudio] 🔄 Track loaded, prefetching next track');
+        this.prefetchNextTrack(trackIndex);
 
-        // Immediately schedule the next track for gapless playback
-        console.info('[WebAudio] 🎯 Current track playing, scheduling next track immediately');
-        this.scheduleNextTrackIfNeeded(trackIndex);
+        // Only schedule next track if current track's playlist is complete
+        if (playlistComplete) {
+          console.info('[WebAudio] 🎯 Playlist complete, scheduling next track for gapless playback');
+          this.scheduleNextTrackIfNeeded(trackIndex);
+        } else {
+          console.info('[WebAudio] ⏳ Playlist still transcoding, will schedule next track when complete');
+        }
       }
     } finally {
       this.schedulingInProgress.delete(trackIndex);
     }
   }
 
-  private async fetchAndDecode(url: string, trackId: string): Promise<AudioBuffer> {
-    const cached = this.audioBuffers.get(trackId);
-    if (cached) {
-      console.info('[WebAudio] Using cached audio buffer for track:', trackId);
-      return cached;
-    }
-
-    console.info('[WebAudio] Fetching audio file:', url);
-    const controller = new AbortController();
-    this.abortControllers.set(trackId, controller);
-
-    try {
-      const audioResponse = await fetch(url, { signal: controller.signal });
-      const arrayBuffer = await audioResponse.arrayBuffer();
-
-      console.info('[WebAudio] Decoding audio, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      console.info('[WebAudio] Decoded, duration:', audioBuffer.duration.toFixed(2), 's');
-
-      this.audioBuffers.set(trackId, audioBuffer);
-      return audioBuffer;
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.info('[WebAudio] Fetch aborted for track:', trackId);
-        throw error;
-      }
-      console.error('[WebAudio] Error fetching/decoding track:', trackId, error);
-      throw error;
-    } finally {
-      this.abortControllers.delete(trackId);
-    }
-  }
-
   private cancelBuffering(trackId: string) {
-    const controller = this.abortControllers.get(trackId);
-    if (controller) {
-      controller.abort();
-      this.abortControllers.delete(trackId);
-    }
+    this.progressiveLoader.cancelTrack(trackId);
   }
 
   private getNextIndex(currentIndex: number, direction: 1 | -1 = 1): number | null {
@@ -342,7 +330,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
 
         // Schedule the next track to maintain gapless playback chain
         console.info('[WebAudio] 🔄 Gapless transition successful, prefetching and scheduling next track');
-        this.prefetchUpcomingTracks(nextIndex);
+        this.prefetchNextTrack(nextIndex);
         this.scheduleNextTrackIfNeeded(nextIndex);
       }
     } else {
@@ -352,7 +340,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
 
       // After reactive scheduling, ensure we schedule the next track
       console.info('[WebAudio] 🔄 Reactive scheduling complete, prefetching and scheduling next track');
-      this.prefetchUpcomingTracks(nextIndex);
+      this.prefetchNextTrack(nextIndex);
       this.scheduleNextTrackIfNeeded(nextIndex);
     }
   }
@@ -377,8 +365,6 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     if (this.audioContext.state !== 'suspended' && this.audioContext.state !== 'closed') {
       await this.audioContext.suspend();
     }
-
-    this.pruneOldCacheEntries();
 
     await this.scheduleTrack(index, this.audioContext.currentTime);
 
@@ -407,13 +393,27 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
       return;
     }
 
-    const currentSource = this.scheduledSources.find(s => s.trackIndex === currentIndex);
-    if (!currentSource) {
-      console.warn('[WebAudio] Cannot find current source for track', currentIndex);
+    const currentTrack = this.tracks[currentIndex];
+    if (!currentTrack) {
+      console.warn('[WebAudio] Cannot find current track at index', currentIndex);
       return;
     }
 
-    const endTime = currentSource.startTime + currentSource.duration;
+    // Get metadata for current track
+    const metadata = this.scheduledTracks.get(currentTrack.id);
+    if (!metadata) {
+      console.warn('[WebAudio] Cannot find metadata for track', currentIndex, currentTrack.id);
+      return;
+    }
+
+    // Only schedule next track if current track's playlist is complete
+    if (!metadata.isPlaylistComplete) {
+      console.info('[WebAudio] ⏳ Current track playlist not complete yet, cannot schedule next track');
+      return;
+    }
+
+    // Calculate end time from metadata
+    const endTime = metadata.startTime + metadata.duration;
     const nextTrack = this.tracks[nextIndex];
 
     console.info('[WebAudio] 📅 Scheduling next track', nextIndex, nextTrack?.title, 'to start at', endTime.toFixed(3), 's');
@@ -424,39 +424,18 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     });
   }
 
-  private prefetchUpcomingTracks(startIndex: number) {
-    for (let i = 1; i <= 2; i++) {
-      let nextIndex = startIndex + i;
+  private prefetchNextTrack(currentIndex: number) {
+    const nextIndex = this.getNextIndex(currentIndex);
+    if (nextIndex === null) return;
 
-      if (nextIndex >= this.tracks.length && this.repeatMode === 'all') {
-        nextIndex = nextIndex % this.tracks.length;
-      }
+    const nextTrack = this.tracks[nextIndex];
+    if (!nextTrack) return;
 
-      if (nextIndex < this.tracks.length) {
-        const track = this.tracks[nextIndex];
-
-        if (this.audioBuffers.has(track.id)) {
-          continue;
-        }
-        if (this.prefetchInProgress.has(track.id)) {
-          continue;
-        }
-
-        const fileUrl = `${baseUrl}/api/library/tracks/${track.id}/original`;
-        console.info('[WebAudio] Prefetching track', nextIndex, track.title);
-
-        this.prefetchInProgress.add(track.id);
-
-        this.fetchAndDecode(fileUrl, track.id)
-          .then(() => {
-            this.prefetchInProgress.delete(track.id);
-          })
-          .catch(err => {
-            console.warn('[WebAudio] Prefetch failed for track', nextIndex, err);
-            this.prefetchInProgress.delete(track.id);
-          });
-      }
-    }
+    // Prefetch first few chunks of next track
+    console.info('[WebAudio] Prefetching first 3 chunks of track', nextIndex, nextTrack.title);
+    this.progressiveLoader.prefetchChunks(nextTrack.id, 0, 3).catch(err => {
+      console.warn('[WebAudio] Prefetch failed for track', nextIndex, err);
+    });
   }
 
   private async handleTrackEnd(scheduledSource: ScheduledSource) {
@@ -496,7 +475,6 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
     this.currentTrackIndex = nextIndex;
     const nextTrack = this.tracks[nextIndex];
 
-    this.pruneOldCacheEntries();
     await this.waitForSchedulingComplete(nextIndex, nextTrack?.title);
 
     const existingSchedule = this.scheduledSources.find(s => s.trackIndex === nextIndex);
@@ -510,7 +488,7 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   }
 
 
-  private clearScheduledSources() {
+  private clearScheduledSources(clearMetadata: boolean = true) {
     this.scheduledSources.forEach(s => {
       try {
         s.source.onended = null;
@@ -520,6 +498,11 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
       }
     });
     this.scheduledSources = [];
+
+    // Only clear metadata when loading a new queue or switching tracks
+    if (clearMetadata) {
+      this.scheduledTracks.clear();
+    }
   }
 
   async play() {
@@ -547,41 +530,105 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   }
 
   async seekTo(position: number) {
-    this.clearScheduledSources();
+    // Clear scheduled sources but preserve track metadata
+    this.clearScheduledSources(false);
 
     const track = this.tracks[this.currentTrackIndex];
     if (!track) return;
 
-    const audioBuffer = this.audioBuffers.get(track.id);
-    if (!audioBuffer) {
+    console.info('[WebAudio] Seeking to', position.toFixed(2), 's in track', track.title);
+
+    // Find which chunk contains this position
+    const targetChunkIndex = await this.progressiveLoader.getChunkIndexForPosition(track.id, position);
+    if (targetChunkIndex === null) {
+      console.warn('[WebAudio] Could not determine chunk for seek position');
       return;
     }
 
-    const clampedPosition = Math.max(0, Math.min(position, audioBuffer.duration));
+    console.info('[WebAudio] Seek target is chunk', targetChunkIndex);
 
+    // Fetch the target chunk (will use cache if available)
+    const targetChunk = await this.progressiveLoader.getChunk(track.id, targetChunkIndex);
+    if (!targetChunk) {
+      console.warn('[WebAudio] Could not load target chunk');
+      return;
+    }
+
+    // Calculate offset within the chunk
+    // Each chunk is ~10 seconds, so offset = position % 10 (approximately)
+    const chunkStartTime = targetChunkIndex * 10; // Rough estimate
+    const offsetWithinChunk = Math.max(0, position - chunkStartTime);
+    const clampedOffset = Math.min(offsetWithinChunk, targetChunk.duration);
+
+    console.info('[WebAudio] 🎯 Seek target breakdown:');
+    console.info('[WebAudio]   Chunk', targetChunkIndex, 'starts at ~' + chunkStartTime.toFixed(1), 's');
+    console.info('[WebAudio]   Offset within chunk:', clampedOffset.toFixed(2), 's');
+    console.info('[WebAudio]   Chunk duration:', targetChunk.duration.toFixed(2), 's');
+
+    // Schedule the target chunk with offset
     const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
+    source.buffer = targetChunk;
     source.connect(this.gainNode);
 
     const startTime = this.audioContext.currentTime;
-    source.start(startTime, clampedPosition);
+    source.start(startTime, clampedOffset);
 
     const scheduledSource: ScheduledSource = {
       source,
-      startTime: startTime - clampedPosition,
-      duration: audioBuffer.duration,
-      trackIndex: this.currentTrackIndex
+      startTime: startTime - clampedOffset,
+      duration: targetChunk.duration,
+      trackIndex: this.currentTrackIndex,
+      trackId: track.id,
+      chunkIndex: targetChunkIndex,
+      isLastChunk: false, // Will be updated if needed
     };
 
     this.scheduledSources.push(scheduledSource);
 
-    source.onended = () => {
-      this.handleTrackEnd(scheduledSource);
-    };
+    // Schedule subsequent chunks
+    let nextChunkStartTime = startTime + (targetChunk.duration - clampedOffset);
+    let nextChunkIndex = targetChunkIndex + 1;
 
-    // Immediately reschedule the next track for gapless playback after seek
-    console.info('[WebAudio] 🔄 Seek completed, rescheduling next track for gapless playback');
-    this.scheduleNextTrackIfNeeded(this.currentTrackIndex);
+    // Prefetch and schedule next few chunks
+    this.progressiveLoader.prefetchChunks(track.id, nextChunkIndex, 5).then(async () => {
+      // Schedule the prefetched chunks
+      for (let i = nextChunkIndex; i < nextChunkIndex + 5; i++) {
+        const chunk = await this.progressiveLoader.getChunk(track.id, i);
+        if (!chunk) break;
+
+        const chunkSource = this.audioContext.createBufferSource();
+        chunkSource.buffer = chunk;
+        chunkSource.connect(this.gainNode);
+
+        chunkSource.start(nextChunkStartTime);
+
+        const isLastChunk = i === await this.progressiveLoader.getChunkIndexForPosition(track.id, Infinity) ?? false;
+
+        const chunkScheduledSource: ScheduledSource = {
+          source: chunkSource,
+          startTime: nextChunkStartTime,
+          duration: chunk.duration,
+          trackIndex: this.currentTrackIndex,
+          trackId: track.id,
+          chunkIndex: i,
+          isLastChunk,
+        };
+
+        if (isLastChunk) {
+          chunkSource.onended = () => {
+            this.handleTrackEnd(chunkScheduledSource);
+          };
+        }
+
+        this.scheduledSources.push(chunkScheduledSource);
+        nextChunkStartTime += chunk.duration;
+      }
+    }).catch(err => {
+      console.warn('[WebAudio] Failed to schedule chunks after seek:', err);
+    });
+
+    // Don't schedule next track here - it will be scheduled automatically
+    // when the current track's playlist is complete
   }
 
   async skip(direction: 1 | -1) {
@@ -605,23 +652,70 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
   }
 
   getCurrentTime(): number {
+    const currentTrack = this.tracks[this.currentTrackIndex];
+    if (!currentTrack) return 0;
+
     if (this.scheduledSources.length === 0) return 0;
 
     const currentTime = this.audioContext.currentTime;
-    const currentSource = this.scheduledSources.find(s =>
+
+    // Find all chunks for current track
+    const trackChunks = this.scheduledSources
+      .filter(s => s.trackIndex === this.currentTrackIndex)
+      .sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+    if (trackChunks.length === 0) return 0;
+
+    // Find which chunk is currently playing
+    const currentChunk = trackChunks.find(s =>
       currentTime >= s.startTime && currentTime < s.startTime + s.duration
     );
 
-    if (currentSource) {
-      return currentTime - currentSource.startTime;
+    if (currentChunk) {
+      // Calculate position within current chunk
+      const positionInChunk = currentTime - currentChunk.startTime;
+
+      // Get cumulative time before this chunk from the HLS playlist
+      // This accounts for seeks where not all chunks are scheduled
+      const cumulativeTime = this.progressiveLoader.getCumulativeTimeBeforeChunk(
+        currentTrack.id,
+        currentChunk.chunkIndex
+      );
+
+      if (cumulativeTime !== null) {
+        return cumulativeTime + positionInChunk;
+      }
+
+      // Fallback: sum scheduled chunks (only accurate if all chunks are scheduled from start)
+      let positionFromStart = 0;
+      for (const chunk of trackChunks) {
+        if (chunk.chunkIndex < currentChunk.chunkIndex) {
+          positionFromStart += chunk.duration;
+        }
+      }
+      positionFromStart += positionInChunk;
+
+      return positionFromStart;
     }
 
     return 0;
   }
 
   getDuration(): number {
-    const currentSource = this.scheduledSources.find(s => s.trackIndex === this.currentTrackIndex);
-    return currentSource?.duration || 0;
+    const currentTrack = this.tracks[this.currentTrackIndex];
+    if (!currentTrack) return 0;
+
+    // Get duration from metadata (from HLS playlist)
+    const metadata = this.scheduledTracks.get(currentTrack.id);
+    if (metadata && metadata.duration > 0) {
+      return metadata.duration;
+    }
+
+    // Fallback: sum all chunk durations for current track
+    const trackChunks = this.scheduledSources.filter(s => s.trackIndex === this.currentTrackIndex);
+    if (trackChunks.length === 0) return 0;
+
+    return trackChunks.reduce((total, chunk) => total + chunk.duration, 0);
   }
 
   getVolume(): number {
@@ -658,11 +752,8 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
 
   destroy() {
     this.clearScheduledSources();
-    this.audioBuffers.clear();
-    this.prefetchInProgress.clear();
     this.schedulingInProgress.clear();
-    this.abortControllers.forEach(controller => controller.abort());
-    this.abortControllers.clear();
+    this.progressiveLoader.clearAllCaches();
     this.audioContext.close();
   }
 }

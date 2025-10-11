@@ -7,5 +7,5 @@ public enum Platform
 
 public enum OutputFormat
 {
-    AAC, MP3, Ogg, Opus
+    AAC, MP3, Ogg, Opus, Remux
 }

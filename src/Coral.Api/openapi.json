@@ -263,23 +263,6 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "bitrate",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 192
-            }
-          },
-          {
-            "name": "transcodeTrack",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            }
           }
         ],
         "responses": {
@@ -1432,7 +1415,8 @@
           "AAC",
           "MP3",
           "Ogg",
-          "Opus"
+          "Opus",
+          "Remux"
         ],
         "type": "string"
       },

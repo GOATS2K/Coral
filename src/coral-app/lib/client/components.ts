@@ -643,23 +643,10 @@ export type StreamTrackPathParams = {
   trackId: string;
 };
 
-export type StreamTrackQueryParams = {
-  /**
-   * @format int32
-   * @default 192
-   */
-  bitrate?: number;
-  /**
-   * @default true
-   */
-  transcodeTrack?: boolean;
-};
-
 export type StreamTrackError = Fetcher.ErrorWrapper<undefined>;
 
 export type StreamTrackVariables = {
   pathParams: StreamTrackPathParams;
-  queryParams?: StreamTrackQueryParams;
 } & Context["fetcherOptions"];
 
 export const fetchStreamTrack = (
@@ -671,7 +658,7 @@ export const fetchStreamTrack = (
     StreamTrackError,
     undefined,
     {},
-    StreamTrackQueryParams,
+    {},
     StreamTrackPathParams
   >({
     url: "/api/Library/tracks/{trackId}/stream",

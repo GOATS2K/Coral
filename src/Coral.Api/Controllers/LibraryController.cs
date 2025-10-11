@@ -121,23 +121,36 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/{trackId}/stream")]
-        public ActionResult<StreamDto> StreamTrack(Guid trackId,
-            [FromQuery] int bitrate = 192,
-            [FromQuery] bool transcodeTrack = true)
+        public async Task<ActionResult<StreamDto>> StreamTrack(Guid trackId)
         {
-            if (!transcodeTrack)
+            var dbTrack = await _libraryService.GetTrack(trackId);
+            if (dbTrack == null)
             {
-                return new StreamDto()
+                return NotFound(new
                 {
-                    Link = Url.Action("FileFromLibrary", "Library", new
-                    {
-                        trackId = trackId
-                    }, Request.Scheme)!,
-                    TranscodeInfo = null,
-                };
+                    Message = "Track not found."
+                });
             }
 
-            return RedirectToAction("TranscodeTrack", new {trackId = trackId, bitrate = bitrate});
+            var job = await _transcoderService.CreateJob(OutputFormat.Remux, opt =>
+            {
+                opt.SourceTrack = dbTrack;
+                opt.Bitrate = 0;  // Not used for remux
+                opt.RequestType = TranscodeRequestType.HLS;
+            });
+
+            var streamData = new StreamDto()
+            {
+                Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
+                TranscodeInfo = new TranscodeInfoDto()
+                {
+                    JobId = job.Id,
+                    Bitrate = 0,  // Remux preserves original bitrate
+                    Format = OutputFormat.Remux
+                }
+            };
+
+            return streamData;
         }
 
         [HttpGet]

@@ -156,7 +156,7 @@ export type MusicLibraryDto = {
   lastScan: string;
 };
 
-export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus";
+export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus" | "Remux";
 
 export type SearchResult = {
   artists: SimpleArtistDto[];

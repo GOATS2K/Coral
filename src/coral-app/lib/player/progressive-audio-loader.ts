@@ -300,26 +300,79 @@ export class ProgressiveAudioLoader {
    */
   private async getPlaylistUrl(trackId: string): Promise<string> {
     const response = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
+
+    if (!response.ok) {
+      let errorMessage = `Failed to get stream URL: ${response.status} ${response.statusText}`;
+
+      try {
+        // Try to parse as JSON first
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // If JSON parsing fails, try to get text (might be HTML error page)
+        try {
+          const text = await response.text();
+          // Extract error message from HTML if present
+          const match = text.match(/System\.(\w+Exception): ([^\n<]+)/);
+          if (match) {
+            errorMessage = `${match[1]}: ${match[2]}`;
+          }
+        } catch {
+          // Use default error message
+        }
+      }
+
+      throw new Error(errorMessage);
+    }
+
     const data = await response.json();
     return data.link;
   }
 
   /**
-   * Fetch and parse playlist
+   * Fetch and parse playlist with retry logic for file locking issues
    */
-  private async fetchAndParsePlaylist(url: string): Promise<LevelDetails> {
-    const playlistText = await fetch(url).then(r => r.text());
+  private async fetchAndParsePlaylist(url: string, retries: number = 3): Promise<LevelDetails> {
+    let lastError: Error | null = null;
 
-    const levelDetails = M3U8Parser.parseLevelPlaylist(
-      playlistText,
-      url,
-      0, // id
-      'EVENT', // type
-      0, // levelUrlId
-      null // multivariantPlaylist
-    );
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url);
 
-    return levelDetails;
+        // If server error (500), retry after a short delay (likely FFMPEG file lock)
+        if (response.status >= 500) {
+          if (attempt < retries) {
+            const delay = 100 * Math.pow(2, attempt); // Exponential backoff: 100ms, 200ms, 400ms
+            console.warn('[ProgressiveLoader] ⚠️  Playlist fetch failed (status', response.status, '), retrying in', delay, 'ms (attempt', attempt + 1, '/', retries + 1, ')');
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          throw new Error(`Failed to fetch playlist: ${response.status} ${response.statusText}`);
+        }
+
+        const playlistText = await response.text();
+
+        const levelDetails = M3U8Parser.parseLevelPlaylist(
+          playlistText,
+          url,
+          0, // id
+          'EVENT', // type
+          0, // levelUrlId
+          null // multivariantPlaylist
+        );
+
+        return levelDetails;
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < retries) {
+          const delay = 100 * Math.pow(2, attempt);
+          console.warn('[ProgressiveLoader] ⚠️  Playlist fetch error:', error, '- retrying in', delay, 'ms (attempt', attempt + 1, '/', retries + 1, ')');
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw new Error(`Failed to fetch playlist after ${retries + 1} attempts: ${lastError?.message}`);
   }
 
   /**
@@ -488,6 +541,46 @@ export class ProgressiveAudioLoader {
     return trackChunks.levelDetails.fragments.reduce((total, fragment) => {
       return total + fragment.duration;
     }, 0);
+  }
+
+  /**
+   * Ensure playlist is loaded and cached for a track
+   */
+  async ensurePlaylistLoaded(trackId: string): Promise<void> {
+    let trackChunks = this.trackCache.get(trackId);
+
+    if (!trackChunks) {
+      // Get playlist URL from backend
+      const playlistUrl = await this.getPlaylistUrl(trackId);
+
+      trackChunks = {
+        initSegment: null,
+        chunks: new Map(),
+        playlistUrl,
+        mediaUrl: '',
+        lastPlaylistFetch: 0,
+        levelDetails: null,
+        isPlaylistComplete: false,
+      };
+
+      this.trackCache.set(trackId, trackChunks);
+    }
+
+    // Fetch playlist if not already cached
+    if (!trackChunks.levelDetails) {
+      const levelDetails = await this.fetchAndParsePlaylist(trackChunks.playlistUrl);
+      trackChunks.levelDetails = levelDetails;
+
+      // Mark as complete if #EXT-X-ENDLIST is present
+      if (!levelDetails.live) {
+        trackChunks.isPlaylistComplete = true;
+      }
+
+      // Set media URL
+      if (levelDetails.fragments.length > 0) {
+        trackChunks.mediaUrl = levelDetails.fragments[0].url;
+      }
+    }
   }
 
   /**

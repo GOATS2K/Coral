@@ -101,6 +101,9 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
       const track = this.tracks[trackIndex];
       console.info('[WebAudio] Scheduling track', trackIndex, track.title, 'at', startTime.toFixed(3));
 
+      // Ensure playlist is loaded first so we have immediate duration info
+      await this.progressiveLoader.ensurePlaylistLoaded(track.id);
+
       // Initialize track metadata
       const initialDuration = this.progressiveLoader.getTrackDuration(track.id) || 0;
       const isComplete = this.progressiveLoader.isPlaylistComplete(track.id);
@@ -191,6 +194,21 @@ export class WebAudioPlayer extends EventEmitter<PlayerEvents> {
           this.currentTrackLoaded = true;
           this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
           console.info('[WebAudio] 🔄 First chunk loaded');
+        }
+
+        // Update duration metadata every 5 chunks for live playlists
+        if (chunkIndex % 5 === 0) {
+          const updatedDuration = this.progressiveLoader.getTrackDuration(track.id);
+          const playlistComplete = this.progressiveLoader.isPlaylistComplete(track.id);
+
+          if (updatedDuration !== null) {
+            const metadata = this.scheduledTracks.get(track.id);
+            if (metadata) {
+              metadata.duration = updatedDuration;
+              metadata.isPlaylistComplete = playlistComplete;
+              console.info('[WebAudio] 📊 Updated metadata: duration', updatedDuration.toFixed(2), 's, complete:', playlistComplete);
+            }
+          }
         }
       }
 

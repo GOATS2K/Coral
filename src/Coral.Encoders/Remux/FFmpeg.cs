@@ -92,8 +92,9 @@ public class RemuxFFmpeg : IEncoder
         {
             "flac" => "flac",
             "m4a" or "aac" => "aac",
+            "mp3" => "mp3",
             _ => throw new NotSupportedException(
-                $"RemuxFFmpeg only supports FLAC and AAC files. File extension: {ext}"
+                $"RemuxFFmpeg only supports FLAC, AAC, and MP3 files. File extension: {ext}"
             )
         };
     }

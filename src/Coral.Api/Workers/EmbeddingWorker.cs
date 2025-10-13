@@ -58,13 +58,16 @@ public class EmbeddingWorker : BackgroundService
                 return;
         }
 
-
         await _semaphore.WaitAsync(stoppingToken);
         try
         {
-            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
             await using var scope = _scopeFactory.CreateAsyncScope();
             await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+            
+            if (context.TrackEmbeddings.Any(a => a.TrackId == track.Id))
+                return;
+            
+            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
             await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
             {
                 CreatedAt = DateTime.UtcNow,

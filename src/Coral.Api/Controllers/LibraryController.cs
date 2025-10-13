@@ -3,6 +3,7 @@ using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services;
+using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -139,6 +140,11 @@ namespace Coral.Api.Controllers
                 opt.RequestType = TranscodeRequestType.HLS;
             });
 
+            // Get accurate codec info from ffprobe
+            var ffprobeResult = await Ffprobe.GetAudioMetadata(dbTrack.AudioFile.FilePath);
+            var audioStream = ffprobeResult?.Streams.FirstOrDefault(s => s.CodecType == "audio");
+            var codec = audioStream?.CodecName;
+
             var streamData = new StreamDto()
             {
                 Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
@@ -146,7 +152,8 @@ namespace Coral.Api.Controllers
                 {
                     JobId = job.Id,
                     Bitrate = 0,  // Remux preserves original bitrate
-                    Format = OutputFormat.Remux
+                    Format = OutputFormat.Remux,
+                    Codec = codec
                 }
             };
 

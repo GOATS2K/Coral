@@ -38,7 +38,10 @@ namespace Coral.Services
 
         public async Task<Track?> GetTrack(Guid trackId)
         {
-            return await _context.Tracks.Include(t => t.AudioFile).FirstOrDefaultAsync(t => t.Id == trackId);
+            return await _context.Tracks
+                .Include(t => t.AudioFile)
+                .ThenInclude(a => a.AudioMetadata)
+                .FirstOrDefaultAsync(t => t.Id == trackId);
         }
 
         public async Task<TrackDto?> GetTrackDto(Guid trackId)

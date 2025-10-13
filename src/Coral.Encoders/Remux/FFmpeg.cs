@@ -48,6 +48,7 @@ public class RemuxFFmpeg : IEncoder
             var args = new List<string>
             {
                 "-i", request.SourceTrack.AudioFile.FilePath,
+                "-map", "0:a",  // Select only audio stream (ignore embedded artwork)
                 "-c:a", "copy",
                 "-movflags", "frag_keyframe+empty_moov+default_base_moof",
                 "-frag_duration", "10000000",  // 10 seconds in microseconds

@@ -1760,6 +1760,10 @@
           "bitrate": {
             "type": "integer",
             "format": "int32"
+          },
+          "codec": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

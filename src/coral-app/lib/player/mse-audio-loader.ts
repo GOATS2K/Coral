@@ -12,6 +12,7 @@ interface TrackInfo {
   isComplete: boolean;
   bufferStartTime: number;
   bufferEndTime: number;
+  codec: string;
 }
 
 export class MSEAudioLoader {
@@ -41,8 +42,32 @@ export class MSEAudioLoader {
   async initialize(trackId: string): Promise<void> {
     console.info('[MSE] 🎬 Initializing MSE for track:', trackId);
 
+    // Fetch stream info to get codec
+    const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
+    if (!streamInfoResponse.ok) {
+      throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
+    }
+    const streamData = await streamInfoResponse.json();
+    const codec = streamData.transcodeInfo?.codec;
+
+    if (!codec) {
+      throw new Error('Codec information not available from API');
+    }
+
+    console.info('[MSE] 📝 Codec:', codec);
+
+    // Get MIME type for codec
+    const mimeType = this.getCodecMimeType(codec);
+
+    // Validate browser support
+    if (!MediaSource.isTypeSupported(mimeType)) {
+      throw new Error(`Browser doesn't support ${mimeType}`);
+    }
+
+    console.info('[MSE] ✅ MIME type supported:', mimeType);
+
     // Get playlist URL and parse it
-    const playlistUrl = await this.getPlaylistUrl(trackId);
+    const playlistUrl = streamData.link;
     const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
     const mediaUrl = levelDetails.fragments[0]?.url || '';
 
@@ -65,6 +90,7 @@ export class MSEAudioLoader {
       isComplete: !levelDetails.live,
       bufferStartTime: this.nextBufferStartTime,
       bufferEndTime: this.nextBufferStartTime + trackDuration,
+      codec,
     });
 
     this.currentTrackId = trackId;
@@ -92,13 +118,7 @@ export class MSEAudioLoader {
       }, { once: true });
     });
 
-    // Create SourceBuffer with FLAC codec (hardcoded for POC)
-    const mimeType = 'audio/mp4; codecs="flac"';
-
-    if (!MediaSource.isTypeSupported(mimeType)) {
-      throw new Error(`Browser doesn't support ${mimeType}`);
-    }
-
+    // Create SourceBuffer with dynamic codec
     this.sourceBuffer = this.mediaSource!.addSourceBuffer(mimeType);
     this.sourceBuffer.mode = 'sequence';
 
@@ -114,7 +134,19 @@ export class MSEAudioLoader {
   async appendTrack(trackId: string): Promise<void> {
     console.info('[MSE] 📋 Queuing track for gapless:', trackId);
 
-    const playlistUrl = await this.getPlaylistUrl(trackId);
+    // Fetch stream info to get codec
+    const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
+    if (!streamInfoResponse.ok) {
+      throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
+    }
+    const streamData = await streamInfoResponse.json();
+    const codec = streamData.transcodeInfo?.codec;
+
+    if (!codec) {
+      throw new Error('Codec information not available from API');
+    }
+
+    const playlistUrl = streamData.link;
     const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
     const mediaUrl = levelDetails.fragments[0]?.url || '';
 
@@ -133,11 +165,12 @@ export class MSEAudioLoader {
       isComplete: !levelDetails.live,
       bufferStartTime: this.nextBufferStartTime,
       bufferEndTime: this.nextBufferStartTime + trackDuration,
+      codec,
     });
 
     this.nextBufferStartTime += trackDuration;
 
-    console.info('[MSE] ✅ Track queued (buffer time:', this.tracks.get(trackId)?.bufferStartTime, '-', this.tracks.get(trackId)?.bufferEndTime, ')');
+    console.info('[MSE] ✅ Track queued (buffer time:', this.tracks.get(trackId)?.bufferStartTime, '-', this.tracks.get(trackId)?.bufferEndTime, ', codec:', codec, ')');
   }
 
   private async loadInitSegment(trackId: string): Promise<void> {
@@ -264,7 +297,7 @@ export class MSEAudioLoader {
         try {
           console.info('[MSE] 🗑️  Removing old buffer:', start.toFixed(1), '-', end.toFixed(1));
           this.sourceBuffer.remove(start, end);
-        } catch (e) {
+        } catch {
           // Ignore errors
         }
         break;
@@ -319,17 +352,6 @@ export class MSEAudioLoader {
         resolve();
       }, { once: true });
     });
-  }
-
-  private async getPlaylistUrl(trackId: string): Promise<string> {
-    const response = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to get stream URL: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.link as string;
   }
 
   private async fetchAndParsePlaylist(url: string): Promise<LevelDetails> {
@@ -428,13 +450,31 @@ export class MSEAudioLoader {
     };
   }
 
+  private getCodecMimeType(codec: string): string {
+    // ffprobe returns lowercase codec names: "aac", "alac", "flac", "mp3", etc.
+    const normalizedCodec = codec.toLowerCase();
+
+    switch (normalizedCodec) {
+      case 'flac':
+        return 'audio/mp4; codecs="flac"';
+      case 'mp3':
+        return 'audio/mp4; codecs="mp3"';
+      case 'aac':
+        return 'audio/mp4; codecs="mp4a.40.2"';
+      case 'alac':
+        return 'audio/mp4; codecs="alac"';
+      default:
+        throw new Error(`Unsupported codec for MSE: ${codec}`);
+    }
+  }
+
   destroy(): void {
     this.appendQueue = [];
 
     if (this.mediaSource?.readyState === 'open') {
       try {
         this.mediaSource.endOfStream();
-      } catch (e) {
+      } catch {
         // Ignore
       }
     }

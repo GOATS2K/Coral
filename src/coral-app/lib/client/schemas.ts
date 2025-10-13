@@ -314,4 +314,5 @@ export type TranscodeInfoDto = {
    * @format int32
    */
   bitrate: number;
+  codec?: string | null;
 };

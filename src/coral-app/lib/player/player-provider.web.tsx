@@ -1,6 +1,5 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
-// MSE-based player for FLAC-only proof of concept
 import { MSEWebAudioPlayer as WebAudioPlayer, PlayerEventNames } from './mse-web-audio-player';
 import { playerStateAtom, playbackStateAtom } from '@/lib/state';
 
@@ -15,9 +14,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useAtom(playerStateAtom);
   const setPlaybackState = useSetAtom(playbackStateAtom);
 
-  // Initialize MSE Web Audio Player (FLAC-only POC)
+  // Initialize MSE Web Audio Player
   useEffect(() => {
-    console.info('[PlayerProvider] Initializing MSE Web Audio Player (FLAC-only POC)...');
+    console.info('[PlayerProvider] Initializing MSE Web Audio Player...');
     let mounted = true;
 
     const audioPlayer = new WebAudioPlayer();

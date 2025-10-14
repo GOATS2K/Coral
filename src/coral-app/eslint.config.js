@@ -13,6 +13,7 @@ module.exports = defineConfig([
       'build/**',
       '**/generated/**',
       'lib/client/**', // Generated API client code
+      'lib/vendor/hls.js/**', // Vendored hls.js library
     ],
   },
 ]);

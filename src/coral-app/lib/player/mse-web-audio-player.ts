@@ -44,57 +44,42 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
   }
 
   private setupEventListeners() {
-    // Track ended event
     this.audioElement.addEventListener('ended', () => {
-      console.info('[MSEPlayer] 🏁 Track ended');
       this.handleTrackEnd();
     });
 
-    // Waiting event (buffering)
     this.audioElement.addEventListener('waiting', () => {
-      console.info('[MSEPlayer] ⏳ Buffering...');
       this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: true });
     });
 
-    // Can play event (buffering complete)
     this.audioElement.addEventListener('canplay', () => {
-      console.info('[MSEPlayer] ✅ Can play');
       this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
     });
 
-    // Playing event
     this.audioElement.addEventListener('playing', () => {
-      console.info('[MSEPlayer] ▶️  Playing');
       this.isPlaying = true;
       this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: true });
     });
 
-    // Pause event
     this.audioElement.addEventListener('pause', () => {
-      console.info('[MSEPlayer] ⏸️  Paused');
       this.isPlaying = false;
       this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: false });
     });
 
-    // Error event
     this.audioElement.addEventListener('error', (e) => {
-      console.error('[MSEPlayer] ❌ Audio element error:', e);
+      console.error('[MSEPlayer] Audio element error:', e);
       const error = this.audioElement.error;
       if (error) {
-        console.error('[MSEPlayer]   Code:', error.code);
-        console.error('[MSEPlayer]   Message:', error.message);
+        console.error('[MSEPlayer] Error code:', error.code, 'Message:', error.message);
       }
     });
 
-    // Time update - check for track transitions
     this.audioElement.addEventListener('timeupdate', () => {
       this.checkTrackTransition();
     });
   }
 
-  async loadQueue(tracks: SimpleTrackDto[], startIndex: number = 0, clearCache: boolean = true) {
-    console.info('[MSEPlayer] 📋 Loading queue with', tracks.length, 'tracks, starting at index', startIndex);
-
+  async loadQueue(tracks: SimpleTrackDto[], startIndex: number = 0) {
     this.tracks = tracks;
     this.currentTrackIndex = startIndex;
 
@@ -119,11 +104,9 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
     const currentTrack = this.tracks[startIndex];
     if (!currentTrack) {
-      console.error('[MSEPlayer] ❌ No track at index', startIndex);
+      console.error('[MSEPlayer] No track at index', startIndex);
       return;
     }
-
-    console.info('[MSEPlayer] 🎵 Initializing with track:', currentTrack.title);
 
     // Initialize MSE with first track
     this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: true });
@@ -134,7 +117,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     if (!this.mediaElementSource) {
       this.mediaElementSource = this.audioContext.createMediaElementSource(this.audioElement);
       this.mediaElementSource.connect(this.gainNode);
-      console.info('[MSEPlayer] ✅ Connected to Web Audio API');
     }
 
     this.isInitialized = true;
@@ -143,7 +125,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     const nextIndex = this.getNextIndex(startIndex);
     if (nextIndex !== null && nextIndex !== startIndex) {
       const nextTrack = this.tracks[nextIndex];
-      console.info('[MSEPlayer] 📋 Queueing next track for gapless:', nextTrack.title);
       await this.mseLoader.appendTrack(nextTrack.id);
     }
 
@@ -157,8 +138,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
   }
 
   async play() {
-    console.info('[MSEPlayer] ▶️  Play requested');
-
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
@@ -166,13 +145,12 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     try {
       await this.audioElement.play();
     } catch (error) {
-      console.error('[MSEPlayer] ❌ Play failed:', error);
+      console.error('[MSEPlayer] Play failed:', error);
       throw error;
     }
   }
 
   async pause() {
-    console.info('[MSEPlayer] ⏸️  Pause requested');
     this.audioElement.pause();
 
     if (this.audioContext.state !== 'suspended' && this.audioContext.state !== 'closed') {
@@ -190,7 +168,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
   async seekTo(position: number) {
     const bufferInfo = this.mseLoader.getCurrentTrackBufferInfo();
-    console.info('[MSEPlayer] 🎯 Seeking to', position.toFixed(2), 's');
 
     if (!bufferInfo) {
       this.audioElement.currentTime = position;
@@ -199,7 +176,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
     // Convert relative position to absolute buffer time
     const absoluteTime = bufferInfo.bufferStartTime + position;
-    console.info('[MSEPlayer] ⏩ Absolute buffer time:', absoluteTime.toFixed(2), 's');
 
     // Reset fragment index to match the seek position
     this.mseLoader.resetToPosition(absoluteTime);
@@ -207,39 +183,30 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     // Set currentTime - browser may reject if unbuffered
     this.audioElement.currentTime = absoluteTime;
 
-    console.info('[MSEPlayer] 🎯 audioElement.currentTime after seek:', this.audioElement.currentTime.toFixed(2), 's');
-
     // Trigger buffer check to start loading fragments at the seek position
     // (seeked event won't fire until data is available, so we need to manually trigger loading)
     await this.mseLoader.checkBufferAndLoad();
 
     // Retry seek after fragments are loaded - browser may have rejected initial seek
-    console.info('[MSEPlayer] 🔄 Retrying seek to:', absoluteTime.toFixed(2), 's');
     this.audioElement.currentTime = absoluteTime;
-    console.info('[MSEPlayer] 🎯 audioElement.currentTime after retry:', this.audioElement.currentTime.toFixed(2), 's');
   }
 
   async skip(direction: 1 | -1) {
     const newIndex = this.getNextIndex(this.currentTrackIndex, direction);
 
-    if (newIndex === null) {
-      console.info('[MSEPlayer] 🛑 Cannot skip - at boundary');
-      return;
-    }
+    if (newIndex === null) return;
 
     await this.playFromIndex(newIndex);
   }
 
   async playFromIndex(index: number) {
     if (index < 0 || index >= this.tracks.length) {
-      console.error('[MSEPlayer] ❌ Invalid track index:', index);
+      console.error('[MSEPlayer] Invalid track index:', index);
       return;
     }
 
-    console.info('[MSEPlayer] 🎵 Playing from index:', index);
-
     this.currentTrackIndex = index;
-    await this.loadQueue(this.tracks, index, false);
+    await this.loadQueue(this.tracks, index);
     await this.play();
 
     if (this.trackChangeCallback) {
@@ -256,8 +223,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
     // Check if we've transitioned to a different track
     if (actualTrackId && actualTrackId !== currentTrackId) {
-      console.info('[MSEPlayer] 🔄 Track transition detected at', currentTime.toFixed(2), 's');
-
       // Find the index of the new track
       const newTrackIndex = this.tracks.findIndex(t => t.id === actualTrackId);
       if (newTrackIndex !== -1 && newTrackIndex !== this.currentTrackIndex) {
@@ -266,10 +231,7 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     }
   }
 
-  private async handleTrackTransition(newIndex: number) {
-    console.info('[MSEPlayer] ➡️  Transitioning to track', newIndex);
-
-    this.currentTrackIndex = newIndex;
+  private async notifyTrackChange(newIndex: number) {
     const newTrack = this.tracks[newIndex];
 
     // Update MSE loader's current track ID
@@ -285,16 +247,17 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     const followingIndex = this.getNextIndex(newIndex);
     if (followingIndex !== null && followingIndex !== newIndex) {
       const followingTrack = this.tracks[followingIndex];
-      console.info('[MSEPlayer] 📋 Queueing following track:', followingTrack.title);
       await this.mseLoader.appendTrack(followingTrack.id);
     }
   }
 
-  private async handleTrackEnd() {
-    console.info('[MSEPlayer] 🏁 Handling track end at index', this.currentTrackIndex);
+  private async handleTrackTransition(newIndex: number) {
+    this.currentTrackIndex = newIndex;
+    await this.notifyTrackChange(newIndex);
+  }
 
+  private async handleTrackEnd() {
     if (this.repeatMode === 'one') {
-      console.info('[MSEPlayer] 🔁 Repeat one - seeking to start');
       const bufferInfo = this.mseLoader.getCurrentTrackBufferInfo();
       if (bufferInfo) {
         this.audioElement.currentTime = bufferInfo.bufferStartTime;
@@ -306,39 +269,16 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     const nextIndex = this.getNextIndex(this.currentTrackIndex);
 
     if (nextIndex === null) {
-      console.info('[MSEPlayer] 🛑 End of queue, stopping playback');
       this.isPlaying = false;
       this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying: false });
       return;
     }
 
-    if (nextIndex === 0 && this.repeatMode === 'all') {
-      console.info('[MSEPlayer] 🔁 Repeat all - wrapping to start');
-    }
-
     this.currentTrackIndex = nextIndex;
-    const nextTrack = this.tracks[nextIndex];
-
-    // Update MSE loader's current track ID to the next track
-    this.mseLoader.setCurrentTrackId(nextTrack.id);
 
     // Note: With MSE, the next track should already be queued and will
     // start playing automatically. We just need to update our state.
-    console.info('[MSEPlayer] ➡️  Transitioning to track', nextIndex);
-
-    if (this.trackChangeCallback) {
-      this.trackChangeCallback(nextIndex);
-    }
-
-    this.emit(PlayerEventNames.TRACK_CHANGED, { index: nextIndex });
-
-    // Queue the following track for continuous gapless playback
-    const followingIndex = this.getNextIndex(nextIndex);
-    if (followingIndex !== null && followingIndex !== nextIndex) {
-      const followingTrack = this.tracks[followingIndex];
-      console.info('[MSEPlayer] 📋 Queueing following track:', followingTrack.title);
-      await this.mseLoader.appendTrack(followingTrack.id);
-    }
+    await this.notifyTrackChange(nextIndex);
   }
 
   private getNextIndex(currentIndex: number, direction: 1 | -1 = 1): number | null {
@@ -409,17 +349,9 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
   setRepeatMode(mode: RepeatMode) {
     this.repeatMode = mode;
-    console.info('[MSEPlayer] 🔁 Repeat mode set to:', mode);
-  }
-
-  // Unused methods for compatibility
-  checkAndScheduleNext() {
-    // Not needed with MSE - tracks are automatically queued
   }
 
   destroy() {
-    console.info('[MSEPlayer] 🗑️  Destroying player');
-
     this.audioElement.pause();
 
     if (this.mediaElementSource) {

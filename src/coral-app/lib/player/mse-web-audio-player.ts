@@ -108,6 +108,7 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
       this.mseLoader.destroy();
       this.mseLoader = new MSEAudioLoader();
       this.audioElement = this.mseLoader.getAudioElement();
+
       this.setupEventListeners();
 
       // Reconnect to Web Audio API
@@ -189,6 +190,8 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
   async seekTo(position: number) {
     const bufferInfo = this.mseLoader.getCurrentTrackBufferInfo();
+    console.info('[MSEPlayer] 🎯 Seeking to', position.toFixed(2), 's');
+
     if (!bufferInfo) {
       this.audioElement.currentTime = position;
       return;
@@ -196,8 +199,24 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
     // Convert relative position to absolute buffer time
     const absoluteTime = bufferInfo.bufferStartTime + position;
-    console.info('[MSEPlayer] ⏩ Seeking to', position.toFixed(2), 's (buffer time:', absoluteTime.toFixed(2), 's)');
+    console.info('[MSEPlayer] ⏩ Absolute buffer time:', absoluteTime.toFixed(2), 's');
+
+    // Reset fragment index to match the seek position
+    this.mseLoader.resetToPosition(absoluteTime);
+
+    // Set currentTime - browser may reject if unbuffered
     this.audioElement.currentTime = absoluteTime;
+
+    console.info('[MSEPlayer] 🎯 audioElement.currentTime after seek:', this.audioElement.currentTime.toFixed(2), 's');
+
+    // Trigger buffer check to start loading fragments at the seek position
+    // (seeked event won't fire until data is available, so we need to manually trigger loading)
+    await this.mseLoader.checkBufferAndLoad();
+
+    // Retry seek after fragments are loaded - browser may have rejected initial seek
+    console.info('[MSEPlayer] 🔄 Retrying seek to:', absoluteTime.toFixed(2), 's');
+    this.audioElement.currentTime = absoluteTime;
+    console.info('[MSEPlayer] 🎯 audioElement.currentTime after retry:', this.audioElement.currentTime.toFixed(2), 's');
   }
 
   async skip(direction: 1 | -1) {
@@ -359,18 +378,8 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
     const currentTrack = this.tracks[this.currentTrackIndex];
     if (!currentTrack) return 0;
 
-    // Get duration from HLS playlist metadata (same as original player)
-    const trackId = this.mseLoader.getCurrentTrackId();
-    if (trackId) {
-      const duration = this.mseLoader.getTrackDuration(trackId);
-      if (duration > 0) {
-        return duration;
-      }
-    }
-
-    // Fallback to audio element duration
-    const duration = this.audioElement.duration;
-    return isFinite(duration) ? duration : 0;
+    // Use duration from track metadata (always accurate, even during transcoding)
+    return currentTrack.durationInSeconds || 0;
   }
 
   getVolume(): number {

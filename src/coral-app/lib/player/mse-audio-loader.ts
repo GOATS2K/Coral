@@ -13,6 +13,7 @@ interface TrackInfo {
   bufferStartTime: number;
   bufferEndTime: number;
   codec: string;
+  isLoadingFragments: boolean;
 }
 
 export class MSEAudioLoader {
@@ -37,12 +38,15 @@ export class MSEAudioLoader {
     this.audioElement.addEventListener('timeupdate', () => {
       this.checkBufferAndLoad();
     });
+
+    // Also check buffer after seeking completes
+    this.audioElement.addEventListener('seeked', () => {
+      console.info('[MSE] ⏩ Seek completed, checking buffer');
+      this.checkBufferAndLoad();
+    });
   }
 
-  async initialize(trackId: string): Promise<void> {
-    console.info('[MSE] 🎬 Initializing MSE for track:', trackId);
-
-    // Fetch stream info to get codec
+  private async fetchStreamInfo(trackId: string): Promise<{ codec: string; playlistUrl: string; levelDetails: LevelDetails; mediaUrl: string; duration: number }> {
     const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
     if (!streamInfoResponse.ok) {
       throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
@@ -53,6 +57,22 @@ export class MSEAudioLoader {
     if (!codec) {
       throw new Error('Codec information not available from API');
     }
+
+    const playlistUrl = streamData.link;
+    const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
+    const mediaUrl = levelDetails.fragments[0]?.url || '';
+
+    const duration = levelDetails.fragments.reduce((total, fragment) => {
+      return total + fragment.duration;
+    }, 0);
+
+    return { codec, playlistUrl, levelDetails, mediaUrl, duration };
+  }
+
+  async initialize(trackId: string): Promise<void> {
+    console.info('[MSE] 🎬 Initializing MSE for track:', trackId);
+
+    const { codec, playlistUrl, levelDetails, mediaUrl, duration: trackDuration } = await this.fetchStreamInfo(trackId);
 
     console.info('[MSE] 📝 Codec:', codec);
 
@@ -65,19 +85,8 @@ export class MSEAudioLoader {
     }
 
     console.info('[MSE] ✅ MIME type supported:', mimeType);
-
-    // Get playlist URL and parse it
-    const playlistUrl = streamData.link;
-    const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
-    const mediaUrl = levelDetails.fragments[0]?.url || '';
-
     console.info('[MSE] Playlist has', levelDetails.fragments.length, 'fragments');
     console.info('[MSE] Media URL:', mediaUrl);
-
-    // Calculate track duration
-    const trackDuration = levelDetails.fragments.reduce((total, fragment) => {
-      return total + fragment.duration;
-    }, 0);
 
     // Store track info
     this.tracks.set(trackId, {
@@ -91,6 +100,7 @@ export class MSEAudioLoader {
       bufferStartTime: this.nextBufferStartTime,
       bufferEndTime: this.nextBufferStartTime + trackDuration,
       codec,
+      isLoadingFragments: false,
     });
 
     this.currentTrackId = trackId;
@@ -120,7 +130,7 @@ export class MSEAudioLoader {
 
     // Create SourceBuffer with dynamic codec
     this.sourceBuffer = this.mediaSource!.addSourceBuffer(mimeType);
-    this.sourceBuffer.mode = 'sequence';
+    this.sourceBuffer.mode = 'segments'; // Use segments mode to preserve timestamps
 
     console.info('[MSE] ✅ SourceBuffer created');
 
@@ -134,26 +144,7 @@ export class MSEAudioLoader {
   async appendTrack(trackId: string): Promise<void> {
     console.info('[MSE] 📋 Queuing track for gapless:', trackId);
 
-    // Fetch stream info to get codec
-    const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
-    if (!streamInfoResponse.ok) {
-      throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
-    }
-    const streamData = await streamInfoResponse.json();
-    const codec = streamData.transcodeInfo?.codec;
-
-    if (!codec) {
-      throw new Error('Codec information not available from API');
-    }
-
-    const playlistUrl = streamData.link;
-    const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
-    const mediaUrl = levelDetails.fragments[0]?.url || '';
-
-    // Calculate track duration
-    const trackDuration = levelDetails.fragments.reduce((total, fragment) => {
-      return total + fragment.duration;
-    }, 0);
+    const { codec, playlistUrl, levelDetails, mediaUrl, duration: trackDuration } = await this.fetchStreamInfo(trackId);
 
     this.tracks.set(trackId, {
       trackId,
@@ -166,6 +157,7 @@ export class MSEAudioLoader {
       bufferStartTime: this.nextBufferStartTime,
       bufferEndTime: this.nextBufferStartTime + trackDuration,
       codec,
+      isLoadingFragments: false,
     });
 
     this.nextBufferStartTime += trackDuration;
@@ -184,6 +176,13 @@ export class MSEAudioLoader {
     console.info('[MSE] 📦 Fetching init segment (0-' + initSegmentEnd + ' bytes)');
 
     trackInfo.initSegment = await this.fetchByteRange(trackInfo.mediaUrl, 0, initSegmentEnd);
+
+    // Set timestamp offset for this track to ensure gapless playback
+    if (this.sourceBuffer) {
+      this.sourceBuffer.timestampOffset = trackInfo.bufferStartTime;
+      console.info('[MSE] ⏰ Set timestampOffset to', trackInfo.bufferStartTime.toFixed(2), 's for gapless playback');
+    }
+
     await this.appendToSourceBuffer(trackInfo.initSegment);
 
     console.info('[MSE] ✓ Init segment appended');
@@ -192,6 +191,12 @@ export class MSEAudioLoader {
   private async loadFragments(trackId: string, count: number): Promise<void> {
     const trackInfo = this.tracks.get(trackId);
     if (!trackInfo || !trackInfo.levelDetails) return;
+
+    // Prevent concurrent loading
+    if (trackInfo.isLoadingFragments) {
+      console.info('[MSE] ⏭️  Already loading fragments for track:', trackId);
+      return;
+    }
 
     const fragments = trackInfo.levelDetails.fragments;
     const startIndex = trackInfo.currentFragmentIndex;
@@ -202,31 +207,49 @@ export class MSEAudioLoader {
       return;
     }
 
-    console.info('[MSE] 📥 Loading fragments', startIndex + 1, '-', endIndex, '/', fragments.length);
+    // Mark as loading and update index optimistically
+    trackInfo.isLoadingFragments = true;
+    const originalIndex = trackInfo.currentFragmentIndex;
+    trackInfo.currentFragmentIndex = endIndex;
 
-    for (let i = startIndex; i < endIndex; i++) {
-      const fragment = fragments[i];
-      const start = fragment.byteRangeStartOffset!;
-      const end = fragment.byteRangeEndOffset!;
-      const size = end - start;
+    console.info('[MSE] 📥 Loading fragments at indices', startIndex, 'to', endIndex - 1, '(displayed as', startIndex + 1, '-', endIndex, ') /', fragments.length);
 
-      const fragmentData = await this.fetchByteRange(trackInfo.mediaUrl, start, size);
+    try {
+      for (let i = startIndex; i < endIndex; i++) {
+        console.info('[MSE] 📦 Loading fragment at index', i, '(fragment', i + 1, ')');
 
-      // Concatenate init + fragment (MSE needs complete fMP4 boxes)
-      const combined = this.concatenateBuffers(trackInfo.initSegment!, fragmentData);
-      await this.appendToSourceBuffer(combined);
+        const fragment = fragments[i];
+        const start = fragment.byteRangeStartOffset!;
+        const end = fragment.byteRangeEndOffset!;
+        const size = end - start;
 
-      trackInfo.currentFragmentIndex = i + 1;
+        const fragmentData = await this.fetchByteRange(trackInfo.mediaUrl, start, size);
 
-      if (i === startIndex) {
-        console.info('[MSE] ✓ First fragment appended');
+        // Only concatenate init segment for the first fragment of this track
+        if (i === 0) {
+          const combined = this.concatenateBuffers(trackInfo.initSegment!, fragmentData);
+          await this.appendToSourceBuffer(combined);
+        } else {
+          // For subsequent fragments, append directly
+          await this.appendToSourceBuffer(fragmentData);
+        }
+
+        if (i === startIndex) {
+          console.info('[MSE] ✓ First fragment appended');
+        }
       }
-    }
 
-    console.info('[MSE] ✅ Loaded', endIndex - startIndex, 'fragments');
+      console.info('[MSE] ✅ Loaded', endIndex - startIndex, 'fragments');
+    } catch (error) {
+      // On error, restore the original index
+      console.error('[MSE] ❌ Error loading fragments:', error);
+      trackInfo.currentFragmentIndex = originalIndex;
+    } finally {
+      trackInfo.isLoadingFragments = false;
+    }
   }
 
-  private async checkBufferAndLoad(): Promise<void> {
+  async checkBufferAndLoad(): Promise<void> {
     if (!this.sourceBuffer || !this.currentTrackId) return;
 
     const currentTime = this.audioElement.currentTime;
@@ -234,17 +257,22 @@ export class MSEAudioLoader {
 
     // Calculate buffered ahead
     let bufferedAhead = 0;
+    let inBufferedRange = false;
     for (let i = 0; i < buffered.length; i++) {
       const start = buffered.start(i);
       const end = buffered.end(i);
       if (currentTime >= start && currentTime <= end) {
         bufferedAhead = end - currentTime;
+        inBufferedRange = true;
         break;
       }
     }
 
-    // Load more if buffer is low
-    if (bufferedAhead < this.bufferAheadTarget) {
+    // If we're not in a buffered range at all, we definitely need to load
+    const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
+
+    // Load more if buffer is low or we're in an unbuffered position
+    if (needsData) {
       const trackInfo = this.tracks.get(this.currentTrackId);
       if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
         console.info('[MSE] 🔄 Buffer low (', bufferedAhead.toFixed(1), 's), loading more');
@@ -393,6 +421,33 @@ export class MSEAudioLoader {
     combined.set(new Uint8Array(buffer1), 0);
     combined.set(new Uint8Array(buffer2), buffer1.byteLength);
     return combined.buffer;
+  }
+
+  // Reset fragment index to match a seek position
+  resetToPosition(absoluteTime: number): void {
+    if (!this.currentTrackId) return;
+
+    const trackInfo = this.tracks.get(this.currentTrackId);
+    if (!trackInfo || !trackInfo.levelDetails) return;
+
+    // Calculate relative time within the current track
+    const relativeTime = absoluteTime - trackInfo.bufferStartTime;
+
+    // Find which fragment corresponds to this time
+    const fragments = trackInfo.levelDetails.fragments;
+    let cumulativeTime = 0;
+    let fragmentIndex = 0;
+
+    for (let i = 0; i < fragments.length; i++) {
+      cumulativeTime += fragments[i].duration;
+      if (cumulativeTime > relativeTime) {
+        fragmentIndex = i;
+        break;
+      }
+    }
+
+    console.info('[MSE] 🎯 Resetting fragment index to', fragmentIndex, 'for time', relativeTime.toFixed(2), 's');
+    trackInfo.currentFragmentIndex = fragmentIndex;
   }
 
   getAudioElement(): HTMLAudioElement {

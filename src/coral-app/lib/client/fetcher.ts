@@ -1,7 +1,29 @@
 import axios, { AxiosError } from 'axios';
 import { Context } from './context';
+import { Config } from '../config';
 
-export const baseUrl = 'http://192.168.7.161:5031'; // TODO add your baseUrl
+// Base URL - initialized synchronously with default, then updated from config
+export let baseUrl = 'http://localhost:5031';
+
+// Initialize base URL from config
+let isInitialized = false;
+const initializeBaseUrl = async () => {
+  if (!isInitialized) {
+    baseUrl = await Config.getBackendUrl();
+    isInitialized = true;
+  }
+};
+
+// Get base URL (async, ensures initialization)
+export const getBaseUrl = async (): Promise<string> => {
+  await initializeBaseUrl();
+  return baseUrl;
+};
+
+// Reset cached URL (useful when user changes backend URL in settings)
+export const resetBaseUrl = async () => {
+  baseUrl = await Config.getBackendUrl();
+};
 
 export type ErrorWrapper<TError> = TError | { status: 'unknown'; payload: string };
 
@@ -44,6 +66,7 @@ export async function fetch<
   ...rest // Capture any other options from the context
 }: FetcherOptions<TBody, THeaders, TQueryParams, TPathParams>): Promise<TData> {
   try {
+    const baseUrl = await getBaseUrl();
     const response = await axios<TData>({
       url: `${baseUrl}${resolveUrl(url, pathParams)}`,
       method,

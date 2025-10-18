@@ -1,0 +1,10 @@
+# Electron-related files and directories
+electron/
+electron-builder.json
+dist-electron/
+
+# Electron Node.js dependencies
+node_modules/electron/
+node_modules/electron-builder/
+node_modules/electron-store/
+node_modules/conf/

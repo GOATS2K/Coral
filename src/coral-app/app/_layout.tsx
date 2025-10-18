@@ -8,8 +8,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { useEffect } from 'react';
-import { Appearance, Platform, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Appearance, Platform, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,6 +20,8 @@ import { PlayerProvider } from '@/lib/player/player-provider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ToastContainer } from '@/components/toast-container';
 import { Sidebar } from '@/components/ui/sidebar';
+import { Config } from '@/lib/config';
+import OnboardingScreen from './onboarding';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -44,6 +46,38 @@ function AppContent() {
   const resolvedTheme = useAtomValue(themeAtom);
   const setSystemTheme = useSetAtom(systemThemeAtom);
   const setThemePreference = useSetAtom(themePreferenceAtom);
+  const [isReady, setIsReady] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  // Check configuration on app startup
+  useEffect(() => {
+    async function checkInitialConfig() {
+      try {
+        console.info('[RootLayout] Checking initial config...');
+        const isFirstRun = await Config.isFirstRun();
+        const backendUrl = await Config.getBackendUrl();
+
+        console.info('[RootLayout] First run:', isFirstRun, 'Backend URL:', backendUrl);
+
+        if (isFirstRun || !backendUrl) {
+          console.info('[RootLayout] Onboarding needed');
+          setNeedsOnboarding(true);
+        } else {
+          console.info('[RootLayout] Config exists, no onboarding needed');
+          setNeedsOnboarding(false);
+        }
+      } catch (error) {
+        console.error('[RootLayout] Error checking initial config:', error);
+        // On error, show onboarding to be safe
+        setNeedsOnboarding(true);
+      } finally {
+        console.info('[RootLayout] Config check complete, setting ready');
+        setIsReady(true);
+      }
+    }
+
+    checkInitialConfig();
+  }, [])
 
   useEffect(() => {
     // On native platforms, load theme preference from AsyncStorage
@@ -83,6 +117,27 @@ function AppContent() {
   useEffect(() => {
     setColorScheme(resolvedTheme);
   }, [resolvedTheme, setColorScheme]);
+
+  // Show loading screen while checking configuration
+  if (!isReady) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // If onboarding is needed, show onboarding screen directly
+  if (needsOnboarding) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <OnboardingScreen />
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

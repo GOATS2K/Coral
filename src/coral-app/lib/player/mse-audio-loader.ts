@@ -1,6 +1,5 @@
-import { baseUrl } from '@/lib/client/fetcher';
-import M3U8Parser from '@/lib/vendor/hls.js/src/loader/m3u8-parser';
 import type { LevelDetails } from '@/lib/vendor/hls.js/src/loader/level-details';
+import { FragmentLoader } from './fragment-loader';
 
 interface TrackInfo {
   trackId: string;
@@ -25,9 +24,12 @@ export class MSEAudioLoader {
   private bufferAheadTarget = 30; // Keep 30 seconds buffered ahead
   private bufferBehindLimit = 60; // Remove data older than 60 seconds
   private nextBufferStartTime = 0; // Track where the next track should start in buffer timeline
+  private fragmentLoader: FragmentLoader;
+  private isCheckingBuffer = false; // Prevent concurrent buffer checks
 
   constructor() {
     this.audioElement = new Audio();
+    this.fragmentLoader = new FragmentLoader();
     this.setupAudioEventListeners();
   }
 
@@ -43,31 +45,8 @@ export class MSEAudioLoader {
     });
   }
 
-  private async fetchStreamInfo(trackId: string): Promise<{ codec: string; playlistUrl: string; levelDetails: LevelDetails; mediaUrl: string; duration: number }> {
-    const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
-    if (!streamInfoResponse.ok) {
-      throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
-    }
-    const streamData = await streamInfoResponse.json();
-    const codec = streamData.transcodeInfo?.codec;
-
-    if (!codec) {
-      throw new Error('Codec information not available from API');
-    }
-
-    const playlistUrl = streamData.link;
-    const levelDetails = await this.fetchAndParsePlaylist(playlistUrl);
-    const mediaUrl = levelDetails.fragments[0]?.url || '';
-
-    const duration = levelDetails.fragments.reduce((total, fragment) => {
-      return total + fragment.duration;
-    }, 0);
-
-    return { codec, playlistUrl, levelDetails, mediaUrl, duration };
-  }
-
   async initialize(trackId: string): Promise<void> {
-    const { codec, levelDetails, mediaUrl, duration: trackDuration } = await this.fetchStreamInfo(trackId);
+    const { codec, levelDetails, mediaUrl, duration: trackDuration } = await this.fragmentLoader.fetchStreamInfo(trackId);
 
     // Get MIME type for codec
     const mimeType = this.getCodecMimeType(codec);
@@ -116,7 +95,9 @@ export class MSEAudioLoader {
 
     // Create SourceBuffer with dynamic codec
     this.sourceBuffer = this.mediaSource!.addSourceBuffer(mimeType);
-    this.sourceBuffer.mode = 'segments'; // Use segments mode to preserve timestamps
+
+    // Use 'segments' mode to preserve timestamps from fMP4 container
+    this.sourceBuffer.mode = 'segments';
 
     // Load init segment
     await this.loadInitSegment(trackId);
@@ -126,7 +107,7 @@ export class MSEAudioLoader {
   }
 
   async appendTrack(trackId: string): Promise<void> {
-    const { codec, levelDetails, mediaUrl, duration: trackDuration } = await this.fetchStreamInfo(trackId);
+    const { codec, levelDetails, mediaUrl, duration: trackDuration } = await this.fragmentLoader.fetchStreamInfo(trackId);
 
     this.tracks.set(trackId, {
       trackId,
@@ -150,22 +131,29 @@ export class MSEAudioLoader {
     const firstFragment = trackInfo.levelDetails.fragments[0];
     if (!firstFragment) return;
 
-    const initSegmentEnd = firstFragment.byteRangeStartOffset!;
-    trackInfo.initSegment = await this.fetchByteRange(trackInfo.mediaUrl, 0, initSegmentEnd);
+    const initSegmentEnd = firstFragment.byteRangeStartOffset;
+    if (!initSegmentEnd) {
+      throw new Error('Init segment byte range not found');
+    }
 
-    // Set timestamp offset for this track to ensure gapless playback
+    trackInfo.initSegment = await this.fragmentLoader.fetchInitSegment(
+      trackInfo.mediaUrl,
+      initSegmentEnd,
+      trackInfo.codec
+    );
+
+    // Set timestamp offset for gapless playback
+    // This offsets the entire track's timestamps to the correct position in the buffer timeline
     if (this.sourceBuffer) {
       this.sourceBuffer.timestampOffset = trackInfo.bufferStartTime;
     }
 
-    await this.appendToSourceBuffer(trackInfo.initSegment);
+    // Init segment is stored but will be concatenated with the first fragment
   }
 
   private async loadFragments(trackId: string, count: number): Promise<void> {
     const trackInfo = this.tracks.get(trackId);
     if (!trackInfo || !trackInfo.levelDetails) return;
-
-    // Prevent concurrent loading
     if (trackInfo.isLoadingFragments) return;
 
     const fragments = trackInfo.levelDetails.fragments;
@@ -174,28 +162,14 @@ export class MSEAudioLoader {
 
     if (startIndex >= fragments.length) return;
 
-    // Mark as loading and update index optimistically
+    console.info(`[MSE] Loading fragments ${startIndex}-${endIndex - 1} for track ${trackId.substring(0, 8)}...`);
+
     trackInfo.isLoadingFragments = true;
     const originalIndex = trackInfo.currentFragmentIndex;
     trackInfo.currentFragmentIndex = endIndex;
 
     try {
-      for (let i = startIndex; i < endIndex; i++) {
-        const fragment = fragments[i];
-        const start = fragment.byteRangeStartOffset!;
-        const end = fragment.byteRangeEndOffset!;
-        const size = end - start;
-
-        const fragmentData = await this.fetchByteRange(trackInfo.mediaUrl, start, size);
-
-        // Only concatenate init segment for the first fragment of this track
-        if (i === 0) {
-          const combined = this.concatenateBuffers(trackInfo.initSegment!, fragmentData);
-          await this.appendToSourceBuffer(combined);
-        } else {
-          await this.appendToSourceBuffer(fragmentData);
-        }
-      }
+      await this.loadFragmentRange(trackInfo, fragments, startIndex, endIndex);
     } catch (error) {
       console.error('[MSE] Error loading fragments:', error);
       trackInfo.currentFragmentIndex = originalIndex;
@@ -204,56 +178,103 @@ export class MSEAudioLoader {
     }
   }
 
+  private async loadFragmentRange(
+    trackInfo: TrackInfo,
+    fragments: any[],
+    startIndex: number,
+    endIndex: number
+  ): Promise<void> {
+    for (let i = startIndex; i < endIndex; i++) {
+      const fragment = fragments[i];
+      const start = fragment.byteRangeStartOffset;
+      const end = fragment.byteRangeEndOffset;
+
+      const fragmentData = await this.fragmentLoader.fetchFragment(
+        trackInfo.mediaUrl,
+        start,
+        end,
+        trackInfo.codec
+      );
+
+      // For the very first fragment of this track, concatenate init segment
+      if (i === 0 && trackInfo.initSegment) {
+        const combined = this.concatenateBuffers(trackInfo.initSegment, fragmentData);
+        await this.appendToSourceBuffer(combined);
+      } else {
+        // For subsequent fragments, append directly
+        await this.appendToSourceBuffer(fragmentData);
+      }
+    }
+  }
+
+  private concatenateBuffers(buffer1: ArrayBuffer, buffer2: ArrayBuffer): ArrayBuffer {
+    const combined = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+    combined.set(new Uint8Array(buffer1), 0);
+    combined.set(new Uint8Array(buffer2), buffer1.byteLength);
+    return combined.buffer;
+  }
+
   async checkBufferAndLoad(): Promise<void> {
     if (!this.sourceBuffer || !this.currentTrackId) return;
 
-    const currentTime = this.audioElement.currentTime;
-    const buffered = this.sourceBuffer.buffered;
+    // Prevent concurrent buffer checks
+    if (this.isCheckingBuffer) return;
+    this.isCheckingBuffer = true;
 
-    // Calculate buffered ahead
-    let bufferedAhead = 0;
-    let inBufferedRange = false;
-    for (let i = 0; i < buffered.length; i++) {
-      const start = buffered.start(i);
-      const end = buffered.end(i);
-      if (currentTime >= start && currentTime <= end) {
-        bufferedAhead = end - currentTime;
-        inBufferedRange = true;
-        break;
+    try {
+      const currentTime = this.audioElement.currentTime;
+
+      // Clean up buffer ranges that are far from current position
+      this.cleanUpDistantBuffers(currentTime);
+
+      const buffered = this.sourceBuffer.buffered;
+
+      // Calculate buffered ahead
+      let bufferedAhead = 0;
+      let inBufferedRange = false;
+      for (let i = 0; i < buffered.length; i++) {
+        const start = buffered.start(i);
+        const end = buffered.end(i);
+        if (currentTime >= start && currentTime <= end) {
+          bufferedAhead = end - currentTime;
+          inBufferedRange = true;
+          break;
+        }
       }
-    }
 
-    // If we're not in a buffered range at all, we definitely need to load
-    const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
+      // Only load if buffer is getting low
+      const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
 
-    // Load more if buffer is low or we're in an unbuffered position
-    if (needsData) {
-      const trackInfo = this.tracks.get(this.currentTrackId);
-      if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
-        await this.loadFragments(this.currentTrackId, 2);
-      } else {
-        // Current track is fully loaded, check if we should start loading next track
-        const bufferInfo = this.getCurrentTrackBufferInfo();
-        if (bufferInfo) {
-          const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
+      if (needsData) {
+        const trackInfo = this.tracks.get(this.currentTrackId);
+        if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
+          await this.loadFragments(this.currentTrackId, 2);
+        } else {
+          // Current track is fully loaded, check if we should start loading next track
+          const bufferInfo = this.getCurrentTrackBufferInfo();
+          if (bufferInfo) {
+            const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
 
-          if (timeUntilEnd < this.bufferAheadTarget) {
-            // Find next track in queue
-            const nextTrackId = this.findNextQueuedTrack();
-            if (nextTrackId) {
-              const nextTrackInfo = this.tracks.get(nextTrackId);
-              if (nextTrackInfo && nextTrackInfo.currentFragmentIndex === 0) {
-                await this.loadInitSegment(nextTrackId);
-                await this.loadFragments(nextTrackId, 3);
+            if (timeUntilEnd < this.bufferAheadTarget) {
+              // Find next track in queue
+              const nextTrackId = this.findNextQueuedTrack();
+              if (nextTrackId) {
+                const nextTrackInfo = this.tracks.get(nextTrackId);
+                if (nextTrackInfo && nextTrackInfo.currentFragmentIndex === 0) {
+                  await this.loadInitSegment(nextTrackId);
+                  await this.loadFragments(nextTrackId, 3);
+                }
               }
             }
           }
         }
       }
-    }
 
-    // Remove old buffer
-    this.removeOldBuffer(currentTime);
+      // Remove old buffer
+      this.removeOldBuffer(currentTime);
+    } finally {
+      this.isCheckingBuffer = false;
+    }
   }
 
   private findNextQueuedTrack(): string | null {
@@ -281,6 +302,34 @@ export class MSEAudioLoader {
           // Ignore errors
         }
         break;
+      }
+    }
+  }
+
+  /**
+   * Clean up buffer ranges that are far from the current playback position
+   * This helps prevent buffer quota issues when seeking
+   */
+  private cleanUpDistantBuffers(currentTime: number): void {
+    if (!this.sourceBuffer || this.sourceBuffer.updating) return;
+
+    const buffered = this.sourceBuffer.buffered;
+    const maxBufferRange = 90; // Keep max 90 seconds around current position
+
+    for (let i = 0; i < buffered.length; i++) {
+      const start = buffered.start(i);
+      const end = buffered.end(i);
+
+      // Remove ranges that are completely outside our buffer window
+      if (end < currentTime - this.bufferBehindLimit || start > currentTime + maxBufferRange) {
+        try {
+          console.info('[MSE] Removing distant buffer range:', start.toFixed(1), '-', end.toFixed(1));
+          this.sourceBuffer.remove(start, end);
+          // Can only remove one range at a time, exit after first removal
+          return;
+        } catch (error) {
+          // Ignore errors - might be trying to remove current playback position
+        }
       }
     }
   }
@@ -332,47 +381,6 @@ export class MSEAudioLoader {
         resolve();
       }, { once: true });
     });
-  }
-
-  private async fetchAndParsePlaylist(url: string): Promise<LevelDetails> {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch playlist: ${response.status}`);
-    }
-
-    const playlistText = await response.text();
-
-    return M3U8Parser.parseLevelPlaylist(
-      playlistText,
-      url,
-      0,
-      'EVENT',
-      0,
-      null
-    );
-  }
-
-  private async fetchByteRange(url: string, start: number, length: number): Promise<ArrayBuffer> {
-    const end = start + length - 1;
-    const response = await fetch(url, {
-      headers: {
-        'Range': `bytes=${start}-${end}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch byte range: ${response.status}`);
-    }
-
-    return await response.arrayBuffer();
-  }
-
-  private concatenateBuffers(buffer1: ArrayBuffer, buffer2: ArrayBuffer): ArrayBuffer {
-    const combined = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-    combined.set(new Uint8Array(buffer1), 0);
-    combined.set(new Uint8Array(buffer2), buffer1.byteLength);
-    return combined.buffer;
   }
 
   private findFragmentIndexForTime(fragments: any[], relativeTime: number): number {
@@ -459,21 +467,19 @@ export class MSEAudioLoader {
   }
 
   private getCodecMimeType(codec: string): string {
-    // ffprobe returns lowercase codec names: "aac", "alac", "flac", "mp3", etc.
     const normalizedCodec = codec.toLowerCase();
 
-    switch (normalizedCodec) {
-      case 'flac':
-        return 'audio/mp4; codecs="flac"';
-      case 'mp3':
-        return 'audio/mp4; codecs="mp3"';
-      case 'aac':
-        return 'audio/mp4; codecs="mp4a.40.2"';
-      case 'alac':
-        return 'audio/mp4; codecs="alac"';
-      default:
-        throw new Error(`Unsupported codec for MSE: ${codec}`);
+    const codecMap: Record<string, string> = {
+      'flac': 'audio/mp4; codecs="flac"',
+      'aac': 'audio/mp4; codecs="mp4a.40.2"',
+      'alac': 'audio/mp4; codecs="alac"',
+    };
+
+    if (codecMap[normalizedCodec]) {
+      return codecMap[normalizedCodec];
     }
+
+    throw new Error(`Unsupported codec for MSE: ${codec}`);
   }
 
   destroy(): void {

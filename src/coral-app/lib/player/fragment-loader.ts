@@ -44,6 +44,17 @@ export class FragmentLoader {
       return total + fragment.duration;
     }, 0);
 
+    // Log parsed playlist details
+    console.info('[HLS] Parsed playlist:', {
+      live: levelDetails.live,
+      fragments: levelDetails.fragments.length,
+      totalDuration: levelDetails.totalduration?.toFixed(2),
+      type: levelDetails.type,
+      endSN: levelDetails.endSN,
+      startSN: levelDetails.startSN,
+      playlistUrl
+    });
+
     return { codec, playlistUrl, levelDetails, mediaUrl, duration };
   }
 

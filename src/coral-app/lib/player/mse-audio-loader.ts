@@ -21,11 +21,10 @@ export class MSEAudioLoader {
   private currentTrackId: string | null = null;
   private isAppending: boolean = false;
   private appendQueue: ArrayBuffer[] = [];
-  private bufferAheadTarget = 30; // Keep 30 seconds buffered ahead
-  private bufferBehindLimit = 60; // Remove data older than 60 seconds
+  private bufferAheadTarget = 20; // Keep 20 seconds buffered ahead
+  private bufferBehindLimit = 30; // Remove data older than 30 seconds
   private nextBufferStartTime = 0; // Track where the next track should start in buffer timeline
   private fragmentLoader: FragmentLoader;
-  private isCheckingBuffer = false; // Prevent concurrent buffer checks
 
   constructor() {
     this.audioElement = new Audio();
@@ -102,8 +101,8 @@ export class MSEAudioLoader {
     // Load init segment
     await this.loadInitSegment(trackId);
 
-    // Load first 3 fragments (~30 seconds)
-    await this.loadFragments(trackId, 3);
+    // Load first 2 fragments (~20 seconds) - conservative due to 50MB buffer quota
+    await this.loadFragments(trackId, 2);
   }
 
   async appendTrack(trackId: string): Promise<void> {
@@ -156,13 +155,28 @@ export class MSEAudioLoader {
     if (!trackInfo || !trackInfo.levelDetails) return;
     if (trackInfo.isLoadingFragments) return;
 
-    const fragments = trackInfo.levelDetails.fragments;
     const startIndex = trackInfo.currentFragmentIndex;
+
+    // For live/EVENT streams, ALWAYS refetch playlist before loading fragments
+    // to ensure we have the latest fragment data
+    if (trackInfo.levelDetails.live) {
+      try {
+        const updatedInfo = await this.fragmentLoader.fetchStreamInfo(trackId);
+        trackInfo.levelDetails = updatedInfo.levelDetails;
+      } catch (error) {
+        console.error('[MSE] Failed to refetch playlist:', error);
+        return;
+      }
+    }
+
+    const fragments = trackInfo.levelDetails.fragments;
+
+    // If still out of bounds after refetch, fragment doesn't exist yet
+    if (startIndex >= fragments.length) {
+      return;
+    }
+
     const endIndex = Math.min(startIndex + count, fragments.length);
-
-    if (startIndex >= fragments.length) return;
-
-    console.info(`[MSE] Loading fragments ${startIndex}-${endIndex - 1} for track ${trackId.substring(0, 8)}...`);
 
     trackInfo.isLoadingFragments = true;
     const originalIndex = trackInfo.currentFragmentIndex;
@@ -217,63 +231,82 @@ export class MSEAudioLoader {
   async checkBufferAndLoad(): Promise<void> {
     if (!this.sourceBuffer || !this.currentTrackId) return;
 
-    // Prevent concurrent buffer checks
-    if (this.isCheckingBuffer) return;
-    this.isCheckingBuffer = true;
+    const currentTime = this.audioElement.currentTime;
 
-    try {
-      const currentTime = this.audioElement.currentTime;
+    // Remove old buffer first to free up quota
+    this.removeOldBuffer(currentTime);
 
-      // Clean up buffer ranges that are far from current position
-      this.cleanUpDistantBuffers(currentTime);
+    // Clean up buffer ranges that are far from current position
+    await this.cleanUpDistantBuffers(currentTime);
 
-      const buffered = this.sourceBuffer.buffered;
+    const buffered = this.sourceBuffer.buffered;
 
-      // Calculate buffered ahead
-      let bufferedAhead = 0;
-      let inBufferedRange = false;
-      for (let i = 0; i < buffered.length; i++) {
-        const start = buffered.start(i);
-        const end = buffered.end(i);
-        if (currentTime >= start && currentTime <= end) {
-          bufferedAhead = end - currentTime;
-          inBufferedRange = true;
-          break;
-        }
+    // Calculate buffered ahead
+    let bufferedAhead = 0;
+    let inBufferedRange = false;
+    for (let i = 0; i < buffered.length; i++) {
+      const start = buffered.start(i);
+      const end = buffered.end(i);
+      if (currentTime >= start && currentTime <= end) {
+        bufferedAhead = end - currentTime;
+        inBufferedRange = true;
+        break;
       }
+    }
 
-      // Only load if buffer is getting low
-      const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
+    // Only load if buffer is getting low
+    const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
 
-      if (needsData) {
-        const trackInfo = this.tracks.get(this.currentTrackId);
-        if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
-          await this.loadFragments(this.currentTrackId, 2);
-        } else {
-          // Current track is fully loaded, check if we should start loading next track
-          const bufferInfo = this.getCurrentTrackBufferInfo();
-          if (bufferInfo) {
-            const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
+    if (needsData) {
+      const trackInfo = this.tracks.get(this.currentTrackId);
 
-            if (timeUntilEnd < this.bufferAheadTarget) {
-              // Find next track in queue
-              const nextTrackId = this.findNextQueuedTrack();
-              if (nextTrackId) {
-                const nextTrackInfo = this.tracks.get(nextTrackId);
-                if (nextTrackInfo && nextTrackInfo.currentFragmentIndex === 0) {
-                  await this.loadInitSegment(nextTrackId);
-                  await this.loadFragments(nextTrackId, 3);
-                }
+      if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
+        // Only correct timestampOffset if it's pointing to a different track's timeline
+        // (don't correct during normal progressive loading or when next track is pre-loading)
+        if (this.sourceBuffer) {
+          const currentTrackEnd = trackInfo.bufferStartTime + this.getTrackDuration(this.currentTrackId);
+          const offsetOutsideCurrentTrack = this.sourceBuffer.timestampOffset < trackInfo.bufferStartTime ||
+                                             this.sourceBuffer.timestampOffset >= currentTrackEnd;
+
+          if (offsetOutsideCurrentTrack) {
+            this.sourceBuffer.timestampOffset = trackInfo.bufferStartTime;
+          }
+        }
+        // Load 1 fragment at a time to avoid quota issues
+        await this.loadFragments(this.currentTrackId, 1);
+      } else if (trackInfo && trackInfo.levelDetails && trackInfo.levelDetails.live) {
+        // Live stream - all current fragments loaded, refetch playlist for new fragments
+        try {
+          const updatedInfo = await this.fragmentLoader.fetchStreamInfo(this.currentTrackId);
+          trackInfo.levelDetails = updatedInfo.levelDetails;
+
+          // Check if new fragments are available
+          if (trackInfo.currentFragmentIndex < trackInfo.levelDetails.fragments.length) {
+            await this.loadFragments(this.currentTrackId, 1);
+          }
+        } catch (error) {
+          console.error('[MSE] Failed to refetch live playlist:', error);
+        }
+      } else {
+        // Current track is fully loaded (non-live), check if we should start loading next track
+        const bufferInfo = this.getCurrentTrackBufferInfo();
+        if (bufferInfo) {
+          const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
+
+          if (timeUntilEnd < this.bufferAheadTarget) {
+            // Find next track in queue
+            const nextTrackId = this.findNextQueuedTrack();
+            if (nextTrackId) {
+              const nextTrackInfo = this.tracks.get(nextTrackId);
+              if (nextTrackInfo && nextTrackInfo.currentFragmentIndex === 0) {
+                await this.loadInitSegment(nextTrackId);
+                // Load 2 fragments for next track to ensure smooth transition
+                await this.loadFragments(nextTrackId, 2);
               }
             }
           }
         }
       }
-
-      // Remove old buffer
-      this.removeOldBuffer(currentTime);
-    } finally {
-      this.isCheckingBuffer = false;
     }
   }
 
@@ -310,11 +343,11 @@ export class MSEAudioLoader {
    * Clean up buffer ranges that are far from the current playback position
    * This helps prevent buffer quota issues when seeking
    */
-  private cleanUpDistantBuffers(currentTime: number): void {
+  private async cleanUpDistantBuffers(currentTime: number): Promise<void> {
     if (!this.sourceBuffer || this.sourceBuffer.updating) return;
 
     const buffered = this.sourceBuffer.buffered;
-    const maxBufferRange = 90; // Keep max 90 seconds around current position
+    const maxBufferRange = 40; // Keep max 40 seconds around current position (tight limit due to ~50MB quota)
 
     for (let i = 0; i < buffered.length; i++) {
       const start = buffered.start(i);
@@ -323,12 +356,13 @@ export class MSEAudioLoader {
       // Remove ranges that are completely outside our buffer window
       if (end < currentTime - this.bufferBehindLimit || start > currentTime + maxBufferRange) {
         try {
-          console.info('[MSE] Removing distant buffer range:', start.toFixed(1), '-', end.toFixed(1));
           this.sourceBuffer.remove(start, end);
+          // Wait for remove operation to complete before continuing
+          await this.waitForUpdateEnd();
           // Can only remove one range at a time, exit after first removal
           return;
         } catch (error) {
-          // Ignore errors - might be trying to remove current playback position
+          console.error('[MSE] Error during buffer removal:', error);
         }
       }
     }
@@ -384,6 +418,8 @@ export class MSEAudioLoader {
   }
 
   private findFragmentIndexForTime(fragments: any[], relativeTime: number): number {
+    if (fragments.length === 0) return 0;
+
     let cumulativeTime = 0;
 
     for (let i = 0; i < fragments.length; i++) {
@@ -393,7 +429,13 @@ export class MSEAudioLoader {
       }
     }
 
-    return Math.max(0, fragments.length - 1);
+    // If we've gone through all fragments and haven't reached the target time,
+    // calculate the fragment index based on average fragment duration
+    const avgFragmentDuration = cumulativeTime / fragments.length;
+    const additionalTime = relativeTime - cumulativeTime;
+    const additionalFragments = Math.ceil(additionalTime / avgFragmentDuration);
+
+    return fragments.length + additionalFragments - 1;
   }
 
   // Reset fragment index to match a seek position
@@ -410,6 +452,31 @@ export class MSEAudioLoader {
       trackInfo.levelDetails.fragments,
       relativeTime
     );
+  }
+
+  /**
+   * Check if playlist needs refetching and refetch if necessary
+   * Returns true if playlist was refetched
+   */
+  async checkAndRefetchIfNeeded(): Promise<boolean> {
+    if (!this.currentTrackId) return false;
+
+    const trackInfo = this.tracks.get(this.currentTrackId);
+    if (!trackInfo?.levelDetails) return false;
+
+    // If fragment index is beyond available and stream is live, refetch playlist
+    if (trackInfo.currentFragmentIndex >= trackInfo.levelDetails.fragments.length &&
+        trackInfo.levelDetails.live) {
+      try {
+        const updatedInfo = await this.fragmentLoader.fetchStreamInfo(this.currentTrackId);
+        trackInfo.levelDetails = updatedInfo.levelDetails;
+        return true;
+      } catch (error) {
+        console.error('[MSE] Failed to refetch playlist before seek:', error);
+        return false;
+      }
+    }
+    return false;
   }
 
   getAudioElement(): HTMLAudioElement {
@@ -439,6 +506,20 @@ export class MSEAudioLoader {
       return;
     }
     this.currentTrackId = trackId;
+  }
+
+  getMediaSourceState(): string {
+    return this.mediaSource?.readyState || 'null';
+  }
+
+  getSourceBufferState(): { updating: boolean; bufferedRanges: string[] } | null {
+    if (!this.sourceBuffer) return null;
+    const buffered = this.sourceBuffer.buffered;
+    return {
+      updating: this.sourceBuffer.updating,
+      bufferedRanges: Array.from({length: buffered.length}, (_, i) =>
+        `${buffered.start(i).toFixed(1)}-${buffered.end(i).toFixed(1)}`)
+    };
   }
 
   /**

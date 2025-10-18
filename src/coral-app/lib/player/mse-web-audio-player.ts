@@ -174,11 +174,17 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
       return;
     }
 
+    // Track if we were playing before the seek
+    const wasPlaying = this.isPlaying;
+
     // Convert relative position to absolute buffer time
     const absoluteTime = bufferInfo.bufferStartTime + position;
 
     // Reset fragment index to match the seek position
     this.mseLoader.resetToPosition(absoluteTime);
+
+    // Check if we need to refetch playlist (for live/EVENT streams)
+    await this.mseLoader.checkAndRefetchIfNeeded();
 
     // Set currentTime - browser may reject if unbuffered
     this.audioElement.currentTime = absoluteTime;
@@ -189,6 +195,34 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
 
     // Retry seek after fragments are loaded - browser may have rejected initial seek
     this.audioElement.currentTime = absoluteTime;
+
+    // Resume playback if we were playing before the seek
+    if (wasPlaying) {
+      try {
+        // Wait for the 'seeked' event - fires when seek completes AND browser has enough data
+        // Add timeout to prevent infinite wait if browser state machine gets stuck
+        await Promise.race([
+          new Promise<void>((resolve) => {
+            this.audioElement.addEventListener('seeked', () => resolve(), { once: true });
+          }),
+          // Timeout after 500ms if seeked doesn't fire
+          new Promise<void>((resolve) => setTimeout(resolve, 500))
+        ]);
+
+        // If audioElement.paused is false OR audioContext is suspended from a previous
+        // seek, force a pause/play cycle to reset the state machine.
+        if (!this.audioElement.paused || this.audioContext.state === 'suspended') {
+          this.audioElement.pause();
+          if (this.audioContext.state === 'running') {
+            await this.audioContext.suspend();
+          }
+        }
+
+        await this.play();
+      } catch (error) {
+        console.error('[MSE] Play failed after seek:', error);
+      }
+    }
   }
 
   async skip(direction: 1 | -1) {

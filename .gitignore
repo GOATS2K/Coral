@@ -588,3 +588,6 @@ src/Coral.Essentia.Cli/include
 src/Coral.Essentia.Cli/bin
 src/Coral.Essentia.Cli/Coral.Es.*/
 .claude/settings.local.json
+
+# mpv
+src/coral-app/electron/native/libmpv/

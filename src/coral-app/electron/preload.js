@@ -1,4 +1,5 @@
-const { contextBridge } = require('electron');
+/* eslint-env node */
+const { contextBridge, ipcRenderer } = require('electron');
 
 /**
  * Preload script for Electron
@@ -11,7 +12,25 @@ const { contextBridge } = require('electron');
  * can use standard web APIs directly.
  */
 
-// Expose a simple flag to detect if running in Electron
+// Expose Electron API with IPC support for MpvPlayer
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
+  ipcRenderer: {
+    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+    on: (channel, callback) => {
+      // Whitelist channels that can be listened to
+      const validChannels = [
+        'mpv:playbackStateChanged',
+        'mpv:trackChanged',
+        'mpv:bufferingStateChanged',
+        'mpv:timeUpdate',
+      ];
+      if (validChannels.includes(channel)) {
+        ipcRenderer.on(channel, callback);
+      }
+    },
+    removeAllListeners: (channel) => {
+      ipcRenderer.removeAllListeners(channel);
+    },
+  },
 });

@@ -1,11 +1,17 @@
+/* eslint-env node */
+/* global __dirname */
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { setupMpvIpcHandlers, cleanupMpvIpcHandlers } = require('./mpv-ipc-main');
 
 // Keep a global reference of window to prevent garbage collection
 let mainWindow = null;
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const webUrl = isDevelopment ? 'http://localhost:8081' : `file://${path.join(__dirname, '../dist/index.html')}`;
+
+// Default backend URL (should match Config.ts default)
+const DEFAULT_BACKEND_URL = 'http://localhost:5031';
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -36,6 +42,9 @@ function createMainWindow() {
 app.whenReady().then(() => {
   createMainWindow();
 
+  // Initialize MPV IPC handlers
+  setupMpvIpcHandlers(DEFAULT_BACKEND_URL);
+
   app.on('activate', () => {
     // On macOS, re-create window when dock icon is clicked and no windows open
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -45,6 +54,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // Cleanup MPV IPC handlers
+  cleanupMpvIpcHandlers();
+
   // On macOS, apps typically stay active until Cmd+Q
   if (process.platform !== 'darwin') {
     app.quit();

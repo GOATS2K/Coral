@@ -72,11 +72,11 @@ export class MpvPlayer extends EventEmitter {
       mpv_set_property_string(this.handle, 'vid', 'no');
       mpv_set_property_string(this.handle, 'video', 'no');
 
-      // Set idle mode
+      // Set idle mode (allows mpv to stay running without a file loaded)
       mpv_set_property_string(this.handle, 'idle', 'yes');
 
-      // Keep playlist loaded
-      mpv_set_property_string(this.handle, 'keep-open', 'yes');
+      // Don't keep file open at end - allow auto-advance in playlist
+      mpv_set_property_string(this.handle, 'keep-open', 'no');
 
       // Initialize mpv
       const initResult = mpv_initialize(this.handle);
@@ -477,12 +477,12 @@ export class MpvPlayer extends EventEmitter {
     try {
       const posStr = mpv_get_property_string(this.handle, 'playlist-pos');
       const pos = parseInt(posStr, 10);
+
       if (!isNaN(pos) && pos >= 0) {
-        this.currentTrackIndex = pos;
         return pos;
       }
     } catch (error) {
-      // Ignore errors
+
     }
 
     return this.currentTrackIndex;

@@ -4,8 +4,8 @@
  */
 
 /* eslint-env node */
-const EventEmitter = require('events');
-const {
+import EventEmitter from 'node:events';
+import {
   koffi,
   mpv_create,
   mpv_initialize,
@@ -20,17 +20,17 @@ const {
   MpvEventStruct,
   MpvEventPropertyStruct,
   MpvFormat,
-} = require('./mpv-bindings');
+} from './mpv-bindings.mjs';
 
 // Event names matching the React Native player interface
-const PlayerEventNames = {
+export const PlayerEventNames = {
   PLAYBACK_STATE_CHANGED: 'playbackStateChanged',
   TRACK_CHANGED: 'trackChanged',
   BUFFERING_STATE_CHANGED: 'bufferingStateChanged',
   TIME_UPDATE: 'timeUpdate',
 };
 
-class MpvPlayer extends EventEmitter {
+export class MpvPlayer extends EventEmitter {
   constructor(baseUrl) {
     super();
     this.handle = null;
@@ -551,8 +551,3 @@ class MpvPlayer extends EventEmitter {
     this.isInitialized = false;
   }
 }
-
-module.exports = {
-  MpvPlayer,
-  PlayerEventNames,
-};

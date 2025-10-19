@@ -4,8 +4,8 @@
  */
 
 /* eslint-env node */
-const { ipcMain, BrowserWindow } = require('electron');
-const { MpvPlayer } = require('./mpv-player');
+import { ipcMain, BrowserWindow } from 'electron';
+import { MpvPlayer } from './mpv-player.mjs';
 
 /**
  * Helper to forward player events to renderer process
@@ -21,7 +21,7 @@ function forwardEventToRenderer(channel, ...args) {
  * Sets up IPC handlers for the MpvPlayer in the Electron main process
  * @param {string} defaultBaseUrl - Default backend URL
  */
-function setupMpvIpcHandlers(defaultBaseUrl) {
+export function setupMpvIpcHandlers(defaultBaseUrl) {
   let player = null;
   let baseUrl = defaultBaseUrl;
 
@@ -268,7 +268,7 @@ function setupMpvIpcHandlers(defaultBaseUrl) {
 /**
  * Cleans up IPC handlers
  */
-function cleanupMpvIpcHandlers() {
+export function cleanupMpvIpcHandlers() {
   const channels = [
     'mpv:setBaseUrl',
     'mpv:initialize',
@@ -298,8 +298,3 @@ function cleanupMpvIpcHandlers() {
 
   console.info('[MpvIpcMain] IPC handlers cleaned up');
 }
-
-module.exports = {
-  setupMpvIpcHandlers,
-  cleanupMpvIpcHandlers,
-};

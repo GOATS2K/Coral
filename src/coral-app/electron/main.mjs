@@ -1,8 +1,13 @@
 /* eslint-env node */
-/* global __dirname */
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
-const { setupMpvIpcHandlers, cleanupMpvIpcHandlers } = require('./mpv-ipc-main');
+import { app, BrowserWindow } from 'electron';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import serve from 'electron-serve';
+import { setupMpvIpcHandlers, cleanupMpvIpcHandlers } from './mpv-ipc-main.mjs';
+
+// ESM equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Set AppUserModelId for Windows to show app name in media controls
 // In development: use process.execPath so Windows recognizes the electron.exe
@@ -17,12 +22,13 @@ if (isDevelopment) {
 // Keep a global reference of window to prevent garbage collection
 let mainWindow = null;
 
-const webUrl = isDevelopment ? 'http://localhost:8081' : `file://${path.join(__dirname, '../dist/index.html')}`;
-
 // Default backend URL (should match Config.ts default)
 const DEFAULT_BACKEND_URL = 'http://localhost:5031';
 
-function createMainWindow() {
+// Setup electron-serve for production (called before app.whenReady)
+const loadURL = serve({ directory: 'dist' });
+
+async function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -35,7 +41,12 @@ function createMainWindow() {
     backgroundColor: '#000000'
   });
 
-  mainWindow.loadURL(webUrl);
+  // Load the app: development uses Metro, production uses electron-serve
+  if (isDevelopment) {
+    await mainWindow.loadURL('http://localhost:8081');
+  } else {
+    await loadURL(mainWindow);
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -48,8 +59,8 @@ function createMainWindow() {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
-  createMainWindow();
+app.whenReady().then(async () => {
+  await createMainWindow();
 
   // Initialize MPV IPC handlers
   setupMpvIpcHandlers(DEFAULT_BACKEND_URL);

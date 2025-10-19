@@ -36,6 +36,7 @@
     "babel-plugin-react-compiler": "^19.0.0-beta-af1b7da-20250417",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "electron-serve": "^3.0.0",
     "eslint-config-expo": "~10.0.0",
     "eventemitter3": "^5.0.1",
     "expo": "^54.0.0",

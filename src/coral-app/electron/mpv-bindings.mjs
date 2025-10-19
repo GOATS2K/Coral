@@ -4,9 +4,13 @@
  */
 
 /* eslint-env node */
-/* global __dirname */
-const koffi = require('koffi');
-const path = require('path');
+import koffi from 'koffi';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// ESM equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Platform detection
 function getPlatformLibPath() {
@@ -21,7 +25,7 @@ function getPlatformLibPath() {
 
   switch (platform) {
     case 'win32':
-      return path.join(baseDir, 'win32', 'libmpv-2.dll');
+      return path.join(baseDir, 'win', 'libmpv-2.dll');
     case 'darwin':
       return path.join(baseDir, 'darwin', 'libmpv.dylib');
     case 'linux':
@@ -44,7 +48,7 @@ try {
 }
 
 // mpv_event types (enums)
-const MpvEventId = {
+export const MpvEventId = {
   MPV_EVENT_NONE: 0,
   MPV_EVENT_SHUTDOWN: 1,
   MPV_EVENT_LOG_MESSAGE: 2,
@@ -65,7 +69,7 @@ const MpvEventId = {
   MPV_EVENT_QUEUE_OVERFLOW: 24,
 };
 
-const MpvEndFileReason = {
+export const MpvEndFileReason = {
   MPV_END_FILE_REASON_EOF: 0,
   MPV_END_FILE_REASON_STOP: 2,
   MPV_END_FILE_REASON_QUIT: 3,
@@ -73,7 +77,7 @@ const MpvEndFileReason = {
   MPV_END_FILE_REASON_REDIRECT: 5,
 };
 
-const MpvFormat = {
+export const MpvFormat = {
   MPV_FORMAT_NONE: 0,
   MPV_FORMAT_STRING: 1,
   MPV_FORMAT_OSD_STRING: 2,
@@ -87,19 +91,19 @@ const MpvFormat = {
 };
 
 // Event structures
-const MpvEventEndFileStruct = koffi.struct('mpv_event_end_file', {
+export const MpvEventEndFileStruct = koffi.struct('mpv_event_end_file', {
   reason: 'int',
   error: 'int',
   playlist_entry_id: 'int64',
 });
 
-const MpvEventPropertyStruct = koffi.struct('mpv_event_property', {
+export const MpvEventPropertyStruct = koffi.struct('mpv_event_property', {
   name: 'string',
   format: 'int',
   data: 'void*',
 });
 
-const MpvEventStruct = koffi.struct('mpv_event', {
+export const MpvEventStruct = koffi.struct('mpv_event', {
   event_id: 'int',
   error: 'int',
   reply_userdata: 'uint64',
@@ -107,36 +111,36 @@ const MpvEventStruct = koffi.struct('mpv_event', {
 });
 
 // Core functions - matching official signatures from client.h
-const mpv_create = lib.func('mpv_create', 'void*', []);
-const mpv_initialize = lib.func('mpv_initialize', 'int', ['void*']);
-const mpv_destroy = lib.func('mpv_destroy', 'void', ['void*']);
-const mpv_terminate_destroy = lib.func('mpv_terminate_destroy', 'void', ['void*']);
+export const mpv_create = lib.func('mpv_create', 'void*', []);
+export const mpv_initialize = lib.func('mpv_initialize', 'int', ['void*']);
+export const mpv_destroy = lib.func('mpv_destroy', 'void', ['void*']);
+export const mpv_terminate_destroy = lib.func('mpv_terminate_destroy', 'void', ['void*']);
 
 // Command functions
-const mpv_command = lib.func('mpv_command', 'int', ['void*', koffi.pointer('string')]);
-const mpv_command_string = lib.func('mpv_command_string', 'int', ['void*', 'string']);
-const mpv_command_async = lib.func('mpv_command_async', 'int', ['void*', 'uint64', koffi.pointer('string')]);
+export const mpv_command = lib.func('mpv_command', 'int', ['void*', koffi.pointer('string')]);
+export const mpv_command_string = lib.func('mpv_command_string', 'int', ['void*', 'string']);
+export const mpv_command_async = lib.func('mpv_command_async', 'int', ['void*', 'uint64', koffi.pointer('string')]);
 
 // Property functions
-const mpv_set_property_string = lib.func('mpv_set_property_string', 'int', ['void*', 'string', 'string']);
-const mpv_get_property_string = lib.func('mpv_get_property_string', 'string', ['void*', 'string']);
-const mpv_set_property = lib.func('mpv_set_property', 'int', ['void*', 'string', 'int', 'void*']);
-const mpv_get_property = lib.func('mpv_get_property', 'int', ['void*', 'string', 'int', 'void*']);
+export const mpv_set_property_string = lib.func('mpv_set_property_string', 'int', ['void*', 'string', 'string']);
+export const mpv_get_property_string = lib.func('mpv_get_property_string', 'string', ['void*', 'string']);
+export const mpv_set_property = lib.func('mpv_set_property', 'int', ['void*', 'string', 'int', 'void*']);
+export const mpv_get_property = lib.func('mpv_get_property', 'int', ['void*', 'string', 'int', 'void*']);
 
 // Property observation
-const mpv_observe_property = lib.func('mpv_observe_property', 'int', ['void*', 'uint64', 'string', 'int']);
-const mpv_unobserve_property = lib.func('mpv_unobserve_property', 'int', ['void*', 'uint64']);
+export const mpv_observe_property = lib.func('mpv_observe_property', 'int', ['void*', 'uint64', 'string', 'int']);
+export const mpv_unobserve_property = lib.func('mpv_unobserve_property', 'int', ['void*', 'uint64']);
 
 // Event functions
-const mpv_wait_event = lib.func('mpv_wait_event', koffi.pointer(MpvEventStruct), ['void*', 'double']);
-const mpv_request_event = lib.func('mpv_request_event', 'int', ['void*', 'int', 'int']);
-const mpv_request_log_messages = lib.func('mpv_request_log_messages', 'int', ['void*', 'string']);
+export const mpv_wait_event = lib.func('mpv_wait_event', koffi.pointer(MpvEventStruct), ['void*', 'double']);
+export const mpv_request_event = lib.func('mpv_request_event', 'int', ['void*', 'int', 'int']);
+export const mpv_request_log_messages = lib.func('mpv_request_log_messages', 'int', ['void*', 'string']);
 
 // Error handling
-const mpv_error_string = lib.func('mpv_error_string', 'string', ['int']);
+export const mpv_error_string = lib.func('mpv_error_string', 'string', ['int']);
 
 // Helper function to create command arrays for mpv_command
-function createCommandArray(args) {
+export function createCommandArray(args) {
   // Allocate array with null terminator
   const arr = new Array(args.length + 1);
   for (let i = 0; i < args.length; i++) {
@@ -147,47 +151,12 @@ function createCommandArray(args) {
 }
 
 // Helper to check error codes
-function checkMpvError(errorCode, operation) {
+export function checkMpvError(errorCode, operation) {
   if (errorCode < 0) {
     const errorMsg = mpv_error_string(errorCode);
     throw new Error(`[Mpv] ${operation} failed: ${errorMsg} (code: ${errorCode})`);
   }
 }
 
-module.exports = {
-  // Koffi instance (for decoding pointers)
-  koffi,
-
-  // Enums
-  MpvEventId,
-  MpvEndFileReason,
-  MpvFormat,
-
-  // Structs
-  MpvEventStruct,
-  MpvEventEndFileStruct,
-  MpvEventPropertyStruct,
-
-  // Functions
-  mpv_create,
-  mpv_initialize,
-  mpv_destroy,
-  mpv_terminate_destroy,
-  mpv_command,
-  mpv_command_string,
-  mpv_command_async,
-  mpv_set_property_string,
-  mpv_get_property_string,
-  mpv_set_property,
-  mpv_get_property,
-  mpv_observe_property,
-  mpv_unobserve_property,
-  mpv_wait_event,
-  mpv_request_event,
-  mpv_request_log_messages,
-  mpv_error_string,
-
-  // Helpers
-  createCommandArray,
-  checkMpvError,
-};
+// Export koffi for decoding pointers
+export { koffi };

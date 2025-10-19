@@ -8,7 +8,15 @@
     "dist/**/*",
     "electron/**/*",
     "!electron/native/**/*",
+    "!node_modules/**/*",
+    "node_modules/koffi/**/*",
+    "node_modules/electron-serve/**/*",
     "package.json"
+  ],
+  "asarUnpack": [
+    "dist/**/*",
+    "node_modules/koffi/**/*",
+    "node_modules/electron-serve/**/*"
   ],
   "extraResources": [
     {
@@ -18,7 +26,7 @@
     }
   ],
   "extraMetadata": {
-    "main": "electron/main.js"
+    "main": "electron/main.mjs"
   },
   "mac": {
     "category": "public.app-category.music",
@@ -37,11 +45,7 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
-        "arch": ["x64"]
-      },
-      {
-        "target": "portable",
+        "target": "dir",
         "arch": ["x64"]
       }
     ],

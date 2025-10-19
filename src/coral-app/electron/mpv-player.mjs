@@ -292,8 +292,64 @@ export class MpvPlayer extends EventEmitter {
   }
 
   updateQueue(tracks, currentIndex) {
-    this.tracks = tracks;
-    this.currentTrackIndex = currentIndex;
+    if (!this.handle) {
+      throw new Error('[MpvPlayer] Not initialized');
+    }
+
+    try {
+      const mpvState = [...this.tracks];
+      const newTracks = tracks;
+
+      for (let targetPos = 0; targetPos < newTracks.length; targetPos++) {
+        const desiredTrack = newTracks[targetPos];
+        const currentTrack = mpvState[targetPos];
+
+        if (currentTrack && currentTrack.id === desiredTrack.id) {
+          continue;
+        }
+
+        const currentPos = mpvState.findIndex(t => t && t.id === desiredTrack.id);
+
+        if (currentPos !== -1 && currentPos !== targetPos) {
+          mpv_command_string(this.handle, `playlist-move ${currentPos} ${targetPos}`);
+
+          const [movedTrack] = mpvState.splice(currentPos, 1);
+          mpvState.splice(targetPos, 0, movedTrack);
+        } else if (currentPos === -1) {
+          const url = `${this.baseUrl}/api/library/tracks/${desiredTrack.id}/original`;
+          mpv_command_string(this.handle, `loadfile "${url}" append`);
+
+          mpvState.push(desiredTrack);
+
+          const appendedPos = mpvState.length - 1;
+          if (appendedPos !== targetPos) {
+            mpv_command_string(this.handle, `playlist-move ${appendedPos} ${targetPos}`);
+            const [movedTrack] = mpvState.splice(appendedPos, 1);
+            mpvState.splice(targetPos, 0, movedTrack);
+          }
+        }
+      }
+
+      const newTrackIds = new Set(newTracks.map(t => t.id));
+      for (let i = mpvState.length - 1; i >= 0; i--) {
+        if (!newTrackIds.has(mpvState[i].id)) {
+          mpv_command_string(this.handle, `playlist-remove ${i}`);
+          mpvState.splice(i, 1);
+        }
+      }
+
+      this.tracks = newTracks;
+
+      if (currentIndex !== this.currentTrackIndex) {
+        this.currentTrackIndex = currentIndex;
+        mpv_set_property_string(this.handle, 'playlist-pos', currentIndex.toString());
+      }
+
+      console.info(`[MpvPlayer] Queue synced: ${newTracks.length} tracks`);
+    } catch (error) {
+      console.error('[MpvPlayer] Failed to update queue:', error);
+      throw error;
+    }
   }
 
   async play() {

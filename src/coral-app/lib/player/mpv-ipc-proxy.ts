@@ -11,6 +11,8 @@ import { PlayerEventNames } from './mse-web-audio-player';
 export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
   private trackChangeCallback: ((index: number) => void) | null = null;
   private isInitialized = false;
+  private dummyAudio: HTMLAudioElement | null = null;
+  private dummyAudioBlobUrl: string | null = null;
 
   // Cached state updated by IPC events (matches MSE player API pattern)
   private cachedState = {
@@ -39,6 +41,12 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
       if (result.success) {
         this.isInitialized = true;
         console.info('[MpvIpcProxy] Initialized successfully');
+
+        // Create dummy audio element to activate MediaSession for OS media controls
+        // Chrome requires an active <audio> element for MediaSession integration
+        // Without this, OS media controls won't display track metadata
+        // Optimized: only plays when mpv is playing, uses volume=0, longer duration
+        this.createDummyAudio();
       } else {
         console.error('[MpvIpcProxy] Initialization failed:', result.error);
         throw new Error(result.error || 'Failed to initialize MpvPlayer');
@@ -62,6 +70,10 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
     // Listen for events from main process
     ipcRenderer.on('mpv:playbackStateChanged', (_: any, isPlaying: boolean) => {
       this.cachedState.isPlaying = isPlaying;
+
+      // Note: Dummy audio play/pause is now handled in useMediaSession hook
+      // to ensure it's synced with navigator.mediaSession.playbackState
+
       this.emit(PlayerEventNames.PLAYBACK_STATE_CHANGED, { isPlaying });
     });
 
@@ -82,6 +94,84 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
       this.cachedState.duration = duration;
       this.emit(PlayerEventNames.TIME_UPDATE, { position, duration });
     });
+  }
+
+  /**
+   * Creates a silent, looping audio element to activate MediaSession.
+   * Browsers require an active <audio> element for MediaSession to connect to OS media controls.
+   * Since mpv plays natively (outside the browser), we need this dummy element.
+   *
+   * Optimized to minimize performance impact:
+   * - 10-second duration (Chrome requires ≥5s for media controls)
+   * - Volume set to 0.01 (must be > 0 for Chrome to activate audio pipeline and OS integration)
+   * - Only plays when mpv is actively playing (synced with playback state)
+   * - Loops to support long tracks
+   * - Low sample rate (8kHz) and 8-bit mono to minimize processing overhead
+   */
+  private createDummyAudio() {
+    if (typeof window === 'undefined' || typeof Audio === 'undefined') {
+      return;
+    }
+
+    try {
+      // Generate a 10-second silent WAV file programmatically
+      const sampleRate = 8000; // Low sample rate for efficiency
+      const duration = 10; // 10 seconds (meets Chrome's ≥5s requirement)
+      const numSamples = sampleRate * duration;
+
+      // WAV file format (PCM, mono, 8-bit)
+      const wavHeader = new ArrayBuffer(44);
+      const view = new DataView(wavHeader);
+
+      // RIFF header
+      view.setUint32(0, 0x52494646, false); // "RIFF"
+      view.setUint32(4, 36 + numSamples, true); // File size - 8
+      view.setUint32(8, 0x57415645, false); // "WAVE"
+
+      // fmt chunk
+      view.setUint32(12, 0x666d7420, false); // "fmt "
+      view.setUint32(16, 16, true); // Chunk size
+      view.setUint16(20, 1, true); // Audio format (PCM)
+      view.setUint16(22, 1, true); // Channels (mono)
+      view.setUint32(24, sampleRate, true); // Sample rate
+      view.setUint32(28, sampleRate, true); // Byte rate
+      view.setUint16(32, 1, true); // Block align
+      view.setUint16(34, 8, true); // Bits per sample
+
+      // data chunk
+      view.setUint32(36, 0x64617461, false); // "data"
+      view.setUint32(40, numSamples, true); // Data size
+
+      // Create silent samples (128 = silence for 8-bit unsigned PCM)
+      const samples = new Uint8Array(numSamples);
+      samples.fill(128);
+
+      // Combine header and samples
+      const wavFile = new Blob([wavHeader, samples], { type: 'audio/wav' });
+      this.dummyAudioBlobUrl = URL.createObjectURL(wavFile);
+
+      // Create audio element and add to DOM so useMediaSession can control it
+      this.dummyAudio = new Audio();
+      this.dummyAudio.src = this.dummyAudioBlobUrl;
+      this.dummyAudio.loop = true;
+      this.dummyAudio.volume = 0.01; // Very quiet but > 0 for Chrome to activate audio pipeline
+      this.dummyAudio.style.display = 'none'; // Hide from UI
+      this.dummyAudio.setAttribute('data-mpv-dummy', 'true'); // Mark for identification
+
+      // Add to DOM so useMediaSession can find and control it
+      if (typeof document !== 'undefined') {
+        document.body.appendChild(this.dummyAudio);
+      }
+
+      // Auto-play to activate MediaSession (10s duration minimizes performance impact vs 1s original)
+      this.dummyAudio.play().catch(err => {
+        console.warn('[MpvIpcProxy] Dummy audio autoplay blocked (this may affect MediaSession):', err);
+      });
+
+      console.info('[MpvIpcProxy] Dummy audio element created, added to DOM, and playing (10s loop, volume=0.01)');
+    } catch (error) {
+      console.error('[MpvIpcProxy] Failed to create dummy audio element:', error);
+    }
   }
 
   private async invoke(channel: string, ...args: any[]): Promise<any> {
@@ -229,6 +319,26 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
     this.invoke('mpv:destroy').catch(err => {
       console.error('[MpvIpcProxy] destroy failed:', err);
     });
+
+    // Clean up dummy audio element
+    if (this.dummyAudio) {
+      this.dummyAudio.pause();
+      this.dummyAudio.src = '';
+
+      // Remove from DOM
+      if (this.dummyAudio.parentNode) {
+        this.dummyAudio.parentNode.removeChild(this.dummyAudio);
+      }
+
+      this.dummyAudio = null;
+      console.info('[MpvIpcProxy] Dummy audio element cleaned up and removed from DOM');
+    }
+
+    // Revoke blob URL to free memory
+    if (this.dummyAudioBlobUrl) {
+      URL.revokeObjectURL(this.dummyAudioBlobUrl);
+      this.dummyAudioBlobUrl = null;
+    }
 
     // Remove event listeners
     if (typeof window !== 'undefined' && (window as any).electronAPI) {

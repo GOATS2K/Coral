@@ -11,11 +11,17 @@ const path = require('path');
 // Platform detection
 function getPlatformLibPath() {
   const platform = process.platform;
-  const baseDir = path.join(__dirname, 'native/libmpv');
+
+  // In production (packaged app), extraResources are in process.resourcesPath
+  // In development, they're relative to the electron directory
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.resourcesPath;
+  const baseDir = isDevelopment
+    ? path.join(__dirname, 'native/libmpv')
+    : path.join(process.resourcesPath, 'native/libmpv');
 
   switch (platform) {
     case 'win32':
-      return path.join(baseDir, 'win', 'libmpv-2.dll');
+      return path.join(baseDir, 'win32', 'libmpv-2.dll');
     case 'darwin':
       return path.join(baseDir, 'darwin', 'libmpv.dylib');
     case 'linux':

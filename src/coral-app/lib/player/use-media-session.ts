@@ -69,6 +69,19 @@ export function useMediaSession({ activeTrack, isPlaying, progress, togglePlayPa
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
+    // Sync dummy audio element if it exists (used by mpv for MediaSession activation)
+    // The dummy audio must be synced with playback state for Windows SMTC to work correctly
+    const dummyAudio = document.querySelector('audio[data-mpv-dummy="true"]') as HTMLAudioElement;
+    if (dummyAudio) {
+      if (isPlaying) {
+        dummyAudio.play().catch(() => {
+          // Ignore playback errors (autoplay policy, etc.)
+        });
+      } else {
+        dummyAudio.pause();
+      }
+    }
+
     navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
   }, [isPlaying]);
 

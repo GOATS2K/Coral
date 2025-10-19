@@ -7,7 +7,15 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
+    "!electron/native/**/*",
     "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "electron/native",
+      "to": "native",
+      "filter": ["**/*"]
+    }
   ],
   "extraMetadata": {
     "main": "electron/main.js"

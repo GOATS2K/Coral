@@ -8,6 +8,10 @@ node_modules/
 dist/
 web-build/
 
+# Electron
+dist-electron/
+electron/native/
+
 # Native
 *.orig.*
 *.jks

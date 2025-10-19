@@ -4,10 +4,19 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { setupMpvIpcHandlers, cleanupMpvIpcHandlers } = require('./mpv-ipc-main');
 
+// Set AppUserModelId for Windows to show app name in media controls
+// In development: use process.execPath so Windows recognizes the electron.exe
+// In production: use custom appId from electron-builder.json
+const isDevelopment = process.env.NODE_ENV === 'development';
+if (isDevelopment) {
+  app.setAppUserModelId(process.execPath);
+} else {
+  app.setAppUserModelId('com.goats2k.coral');
+}
+
 // Keep a global reference of window to prevent garbage collection
 let mainWindow = null;
 
-const isDevelopment = process.env.NODE_ENV === 'development';
 const webUrl = isDevelopment ? 'http://localhost:8081' : `file://${path.join(__dirname, '../dist/index.html')}`;
 
 // Default backend URL (should match Config.ts default)

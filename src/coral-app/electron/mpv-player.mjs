@@ -522,7 +522,7 @@ export class MpvPlayer extends EventEmitter {
     try {
       const pauseStr = mpv_get_property_string(this.handle, 'pause');
       return pauseStr === 'no';
-    } catch (error) {
+    } catch (_error) {
       return this.isPlaying;
     }
   }
@@ -533,7 +533,7 @@ export class MpvPlayer extends EventEmitter {
     try {
       const timeStr = mpv_get_property_string(this.handle, 'time-pos');
       return parseFloat(timeStr) || 0;
-    } catch (error) {
+    } catch (_error) {
       return 0;
     }
   }
@@ -544,7 +544,7 @@ export class MpvPlayer extends EventEmitter {
     try {
       const durationStr = mpv_get_property_string(this.handle, 'duration');
       return parseFloat(durationStr) || 0;
-    } catch (error) {
+    } catch (_error) {
       // Fallback to track metadata
       const currentTrack = this.tracks[this.currentTrackIndex];
       return currentTrack?.durationInSeconds || 0;
@@ -558,7 +558,7 @@ export class MpvPlayer extends EventEmitter {
       const volumeStr = mpv_get_property_string(this.handle, 'volume');
       // mpv volume is 0-100, we use 0-1
       return parseFloat(volumeStr) / 100 || 1;
-    } catch (error) {
+    } catch (_error) {
       return 1;
     }
   }
@@ -573,7 +573,7 @@ export class MpvPlayer extends EventEmitter {
       if (!isNaN(pos) && pos >= 0) {
         return pos;
       }
-    } catch (error) {
+    } catch (_error) {
 
     }
 

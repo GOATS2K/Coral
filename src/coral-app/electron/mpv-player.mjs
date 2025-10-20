@@ -297,6 +297,33 @@ export class MpvPlayer extends EventEmitter {
     }
 
     try {
+      // Get actual playlist count from mpv to verify sync
+      const playlistCountStr = mpv_get_property_string(this.handle, 'playlist-count');
+      const actualPlaylistCount = parseInt(playlistCountStr, 10) || 0;
+
+      if (this.tracks.length !== actualPlaylistCount) {
+        console.warn(`[MpvPlayer] WARNING: this.tracks is out of sync with mpv playlist! this.tracks=${this.tracks.length}, mpv=${actualPlaylistCount}. Rebuilding playlist...`);
+
+        // Out of sync - rebuild entire playlist instead of reconciling
+        mpv_command_string(this.handle, 'playlist-clear');
+
+        for (let i = 0; i < tracks.length; i++) {
+          const track = tracks[i];
+          const url = `${this.baseUrl}/api/library/tracks/${track.id}/original`;
+          const mode = i === 0 ? 'replace' : 'append';
+          mpv_command_string(this.handle, `loadfile "${url}" ${mode}`);
+        }
+
+        this.tracks = tracks;
+
+        if (currentIndex !== this.currentTrackIndex) {
+          this.currentTrackIndex = currentIndex;
+          mpv_set_property_string(this.handle, 'playlist-pos', currentIndex.toString());
+        }
+
+        return;
+      }
+
       const mpvState = [...this.tracks];
       const newTracks = tracks;
 
@@ -317,14 +344,25 @@ export class MpvPlayer extends EventEmitter {
           mpvState.splice(targetPos, 0, movedTrack);
         } else if (currentPos === -1) {
           const url = `${this.baseUrl}/api/library/tracks/${desiredTrack.id}/original`;
+
+          // Get playlist count BEFORE appending to know where it will go
+          const beforeAppendCountStr = mpv_get_property_string(this.handle, 'playlist-count');
+          const beforeAppendCount = parseInt(beforeAppendCountStr, 10) || 0;
+
           mpv_command_string(this.handle, `loadfile "${url}" append`);
 
-          mpvState.push(desiredTrack);
+          // The track was appended to mpv's ACTUAL playlist end, not mpvState's end
+          const actualAppendedPos = beforeAppendCount;
 
-          const appendedPos = mpvState.length - 1;
-          if (appendedPos !== targetPos) {
-            mpv_command_string(this.handle, `playlist-move ${appendedPos} ${targetPos}`);
-            const [movedTrack] = mpvState.splice(appendedPos, 1);
+          // Update shadow state to match
+          mpvState.push(desiredTrack);
+          const shadowAppendedPos = mpvState.length - 1;
+
+          if (actualAppendedPos !== targetPos) {
+            mpv_command_string(this.handle, `playlist-move ${actualAppendedPos} ${targetPos}`);
+
+            // Also update shadow state to reflect the move
+            const [movedTrack] = mpvState.splice(shadowAppendedPos, 1);
             mpvState.splice(targetPos, 0, movedTrack);
           }
         }
@@ -344,8 +382,6 @@ export class MpvPlayer extends EventEmitter {
         this.currentTrackIndex = currentIndex;
         mpv_set_property_string(this.handle, 'playlist-pos', currentIndex.toString());
       }
-
-      console.info(`[MpvPlayer] Queue synced: ${newTracks.length} tracks`);
     } catch (error) {
       console.error('[MpvPlayer] Failed to update queue:', error);
       throw error;

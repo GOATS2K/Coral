@@ -1,6 +1,7 @@
 using Coral.Api;
 using Coral.Api.Workers;
 using Coral.Configuration;
+using Coral.Configuration.Models;
 using Coral.Database;
 using Coral.Dto.Profiles;
 using Microsoft.AspNetCore.StaticFiles;
@@ -9,10 +10,14 @@ using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
-// before anything else, make sure our config directories are created
+// Load Coral configuration
+var coralConfig = ApplicationConfiguration.GetConfiguration();
 ApplicationConfiguration.EnsureDirectoriesAreCreated();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure IOptions for ServerConfiguration
+builder.Services.Configure<ServerConfiguration>(coralConfig);
 
 // Add services to the container.
 builder.Services.AddDbContext<CoralDbContext>();

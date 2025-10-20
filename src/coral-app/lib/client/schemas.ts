@@ -115,6 +115,17 @@ export type AudioMetadata = {
   codec: string;
 };
 
+export type DatabaseSettings = {
+  host: string;
+  /**
+   * @format int32
+   */
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+};
+
 export type GenreDto = {
   /**
    * @format uuid
@@ -158,6 +169,10 @@ export type MusicLibraryDto = {
 
 export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus" | "Remux";
 
+export type PathSettings = {
+  data: string;
+};
+
 export type SearchResult = {
   artists: SimpleArtistDto[];
   albums: SimpleAlbumDto[];
@@ -178,6 +193,15 @@ export type SearchResultPaginatedCustomData = {
    */
   resultCount: number;
   data: SearchResult;
+};
+
+export type ServerConfiguration = {
+  /**
+   * @format int32
+   */
+  configVersion: number;
+  database: DatabaseSettings;
+  paths: PathSettings;
 };
 
 export type SimpleAlbumDto = {

@@ -59,6 +59,66 @@
         }
       }
     },
+    "/api/Configuration": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "operationId": "GetConfiguration",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerConfiguration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Configuration"
+        ],
+        "operationId": "UpdateConfiguration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerConfiguration"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerConfiguration"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerConfiguration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Library/scan": {
       "post": {
         "tags": [
@@ -1332,6 +1392,35 @@
         },
         "additionalProperties": false
       },
+      "DatabaseSettings": {
+        "required": [
+          "database",
+          "host",
+          "password",
+          "port",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "GenreDto": {
         "required": [
           "id",
@@ -1420,6 +1509,18 @@
         ],
         "type": "string"
       },
+      "PathSettings": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "SearchResult": {
         "required": [
           "albums",
@@ -1472,6 +1573,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/SearchResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServerConfiguration": {
+        "required": [
+          "configVersion",
+          "database",
+          "paths"
+        ],
+        "type": "object",
+        "properties": {
+          "configVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DatabaseSettings"
+          },
+          "paths": {
+            "$ref": "#/components/schemas/PathSettings"
           }
         },
         "additionalProperties": false

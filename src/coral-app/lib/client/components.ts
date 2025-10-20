@@ -193,6 +193,147 @@ export const useArtworkFromId = <TData = undefined,>(
   });
 };
 
+export type GetConfigurationError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetConfigurationVariables = Context["fetcherOptions"];
+
+export const fetchGetConfiguration = (
+  variables: GetConfigurationVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.ServerConfiguration,
+    GetConfigurationError,
+    undefined,
+    {},
+    {},
+    {}
+  >({ url: "/api/Configuration", method: "get", ...variables, signal });
+
+export function getConfigurationQuery(variables: GetConfigurationVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.ServerConfiguration>;
+};
+
+export function getConfigurationQuery(
+  variables: GetConfigurationVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.ServerConfiguration>)
+    | reactQuery.SkipToken;
+};
+
+export function getConfigurationQuery(
+  variables: GetConfigurationVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Configuration",
+      operationId: "getConfiguration",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetConfiguration(variables, signal),
+  };
+}
+
+export const useSuspenseGetConfiguration = <
+  TData = Schemas.ServerConfiguration,
+>(
+  variables: GetConfigurationVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ServerConfiguration,
+      GetConfigurationError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.ServerConfiguration,
+    GetConfigurationError,
+    TData
+  >({
+    ...getConfigurationQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetConfiguration = <TData = Schemas.ServerConfiguration,>(
+  variables: GetConfigurationVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ServerConfiguration,
+      GetConfigurationError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.ServerConfiguration,
+    GetConfigurationError,
+    TData
+  >({
+    ...getConfigurationQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type UpdateConfigurationError = Fetcher.ErrorWrapper<undefined>;
+
+export type UpdateConfigurationVariables = {
+  body: Schemas.ServerConfiguration;
+} & Context["fetcherOptions"];
+
+export const fetchUpdateConfiguration = (
+  variables: UpdateConfigurationVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    UpdateConfigurationError,
+    Schemas.ServerConfiguration,
+    {},
+    {},
+    {}
+  >({ url: "/api/Configuration", method: "put", ...variables, signal });
+
+export const useUpdateConfiguration = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      UpdateConfigurationError,
+      UpdateConfigurationVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    UpdateConfigurationError,
+    UpdateConfigurationVariables
+  >({
+    mutationFn: (variables: UpdateConfigurationVariables) =>
+      fetchUpdateConfiguration(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
 export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
 
 export type RunIndexerVariables = Context["fetcherOptions"];
@@ -2563,6 +2704,11 @@ export type QueryOperation =
       path: "/api/Artwork/{artworkId}";
       operationId: "artworkFromId";
       variables: ArtworkFromIdVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Configuration";
+      operationId: "getConfiguration";
+      variables: GetConfigurationVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/search";

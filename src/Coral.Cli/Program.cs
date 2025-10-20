@@ -1,15 +1,26 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using Coral.Configuration;
 
-using Coral.Services;
-using Coral.Services.Helpers;
+Console.WriteLine("Coral Configuration Test - Testing live-reload");
+Console.WriteLine("Edit the config.json file while this is running to see changes take effect.");
+Console.WriteLine($"Config file location: {ApplicationConfiguration.ConfigurationFile}");
+Console.WriteLine("Press Ctrl+C to exit.\n");
 
-var trackPath = @"C:\Music\Codec Test";
-var files = Directory.EnumerateFiles(trackPath, "*.*", SearchOption.AllDirectories);
-foreach (var file in files)
+while (true)
 {
-    Console.WriteLine(file);
-    var t = await Ffprobe.GetAudioMetadata(file);
-    var bitrate = int.Parse(t!.Format.BitRate!) / 1000;
-    var audioStream = t.Streams.First(a => a.CodecType == "audio");
-    Console.WriteLine($"{bitrate} kbps / {audioStream.CodecName} / {audioStream.CodecLongName}\n");
+    Console.WriteLine($"\n=== Configuration Check at {DateTime.Now:HH:mm:ss} ===");
+
+    Console.WriteLine("Database Settings:");
+    Console.WriteLine($"  Host: {ApplicationConfiguration.GetConfiguration()["Database:Host"]}");
+    Console.WriteLine($"  Port: {ApplicationConfiguration.GetConfiguration()["Database:Port"]}");
+    Console.WriteLine($"  Database: {ApplicationConfiguration.GetConfiguration()["Database:Database"]}");
+    Console.WriteLine($"  Connection String: {ApplicationConfiguration.DatabaseConnectionString}");
+
+    Console.WriteLine("Path Settings:");
+    Console.WriteLine($"  Data: {ApplicationConfiguration.AppData}");
+    Console.WriteLine($"  Thumbnails: {ApplicationConfiguration.Thumbnails}");
+    Console.WriteLine($"  HLS: {ApplicationConfiguration.HLSDirectory}");
+
+    Console.WriteLine("Waiting 2 seconds before next refresh...");
+
+    await Task.Delay(2000);
 }

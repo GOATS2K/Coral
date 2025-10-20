@@ -31,14 +31,11 @@ public class CoralDbContext : DbContext
     {
     }
 
-    // The following configures EF to create a Sqlite database file in the
-    // special "local" folder for your platform.
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         if (!options.IsConfigured)
         {
-            // TODO: Make this user-configurable
-            options.UseNpgsql("Host=localhost;Username=postgres;Password=admin;Database=coral2", opt => opt.UseVector());
+            options.UseNpgsql(ApplicationConfiguration.DatabaseConnectionString, opt => opt.UseVector());
         }
     }
     

@@ -72,6 +72,7 @@ function AlbumHeaderCard({ album, gradientColors, gradientLocations, backgroundC
     ? album.tracks
         .flatMap(track => track.genre || [])
         .map(genre => genre.name)
+        .filter(name => name && name.trim().length > 0)
         .filter((name, index, array) => array.indexOf(name) === index)
         .slice(0, 3)
     : [];

@@ -272,7 +272,7 @@ export default function Screen() {
             tracks={data.tracks}
             album={data}
             showTrackNumber={true}
-            className="px-4 sm:px-6 pb-20 mt-6"
+            className="px-4 sm:px-6 pb-20 mt-1.5"
             initializer={{ source: PlaybackSource.Album, id: data.id }}
           />
         </ScrollView>

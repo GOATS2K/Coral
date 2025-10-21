@@ -71,7 +71,7 @@ function TrackRow({
     <TrackMenu key={track.id} track={track} isActive={isActive}>
       <Pressable
         onPress={() => onPlay(index)}
-        className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30"
+        className="flex-row py-2 items-center gap-2 web:cursor-pointer active:bg-muted/50 web:hover:bg-muted/30 -mx-4 px-4 sm:-mx-6 sm:px-6"
       >
         {showCoverArt ? (
           <View className="w-10 h-10 rounded overflow-hidden">

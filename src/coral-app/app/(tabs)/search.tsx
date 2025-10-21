@@ -41,10 +41,10 @@ export default function SearchScreen() {
       isUpdatingUrlRef.current = false;
       return;
     }
-    const urlQuery = params.q as string || '';
+    const urlQuery = (params.q as string) || lastSearchQuery;
     setQuery(urlQuery);
     setDebouncedQuery(urlQuery);
-  }, [params.q]);
+  }, [params.q, lastSearchQuery]);
 
   // Debounce search query
   useEffect(() => {

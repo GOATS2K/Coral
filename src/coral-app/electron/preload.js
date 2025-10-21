@@ -33,4 +33,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners(channel);
     },
   },
+  // Theme management for window controls
+  setTheme: (theme) => {
+    ipcRenderer.send('theme:changed', theme);
+  },
 });

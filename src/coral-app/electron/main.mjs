@@ -1,5 +1,5 @@
 /* eslint-env node */
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import serve from 'electron-serve';
@@ -29,7 +29,8 @@ const DEFAULT_BACKEND_URL = 'http://localhost:5031';
 const loadURL = serve({ directory: 'dist' });
 
 async function createMainWindow() {
-  mainWindow = new BrowserWindow({
+  // Base window options
+  const windowOptions = {
     width: 1200,
     height: 800,
     webPreferences: {
@@ -38,8 +39,31 @@ async function createMainWindow() {
       nodeIntegration: false
     },
     title: 'Coral',
-    backgroundColor: '#000000'
-  });
+    backgroundColor: '#000000',
+    autoHideMenuBar: true // Hide menu bar (File/Edit/View), accessible via Alt
+  };
+
+  // Platform-specific title bar configuration
+  if (process.platform === 'darwin') {
+    // macOS: hiddenInset keeps traffic light buttons visible
+    windowOptions.titleBarStyle = 'hiddenInset';
+  } else if (process.platform === 'win32') {
+    // Windows: Use titleBarOverlay to get native controls overlaid on custom UI
+    // Note: titleBarOverlay requires keeping the frame, not using frame: false
+    windowOptions.titleBarStyle = 'hidden';
+    // Use system theme for initial colors (will be updated by renderer on load)
+    const systemIsDark = nativeTheme.shouldUseDarkColors;
+    const initialColors = getTitleBarColors(systemIsDark ? 'dark' : 'light');
+    windowOptions.titleBarOverlay = {
+      ...initialColors,
+      height: 32 // Slightly shorter than TitleBar (33px) so border shows below controls
+    };
+  } else {
+    // Linux: hidden title bar (behavior varies by desktop environment)
+    windowOptions.titleBarStyle = 'hidden';
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   // Load the app: development uses Metro, production uses electron-serve
   if (isDevelopment) {
@@ -58,12 +82,39 @@ async function createMainWindow() {
   }
 }
 
+// Helper function to get theme colors for titleBarOverlay
+// Colors match theme.ts THEME configuration
+function getTitleBarColors(theme) {
+  if (theme === 'dark') {
+    return {
+      color: '#0a0a0a', // Dark background - hsl(0 0% 3.9%)
+      symbolColor: '#fafafa' // Light foreground - hsl(0 0% 98%)
+    };
+  } else {
+    return {
+      color: '#ffffff', // Light background - hsl(0 0% 100%)
+      symbolColor: '#0a0a0a' // Dark foreground - hsl(0 0% 3.9%)
+    };
+  }
+}
+
 // App lifecycle
 app.whenReady().then(async () => {
   await createMainWindow();
 
   // Initialize MPV IPC handlers
   setupMpvIpcHandlers(DEFAULT_BACKEND_URL);
+
+  // IPC handler for theme changes (Windows titleBarOverlay)
+  ipcMain.on('theme:changed', (event, theme) => {
+    if (process.platform === 'win32' && mainWindow) {
+      const colors = getTitleBarColors(theme);
+      mainWindow.setTitleBarOverlay({
+        ...colors,
+        height: 32 // Slightly shorter than TitleBar (33px) so border shows below controls
+      });
+    }
+  });
 
   app.on('activate', () => {
     // On macOS, re-create window when dock icon is clicked and no windows open

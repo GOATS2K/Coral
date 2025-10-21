@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/toast-container';
 import { Sidebar } from '@/components/ui/sidebar';
 import { Config } from '@/lib/config';
 import OnboardingScreen from './onboarding';
+import { TitleBar } from '@/components/title-bar';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -118,6 +119,16 @@ function AppContent() {
     setColorScheme(resolvedTheme);
   }, [resolvedTheme, setColorScheme]);
 
+  // Update Electron window controls theme (Windows titleBarOverlay)
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const electronAPI = (window as any).electronAPI;
+      if (electronAPI?.setTheme) {
+        electronAPI.setTheme(resolvedTheme);
+      }
+    }
+  }, [resolvedTheme]);
+
   // Show loading screen while checking configuration
   if (!isReady) {
     return (
@@ -149,6 +160,7 @@ function AppContent() {
               {Platform.OS === 'web' ? (
                 // Web: Sidebar + Content layout with player bar at bottom
                 <View className="flex-1 flex-col">
+                  <TitleBar />
                   <View className="flex-1 flex-row">
                     <Sidebar />
                     <View className="flex-1">

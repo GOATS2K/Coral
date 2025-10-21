@@ -38,7 +38,7 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
   return (
     <View className="mb-8">
       <Text variant="h4" className="mb-4 px-4">{title}</Text>
-      <View className="flex-row flex-wrap px-4">
+      <View className="flex-row flex-wrap px-2">
         {albums.map((album) => (
           <UniversalAlbumCard key={album.id} album={album} />
         ))}
@@ -52,7 +52,7 @@ function AlbumSection({ title, albums, showDivider, dividerLabel, albumsAfterDiv
               <Text className="text-muted-foreground text-sm mt-2">{dividerLabel}</Text>
             )}
           </View>
-          <View className="flex-row flex-wrap px-4">
+          <View className="flex-row flex-wrap px-2">
             {albumsAfterDivider.map((album) => (
               <UniversalAlbumCard key={album.id} album={album} />
             ))}
@@ -153,7 +153,7 @@ export default function ArtistScreen() {
             <AlbumSection
               title="EPs"
               albums={miniAlbums}
-              showDivider={eps.length > 0}
+              showDivider={eps.length > 0 && miniAlbums.length > 0}
               albumsAfterDivider={eps}
             />
             <AlbumSection title="Singles" albums={singles} />

@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { usePlayerActions } from '@/lib/player/use-player';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { AlbumMenuItems } from '@/components/menu-items/album-menu-items';
+import { PlaybackSource } from '@/lib/state';
 
 interface AlbumCardProps {
   album: SimpleAlbumDto;
@@ -46,12 +47,15 @@ export function AlbumCard({ album }: AlbumCardProps) {
     try {
       const tracks = await fetchAlbumTracks();
       if (tracks && tracks.length > 0) {
-        play(tracks, 0);
+        play(tracks, 0, {
+          source: PlaybackSource.Album,
+          id: album.id,
+        });
       }
     } catch (error) {
       console.error('Error playing album:', error);
     }
-  }, [fetchAlbumTracks, play]);
+  }, [fetchAlbumTracks, play, album.id]);
 
   return (
     <Link href={`/albums/${album.id}`} asChild>

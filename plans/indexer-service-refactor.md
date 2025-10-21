@@ -900,7 +900,9 @@ public record AlbumKey(
 }
 ```
 
-**Schema Change Required:**
+**Schema Changes Required:**
+
+**1. Album Model - Full Release Date Support**
 
 ```csharp
 // Album.cs - Update model
@@ -921,6 +923,42 @@ public class Album : BaseTable
 3. Update indexer to populate `ReleaseDate` from `atlTrack.Date`
 4. Keep `ReleaseYear` as computed property for backwards compatibility (calculate from `ReleaseDate.Year`)
 5. Eventually deprecate `ReleaseYear` column
+
+**2. Track Model - Preserve Original Artist String**
+
+```csharp
+// Track.cs - Update model
+public class Track : BaseTable
+{
+    // ... existing properties ...
+
+    public List<ArtistWithRole> Artists { get; set; } = null!; // Parsed artists
+
+    public string? OriginalArtistString { get; set; } // NEW: Original tag value (e.g., "Daft Punk, Pharrell Williams")
+}
+```
+
+**Why preserve the original artist string?**
+
+The indexer parses and splits artist strings (e.g., `"A & B, C"` → `["A", "B", "C"]`) to create normalized artist entities. However, the **original tag format is often better for UI display**:
+
+- Original: `"Daft Punk feat. Pharrell Williams"` ✅ Readable, preserves intent
+- Reconstructed: `"Daft Punk, Pharrell Williams"` ❌ Lost formatting nuance
+
+**Frontend benefits:**
+```typescript
+// Use original string when available, fall back to reconstructed
+const displayArtist = track.originalArtistString ??
+                      track.artists.filter(a => a.role === 'Main')
+                                   .map(a => a.name)
+                                   .join(', ');
+```
+
+**Migration strategy:**
+1. Add `OriginalArtistString` column (nullable)
+2. Existing tracks: Leave null (or populate from `Artists` collection if desired)
+3. Update indexer to populate from `atlTrack.Artist` before parsing
+4. Frontend prefers `OriginalArtistString` when available
 
 **Benefits:**
 - Accurate deduplication (same album, different release dates)
@@ -1116,6 +1154,7 @@ private Track AddOrUpdateTrack(
         // Update existing track metadata
         existing.Album = album;
         existing.Artists = artists;
+        existing.OriginalArtistString = atlTrack.Artist; // Preserve original tag value
         existing.Title = !string.IsNullOrEmpty(atlTrack.Title)
             ? atlTrack.Title
             : Path.GetFileName(atlTrack.Path);
@@ -1143,6 +1182,7 @@ private Track AddOrUpdateTrack(
         Id = Guid.NewGuid(),
         Album = album,
         Artists = artists,
+        OriginalArtistString = atlTrack.Artist, // Preserve original tag value
         Title = !string.IsNullOrEmpty(atlTrack.Title)
             ? atlTrack.Title
             : Path.GetFileName(atlTrack.Path),

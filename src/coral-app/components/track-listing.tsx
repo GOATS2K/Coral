@@ -60,8 +60,10 @@ function TrackRow({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatTrackNumber = (track: SimpleTrackDto) => {
-    const num = track.trackNumber.toString().padStart(2, '0');
+  const formatTrackNumber = (track: SimpleTrackDto, index: number) => {
+    // Use track number if available, otherwise fall back to index + 1
+    const trackNum = track.trackNumber || (index + 1);
+    const num = trackNum.toString().padStart(2, '0');
     return hasMultipleDiscs ? `${track.discNumber || 1}.${num}` : num;
   };
 
@@ -77,7 +79,7 @@ function TrackRow({
           </View>
         ) : showTrackNumber ? (
           <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-            {formatTrackNumber(track)}
+            {formatTrackNumber(track, index)}
           </Text>
         ) : null}
         <View className="flex-1 min-w-0">

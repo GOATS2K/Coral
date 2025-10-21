@@ -91,7 +91,7 @@ export function Sidebar() {
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
 
   return (
-    <View className={cn('bg-card border-r border-border pt-6 pb-4 flex-col h-full', collapsed ? 'w-20 px-2' : 'w-64 px-4')}>
+    <View className={cn('bg-card border-r border-border pt-6 pb-4 flex-col h-full', collapsed ? 'w-20 px-2' : 'w-56 px-4')}>
       <View className={cn("mb-6 flex-row items-center", collapsed ? "justify-center" : "")}>
         {collapsed ? (
           <Tooltip>

@@ -15,6 +15,7 @@ A brand new take on a self-hosted music streaming platform.
 - .NET 9
 - Bun
 - make
+- ffmpeg
 
 Install frontend dependencies.
 

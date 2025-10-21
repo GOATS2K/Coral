@@ -48,6 +48,13 @@ $ cd src/coral-app
 $ bun run web
 ```
 
+It is recommended to use Firefox as Chrome is much stricter with what codecs it supports when using MSE.
+
+### Electron
+First, download [libmpv](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/) for x86_64 and extract the files to `src/coral-app/electron/native/libmpv/win`
+
+Then, in `src/coral-app` run `bun run electron:dev` and refresh the page with `CTRL+SHIFT+R` to kick off the web server.
+
 ### iOS
 
 Download XCode from the app store.

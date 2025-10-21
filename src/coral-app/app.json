@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "coral-app",
-    "slug": "coral-app",
+    "name": "Coral",
+    "slug": "Coral",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "coral-app",
+    "scheme": "coral",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

@@ -169,19 +169,27 @@ namespace Coral.Services
             if (trackEmbeddings == null)
                 return [];
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            // Set HNSW ef_search parameter to allow exploring more candidates during search
+            // Default is 40, which limits results. Setting to 100 allows full result set.
+            await _context.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.ef_search = 100");
+
             var recs = await _context.TrackEmbeddings
                 .Select(t => new {Entity = t, Distance = t.Embedding.CosineDistance(trackEmbeddings.Embedding)} )
                 .OrderBy(t => t.Distance)
                 .Take(100)
                 .ToListAsync();
-            
+
+            await transaction.CommitAsync();
+
             var trackIds = recs
-                .Where(t => t.Distance < 0.3)
+                .Where(t => t.Distance < 0.2)
                 // tracks with identical distance are duplicates
                 .DistinctBy(t => t.Distance)
                 .Select(t => t.Entity.TrackId)
                 .Distinct().ToList();
-            
+
             var tracks = await _context.Tracks
                 .Where(t => trackIds.Contains(t.Id))
                 .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
@@ -194,9 +202,9 @@ namespace Coral.Services
                 if (targetTrack == null)
                     continue;
                 orderedTracks.Add(targetTrack);
-            } 
-            
-            
+            }
+
+
             return orderedTracks.DistinctBy(t => t.Title).ToList();
         }
     }

@@ -275,6 +275,11 @@ export function PlayerQueue({
             ref={scrollContainerRef}
             onDragOver={handleContainerDragOver}
             className="overflow-y-auto max-h-80"
+            style={{
+              scrollbarWidth: 'none', // Firefox
+              msOverflowStyle: 'none', // IE and Edge
+              WebkitOverflowScrolling: 'touch',
+            }}
           >
             {queue.map((track, index) => {
               const isCurrentTrack = index === currentIndex;

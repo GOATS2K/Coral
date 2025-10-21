@@ -291,6 +291,15 @@ export class MpvPlayer extends EventEmitter {
     }
   }
 
+  /**
+   * Get current playlist count from mpv
+   */
+  getPlaylistCount() {
+    if (!this.handle) return 0;
+    const countStr = mpv_get_property_string(this.handle, 'playlist-count');
+    return parseInt(countStr, 10) || 0;
+  }
+
   updateQueue(tracks, currentIndex) {
     if (!this.handle) {
       throw new Error('[MpvPlayer] Not initialized');
@@ -298,8 +307,7 @@ export class MpvPlayer extends EventEmitter {
 
     try {
       // Get actual playlist count from mpv to verify sync
-      const playlistCountStr = mpv_get_property_string(this.handle, 'playlist-count');
-      const actualPlaylistCount = parseInt(playlistCountStr, 10) || 0;
+      const actualPlaylistCount = this.getPlaylistCount();
 
       if (this.tracks.length !== actualPlaylistCount) {
         console.warn(`[MpvPlayer] WARNING: this.tracks is out of sync with mpv playlist! this.tracks=${this.tracks.length}, mpv=${actualPlaylistCount}. Rebuilding playlist...`);

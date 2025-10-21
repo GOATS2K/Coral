@@ -244,8 +244,12 @@ export const playerStateAtom = atom(
       }
 
       case 'addMultipleToQueue': {
-        const newQueue = [...state.queue, ...action.tracks];
-        const newOriginalQueue = state.originalQueue ? [...state.originalQueue, ...action.tracks] : null;
+        // Filter out tracks that are already in the queue (prevents duplicates)
+        const existingTrackIds = new Set(state.queue.map(t => t.id));
+        const uniqueNewTracks = action.tracks.filter(t => !existingTrackIds.has(t.id));
+
+        const newQueue = [...state.queue, ...uniqueNewTracks];
+        const newOriginalQueue = state.originalQueue ? [...state.originalQueue, ...uniqueNewTracks] : null;
         const freshCurrentTrack = newQueue[state.currentIndex];
 
         set(playerStateAtom, {

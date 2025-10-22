@@ -225,41 +225,327 @@ public class ScanChannel : IScanChannel
 }
 ```
 
-### 2. Refactor IndexerService - Pure Transformation
+### 2. Create ScanReporter - Progress Aggregation
+
+**Purpose:** Centralized progress tracking for indexing and embedding operations
+
+**Problem:** IndexerService and EmbeddingWorker need to coordinate progress reporting:
+- IndexerService indexes tracks (fast)
+- EmbeddingWorker generates embeddings (slow, parallelized)
+- Both need to report progress for the same scan job
+- EmbeddingWorker processes 10 tracks in parallel → needs thread-safe counters
+
+**Solution:** Singleton state store with thread-safe counters
+
+```csharp
+public interface IScanReporter
+{
+    void RegisterScan(string? requestId, int expectedTracks, MusicLibrary library);
+    void ReportTrackIndexed(string? requestId);
+    void ReportEmbeddingCompleted(string? requestId);
+    ScanJobProgress? GetProgress(string? requestId);
+    List<ScanJobProgress> GetActiveScans();  // NEW: For frontend reconnection
+    void CompleteScan(string? requestId);
+}
+
+public class ScanReporter : IScanReporter
+{
+    private readonly ConcurrentDictionary<string, ScanJobProgress> _scanJobs = new();
+    private readonly IHubContext<IndexerHub> _hubContext;
+    private readonly ILogger<ScanReporter> _logger;
+
+    public ScanReporter(IHubContext<IndexerHub> hubContext, ILogger<ScanReporter> logger)
+    {
+        _hubContext = hubContext;
+        _logger = logger;
+    }
+
+    public void RegisterScan(string? requestId, int expectedTracks, MusicLibrary library)
+    {
+        if (requestId == null) return;
+
+        _scanJobs[requestId] = new ScanJobProgress
+        {
+            RequestId = requestId,
+            LibraryId = library.Id,
+            LibraryPath = library.LibraryPath,
+            ExpectedTracks = expectedTracks,
+            TracksIndexed = 0,
+            EmbeddingsCompleted = 0,
+            StartedAt = DateTime.UtcNow
+        };
+
+        _logger.LogInformation("Registered scan job {RequestId} for library {Library} ({ExpectedTracks} tracks)",
+            requestId, library.LibraryPath, expectedTracks);
+    }
+
+    public List<ScanJobProgress> GetActiveScans()
+    {
+        return _scanJobs.Values.ToList();
+    }
+
+    public void ReportTrackIndexed(string? requestId)
+    {
+        if (requestId == null) return;
+
+        if (_scanJobs.TryGetValue(requestId, out var progress))
+        {
+            var indexed = Interlocked.Increment(ref progress.TracksIndexed);
+            _ = EmitProgress(requestId, progress);
+        }
+    }
+
+    public void ReportEmbeddingCompleted(string? requestId)
+    {
+        if (requestId == null) return;
+
+        if (_scanJobs.TryGetValue(requestId, out var progress))
+        {
+            var completed = Interlocked.Increment(ref progress.EmbeddingsCompleted);
+            _ = EmitProgress(requestId, progress);
+
+            // Auto-cleanup when complete
+            if (completed == progress.ExpectedTracks)
+            {
+                _logger.LogInformation("Scan {RequestId} completed: {Tracks} tracks, took {Duration}s",
+                    requestId, completed, (DateTime.UtcNow - progress.StartedAt).TotalSeconds);
+                _scanJobs.TryRemove(requestId, out _);
+            }
+        }
+    }
+
+    public void CompleteScan(string? requestId)
+    {
+        // Called when indexing phase completes (before embeddings)
+        // Allows UI to show "Indexing complete, generating embeddings..."
+    }
+
+    private async Task EmitProgress(string requestId, ScanJobProgress progress)
+    {
+        try
+        {
+            await _hubContext.Clients.All.SendAsync("ScanProgress", new
+            {
+                RequestId = requestId,
+                TracksIndexed = progress.TracksIndexed,
+                EmbeddingsCompleted = progress.EmbeddingsCompleted,
+                TotalTracks = progress.ExpectedTracks,
+                IndexingProgress = progress.ExpectedTracks > 0
+                    ? (int)((double)progress.TracksIndexed / progress.ExpectedTracks * 100)
+                    : 0,
+                EmbeddingProgress = progress.ExpectedTracks > 0
+                    ? (int)((double)progress.EmbeddingsCompleted / progress.ExpectedTracks * 100)
+                    : 0
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to emit scan progress via SignalR");
+        }
+    }
+
+    public ScanJobProgress? GetProgress(string? requestId)
+    {
+        return requestId != null && _scanJobs.TryGetValue(requestId, out var progress)
+            ? progress
+            : null;
+    }
+}
+
+public class ScanJobProgress
+{
+    public string RequestId { get; set; } = null!;
+    public Guid LibraryId { get; set; }
+    public string LibraryPath { get; set; } = null!;
+    public int ExpectedTracks;
+    public int TracksIndexed;
+    public int EmbeddingsCompleted;
+    public DateTime StartedAt;
+}
+```
+
+**Key Design Decisions:**
+
+1. **Thread Safety:** Uses `Interlocked.Increment` for counters modified by parallel EmbeddingWorker
+2. **Auto-cleanup:** Removes completed scan jobs automatically when embeddings finish
+3. **SignalR Integration:** Emits progress updates immediately when state changes
+4. **Nullable RequestId:** FileSystemWatcher scans don't need progress reporting (requestId = null)
+
+### 3. Create DirectoryScanner - File System Scanning
+
+**Purpose:** Separate file system scanning from indexing logic for better testability and reusability
+
+**Responsibilities:**
+- Scan library directory for audio files
+- Filter by file extensions
+- Handle incremental scan logic (modified/new files only)
+- Group files by directory
+- Memory-efficient streaming (no loading entire library into memory)
+
+```csharp
+public interface IDirectoryScanner
+{
+    Task<int> CountFiles(MusicLibrary library, bool incremental = false);
+    IAsyncEnumerable<DirectoryGroup> ScanLibrary(MusicLibrary library, bool incremental = false);
+    Task DeleteMissingTracks(MusicLibrary library);
+}
+
+public record DirectoryGroup(
+    string DirectoryPath,
+    List<FileInfo> Files
+);
+
+public class DirectoryScanner : IDirectoryScanner
+{
+    private readonly CoralDbContext _context;
+    private readonly IArtworkService _artworkService;
+    private readonly ILogger<DirectoryScanner> _logger;
+
+    private static readonly string[] AudioFileFormats =
+        [".flac", ".mp3", ".mp2", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"];
+
+    public DirectoryScanner(
+        CoralDbContext context,
+        IArtworkService artworkService,
+        ILogger<DirectoryScanner> logger)
+    {
+        _context = context;
+        _artworkService = artworkService;
+        _logger = logger;
+    }
+
+    public Task<int> CountFiles(MusicLibrary library, bool incremental = false)
+    {
+        var contentDirectory = new DirectoryInfo(library.LibraryPath);
+
+        if (!incremental)
+        {
+            // Count all audio files in library
+            return Task.FromResult(contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Count(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName))));
+        }
+        else
+        {
+            // Count only new/modified files since last scan
+            return Task.FromResult(contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Count(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) &&
+                           (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan)));
+        }
+    }
+
+    public async IAsyncEnumerable<DirectoryGroup> ScanLibrary(
+        MusicLibrary library,
+        bool incremental = false)
+    {
+        var contentDirectory = new DirectoryInfo(library.LibraryPath);
+
+        if (!incremental)
+        {
+            _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
+            var existingFiles = await _context.AudioFiles
+                .Where(f => f.Library.Id == library.Id)
+                .ToListAsync();
+
+            // Group files by directory, yield each group
+            var groups = contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) &&
+                           !existingFiles.Any(ef => ef.FilePath == f.FullName &&
+                                                    f.LastWriteTimeUtc == ef.UpdatedAt))
+                .GroupBy(f => f.Directory?.FullName ?? "");
+
+            foreach (var group in groups)
+            {
+                yield return new DirectoryGroup(group.Key, group.ToList());
+            }
+        }
+        else
+        {
+            _logger.LogInformation("Starting incremental scan of directory: {Directory}", library.LibraryPath);
+
+            var groups = contentDirectory
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) &&
+                           (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan))
+                .GroupBy(f => f.Directory?.FullName ?? "");
+
+            foreach (var group in groups)
+            {
+                yield return new DirectoryGroup(group.Key, group.ToList());
+            }
+        }
+    }
+
+    public async Task DeleteMissingTracks(MusicLibrary library)
+    {
+        var indexedFiles = _context.AudioFiles
+            .Where(f => f.Library.Id == library.Id)
+            .AsEnumerable();
+        var missingFiles = indexedFiles.Where(f => !Path.Exists(f.FilePath)).Select(f => f.Id);
+
+        var deletedTracks = await _context.Tracks
+            .Where(f => missingFiles.Contains(f.AudioFile.Id))
+            .ExecuteDeleteAsync();
+
+        if (deletedTracks > 0)
+            _logger.LogInformation("Deleted {Tracks} missing tracks", deletedTracks);
+
+        await DeleteEmptyArtistsAndAlbums();
+        await _context.AudioFiles.Where(f => missingFiles.Contains(f.Id)).ExecuteDeleteAsync();
+    }
+
+    private async Task DeleteEmptyArtistsAndAlbums()
+    {
+        var deletedArtists = await _context.ArtistsWithRoles
+            .Where(a => !a.Tracks.Any())
+            .ExecuteDeleteAsync();
+        if (deletedArtists > 0)
+            _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
+
+        var emptyAlbumsArtwork = await _context.Albums
+            .Include(t => t.Artworks)
+            .Where(a => !a.Tracks.Any())
+            .Select(a => a.Artworks)
+            .SelectMany(x => x)
+            .ToListAsync();
+
+        foreach (var artwork in emptyAlbumsArtwork)
+        {
+            await _artworkService.DeleteArtwork(artwork);
+        }
+
+        var deletedAlbums = await _context.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync();
+        if (deletedAlbums > 0)
+            _logger.LogInformation("Deleted {DeletedAlbums} albums with no tracks", deletedAlbums);
+    }
+}
+```
+
+**Benefits:**
+- **Single Responsibility:** Only handles file system operations
+- **Independently Testable:** Can test with mock file systems
+- **Reusable:** FileSystemWatcher can use this to detect changes
+- **Memory Efficient:** Streams directory groups, doesn't load entire library
+- **Clean Separation:** No database entity creation, just file enumeration
+
+### 4. Refactor IndexerService - Pure Indexing
+
+**Purpose:** Index audio files to database (no file system scanning)
 
 **New Signature:**
 
 ```csharp
 public interface IIndexerService
 {
-    // Returns indexed tracks instead of side-effecting
-    Task<ScanResult> ScanLibrary(MusicLibrary library, bool incremental = false, IProgress<ScanProgress>? progress = null);
-    Task<ScanResult> ScanDirectory(string directory, MusicLibrary library, IProgress<ScanProgress>? progress = null);
+    // Process a single directory group, stream indexed tracks
+    IAsyncEnumerable<Track> IndexDirectory(DirectoryGroup directoryGroup, MusicLibrary library);
 
     // File system event handlers (still needed)
     Task DeleteTrack(string filePath);
     Task HandleRename(string oldPath, string newPath);
 }
-
-public record ScanResult(
-    List<Track> IndexedTracks,
-    int DirectoriesScanned,
-    int FilesProcessed,
-    List<ScanError> Errors
-);
-
-public record ScanProgress(
-    string CurrentPath,
-    int DirectoriesScanned,
-    int FilesProcessed,
-    int TotalDirectories
-);
-
-public record ScanError(
-    string FilePath,
-    string ErrorMessage,
-    Exception? Exception = null
-);
 ```
 
 **Slim Dependencies:**
@@ -268,110 +554,121 @@ public record ScanError(
 public class IndexerService : IIndexerService
 {
     private readonly CoralDbContext _context;
+    private readonly ISearchService _searchService;  // KEPT - fast, synchronous keyword indexing
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
 
-    // Only 3 core dependencies!
+    // Only 4 core dependencies (removed: IMapper, MusicLibraryRegisteredEventEmitter, IEmbeddingChannel)
 
     public IndexerService(
         CoralDbContext context,
+        ISearchService searchService,
         IArtworkService artworkService,
         ILogger<IndexerService> logger)
     {
         _context = context;
+        _searchService = searchService;
         _artworkService = artworkService;
         _logger = logger;
     }
 
-    public async Task<ScanResult> ScanLibrary(
-        MusicLibrary library,
-        bool incremental = false,
-        IProgress<ScanProgress>? progress = null)
+    public async IAsyncEnumerable<Track> IndexDirectory(
+        DirectoryGroup directoryGroup,
+        MusicLibrary library)
     {
-        var indexedTracks = new List<Track>();
-        var errors = new List<ScanError>();
-        var directoriesScanned = 0;
-
-        library = await GetLibrary(library);
-        await DeleteMissingTracks(library);
-        var directoryGroups = await ScanMusicLibraryAsync(library, incremental);
-
-        foreach (var directoryGroup in directoryGroups)
-        {
-            try
-            {
-                var tracksInDirectory = directoryGroup.ToList();
-                if (!tracksInDirectory.Any()) continue;
-
-                var tracks = await IndexDirectory(tracksInDirectory, library);
-                indexedTracks.AddRange(tracks);
-
-                directoriesScanned++;
-
-                // Report progress
-                progress?.Report(new ScanProgress(
-                    CurrentPath: directoryGroup.Key ?? "",
-                    DirectoriesScanned: directoriesScanned,
-                    FilesProcessed: indexedTracks.Count,
-                    TotalDirectories: directoryGroups.Count()
-                ));
-
-                // Periodic change tracker clear
-                if (directoriesScanned % 25 == 0)
-                {
-                    _context.ChangeTracker.Clear();
-                    library = await GetLibrary(library);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to index directory {Directory}", directoryGroup.Key);
-                errors.Add(new ScanError(directoryGroup.Key ?? "", ex.Message, ex));
-            }
-        }
-
-        library.LastScan = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        return new ScanResult(indexedTracks, directoriesScanned, indexedTracks.Count, errors);
-    }
-
-    // IndexDirectory now returns List<Track> instead of void
-    private async Task<List<Track>> IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
-    {
-        var indexedTracks = new List<Track>();
-        var analyzedTracks = await ReadTracksInDirectory(tracksInDirectory);
+        var analyzedTracks = await ReadTracksInDirectory(directoryGroup.Files);
         bool folderIsAlbum = analyzedTracks.Select(x => x.Album).Distinct().Count() == 1;
 
         if (folderIsAlbum)
         {
-            indexedTracks = await IndexAlbum(analyzedTracks, library);
+            await foreach (var track in IndexAlbum(analyzedTracks, library))
+            {
+                yield return track;
+            }
         }
         else
         {
-            indexedTracks = await IndexSingleFiles(analyzedTracks, library);
+            await foreach (var track in IndexSingleFiles(analyzedTracks, library))
+            {
+                yield return track;
+            }
         }
-
-        return indexedTracks;
     }
 
-    // IndexAlbum/IndexSingleFiles/IndexFile return tracks
-    private async Task<List<Track>> IndexAlbum(List<ATL.Track> tracks, MusicLibrary library)
+    private async IAsyncEnumerable<Track> IndexAlbum(List<ATL.Track> tracks, MusicLibrary library)
     {
-        var indexedTracks = new List<Track>();
-        // ... existing logic ...
+        // Parse all artists
+        var artistForTracks = new Dictionary<ATL.Track, List<ArtistWithRole>>();
+        foreach (var track in tracks)
+        {
+            var artists = await ParseArtists(track.Artist, track.Title);
+            artistForTracks.Add(track, artists);
+        }
+
+        // Get or create album
+        var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
+        var albumType = AlbumTypeHelper.GetAlbumType(
+            distinctArtists.Count(a => a.Role == ArtistRole.Main),
+            tracks.Count());
+        var indexedAlbum = await GetAlbum(distinctArtists, tracks.First());
+        indexedAlbum.Type = albumType;
+
+        // Get or create genres
+        var distinctGenres = tracks.Where(t => t.Genre != null).Select(t => t.Genre).Distinct();
+        var createdGenres = new List<Genre>();
+        foreach (var genre in distinctGenres)
+        {
+            var indexedGenre = await GetGenre(genre);
+            createdGenres.Add(indexedGenre);
+        }
+
+        // Index each track
         foreach (var trackToIndex in tracks)
         {
-            var track = await IndexFile(artistForTracks[trackToIndex], indexedAlbum, targetGenre, trackToIndex, library);
-            indexedTracks.Add(track);
+            var targetGenre = createdGenres.FirstOrDefault(g => g.Name == trackToIndex.Genre);
+            var track = await IndexFile(
+                artistForTracks[trackToIndex],
+                indexedAlbum,
+                targetGenre,
+                trackToIndex,
+                library);
+
+            // Insert search keywords inline (fast, synchronous)
+            await _searchService.InsertKeywordsForTrack(track);
+
+            // Stream track to caller
+            yield return track;
         }
-        return indexedTracks;
     }
 
-    // Remove _embeddingChannel.GetWriter().WriteAsync(indexedTrack) from AddOrUpdateTrack
-    // Just return the track
+    private async IAsyncEnumerable<Track> IndexSingleFiles(List<ATL.Track> tracks, MusicLibrary library)
+    {
+        foreach (var atlTrack in tracks)
+        {
+            var artists = await ParseArtists(atlTrack.Artist, atlTrack.Title);
+            var indexedAlbum = await GetAlbum(artists, atlTrack);
+            var indexedGenre = await GetGenre(atlTrack.Genre);
+            var track = await IndexFile(artists, indexedAlbum, indexedGenre, atlTrack, library);
+
+            await _searchService.InsertKeywordsForTrack(track);
+            yield return track;
+        }
+    }
+
+    // ... existing helper methods (GetAlbum, GetGenre, GetArtist, etc.) ...
 }
 ```
+
+**What stays in IndexerService:**
+- `ISearchService` - search keyword indexing (fast, synchronous)
+- `IArtworkService` - artwork extraction/processing (inline with track)
+- `CoralDbContext` - database access for creating entities
+
+**What gets removed:**
+- `IEmbeddingChannel` - moved to ScanWorker
+- `IMapper` - moved to NewLibraryService (Phase 1)
+- `MusicLibraryRegisteredEventEmitter` - replaced by IScanChannel
+- File system scanning logic - moved to DirectoryScanner
 
 ### 3. Create LibraryService - Library Management
 
@@ -457,30 +754,60 @@ public class LibraryService : ILibraryService
 }
 ```
 
-### 4. Create ScanWorker - Orchestration Layer
+### 5. Update EmbeddingChannel - Include RequestId
 
-**Purpose:** Coordinate scanning, search indexing, embedding queue, and progress reporting
+**Purpose:** Tag tracks with scan job RequestId so EmbeddingWorker can report progress
+
+```csharp
+public interface IEmbeddingChannel
+{
+    ChannelWriter<EmbeddingJob> GetWriter();
+    ChannelReader<EmbeddingJob> GetReader();
+}
+
+public record EmbeddingJob(
+    Track Track,
+    string? RequestId = null  // Null for tracks not part of a scan job
+);
+
+public class EmbeddingChannel : IEmbeddingChannel
+{
+    private readonly Channel<EmbeddingJob> _channel;
+
+    public EmbeddingChannel()
+    {
+        _channel = Channel.CreateUnbounded<EmbeddingJob>();
+    }
+
+    public ChannelWriter<EmbeddingJob> GetWriter() => _channel.Writer;
+    public ChannelReader<EmbeddingJob> GetReader() => _channel.Reader;
+}
+```
+
+### 6. Create ScanWorker - Orchestration Layer
+
+**Purpose:** Coordinate scanning, embedding queue, and progress reporting
 
 ```csharp
 public class ScanWorker : BackgroundService
 {
     private readonly IScanChannel _scanChannel;
     private readonly IEmbeddingChannel _embeddingChannel;
+    private readonly IScanReporter _scanReporter;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IHubContext<IndexerHub> _hubContext;
     private readonly ILogger<ScanWorker> _logger;
 
     public ScanWorker(
         IScanChannel scanChannel,
         IEmbeddingChannel embeddingChannel,
+        IScanReporter scanReporter,
         IServiceScopeFactory scopeFactory,
-        IHubContext<IndexerHub> hubContext,
         ILogger<ScanWorker> logger)
     {
         _scanChannel = scanChannel;
         _embeddingChannel = embeddingChannel;
+        _scanReporter = scanReporter;
         _scopeFactory = scopeFactory;
-        _hubContext = hubContext;
         _logger = logger;
     }
 
@@ -497,7 +824,6 @@ public class ScanWorker : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process scan job for library {Library}", job.Library.LibraryPath);
-                await ReportProgress(job.RequestId, "Failed", 0, error: ex.Message);
             }
         }
 
@@ -507,102 +833,192 @@ public class ScanWorker : BackgroundService
     private async Task ProcessScan(ScanJob job, CancellationToken ct)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
+        var directoryScanner = scope.ServiceProvider.GetRequiredService<IDirectoryScanner>();
         var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
-        var searchService = scope.ServiceProvider.GetRequiredService<ISearchService>();
 
-        await ReportProgress(job.RequestId, "Started", 0);
+        // Step 1: Delete missing tracks
+        await directoryScanner.DeleteMissingTracks(job.Library);
 
-        // Create progress reporter that forwards to SignalR
-        var progress = new Progress<ScanProgress>(p =>
+        // Step 2: Count total files upfront
+        var totalFiles = await directoryScanner.CountFiles(job.Library, job.Incremental);
+
+        // Step 3: Register scan with expected track count
+        _scanReporter.RegisterScan(job.RequestId, totalFiles, job.Library);
+
+        var tracksIndexed = 0;
+        var directoriesScanned = 0;
+
+        // Step 4: Stream directory groups and process each one
+        await foreach (var directoryGroup in directoryScanner.ScanLibrary(job.Library, job.Incremental))
         {
-            var percentage = p.TotalDirectories > 0
-                ? (int)((double)p.DirectoriesScanned / p.TotalDirectories * 100)
-                : 0;
+            try
+            {
+                // Index this directory group, stream tracks
+                await foreach (var track in indexer.IndexDirectory(directoryGroup, job.Library))
+                {
+                    tracksIndexed++;
 
-            _ = ReportProgress(
-                job.RequestId,
-                $"Scanning {p.CurrentPath}",
-                percentage,
-                directoriesScanned: p.DirectoriesScanned,
-                filesProcessed: p.FilesProcessed
-            );
-        });
+                    // Report indexing progress
+                    _scanReporter.ReportTrackIndexed(job.RequestId);
 
-        // Run the scan with progress reporting
-        ScanResult result;
-        if (job.SpecificDirectory != null)
-        {
-            result = await indexer.ScanDirectory(job.SpecificDirectory, job.Library, progress);
+                    // Queue for embedding with requestId
+                    await _embeddingChannel.GetWriter().WriteAsync(
+                        new EmbeddingJob(track, job.RequestId), ct);
+                }
+
+                directoriesScanned++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to index directory {Directory}", directoryGroup.DirectoryPath);
+            }
+
+            // Periodic change tracker clear
+            if (directoriesScanned % 25 == 0)
+            {
+                await using var clearScope = _scopeFactory.CreateAsyncScope();
+                var context = clearScope.ServiceProvider.GetRequiredService<CoralDbContext>();
+                context.ChangeTracker.Clear();
+            }
         }
-        else
+
+        // Step 5: Update library last scan time
+        await using var finalScope = _scopeFactory.CreateAsyncScope();
+        var finalContext = finalScope.ServiceProvider.GetRequiredService<CoralDbContext>();
+        var library = await finalContext.MusicLibraries.FindAsync(job.Library.Id);
+        if (library != null)
         {
-            result = await indexer.ScanLibrary(job.Library, job.Incremental, progress);
+            library.LastScan = DateTime.UtcNow;
+            await finalContext.SaveChangesAsync(ct);
         }
-
-        // Post-process indexed tracks
-        await ReportProgress(job.RequestId, "Indexing search keywords", 90);
-
-        foreach (var track in result.IndexedTracks)
-        {
-            // Queue for search indexing
-            await searchService.InsertKeywordsForTrack(track);
-
-            // Queue for embedding generation
-            await _embeddingChannel.GetWriter().WriteAsync(track, ct);
-        }
-
-        // Report completion
-        await ReportProgress(
-            job.RequestId,
-            "Completed",
-            100,
-            directoriesScanned: result.DirectoriesScanned,
-            filesProcessed: result.FilesProcessed,
-            errors: result.Errors
-        );
 
         _logger.LogInformation(
-            "Scan completed for {Library}: {Directories} directories, {Files} files, {Errors} errors",
+            "Scan completed for {Library}: {Directories} directories, {Tracks} tracks indexed",
             job.Library.LibraryPath,
-            result.DirectoriesScanned,
-            result.FilesProcessed,
-            result.Errors.Count
-        );
+            directoriesScanned,
+            tracksIndexed);
+    }
+}
+```
+
+**Key changes:**
+- **Removed callback pattern** - Clean async streaming with `IAsyncEnumerable<Track>`
+- **Uses DirectoryScanner** - Separates file system scanning from indexing
+- **Counts files upfront** - Registers scan with accurate expected count
+- **Streams directory groups** - Memory efficient, processes one directory at a time
+- **Streams indexed tracks** - Each track immediately reported and queued for embeddings
+- **Clean orchestration** - DirectoryScanner → IndexerService → ScanReporter → EmbeddingChannel
+
+### 7. Update EmbeddingWorker - Report Progress
+
+**Purpose:** Report embedding completion to ScanReporter for progress tracking
+
+```csharp
+public class EmbeddingWorker : BackgroundService
+{
+    private readonly IEmbeddingChannel _channel;
+    private readonly IScanReporter _scanReporter;  // NEW
+    private readonly ILogger<EmbeddingWorker> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly InferenceService _inferenceService;
+    private readonly SemaphoreSlim _semaphore = new(10);
+
+    public EmbeddingWorker(
+        IEmbeddingChannel channel,
+        IScanReporter scanReporter,  // NEW
+        ILogger<EmbeddingWorker> logger,
+        IServiceScopeFactory scopeFactory,
+        InferenceService inferenceService)
+    {
+        _channel = channel;
+        _scanReporter = scanReporter;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _inferenceService = inferenceService;
     }
 
-    private async Task ReportProgress(
-        string? requestId,
-        string status,
-        int percentage,
-        int? directoriesScanned = null,
-        int? filesProcessed = null,
-        List<ScanError>? errors = null,
-        string? error = null)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (requestId == null) return;
+        _logger.LogInformation("Embedding worker started!");
 
+        await _inferenceService.EnsureModelExists();
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await foreach (var job in _channel.GetReader().ReadAllAsync(stoppingToken))
+            {
+                _ = Task.Run(async () => await GetEmbeddings(stoppingToken, job), stoppingToken);
+            }
+        }
+
+        _logger.LogWarning("Embedding worker stopped!");
+    }
+
+    private async Task GetEmbeddings(CancellationToken stoppingToken, EmbeddingJob job)
+    {
+        var sw = Stopwatch.StartNew();
+        var track = job.Track;
+
+        switch (track.DurationInSeconds)
+        {
+            case < 60:
+                _logger.LogWarning("Skipping embeddings for {FilePath}, track too short.", track.AudioFile.FilePath);
+                _scanReporter.ReportEmbeddingCompleted(job.RequestId);  // Still report completion
+                return;
+            case > 60 * 15:
+                _logger.LogWarning("Skipping embeddings for {FilePath}, track too long.", track.AudioFile.FilePath);
+                _scanReporter.ReportEmbeddingCompleted(job.RequestId);  // Still report completion
+                return;
+        }
+
+        await _semaphore.WaitAsync(stoppingToken);
         try
         {
-            await _hubContext.Clients.All.SendAsync("ScanProgress", new
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+
+            if (context.TrackEmbeddings.Any(a => a.TrackId == track.Id))
             {
-                RequestId = requestId,
-                Status = status,
-                Percentage = percentage,
-                DirectoriesScanned = directoriesScanned,
-                FilesProcessed = filesProcessed,
-                Errors = errors?.Select(e => new { e.FilePath, e.ErrorMessage }).ToList(),
-                Error = error
-            });
+                _scanReporter.ReportEmbeddingCompleted(job.RequestId);  // Already exists
+                return;
+            }
+
+            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
+            await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
+            {
+                CreatedAt = DateTime.UtcNow,
+                Embedding = new Vector(embeddings),
+                TrackId = track.Id
+            }, stoppingToken);
+            await context.SaveChangesAsync(stoppingToken);
+
+            // Report completion to ScanReporter (thread-safe with Interlocked.Increment)
+            _scanReporter.ReportEmbeddingCompleted(job.RequestId);
+
+            _logger.LogInformation("Stored embeddings for {FilePath} in {Time} seconds",
+                track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to report progress via SignalR");
+            _logger.LogError(ex, "Failed to get embeddings for track: {Path}", track.AudioFile.FilePath);
+            // Still report completion even on error to avoid stuck progress
+            _scanReporter.ReportEmbeddingCompleted(job.RequestId);
+        }
+        finally
+        {
+            _semaphore.Release();
         }
     }
 }
 ```
 
-### 5. Refactor FileSystemWatcher to FileSystemWorker
+**Key changes:**
+- Accept `EmbeddingJob` instead of `Track` from channel
+- Inject `IScanReporter` dependency
+- Call `ReportEmbeddingCompleted(job.RequestId)` after processing (success or failure)
+- Uses thread-safe `Interlocked.Increment` inside ScanReporter for parallel safety
+
+### 8. Refactor FileSystemWatcher to FileSystemWorker
 
 **Purpose:** Improve reliability and decouple from IndexerService
 
@@ -1956,6 +2372,208 @@ tests/
 - Full pipeline tests with real dependencies
 - Verify SignalR, channels, workers interact correctly
 - Run these in CI, not locally
+
+## Additional Indexing Improvements
+
+These fixes address current album classification issues that should be integrated into the refactored indexer:
+
+### 1. Fix Compilation Detection Logic
+
+**Problem:** Albums with a recurring main artist + different featured artists on each track are incorrectly marked as compilations.
+
+**Example scenario:**
+```
+Album: "Producer Showcase"
+Track 1: Producer A & Vocalist B (main artists)
+Track 2: Producer A & Vocalist C (main artists)
+Track 3: Producer A & Vocalist D (main artists)
+Track 4: Producer A & Vocalist E (main artists)
+Track 5: Producer A & Vocalist F (main artists)
+```
+
+**Current behavior (src/Coral.Services/IndexerService.cs:393-398):**
+```csharp
+var distinctArtists = artistForTracks.Values.SelectMany(a => a).DistinctBy(a => a.Artist.Id).ToList();
+
+var albumType = AlbumTypeHelper.GetAlbumType(
+    distinctArtists.Count(a => a.Role == ArtistRole.Main),
+    tracks.Count()
+);
+```
+
+This counts 6 distinct main artists (A, B, C, D, E, F), which exceeds the threshold of 4, triggering compilation detection.
+
+**Root cause:** The logic counts ALL distinct artists across the entire album, when it should detect if there's a *consistent* core artist across all tracks. The current approach doesn't distinguish between:
+- **True compilation:** Different artists on every track with no recurring pattern
+- **Featured album:** One main artist + rotating guests (common in hip-hop, electronic, etc.)
+
+**Proposed solution:**
+
+Update AlbumTypeHelper to check for artist consistency:
+
+```csharp
+public static class AlbumTypeHelper
+{
+    public static AlbumType GetAlbumType(int mainArtistCount, int trackCount, Dictionary<ATL.Track, List<ArtistWithRole>> trackArtists)
+    {
+        var maxTracksForSingle = 2;
+        var maxTracksForEP = 4;
+        var maxTracksForMiniAlbum = 9;
+
+        // Check if this is a compilation by analyzing artist distribution
+        if (IsCompilation(trackArtists))
+        {
+            return AlbumType.Compilation;
+        }
+
+        // ... existing track count logic ...
+    }
+
+    private static bool IsCompilation(Dictionary<ATL.Track, List<ArtistWithRole>> trackArtists)
+    {
+        // Get main artists for each track
+        var tracksWithMainArtists = trackArtists
+            .Select(kvp => kvp.Value.Where(a => a.Role == ArtistRole.Main).Select(a => a.Artist.Id).ToList())
+            .ToList();
+
+        // Check if there's at least one artist that appears on ALL tracks
+        var allArtists = tracksWithMainArtists.SelectMany(a => a).Distinct().ToList();
+        var hasRecurringArtist = allArtists.Any(artistId =>
+            tracksWithMainArtists.All(trackArtists => trackArtists.Contains(artistId))
+        );
+
+        if (hasRecurringArtist)
+        {
+            // There's a consistent artist - not a compilation
+            return false;
+        }
+
+        // No recurring artist AND more than 4 distinct artists = likely compilation
+        var totalDistinctArtists = allArtists.Count;
+        return totalDistinctArtists > 4;
+    }
+}
+```
+
+**Alternative (simpler) approach:**
+
+Check if any artist appears on > 50% of tracks:
+
+```csharp
+private static bool IsCompilation(Dictionary<ATL.Track, List<ArtistWithRole>> trackArtists)
+{
+    var trackCount = trackArtists.Count;
+    var mainArtistAppearances = new Dictionary<Guid, int>();
+
+    // Count appearances per artist
+    foreach (var (track, artists) in trackArtists)
+    {
+        foreach (var artist in artists.Where(a => a.Role == ArtistRole.Main))
+        {
+            mainArtistAppearances.TryGetValue(artist.Artist.Id, out var count);
+            mainArtistAppearances[artist.Artist.Id] = count + 1;
+        }
+    }
+
+    // If ANY artist appears on >50% of tracks, it's not a compilation
+    var maxAppearances = mainArtistAppearances.Values.Max();
+    if (maxAppearances > trackCount / 2)
+    {
+        return false;
+    }
+
+    // Otherwise, check distinct artist count
+    return mainArtistAppearances.Count > 4;
+}
+```
+
+**Recommendation:** Use the second approach (50% threshold). It's more flexible and handles edge cases like split artist albums where 2 artists alternate tracks.
+
+### 2. Album Type Override API
+
+**Problem:** Users cannot manually correct album types when automatic detection is wrong.
+
+**Proposed solution:**
+
+Add endpoint to LibraryController:
+
+```csharp
+[HttpPatch]
+[Route("albums/{albumId}/type")]
+public async Task<ActionResult> UpdateAlbumType(Guid albumId, [FromBody] UpdateAlbumTypeRequest request)
+{
+    try
+    {
+        await _libraryService.UpdateAlbumType(albumId, request.AlbumType);
+        return Ok();
+    }
+    catch (ArgumentException ex)
+    {
+        return NotFound(new { Message = ex.Message });
+    }
+}
+
+public record UpdateAlbumTypeRequest(AlbumType AlbumType);
+```
+
+Add service method to LibraryService:
+
+```csharp
+public async Task UpdateAlbumType(Guid albumId, AlbumType albumType)
+{
+    var album = await _context.Albums.FindAsync(albumId);
+    if (album == null)
+    {
+        throw new ArgumentException($"Album {albumId} not found.");
+    }
+
+    album.Type = albumType;
+    album.UpdatedAt = DateTime.UtcNow;
+    await _context.SaveChangesAsync();
+}
+```
+
+**Implementation notes:**
+- Add in Phase 4 (LibraryService creation)
+- Consider adding a "ManualOverride" flag to Album model to prevent re-indexing from overwriting user changes
+
+### 3. Various Artists Compilation Detection
+
+**Problem:** Albums with album artist "Various Artists" / "Various" / "VA" should be marked as compilations.
+
+**Proposed solution:**
+
+Check album artist tag before classification:
+
+```csharp
+private async Task IndexAlbum(List<ATL.Track> tracks, MusicLibrary library)
+{
+    var firstTrack = tracks.First();
+    var albumArtist = firstTrack.AlbumArtist ?? firstTrack.Artist;
+
+    // Check for Various Artists patterns
+    var variousArtistNames = new[] { "Various Artists", "Various Artist", "Various", "VA", "V.A.", "V/A" };
+    var isVariousArtists = variousArtistNames.Contains(albumArtist, StringComparer.OrdinalIgnoreCase);
+
+    // ... existing parsing logic ...
+
+    AlbumType albumType;
+    if (isVariousArtists)
+    {
+        albumType = AlbumType.Compilation;
+    }
+    else
+    {
+        albumType = AlbumTypeHelper.GetAlbumType(distinctArtists.Count(a => a.Role == ArtistRole.Main), tracks.Count(), artistForTracks);
+    }
+
+    indexedAlbum.Type = albumType;
+}
+```
+
+**Implementation notes:**
+- Implement in Phase 2 when refactoring IndexerService
+- Should this create an actual "Various Artists" artist entity, or just use it as a classification signal?
 
 ## Open Questions
 

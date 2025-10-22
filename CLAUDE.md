@@ -186,3 +186,4 @@ The backend uses custom operation IDs based on controller method names for clean
 - When analyzing libraries, clone the repository to a temporary directory and read the source code from there.
 - Use `console.info` instead of `console.log` for logging.
 - Prefer using bunx to npx.
+- Do not make assumptions about library behaviors, always verify your assumptions by reading its source code.

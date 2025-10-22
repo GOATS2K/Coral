@@ -4,6 +4,7 @@ using Coral.PluginBase;
 using Coral.PluginHost;
 using Coral.Services;
 using Coral.Services.ChannelWrappers;
+using Coral.Services.Indexer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Coral.Api
@@ -31,6 +32,15 @@ namespace Coral.Api
             services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton<IEmbeddingChannel, EmbeddingChannel>();
             services.AddSingleton<InferenceService>();
+
+            // Phase 1: New refactored services
+            services.AddSingleton<IScanChannel, ScanChannel>();
+            services.AddScoped<INewLibraryService, NewLibraryService>();
+
+            // Phase 2: Indexer refactored services
+            services.AddScoped<IDirectoryScanner, DirectoryScanner>();
+            services.AddScoped<INewIndexerService, NewIndexerService>();
+            services.AddSingleton<IScanReporter, ScanReporter>();
         }
     }
 }

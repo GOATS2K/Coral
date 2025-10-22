@@ -33,17 +33,18 @@ public class EmbeddingWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await foreach (var track in _channel.GetReader().ReadAllAsync(stoppingToken))
+            await foreach (var job in _channel.GetReader().ReadAllAsync(stoppingToken))
             {
-                _ = Task.Run(async () => await GetEmbeddings(stoppingToken, track), stoppingToken);
+                _ = Task.Run(async () => await GetEmbeddings(stoppingToken, job), stoppingToken);
             }
         }
 
         _logger.LogWarning("Embedding worker stopped!");
     }
 
-    private async Task GetEmbeddings(CancellationToken stoppingToken, Track track)
+    private async Task GetEmbeddings(CancellationToken stoppingToken, EmbeddingJob job)
     {
+        var track = job.Track;
         var sw = Stopwatch.StartNew();
         switch (track.DurationInSeconds)
         {
@@ -63,10 +64,11 @@ public class EmbeddingWorker : BackgroundService
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
             await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
-            
+            var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
+
             if (context.TrackEmbeddings.Any(a => a.TrackId == track.Id))
                 return;
-            
+
             var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
             await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
             {
@@ -77,6 +79,8 @@ public class EmbeddingWorker : BackgroundService
             await context.SaveChangesAsync(stoppingToken);
             _logger.LogInformation("Stored embeddings for track {FilePath} in {Time} seconds",
                 track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
+
+            await reporter.ReportEmbeddingCompleted(job.RequestId);
         }
         catch (Exception ex)
         {

@@ -463,6 +463,7 @@ public sealed class BulkInsertContext : IAsyncDisposable
     {
         [typeof(Guid)] = NpgsqlDbType.Uuid,
         [typeof(string)] = NpgsqlDbType.Text,
+        [typeof(string[])] = NpgsqlDbType.Array | NpgsqlDbType.Text,
         [typeof(int)] = NpgsqlDbType.Integer,
         [typeof(long)] = NpgsqlDbType.Bigint,
         [typeof(DateTime)] = NpgsqlDbType.TimestampTz,

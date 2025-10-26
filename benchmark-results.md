@@ -129,3 +129,69 @@ At the new rate of **24.33 tracks/sec**:
 - CPU utilization remains low, suggesting more room for improvement
 
 ---
+
+## Optimization 2 - Parallelized Artwork Processing
+
+**Date:** 2025-10-26
+
+### Changes Implemented
+
+1. **Parallel Image Processing** (`ArtworkService.ProcessArtworksParallel`)
+   - Uses bounded parallelism with `SemaphoreSlim` limited to `Environment.ProcessorCount`
+   - Processes multiple albums' images concurrently (thumbnails, color extraction)
+   - CPU-intensive operations now utilize all available cores
+   - Returns entity list without database operations
+
+2. **Integrated into Bulk Pipeline**
+   - Artwork processing moved **before** `SaveBulkChangesAsync`
+   - Artwork entities added to BulkContext sequentially (thread-safe)
+   - All entities (tracks, albums, artists, artworks) saved in one bulk operation
+   - Eliminated unnecessary album reload from database
+
+3. **BulkContext Array Support**
+   - Added `string[]` type mapping for `Artwork.Colors` property
+   - Uses `NpgsqlDbType.Array | NpgsqlDbType.Text` for proper PostgreSQL array handling
+
+### Results
+
+```
+Total time:       136.89 seconds (~2.3 minutes)
+Tracks indexed:   3,795
+Speed:            27.72 tracks/sec
+Avg per track:    36.07 ms
+```
+
+### Performance Improvement vs Previous
+
+| Metric | Previous | Current | Improvement |
+|--------|----------|---------|-------------|
+| **Total Time** | 155.95s | 136.89s | **-19.06s (12.2% faster)** |
+| **Tracks/Second** | 24.33 | 27.72 | **+3.39 tracks/sec (13.9% faster)** |
+| **Time per Track** | 41.09 ms | 36.07 ms | **-5.02 ms (12.2% faster)** |
+
+### Performance Improvement vs Baseline
+
+| Metric | Baseline | Current | Total Improvement |
+|--------|----------|---------|-------------------|
+| **Total Time** | 246.99s | 136.89s | **-110.1s (44.6% faster)** |
+| **Tracks/Second** | 15.37 | 27.72 | **+12.35 tracks/sec (80.4% faster)** |
+| **Time per Track** | 65.08 ms | 36.07 ms | **-29.01 ms (44.6% faster)** |
+
+**Overall speedup: 1.8x vs baseline**
+
+### Extrapolated Performance
+
+At the new rate of **27.72 tracks/sec**:
+- **7,000 tracks:**  ~4.2 minutes (vs. 7.6 minutes baseline, 44% faster)
+- **50,000 tracks:** ~30 minutes (vs. 54 minutes baseline, 44% faster)
+- **100,000 tracks:** ~1.0 hours (vs. 1.8 hours baseline, 44% faster)
+
+### Analysis
+
+- **1.8x cumulative speedup** from baseline through bulk operations and parallelization
+- Parallel image processing effectively utilizes CPU cores during artwork generation
+- Eliminated database reload overhead by using AlbumId directly
+- Artwork processing no longer sequential bottleneck
+- Further improvements possible in track indexing phase
+
+---

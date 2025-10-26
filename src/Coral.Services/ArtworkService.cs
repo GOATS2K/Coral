@@ -18,6 +18,7 @@ public interface IArtworkService
 {
     Task ProcessArtwork(Album album, string artworkPath);
     Task ProcessArtworksBulk(Dictionary<Album, string> albumsWithArtwork);
+    Task<List<Artwork>> ProcessArtworksParallel(Dictionary<Guid, string> albumArtworkPaths);
     Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
     Task<string?> GetArtworkPath(Guid artworkId);
     Task DeleteArtwork(Artwork artwork);
@@ -31,11 +32,13 @@ public class ArtworkService : IArtworkService
 {
     private readonly CoralDbContext _context;
     private readonly ILogger<ArtworkService> _logger;
+    private readonly SemaphoreSlim _semaphore;
 
     public ArtworkService(CoralDbContext context, ILogger<ArtworkService> logger)
     {
         _context = context;
         _logger = logger;
+        _semaphore = new SemaphoreSlim(Environment.ProcessorCount);
     }
 
     public async Task<string?> GetPathForOriginalAlbumArtwork(Guid albumId)
@@ -208,6 +211,105 @@ public class ArtworkService : IArtworkService
                 "Bulk artwork processing completed: {Artworks} artworks inserted",
                 artworksToInsert.Count);
         }
+    }
+
+    public async Task<List<Artwork>> ProcessArtworksParallel(Dictionary<Guid, string> albumArtworkPaths)
+    {
+        if (!albumArtworkPaths.Any())
+            return new List<Artwork>();
+
+        _logger.LogInformation("Starting parallel artwork processing for {AlbumCount} albums", albumArtworkPaths.Count);
+
+        var sizes = new Dictionary<ArtworkSize, Size>()
+        {
+            {ArtworkSize.Small, new Size(100, 100)},
+            {ArtworkSize.Medium, new Size(300, 300)}
+        };
+
+        // Use ConcurrentBag for thread-safe collection
+        var artworkResults = new System.Collections.Concurrent.ConcurrentBag<List<Artwork>>();
+
+        // Process albums in parallel with bounded parallelism
+        var processingTasks = albumArtworkPaths.Select(async kvp =>
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var albumId = kvp.Key;
+                var artworkPath = kvp.Value;
+                var albumArtworks = new List<Artwork>();
+
+                var guid = Guid.NewGuid();
+                var outputDir = Path.Join(ApplicationConfiguration.Thumbnails, guid.ToString());
+                Directory.CreateDirectory(outputDir);
+
+                _logger.LogDebug("Processing artwork for album {AlbumId}", albumId);
+
+                // Extract prominent colors once
+                var prominentColors = await GetProminentColorsForImage(artworkPath);
+
+                // Load original image to get dimensions
+                using var originalImage = await Image.LoadAsync(artworkPath);
+
+                // Create original artwork entity
+                albumArtworks.Add(new Artwork
+                {
+                    Id = Guid.NewGuid(),
+                    Path = artworkPath,
+                    Size = ArtworkSize.Original,
+                    Height = originalImage.Height,
+                    Width = originalImage.Width,
+                    Colors = prominentColors,
+                    AlbumId = albumId,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                // Process and create thumbnails
+                foreach (var (artworkSize, size) in sizes)
+                {
+                    using var imageToResize = await Image.LoadAsync(artworkPath);
+                    var outputFile = Path.Join(outputDir, $"{artworkSize.ToString()}.jpg");
+                    imageToResize.Mutate(i => i.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
+                    await imageToResize.SaveAsJpegAsync(outputFile);
+
+                    // Create thumbnail artwork entity
+                    albumArtworks.Add(new Artwork
+                    {
+                        Id = Guid.NewGuid(),
+                        Path = outputFile,
+                        Height = size.Height,
+                        Width = size.Width,
+                        Size = artworkSize,
+                        Colors = prominentColors,
+                        AlbumId = albumId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                artworkResults.Add(albumArtworks);
+                _logger.LogDebug("Processed artwork for album {AlbumId}", albumId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process artwork for album {AlbumId}", kvp.Key);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        });
+
+        // Wait for all parallel processing to complete
+        await Task.WhenAll(processingTasks);
+
+        // Flatten results
+        var allArtworks = artworkResults.SelectMany(a => a).ToList();
+
+        _logger.LogInformation(
+            "Parallel artwork processing completed: {Artworks} artworks created for {Albums} albums",
+            allArtworks.Count, albumArtworkPaths.Count);
+
+        return allArtworks;
     }
     
     // https://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx

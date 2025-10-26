@@ -83,7 +83,7 @@ public class IndexerService : IIndexerService
     #region Core Indexing Logic - Bulk Operations
 
     private readonly List<Track> _tracksForKeywordInsertion = new();
-    private readonly Dictionary<Album, string> _albumsForArtworkProcessing = new();
+    private readonly Dictionary<Guid, string> _albumsForArtworkProcessing = new();
 
     private async Task IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
     {
@@ -190,12 +190,12 @@ public class IndexerService : IIndexerService
         MusicLibrary library)
     {
         // Defer artwork processing until after bulk save completes
-        if (!_albumsForArtworkProcessing.ContainsKey(album))
+        if (!_albumsForArtworkProcessing.ContainsKey(album.Id))
         {
             var albumArtwork = await GetAlbumArtwork(atlTrack);
             if (albumArtwork != null)
             {
-                _albumsForArtworkProcessing[album] = albumArtwork;
+                _albumsForArtworkProcessing[album.Id] = albumArtwork;
             }
         }
 
@@ -530,29 +530,6 @@ public class IndexerService : IIndexerService
 
     #region Scanning and Cleanup Methods
 
-    private async Task ProcessArtworksBulkAsync(Dictionary<Album, string> albumsWithArtwork)
-    {
-        if (!albumsWithArtwork.Any()) return;
-
-        // Reload albums from database (now that bulk save completed)
-        var albumIds = albumsWithArtwork.Keys.Select(a => a.Id).ToList();
-        var reloadedAlbums = await _context.Albums
-            .Include(a => a.Artworks)
-            .Where(a => albumIds.Contains(a.Id))
-            .ToListAsync();
-
-        // Build dictionary mapping reloaded albums to their artwork paths
-        var reloadedAlbumsWithArtwork = new Dictionary<Album, string>();
-        foreach (var reloadedAlbum in reloadedAlbums)
-        {
-            var originalAlbum = albumsWithArtwork.Keys.First(a => a.Id == reloadedAlbum.Id);
-            var artworkPath = albumsWithArtwork[originalAlbum];
-            reloadedAlbumsWithArtwork[reloadedAlbum] = artworkPath;
-        }
-
-        // Process all artworks in bulk
-        await _artworkService.ProcessArtworksBulk(reloadedAlbumsWithArtwork);
-    }
 
     private async Task InsertKeywordsForTracksBulkAsync(List<Track> tracks)
     {
@@ -742,7 +719,20 @@ public class IndexerService : IIndexerService
         if (cancellationToken.IsCancellationRequested)
             return;
 
-        // Save all bulk operations at once
+        // Process artworks in parallel (CPU-intensive image operations)
+        _logger.LogInformation("Processing artworks for {AlbumCount} albums in parallel", _albumsForArtworkProcessing.Count);
+        var artworkEntities = await _artworkService.ProcessArtworksParallel(_albumsForArtworkProcessing);
+        _albumsForArtworkProcessing.Clear();
+
+        // Sequentially add artwork entities to BulkContext (thread-safe)
+        foreach (var artwork in artworkEntities)
+        {
+            await _context.Artworks.GetOrAddBulk(
+                a => new { a.AlbumId, a.Size, a.Path },
+                () => artwork);
+        }
+
+        // Save all bulk operations at once (tracks, albums, artists, artworks)
         var stats = await _context.SaveBulkChangesAsync(
             new BulkInsertOptions { Logger = _logger }, cancellationToken);
 
@@ -752,10 +742,6 @@ public class IndexerService : IIndexerService
             stats.TotalRelationshipsInserted,
             stats.TotalTime.TotalSeconds,
             stats.TotalEntitiesInserted / stats.TotalTime.TotalSeconds);
-
-        // Process artworks for albums using bulk method (now that bulk save completed and albums exist in DB)
-        await ProcessArtworksBulkAsync(_albumsForArtworkProcessing);
-        _albumsForArtworkProcessing.Clear();
 
         // Clear change tracker before keyword insertion to avoid stale entity conflicts
         _context.ChangeTracker.Clear();

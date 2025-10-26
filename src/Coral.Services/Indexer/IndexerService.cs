@@ -28,8 +28,6 @@ public class IndexerService : IIndexerService
     private readonly ISearchService _searchService;
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
-    private readonly MusicLibraryRegisteredEventEmitter _musicLibraryRegisteredEventEmitter;
-    private readonly IMapper _mapper;
     private readonly IEmbeddingChannel _embeddingChannel;
 
     private static readonly string[] AudioFileFormats =
@@ -42,16 +40,12 @@ public class IndexerService : IIndexerService
         ISearchService searchService,
         ILogger<IndexerService> logger,
         IArtworkService artworkService,
-        MusicLibraryRegisteredEventEmitter eventEmitter,
-        IMapper mapper,
         IEmbeddingChannel embeddingChannel)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
         _artworkService = artworkService;
-        _musicLibraryRegisteredEventEmitter = eventEmitter;
-        _mapper = mapper;
         _embeddingChannel = embeddingChannel;
     }
 
@@ -184,7 +178,7 @@ public class IndexerService : IIndexerService
 
         if (existingTrack != null)
         {
-            await UpdateTrackBulk(existingTrack, album, genre, atlTrack);
+            await UpdateTrackBulk(existingTrack, artists, album, genre, atlTrack);
         }
         else
         {
@@ -278,29 +272,87 @@ public class IndexerService : IIndexerService
 
     private async Task UpdateTrackBulk(
         Track existingTrack,
-        Album album,
-        Genre? genre,
+        List<ArtistWithRole> newArtists,
+        Album newAlbum,
+        Genre? newGenre,
         ATL.Track atlTrack)
     {
+        // Load existing relationships for comparison
+        await _context.Entry(existingTrack).Collection(t => t.Artists).LoadAsync();
+
+        // Check if artists changed by comparing IDs and roles
+        var existingArtistIds = existingTrack.Artists
+            .OrderBy(a => a.ArtistId)
+            .ThenBy(a => a.Role)
+            .Select(a => (a.ArtistId, a.Role))
+            .ToList();
+        var newArtistIds = newArtists
+            .OrderBy(a => a.ArtistId)
+            .ThenBy(a => a.Role)
+            .Select(a => (a.ArtistId, a.Role))
+            .ToList();
+        var artistsChanged = !existingArtistIds.SequenceEqual(newArtistIds);
+
+        // If album, genre, or artists changed, we need to persist the bulk cache first
+        // because the new entities might only exist in the bulk cache, not in the database
+        if (existingTrack.AlbumId != newAlbum.Id || existingTrack.GenreId != newGenre?.Id || artistsChanged)
+        {
+            await _context.SaveBulkChangesAsync();
+        }
+
         // Update existing audio file through EF Core (scalar properties only)
         var audioFile = existingTrack.AudioFile!;
         var currentFileInfo = new FileInfo(atlTrack.Path);
         audioFile.UpdatedAt = currentFileInfo.LastWriteTimeUtc;
         audioFile.FileSizeInBytes = currentFileInfo.Length;
-        // Note: AudioMetadata relationship not updated to avoid tracking conflicts
 
-        // Update existing track through EF Core (scalar properties only)
+        // Update existing track scalar properties
         existingTrack.Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path);
         existingTrack.Comment = atlTrack.Comment;
         existingTrack.DiscNumber = atlTrack.DiscNumber;
         existingTrack.TrackNumber = atlTrack.TrackNumber;
         existingTrack.DurationInSeconds = atlTrack.Duration;
         existingTrack.Isrc = atlTrack.ISRC;
-        // Note: Album, Genre, AudioFile navigation properties not updated to avoid tracking conflicts
-        // These relationships should remain stable across rescans
+
+        // Update album if changed
+        if (existingTrack.AlbumId != newAlbum.Id)
+        {
+            existingTrack.Album = newAlbum;
+            existingTrack.AlbumId = newAlbum.Id;
+            _logger.LogDebug("Track {TrackPath} album changed to {NewAlbum}",
+                atlTrack.Path, newAlbum.Name);
+        }
+
+        // Update genre if changed
+        if (existingTrack.GenreId != newGenre?.Id)
+        {
+            existingTrack.Genre = newGenre;
+            existingTrack.GenreId = newGenre?.Id;
+            _logger.LogDebug("Track {TrackPath} genre changed to {NewGenre}",
+                atlTrack.Path, newGenre?.Name ?? "(none)");
+        }
+
+        // Update artist relationships if changed
+        if (artistsChanged)
+        {
+            // Clear existing artist relationships (EF Core will handle the junction table)
+            existingTrack.Artists.Clear();
+
+            // Add new artist relationships
+            foreach (var artistWithRole in newArtists)
+            {
+                existingTrack.Artists.Add(artistWithRole);
+            }
+
+            _logger.LogDebug("Track {TrackPath} artists changed", atlTrack.Path);
+        }
 
         // Save updates immediately via EF Core (don't mix with bulk operations)
         await _context.SaveChangesAsync();
+
+        // Note: We don't call DeleteEmptyArtistsAndAlbums() here because:
+        // - If only one track changes, old entities might not be empty yet
+        // - Cleanup happens once at the end in FinalizeIndexing after all tracks are processed
 
         // Queue for embedding extraction (async operation)
         await _embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(existingTrack, null));
@@ -560,13 +612,24 @@ public class IndexerService : IIndexerService
 
     private async Task DeleteEmptyArtistsAndAlbums()
     {
-        var deletedArtists = await _context.ArtistsWithRoles
+        // Delete ArtistsWithRoles junction entries with no tracks
+        var deletedArtistRoles = await _context.ArtistsWithRoles
             .Where(a => !a.Tracks.Any())
+            .ExecuteDeleteAsync();
+
+        if (deletedArtistRoles > 0)
+        {
+            _logger.LogInformation("Deleted {DeletedArtistRoles} artist roles with no tracks", deletedArtistRoles);
+        }
+
+        // Delete Artists with no roles (orphaned after relationship cleanup)
+        var deletedArtists = await _context.Artists
+            .Where(a => !_context.ArtistsWithRoles.Any(awr => awr.ArtistId == a.Id))
             .ExecuteDeleteAsync();
 
         if (deletedArtists > 0)
         {
-            _logger.LogInformation("Deleted {DeletedArtists} artists with no tracks", deletedArtists);
+            _logger.LogInformation("Deleted {DeletedArtists} orphaned artists", deletedArtists);
         }
 
         var emptyAlbumsArtwork = await _context.Albums
@@ -710,6 +773,12 @@ public class IndexerService : IIndexerService
         // Insert keywords for all saved tracks using bulk method (now that navigation properties are populated)
         await InsertKeywordsForTracksBulkAsync(_tracksForKeywordInsertion);
         _tracksForKeywordInsertion.Clear();
+
+        // Clear change tracker before cleanup to ensure fresh queries
+        _context.ChangeTracker.Clear();
+
+        // Clean up orphaned albums and artists (from album/genre changes during rescans)
+        await DeleteEmptyArtistsAndAlbums();
 
         _logger.LogInformation("Finalized indexing for {Directory}", library.LibraryPath);
         library.LastScan = DateTime.UtcNow;

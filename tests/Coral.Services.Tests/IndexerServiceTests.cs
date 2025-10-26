@@ -36,8 +36,6 @@ public class IndexerServiceTests(DatabaseFixture fixture)
             searchService,
             Substitute.For<ILogger<IndexerService>>(),
             artworkService,
-            eventEmitter,
-            testDatabase.Mapper,
             embeddingChannel);
 
         var directoryScanner = new DirectoryScanner(
@@ -242,9 +240,14 @@ public class IndexerServiceTests(DatabaseFixture fixture)
 
         await ScanLibrary(services, library);
 
-        var indexedTrack = services.TestDatabase.Context.Tracks.Include(t => t.AudioFile)
+        var indexedTrack = services.TestDatabase.Context.Tracks
+            .Include(t => t.AudioFile)
+            .Include(t => t.Album)
             .FirstOrDefault(t => t.Title == "Gallileo" && t.AudioFile.Library.Id == library.Id);
         Assert.NotNull(indexedTrack);
+
+        var originalAlbumName = indexedTrack.Album.Name;
+        var originalTrackId = indexedTrack.Id;
 
         var track = new ATL.Track(indexedTrack.AudioFile.FilePath);
         track.Title = "Modified";
@@ -254,9 +257,132 @@ public class IndexerServiceTests(DatabaseFixture fixture)
 
         var updatedTrack =
             await services.TestDatabase.Context.Tracks.FirstOrDefaultAsync(t =>
-                t.Title == "Modified" && t.Album.Name == indexedTrack.Album.Name);
+                t.Title == "Modified" && t.Album.Name == originalAlbumName);
         Assert.NotNull(updatedTrack);
-        Assert.Equal(indexedTrack.Id, updatedTrack.Id);
+        Assert.Equal(originalTrackId, updatedTrack.Id);
+    }
+
+    [Fact]
+    public async Task ScanLibrary_ModifyAlbumAndGenreTagsBeforeRescan_PicksUpChanges()
+    {
+        var services = CreateServices();
+        var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
+        var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
+        CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)), recursive: true);
+
+        var library = new MusicLibrary
+        {
+            LibraryPath = testFolder.FullName,
+            LastScan = DateTime.UtcNow,
+            AudioFiles = new List<AudioFile>()
+        };
+        services.TestDatabase.Context.MusicLibraries.Add(library);
+        await services.TestDatabase.Context.SaveChangesAsync();
+
+        await ScanLibrary(services, library);
+
+        var indexedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.AudioFile)
+            .Include(t => t.Album)
+            .Include(t => t.Genre)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(indexedTracks);
+
+        var originalAlbumName = indexedTracks.First().Album.Name;
+
+        // Modify ALL tracks in the album - only then should the old album be deleted
+        foreach (var track in indexedTracks)
+        {
+            var atlTrack = new ATL.Track(track.AudioFile.FilePath);
+            atlTrack.Album = "Modified Album Name";
+            atlTrack.Genre = "Modified Genre";
+            await atlTrack.SaveAsync();
+        }
+
+        await ScanLibrary(services, library);
+
+        services.TestDatabase.Context.ChangeTracker.Clear();
+
+        var updatedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.Album)
+            .Include(t => t.Genre)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(updatedTracks);
+
+        // All tracks should now have the modified album and genre
+        Assert.All(updatedTracks, track =>
+        {
+            Assert.Equal("Modified Album Name", track.Album.Name);
+            Assert.Equal("Modified Genre", track.Genre?.Name);
+        });
+
+        // Old album should be deleted since all tracks moved to new album
+        var oldAlbum = await services.TestDatabase.Context.Albums
+            .FirstOrDefaultAsync(a => a.Name == originalAlbumName);
+        Assert.Null(oldAlbum);
+    }
+
+    [Fact]
+    public async Task ScanLibrary_ModifyArtistTagsBeforeRescan_PicksUpChanges()
+    {
+        var services = CreateServices();
+        var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
+        var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
+        CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)), recursive: true);
+
+        var library = new MusicLibrary
+        {
+            LibraryPath = testFolder.FullName,
+            LastScan = DateTime.UtcNow,
+            AudioFiles = new List<AudioFile>()
+        };
+        services.TestDatabase.Context.MusicLibraries.Add(library);
+        await services.TestDatabase.Context.SaveChangesAsync();
+
+        await ScanLibrary(services, library);
+
+        var indexedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.AudioFile)
+            .Include(t => t.Artists)
+            .ThenInclude(a => a.Artist)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(indexedTracks);
+
+        var originalArtistName = indexedTracks.First().Artists.First().Artist.Name;
+
+        // Modify ALL tracks' artist tags
+        foreach (var track in indexedTracks)
+        {
+            var atlTrack = new ATL.Track(track.AudioFile.FilePath);
+            atlTrack.Artist = "Modified Artist Name";
+            await atlTrack.SaveAsync();
+        }
+
+        await ScanLibrary(services, library);
+
+        services.TestDatabase.Context.ChangeTracker.Clear();
+
+        var updatedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.Artists)
+            .ThenInclude(a => a.Artist)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(updatedTracks);
+
+        // All tracks should now have the modified artist
+        Assert.All(updatedTracks, track =>
+        {
+            Assert.Single(track.Artists);
+            Assert.Equal("Modified Artist Name", track.Artists.First().Artist.Name);
+        });
+
+        // Old artist should be deleted since all tracks moved to new artist
+        var oldArtist = await services.TestDatabase.Context.Artists
+            .FirstOrDefaultAsync(a => a.Name == originalArtistName);
+        Assert.Null(oldArtist);
     }
 
     [Fact]

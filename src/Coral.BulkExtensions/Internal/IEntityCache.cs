@@ -6,4 +6,5 @@ namespace Coral.BulkExtensions.Internal;
 internal interface IEntityCache
 {
     System.Collections.IList GetNewEntitiesUntyped();
+    void MarkAllAsExisting();
 }

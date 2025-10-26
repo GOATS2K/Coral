@@ -288,6 +288,9 @@ public sealed class BulkInsertContext : IAsyncDisposable
 
         stats.EntityInsertionTime = entitySw.Elapsed;
 
+        // Mark all inserted entities as no longer new (important for retainCache scenarios)
+        MarkEntitiesAsSaved();
+
         // Phase 3: Bulk insert junction table records
         var relationshipSw = System.Diagnostics.Stopwatch.StartNew();
         await BulkInsertRelationshipsAsync(stats, ct);
@@ -550,6 +553,18 @@ public sealed class BulkInsertContext : IAsyncDisposable
                     new Npgsql.NpgsqlParameter("@rightIds", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = rightIds }
                 },
                 ct);
+        }
+    }
+
+    /// <summary>
+    /// Marks all entities that were inserted as no longer new.
+    /// This is important for retainCache scenarios where the cache persists across saves.
+    /// </summary>
+    private void MarkEntitiesAsSaved()
+    {
+        foreach (var cache in _entityCaches.Values.Cast<IEntityCache>())
+        {
+            cache.MarkAllAsExisting();
         }
     }
 

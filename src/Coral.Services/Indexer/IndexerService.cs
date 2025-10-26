@@ -82,7 +82,7 @@ public class IndexerService : IIndexerService
 
     #region Core Indexing Logic - Bulk Operations
 
-    private readonly List<Track> _tracksForKeywordInsertion = new();
+    private readonly Dictionary<Track, string> _tracksForKeywordInsertion = new();
     private readonly Dictionary<Guid, string> _albumsForArtworkProcessing = new();
 
     private async Task IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
@@ -257,8 +257,9 @@ public class IndexerService : IIndexerService
             _context.AddRelationshipBulk(track, artistWithRole);
         }
 
-        // Defer keyword insertion until after SaveBulkChangesAsync (needs Artists navigation property populated)
-        _tracksForKeywordInsertion.Add(track);
+        // Defer keyword insertion until after SaveBulkChangesAsync
+        // Build keyword string manually since navigation properties aren't populated yet
+        _tracksForKeywordInsertion[track] = BuildKeywordString(artists, album, track.Title);
 
         _logger.LogDebug("Created new track: {TrackPath}", atlTrack.Path);
     }
@@ -347,6 +348,18 @@ public class IndexerService : IIndexerService
         // - If only one track changes, old entities might not be empty yet
         // - Cleanup happens once at the end in FinalizeIndexing after all tracks are processed
 
+        // Insert keywords immediately for updated track (non-bulk, single track)
+        // Reload track with all navigation properties needed by InsertKeywordsForTrack
+        var reloadedTrack = await _context.Tracks
+            .Include(t => t.Artists)
+            .ThenInclude(a => a.Artist)
+            .Include(t => t.Album)
+            .ThenInclude(a => a.Label)
+            .Include(t => t.Keywords)
+            .FirstAsync(t => t.Id == existingTrack.Id);
+
+        await _searchService.InsertKeywordsForTrack(reloadedTrack);
+
         _logger.LogDebug("Updated existing track: {TrackPath}", atlTrack.Path);
     }
 
@@ -401,6 +414,13 @@ public class IndexerService : IIndexerService
                     Role = role,
                     CreatedAt = DateTime.UtcNow
                 });
+
+            // Ensure Artist navigation property is always set (important for keyword string generation)
+            // GetOrAddBulk might return an existing entity from DB without navigation properties loaded
+            if (artistWithRole.Artist == null)
+            {
+                artistWithRole.Artist = artist;
+            }
 
             artistsWithRoles.Add(artistWithRole);
         }
@@ -530,24 +550,25 @@ public class IndexerService : IIndexerService
 
     #region Scanning and Cleanup Methods
 
-
-    private async Task InsertKeywordsForTracksBulkAsync(List<Track> tracks)
+    private static string BuildKeywordString(IEnumerable<ArtistWithRole> artists, Album album, string trackTitle)
     {
-        if (!tracks.Any()) return;
+        var artistString = string.Join(", ", artists.Select(a => a.Artist.Name));
+        var releaseYear = album.ReleaseYear != null ? $"({album.ReleaseYear})" : "";
+        var label = album.Label != null ? $"({album.Label.Name} - {album.CatalogNumber})" : "";
+        return $"{artistString} - {trackTitle} - {album.Name} {releaseYear} {label}";
+    }
 
-        // Reload tracks with navigation properties populated
-        var trackIds = tracks.Select(t => t.Id).ToList();
-        var reloadedTracks = await _context.Tracks
-            .Include(t => t.Artists)
-            .ThenInclude(a => a.Artist)
-            .Include(t => t.Album)
-            .ThenInclude(a => a.Label)
-            .Include(t => t.Keywords)
-            .Where(t => trackIds.Contains(t.Id))
-            .ToListAsync();
+    private async Task InsertKeywordsForTracksBulkAsync(Dictionary<Track, string> trackKeywordStrings)
+    {
+        if (!trackKeywordStrings.Any()) return;
+
+        // Note: Keyword strings are pre-computed during CreateTrackBulk
+        // when navigation properties are still available. This avoids reloading 50k+ tracks
+        // with all their navigation properties just to generate keyword strings.
+        // Updates use InsertKeywordsForTrack (non-bulk) directly in UpdateTrackBulk.
 
         // Insert keywords for all tracks in bulk
-        await _searchService.InsertKeywordsForTracksBulk(reloadedTracks);
+        await _searchService.InsertKeywordsForTracksBulk(trackKeywordStrings);
     }
 
     private async Task DeleteMissingTracks(MusicLibrary library)
@@ -700,10 +721,10 @@ public class IndexerService : IIndexerService
             await IndexDirectory(filesInDirectory, library);
 
             // Yield only the NEW tracks added by this directory
-            var newTracksCount = _tracksForKeywordInsertion.Count - tracksBeforeIndexing;
-            for (int i = 0; i < newTracksCount; i++)
+            var newTracks = _tracksForKeywordInsertion.Keys.Skip(tracksBeforeIndexing).ToList();
+            foreach (var track in newTracks)
             {
-                yield return _tracksForKeywordInsertion[tracksBeforeIndexing + i];
+                yield return track;
             }
 
             _logger.LogDebug("Completed indexing of {Path}", directoryGroup.DirectoryPath);
@@ -732,9 +753,11 @@ public class IndexerService : IIndexerService
                 () => artwork);
         }
 
-        // Save all bulk operations at once (tracks, albums, artists, artworks)
+        // Save all bulk operations but retain cache for keyword relationship registration
         var stats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions { Logger = _logger }, cancellationToken);
+            new BulkInsertOptions { Logger = _logger },
+            retainCache: true,
+            cancellationToken);
 
         _logger.LogInformation(
             "Bulk saved {Entities} entities and {Relationships} relationships in {Time:F2}s ({Rate:N0} entities/sec)",
@@ -746,9 +769,21 @@ public class IndexerService : IIndexerService
         // Clear change tracker before keyword insertion to avoid stale entity conflicts
         _context.ChangeTracker.Clear();
 
-        // Insert keywords for all saved tracks using bulk method (now that navigation properties are populated)
+        // Insert keywords and relationships into BulkContext (tracks still cached from previous save)
         await InsertKeywordsForTracksBulkAsync(_tracksForKeywordInsertion);
         _tracksForKeywordInsertion.Clear();
+
+        // Save keywords and relationships in one bulk operation, now clear cache
+        var keywordStats = await _context.SaveBulkChangesAsync(
+            new BulkInsertOptions { Logger = _logger },
+            retainCache: false,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Bulk saved {Entities} keyword entities and {Relationships} keyword relationships in {Time:F2}s",
+            keywordStats.TotalEntitiesInserted,
+            keywordStats.TotalRelationshipsInserted,
+            keywordStats.TotalTime.TotalSeconds);
 
         // Clear change tracker before cleanup to ensure fresh queries
         _context.ChangeTracker.Clear();

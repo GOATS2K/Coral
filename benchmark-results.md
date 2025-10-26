@@ -195,3 +195,70 @@ At the new rate of **27.72 tracks/sec**:
 - Further improvements possible in track indexing phase
 
 ---
+
+## Optimization 3 - BulkContext for Track-Keyword Relationships
+
+**Date:** 2025-10-27
+
+### Changes Implemented
+
+1. **Refactored SearchService.InsertKeywordsForTracksBulk**
+   - Replaced raw PostgreSQL `UNNEST` SQL with `AddRelationshipBulk<Keyword, Track>`
+   - Pre-computes keyword strings during indexing to avoid loading navigation properties
+   - Adds existing keywords to BulkContext cache for relationship registration
+   - Consistent with BulkContext pattern used throughout codebase
+
+2. **BulkContext Cache Retention**
+   - Added `retainCache` parameter to `SaveBulkChangesAsync`
+   - Enables multi-stage bulk operations (entities → keywords → relationships)
+   - Implemented `MarkEntitiesAsSaved()` to prevent duplicate inserts
+
+3. **Pre-computed Keyword Strings**
+   - Added `BuildKeywordString()` helper method in IndexerService
+   - Constructs keyword string from available artist/album/track data
+   - Avoids loading 50k+ tracks with navigation properties
+
+### Results
+
+```
+Total time:       104.71 seconds (~1.7 minutes)
+Tracks indexed:   3,795
+Speed:            36.24 tracks/sec
+Avg per track:    27.59 ms
+```
+
+### Performance Improvement vs Previous
+
+| Metric | Previous | Current | Improvement |
+|--------|----------|---------|-------------|
+| **Total Time** | 136.89s | 104.71s | **-32.18s (23.5% faster)** |
+| **Tracks/Second** | 27.72 | 36.24 | **+8.52 tracks/sec (30.7% faster)** |
+| **Time per Track** | 36.07 ms | 27.59 ms | **-8.48 ms (23.5% faster)** |
+
+### Performance Improvement vs Baseline
+
+| Metric | Baseline | Current | Total Improvement |
+|--------|----------|---------|-------------------|
+| **Total Time** | 246.99s | 104.71s | **-142.28s (57.6% faster)** |
+| **Tracks/Second** | 15.37 | 36.24 | **+20.87 tracks/sec (135.8% faster)** |
+| **Time per Track** | 65.08 ms | 27.59 ms | **-37.49 ms (57.6% faster)** |
+
+**Overall speedup: 2.36x vs baseline**
+
+### Extrapolated Performance
+
+At the new rate of **36.24 tracks/sec**:
+- **7,000 tracks:**  ~3.2 minutes (vs. 7.6 minutes baseline, 57.6% faster)
+- **50,000 tracks:** ~23 minutes (vs. 54 minutes baseline, 57.6% faster)
+- **100,000 tracks:** ~46 minutes (vs. 1.8 hours baseline, 57.6% faster)
+
+### Analysis
+
+- **2.36x cumulative speedup** from baseline - more than doubled indexing performance
+- Using `AddRelationshipBulk` instead of raw SQL proved significantly more efficient
+- Pre-computing keyword strings eliminated need to reload massive datasets
+- BulkContext cache retention enables efficient multi-stage bulk operations
+- Architecture consistency improved by removing raw SQL usage
+- Still room for improvement in initial track processing phase
+
+---

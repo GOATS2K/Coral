@@ -29,4 +29,15 @@ internal class EntityCache<TEntity> : IEntityCache where TEntity : class
 
     public System.Collections.IList GetNewEntitiesUntyped()
         => GetNewEntities();
+
+    public void MarkAllAsExisting()
+    {
+        // Update all cached entities to mark them as no longer new
+        var keys = _cache.Keys.ToList();
+        foreach (var key in keys)
+        {
+            var cached = _cache[key];
+            _cache[key] = new CachedEntity<TEntity>(cached.Entity, IsNew: false);
+        }
+    }
 }

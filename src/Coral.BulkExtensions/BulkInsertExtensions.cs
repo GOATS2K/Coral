@@ -43,16 +43,24 @@ public static class BulkInsertExtensions
     /// Bulk saves all pending operations and returns statistics.
     /// This is the explicit save operation - nothing is saved automatically.
     /// </summary>
+    /// <param name="context">The database context</param>
+    /// <param name="options">Options for bulk insert operations</param>
+    /// <param name="retainCache">If true, keeps the entity cache after save for registering relationships. Default: false.</param>
+    /// <param name="ct">Cancellation token</param>
     public static async Task<BulkInsertStats> SaveBulkChangesAsync(
         this DbContext context,
         BulkInsertOptions? options = null,
+        bool retainCache = false,
         CancellationToken ct = default)
     {
         var bulkContext = BulkContextStorage.GetOrCreate(context, options);
         var stats = await bulkContext.SaveChangesAsync(ct);
 
-        // Clear after save to release memory
-        BulkContextStorage.Clear(context);
+        // Clear after save to release memory (unless retaining for relationships)
+        if (!retainCache)
+        {
+            BulkContextStorage.Clear(context);
+        }
 
         return stats;
     }

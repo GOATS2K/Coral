@@ -18,7 +18,7 @@ internal class Services
 {
     public TestDatabase TestDatabase { get; set; } = null!;
     public IIndexerService IndexerService { get; set; } = null!;
-
+    public ILibraryService LibraryService { get; set; } = null!;
 }
 
 // These tests will overlap, so using `ContainerTest` makes sure
@@ -46,6 +46,7 @@ public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
         var searchLogger = Substitute.For<ILogger<SearchService>>();
         var indexerLogger = Substitute.For<ILogger<IndexerService>>();
         var artworkLogger = Substitute.For<ILogger<ArtworkService>>();
+        var libraryLogger = Substitute.For<ILogger<LibraryService>>();
         var paginationService = Substitute.For<IPaginationService>();
         var embeddingChannel = new EmbeddingChannel();
         var searchService =
@@ -54,11 +55,13 @@ public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
         var indexerService = new IndexerService(testDatabase.Context, searchService, indexerLogger, artworkService,
             eventEmitter, testDatabase.Mapper, embeddingChannel);
+        var libraryService = new LibraryService(testDatabase.Context, testDatabase.Mapper, libraryLogger);
 
         return new Services()
         {
             TestDatabase = testDatabase,
             IndexerService = indexerService,
+            LibraryService = libraryService
         };
     }
 
@@ -276,7 +279,7 @@ public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
             .Count(f => Path.GetExtension(f) == ".flac");
         CopyDirectory(moons, Path.Combine(testFolder.FullName, Path.GetFileName(moons)));
         // register library
-        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.LibraryService.AddMusicLibrary(testFolder.FullName);
         // act 1
         await services.IndexerService.ScanLibraries();
 
@@ -312,7 +315,7 @@ public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
         var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
         var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
         CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)));
-        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.LibraryService.AddMusicLibrary(testFolder.FullName);
 
         // run scan before change
         await services.IndexerService.ScanLibraries();
@@ -347,7 +350,7 @@ public class IndexerServiceTests(ITestOutputHelper testOutputHelper)
         var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
         var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
         CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)));
-        var library = await services.IndexerService.AddMusicLibrary(testFolder.FullName);
+        var library = await services.LibraryService.AddMusicLibrary(testFolder.FullName);
 
         // run scan before change
         await services.IndexerService.ScanLibraries();

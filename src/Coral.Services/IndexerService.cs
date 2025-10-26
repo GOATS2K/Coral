@@ -18,8 +18,6 @@ public interface IIndexerService
     public Task HandleRename(string oldPath, string newPath);
     public Task ScanDirectory(string directory, MusicLibrary library);
     public Task ScanLibraries();
-    public Task<List<MusicLibraryDto>> GetMusicLibraries();
-    public Task<MusicLibrary?> AddMusicLibrary(string path);
     public Task ScanLibrary(MusicLibrary library, bool incremental = false);
 }
 

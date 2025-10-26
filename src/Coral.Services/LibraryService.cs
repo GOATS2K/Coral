@@ -6,6 +6,7 @@ using Coral.Dto.Models;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Pgvector.EntityFrameworkCore;
 using Track = Coral.Database.Models.Track;
 
@@ -23,17 +24,23 @@ namespace Coral.Services
         public Task<string?> GetArtworkForAlbum(Guid albumId);
         public Task<AlbumDto?> GetAlbum(Guid albumId);
         public Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId);
+        public Task<List<MusicLibraryDto>> GetMusicLibraries();
+        public Task<MusicLibrary?> AddMusicLibrary(string path);
+        public Task RemoveMusicLibrary(Guid libraryId);
+        public Task<MusicLibrary?> GetMusicLibrary(Guid libraryId);
     }
 
     public class LibraryService : ILibraryService
     {
         private readonly CoralDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<LibraryService> _logger;
 
-        public LibraryService(CoralDbContext context, IMapper mapper)
+        public LibraryService(CoralDbContext context, IMapper mapper, ILogger<LibraryService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<Track?> GetTrack(Guid trackId)
@@ -206,6 +213,61 @@ namespace Coral.Services
 
 
             return orderedTracks.DistinctBy(t => t.Title).ToList();
+        }
+
+        public async Task<List<MusicLibraryDto>> GetMusicLibraries()
+        {
+            return await _context
+                .MusicLibraries
+                .ProjectTo<MusicLibraryDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public async Task<MusicLibrary?> AddMusicLibrary(string path)
+        {
+            try
+            {
+                var contentDirectory = new DirectoryInfo(path);
+                if (!contentDirectory.Exists)
+                {
+                    throw new ApplicationException("Content directory does not exist.");
+                }
+
+                var library = await _context.MusicLibraries.FirstOrDefaultAsync(m => m.LibraryPath == path)
+                              ?? new MusicLibrary()
+                              {
+                                  LibraryPath = path,
+                                  AudioFiles = new List<AudioFile>()
+                              };
+
+                _context.MusicLibraries.Add(library);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Added music library: {Path}", path);
+
+                return library;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to add music library {Path}", path);
+                return null;
+            }
+        }
+
+        public async Task RemoveMusicLibrary(Guid libraryId)
+        {
+            var library = await _context.MusicLibraries.FindAsync(libraryId);
+            if (library != null)
+            {
+                _context.MusicLibraries.Remove(library);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Removed music library {LibraryId} ({Path})", libraryId, library.LibraryPath);
+            }
+        }
+
+        public async Task<MusicLibrary?> GetMusicLibrary(Guid libraryId)
+        {
+            return await _context.MusicLibraries.FindAsync(libraryId);
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using Coral.TestProviders;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using Xunit;
 
 namespace Coral.Services.Tests
@@ -68,7 +70,10 @@ namespace Coral.Services.Tests
 
         public Task InitializeAsync()
         {
-            LibraryService = new LibraryService(_fixture.TestDb.Context, _fixture.TestDb.Mapper);
+            LibraryService = new LibraryService(
+                _fixture.TestDb.Context,
+                _fixture.TestDb.Mapper,
+                Substitute.For<ILogger<LibraryService>>());
             return Task.CompletedTask;
         }
 

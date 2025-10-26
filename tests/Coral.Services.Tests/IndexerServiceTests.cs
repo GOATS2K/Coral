@@ -29,14 +29,12 @@ public class IndexerServiceTests(DatabaseFixture fixture)
         var artworkService = new ArtworkService(testDatabase.Context,
             Substitute.For<ILogger<ArtworkService>>());
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
-        var embeddingChannel = new EmbeddingChannel();
 
         var indexerService = new IndexerService(
             testDatabase.Context,
             searchService,
             Substitute.For<ILogger<IndexerService>>(),
-            artworkService,
-            embeddingChannel);
+            artworkService);
 
         var directoryScanner = new DirectoryScanner(
             testDatabase.Context,

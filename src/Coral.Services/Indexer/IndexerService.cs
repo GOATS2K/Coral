@@ -4,7 +4,6 @@ using Coral.BulkExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Events;
-using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -28,7 +27,6 @@ public class IndexerService : IIndexerService
     private readonly ISearchService _searchService;
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
-    private readonly IEmbeddingChannel _embeddingChannel;
 
     private static readonly string[] AudioFileFormats =
         [".flac", ".mp3", ".mp2", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"];
@@ -39,14 +37,12 @@ public class IndexerService : IIndexerService
         CoralDbContext context,
         ISearchService searchService,
         ILogger<IndexerService> logger,
-        IArtworkService artworkService,
-        IEmbeddingChannel embeddingChannel)
+        IArtworkService artworkService)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
         _artworkService = artworkService;
-        _embeddingChannel = embeddingChannel;
     }
 
     #region Public API Methods
@@ -264,9 +260,6 @@ public class IndexerService : IIndexerService
         // Defer keyword insertion until after SaveBulkChangesAsync (needs Artists navigation property populated)
         _tracksForKeywordInsertion.Add(track);
 
-        // Queue for embedding extraction (async operation)
-        await _embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(track, null));
-
         _logger.LogDebug("Created new track: {TrackPath}", atlTrack.Path);
     }
 
@@ -353,9 +346,6 @@ public class IndexerService : IIndexerService
         // Note: We don't call DeleteEmptyArtistsAndAlbums() here because:
         // - If only one track changes, old entities might not be empty yet
         // - Cleanup happens once at the end in FinalizeIndexing after all tracks are processed
-
-        // Queue for embedding extraction (async operation)
-        await _embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(existingTrack, null));
 
         _logger.LogDebug("Updated existing track: {TrackPath}", atlTrack.Path);
     }

@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
+using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
@@ -34,12 +35,14 @@ namespace Coral.Services
     {
         private readonly CoralDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IScanChannel _scanChannel;
         private readonly ILogger<LibraryService> _logger;
 
-        public LibraryService(CoralDbContext context, IMapper mapper, ILogger<LibraryService> logger)
+        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _scanChannel = scanChannel;
             _logger = logger;
         }
 
@@ -243,7 +246,17 @@ namespace Coral.Services
                 _context.MusicLibraries.Add(library);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Added music library: {Path}", path);
+                // Queue initial scan after adding library
+                var requestId = Guid.NewGuid().ToString();
+                await _scanChannel.GetWriter().WriteAsync(new ScanJob(
+                    Library: library,
+                    SpecificDirectory: null,
+                    Incremental: false,
+                    RequestId: requestId,
+                    Trigger: ScanTrigger.LibraryAdded
+                ));
+
+                _logger.LogInformation("Library added and scan queued: {Path} (RequestId: {RequestId})", path, requestId);
 
                 return library;
             }

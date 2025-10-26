@@ -1,4 +1,5 @@
-﻿using Coral.TestProviders;
+﻿using Coral.Services.ChannelWrappers;
+using Coral.TestProviders;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
@@ -10,6 +11,7 @@ namespace Coral.Services.Tests
         private ILibraryService LibraryService => new LibraryService(
             TestDatabase.Context,
             TestDatabase.Mapper,
+            new ScanChannel(),
             Substitute.For<ILogger<LibraryService>>());
 
         [Fact]

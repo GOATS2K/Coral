@@ -35,7 +35,6 @@ namespace Coral.Api
 
             // Phase 1: New refactored services
             services.AddSingleton<IScanChannel, ScanChannel>();
-            services.AddScoped<INewLibraryService, NewLibraryService>();
 
             // Phase 2: Indexer refactored services
             services.AddScoped<IDirectoryScanner, DirectoryScanner>();

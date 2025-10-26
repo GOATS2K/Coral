@@ -3,7 +3,9 @@ using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services;
+using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
+using Coral.Services.Indexer;
 using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,30 +18,41 @@ namespace Coral.Api.Controllers
         private readonly ILibraryService _libraryService;
         private readonly ITranscoderService _transcoderService;
         private readonly ISearchService _searchService;
-        private readonly IIndexerService _indexerService;
         private readonly IPaginationService _paginationService;
         private readonly IPlaybackService _playbackService;
         private readonly IFavoritesService _favoritesService;
+        private readonly IScanChannel _scanChannel;
 
         public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
-            ISearchService searchService, IIndexerService indexerService, IPaginationService paginationService,
+            ISearchService searchService, IPaginationService paginationService,
             TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
-            IFavoritesService favoritesService)
+            IFavoritesService favoritesService, IScanChannel scanChannel)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
             _searchService = searchService;
-            _indexerService = indexerService;
             _paginationService = paginationService;
             _playbackService = playbackService;
             _favoritesService = favoritesService;
+            _scanChannel = scanChannel;
         }
 
         [HttpPost]
         [Route("scan")]
         public async Task<ActionResult> RunIndexer()
         {
-            await _indexerService.ScanLibraries();
+            var libraries = await _libraryService.GetMusicLibraries();
+            foreach (var library in libraries)
+            {
+                var dbLibrary = await _libraryService.GetMusicLibrary(library.Id);
+                if (dbLibrary != null)
+                {
+                    await _scanChannel.GetWriter().WriteAsync(new ScanJob(
+                        dbLibrary,
+                        Trigger: ScanTrigger.Manual
+                    ));
+                }
+            }
             return Ok();
         }
 

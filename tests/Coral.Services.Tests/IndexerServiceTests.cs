@@ -1,6 +1,7 @@
 using Coral.Database.Models;
 using Coral.Events;
 using Coral.Services.ChannelWrappers;
+using Coral.Services.Indexer;
 using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ internal class IndexerServices
 {
     public TestDatabase TestDatabase { get; set; } = null!;
     public IIndexerService IndexerService { get; set; } = null!;
+    public IDirectoryScanner DirectoryScanner { get; set; } = null!;
 }
 
 public class IndexerServiceTests(DatabaseFixture fixture)
@@ -38,10 +40,15 @@ public class IndexerServiceTests(DatabaseFixture fixture)
             testDatabase.Mapper,
             embeddingChannel);
 
+        var directoryScanner = new DirectoryScanner(
+            testDatabase.Context,
+            Substitute.For<ILogger<DirectoryScanner>>());
+
         return new IndexerServices()
         {
             TestDatabase = testDatabase,
-            IndexerService = indexerService
+            IndexerService = indexerService,
+            DirectoryScanner = directoryScanner
         };
     }
 
@@ -59,8 +66,15 @@ public class IndexerServiceTests(DatabaseFixture fixture)
             await TestDatabase.Context.SaveChangesAsync();
         }
 
-        // NewIndexerService now handles scanning internally with bulk operations
-        await services.IndexerService.ScanLibrary(library, incremental);
+        var directoryGroups = services.DirectoryScanner.ScanLibrary(library, incremental);
+        var tracks = services.IndexerService.IndexDirectoryGroups(directoryGroups, library, CancellationToken.None);
+
+        await foreach (var track in tracks)
+        {
+            // Just consume the stream
+        }
+
+        await services.IndexerService.FinalizeIndexing(library, CancellationToken.None);
     }
 
     [Fact]

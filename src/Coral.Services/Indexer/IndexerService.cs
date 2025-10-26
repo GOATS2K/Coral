@@ -1,25 +1,20 @@
+using System.Text.RegularExpressions;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Coral.BulkExtensions;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.Models;
 using Coral.Events;
 using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
-namespace Coral.Services;
+namespace Coral.Services.Indexer;
 
 public interface IIndexerService
 {
     Task DeleteTrack(string filePath);
     Task HandleRename(string oldPath, string newPath);
-    Task ScanDirectory(string directory, MusicLibrary library);
-    Task ScanLibraries();
-    Task ScanLibrary(MusicLibrary library, bool incremental = false);
     IAsyncEnumerable<Track> IndexDirectoryGroups(
         IAsyncEnumerable<Indexer.DirectoryGroup> directoryGroups,
         MusicLibrary library,
@@ -61,115 +56,6 @@ public class IndexerService : IIndexerService
     }
 
     #region Public API Methods
-
-    public async Task ScanLibraries()
-    {
-        foreach (var musicLibrary in _context.MusicLibraries.ToList())
-        {
-            // existing test libraries are ""
-            // new libraries are inserted via AddMusicLibrary
-            // which verifies that the library actually exists
-            if (musicLibrary.LibraryPath == "") continue;
-            await ScanLibrary(musicLibrary);
-        }
-    }
-
-    public async Task ScanLibrary(MusicLibrary library, bool incremental = false)
-    {
-        // fix unique constraint issues by getting a fresh copy of MusicLibrary for each indexing job
-        library = await GetLibrary(library);
-
-        // first delete missing tracks
-        await DeleteMissingTracks(library);
-
-        // then scan library
-        var directoryGroups = await ScanMusicLibraryAsync(library, incremental);
-
-        // enumerate directories
-        foreach (var directoryGroup in directoryGroups)
-        {
-            var tracksInDirectory = directoryGroup.ToList();
-            if (!tracksInDirectory.Any())
-            {
-                _logger.LogWarning("Skipping empty directory {Directory}", directoryGroup.Key);
-                continue;
-            }
-
-            await IndexDirectory(tracksInDirectory, library);
-            _logger.LogInformation("Completed indexing of {Path}", directoryGroup.Key);
-        }
-
-        // Save all bulk operations at once
-        var stats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions { Logger = _logger });
-
-        _logger.LogInformation(
-            "Bulk saved {Entities} entities and {Relationships} relationships in {Time:F2}s ({Rate:N0} entities/sec)",
-            stats.TotalEntitiesInserted,
-            stats.TotalRelationshipsInserted,
-            stats.TotalTime.TotalSeconds,
-            stats.TotalEntitiesInserted / stats.TotalTime.TotalSeconds);
-
-        // Process artworks for albums using bulk method (now that bulk save completed and albums exist in DB)
-        await ProcessArtworksBulkAsync(_albumsForArtworkProcessing);
-        _albumsForArtworkProcessing.Clear();
-
-        // Clear change tracker before keyword insertion to avoid stale entity conflicts
-        _context.ChangeTracker.Clear();
-
-        // Insert keywords for all saved tracks using bulk method (now that navigation properties are populated)
-        await InsertKeywordsForTracksBulkAsync(_tracksForKeywordInsertion);
-        _tracksForKeywordInsertion.Clear();
-
-        _logger.LogInformation("Completed scan of {Directory}", library.LibraryPath);
-        library.LastScan = DateTime.UtcNow;
-
-        // Save library metadata
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task ScanDirectory(string directory, MusicLibrary library)
-    {
-        library = await GetLibrary(library);
-        if (directory == library.LibraryPath)
-        {
-            await ScanLibrary(library, incremental: true);
-            return;
-        }
-
-        var contentDirectory = new DirectoryInfo(directory);
-        if (!contentDirectory.Exists)
-        {
-            _logger.LogWarning("Directory {Directory} does not exist", directory);
-            return;
-        }
-
-        var tracksInDirectory = contentDirectory
-            .EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)))
-            .ToList();
-
-        if (!tracksInDirectory.Any())
-        {
-            _logger.LogWarning("No audio files found in {Directory}", directory);
-            return;
-        }
-
-        await IndexDirectory(tracksInDirectory, library);
-
-        // Save bulk operations
-        var stats = await _context.SaveBulkChangesAsync(new BulkInsertOptions { Logger = _logger });
-
-        // Clear change tracker before keyword insertion
-        _context.ChangeTracker.Clear();
-
-        // Insert keywords for saved tracks using bulk method
-        await InsertKeywordsForTracksBulkAsync(_tracksForKeywordInsertion);
-        _tracksForKeywordInsertion.Clear();
-
-        _logger.LogInformation("Indexed {Directory}: {Entities} entities, {Relationships} relationships",
-            directory, stats.TotalEntitiesInserted, stats.TotalRelationshipsInserted);
-    }
 
     public async Task DeleteTrack(string filePath)
     {
@@ -645,39 +531,6 @@ public class IndexerService : IIndexerService
         await _searchService.InsertKeywordsForTracksBulk(reloadedTracks);
     }
 
-    private async Task<IEnumerable<IGrouping<string?, FileInfo>>> ScanMusicLibraryAsync(
-        MusicLibrary library,
-        bool incremental = false)
-    {
-        var contentDirectory = new DirectoryInfo(library.LibraryPath);
-        Func<FileInfo, bool> predicate;
-
-        if (!incremental)
-        {
-            _logger.LogInformation("Starting full scan of directory: {Directory}", library.LibraryPath);
-            var existingFiles = await _context.AudioFiles
-                .Where(f => f.Library.Id == library.Id)
-                .ToListAsync();
-
-            predicate = f =>
-                AudioFileFormats.Contains(Path.GetExtension(f.FullName))
-                && !existingFiles.Any(t => t.FilePath == f.FullName && f.LastWriteTimeUtc == t.UpdatedAt);
-        }
-        else
-        {
-            _logger.LogInformation("Starting incremental scan of directory: {Directory}", library.LibraryPath);
-            predicate = f => AudioFileFormats.Contains(Path.GetExtension(f.FullName))
-                             && (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan);
-        }
-
-        var directoryGroups = contentDirectory
-            .EnumerateFiles("*.*", SearchOption.AllDirectories)
-            .Where(predicate)
-            .GroupBy(f => f.Directory?.Name, f => f);
-
-        return directoryGroups;
-    }
-
     private async Task DeleteMissingTracks(MusicLibrary library)
     {
         var indexedFiles = _context.AudioFiles
@@ -795,6 +648,8 @@ public class IndexerService : IIndexerService
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         library = await GetLibrary(library);
+
+        await DeleteMissingTracks(library);
 
         await foreach (var directoryGroup in directoryGroups.WithCancellation(cancellationToken))
         {

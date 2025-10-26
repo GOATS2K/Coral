@@ -7,13 +7,15 @@ namespace Coral.TestProviders;
 
 /// <summary>
 /// Base class for tests that use transaction-based isolation.
-/// Each test runs in its own transaction that gets rolled back after the test completes.
-/// This is much faster than spinning up a new database instance per test.
+/// Each test gets its own DbContext instance and runs in its own transaction
+/// that gets rolled back after the test completes.
+/// All tests share the same database container (via collection fixture).
 /// </summary>
-public abstract class TransactionTestBase : IClassFixture<DatabaseFixture>, IAsyncLifetime
+[Collection(nameof(DatabaseCollection))]
+public abstract class TransactionTestBase : IAsyncLifetime
 {
     protected DatabaseFixture Fixture { get; }
-    protected TestDatabase TestDatabase => Fixture.TestDb;
+    protected TestDatabase TestDatabase { get; private set; } = null!;
 
     private IDbContextTransaction? _transaction;
 
@@ -24,20 +26,22 @@ public abstract class TransactionTestBase : IClassFixture<DatabaseFixture>, IAsy
 
     public async Task InitializeAsync()
     {
-        // Start a new transaction before each test
-        _transaction = await Fixture.TestDb.Context.Database.BeginTransactionAsync();
+        var connectionString = Fixture.TestDb.Context.Database.GetConnectionString();
+        TestDatabase = new TestDatabase(opt =>
+        {
+            opt.UseNpgsql(connectionString, p => p.UseVector());
+        });
+        _transaction = await TestDatabase.Context.Database.BeginTransactionAsync();
     }
 
     public async Task DisposeAsync()
     {
-        // Roll back the transaction after each test to ensure isolation
         if (_transaction != null)
         {
             await _transaction.RollbackAsync();
             await _transaction.DisposeAsync();
         }
-
-        // Clear the change tracker to avoid issues with tracked entities
-        Fixture.TestDb.Context.ChangeTracker.Clear();
+        TestDatabase.Context.ChangeTracker.Clear();
+        TestDatabase.Dispose();
     }
 }

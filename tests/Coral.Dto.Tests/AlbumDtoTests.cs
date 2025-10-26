@@ -6,23 +6,16 @@ using Xunit;
 
 namespace Coral.Dto.Tests
 {
-    public class AlbumDtoTests : IClassFixture<DatabaseFixture>
+    public class AlbumDtoTests(DatabaseFixture fixture) : TransactionTestBase(fixture)
     {
-        private readonly DatabaseFixture _fixture;
-
-        public AlbumDtoTests(DatabaseFixture fixture)
-        {
-            _fixture = fixture;
-        }
-
         [Fact]
         public void AlbumDto_AlbumWithMultiplArtistRoles_SetsArtistRoleOnTrackDto()
         {
             // arrange
-            var album = _fixture.TestDb.ALittleWhileLonger;
+            var album = TestDatabase.ALittleWhileLonger;
 
             // act
-            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
+            var result = TestDatabase.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(album.Name, result.Name);
@@ -46,10 +39,10 @@ namespace Coral.Dto.Tests
         public void AlbumDto_AlbumWithType_SetsType()
         {
             // arrange
-            var album = _fixture.TestDb.ALittleWhileLonger;
+            var album = TestDatabase.ALittleWhileLonger;
 
             // act
-            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
+            var result = TestDatabase.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(AlbumType.MiniAlbum, result.Type);
@@ -59,10 +52,10 @@ namespace Coral.Dto.Tests
         public void AlbumDto_AlbumWithMultipleArtistRoles_SetsMainContributingArtistsAsAlbumArtists()
         {
             // arrange
-            var album = _fixture.TestDb.ALittleWhileLonger;
+            var album = TestDatabase.ALittleWhileLonger;
 
             // act
-            var result = _fixture.TestDb.Mapper.Map<AlbumDto>(album);
+            var result = TestDatabase.Mapper.Map<AlbumDto>(album);
 
             // assert
             Assert.Equal(album.Name, result.Name);

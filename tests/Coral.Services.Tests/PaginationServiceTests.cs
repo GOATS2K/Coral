@@ -5,16 +5,9 @@ using Xunit;
 
 namespace Coral.Services.Tests
 {
-    public class PaginationServiceTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+    public class PaginationServiceTests(DatabaseFixture fixture) : TransactionTestBase(fixture)
     {
-        public IPaginationService PaginationService;
-        
-        private readonly DatabaseFixture _fixture;
-
-        public PaginationServiceTests(DatabaseFixture fixture)
-        {
-            _fixture = fixture;
-        }
+        private IPaginationService PaginationService => new PaginationService(TestDatabase.Mapper, TestDatabase.Context);
 
         [Fact]
         public async Task PaginatedQueryable_FiveTracksFromLenzman_GetsAsPaginatedData()
@@ -26,10 +19,10 @@ namespace Coral.Services.Tests
             // act
             var results = await PaginationService.PaginateQuery<Track, TrackDto>(query =>
             {
-                return query.Where(t => t.Artists.Any(t => t.Artist.Name == _fixture.TestDb.Lenzman.Name));
+                return query.Where(t => t.Artists.Any(t => t.Artist.Name == TestDatabase.Lenzman.Name));
             }, skip, take);
             // assert
-            var selfQuery = _fixture.TestDb.Context.Tracks.Where(t => t.Artists.Any(a => a.Artist.Name == _fixture.TestDb.Lenzman.Name)).ToList();
+            var selfQuery = TestDatabase.Context.Tracks.Where(t => t.Artists.Any(a => a.Artist.Name == TestDatabase.Lenzman.Name)).ToList();
 
             var resultCount = results.ResultCount;
             var availableRecords = results.AvailableRecords;
@@ -49,20 +42,9 @@ namespace Coral.Services.Tests
             var results = await PaginationService.PaginateQuery<Album, SimpleAlbumDto>(skip, take);
             // assert
             Assert.Single(results.Data);
-            Assert.Equal(_fixture.TestDb.Context.Albums.Count(), results.TotalRecords);
+            Assert.Equal(TestDatabase.Context.Albums.Count(), results.TotalRecords);
             Assert.Equal(results.Data.Count(), results.ResultCount);
             Assert.NotEqual(0, results.AvailableRecords);
-        }
-
-        public Task InitializeAsync()
-        {
-            PaginationService = new PaginationService(_fixture.TestDb.Mapper, _fixture.TestDb.Context);
-            return Task.CompletedTask;
-        }
-
-        public Task DisposeAsync()
-        {
-            return Task.CompletedTask;
         }
     }
 }

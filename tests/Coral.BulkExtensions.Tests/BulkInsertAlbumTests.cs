@@ -11,28 +11,22 @@ namespace Coral.BulkExtensions.Tests;
 /// Tests for bulk inserting albums with tracks and artists.
 /// Simulates the indexer workflow.
 /// </summary>
-public class BulkInsertAlbumTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class BulkInsertAlbumTests : TransactionTestBase
 {
-    private readonly DatabaseFixture _fixture;
     private readonly ITestOutputHelper _output;
     private readonly ILogger<BulkInsertAlbumTests> _logger;
 
-    public BulkInsertAlbumTests(DatabaseFixture fixture, ITestOutputHelper output)
+    public BulkInsertAlbumTests(DatabaseFixture fixture, ITestOutputHelper output) : base(fixture)
     {
-        _fixture = fixture;
         _output = output;
         _logger = new TestLogger<BulkInsertAlbumTests>(output);
     }
-
-    public Task InitializeAsync() => Task.CompletedTask;
-
-    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task CanInsertSimpleAlbumWithTracksAndArtists()
     {
         // Arrange - simulate indexing a simple album
-        var context = _fixture.TestDb.Context;
+        var context = TestDatabase.Context;
 
         // Act - Using new EF Core-style API
         // Create genre using DbSet extension
@@ -218,7 +212,7 @@ public class BulkInsertAlbumTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
     public async Task CanRegisterMultipleManyToManyRelationshipsForSameEntity()
     {
         // Arrange - simulate a collaboration track with multiple artists
-        var context = _fixture.TestDb.Context;
+        var context = TestDatabase.Context;
 
         // Act - Create a single track with 4 different artists
         var genre = await context.Genres.GetOrAddBulk(

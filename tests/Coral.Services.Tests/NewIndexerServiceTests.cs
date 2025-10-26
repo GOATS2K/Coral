@@ -5,10 +5,7 @@ using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Testcontainers.PostgreSql;
-using Testcontainers.Xunit;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Coral.Services.Tests;
 
@@ -18,26 +15,12 @@ internal class NewIndexerServices
     public IIndexerService IndexerService { get; set; } = null!;
 }
 
-public class NewIndexerServiceTests(ITestOutputHelper testOutputHelper)
-    : ContainerTest<PostgreSqlBuilder, PostgreSqlContainer>(testOutputHelper)
+public class NewIndexerServiceTests(DatabaseFixture fixture)
+    : TransactionTestBase(fixture)
 {
-    protected override PostgreSqlBuilder Configure(PostgreSqlBuilder builder)
-    {
-        return new PostgreSqlBuilder()
-            .WithImage("pgvector/pgvector:0.8.1-pg17-trixie");
-    }
-
-    private TestDatabase CreateDatabase()
-    {
-        return new TestDatabase(opt =>
-        {
-            opt.UseNpgsql(Container.GetConnectionString(), p => p.UseVector());
-        });
-    }
-
     private NewIndexerServices CreateServices()
     {
-        var testDatabase = CreateDatabase();
+        var testDatabase = TestDatabase;
         var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context,
             Substitute.For<ILogger<SearchService>>(), paginationService);
@@ -72,8 +55,8 @@ public class NewIndexerServiceTests(ITestOutputHelper testOutputHelper)
             library.CreatedAt = DateTime.UtcNow;
             library.UpdatedAt = DateTime.UtcNow;
             library.LastScan = DateTime.MinValue;
-            services.TestDatabase.Context.MusicLibraries.Add(library);
-            await services.TestDatabase.Context.SaveChangesAsync();
+            TestDatabase.Context.MusicLibraries.Add(library);
+            await TestDatabase.Context.SaveChangesAsync();
         }
 
         // NewIndexerService now handles scanning internally with bulk operations

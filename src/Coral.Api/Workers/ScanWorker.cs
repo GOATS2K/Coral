@@ -1,4 +1,5 @@
 using Coral.Database;
+using Coral.Services;
 using Coral.Services.ChannelWrappers;
 using Coral.Services.Indexer;
 
@@ -49,7 +50,7 @@ public class ScanWorker : BackgroundService
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
         var scanner = scope.ServiceProvider.GetRequiredService<IDirectoryScanner>();
-        var indexer = scope.ServiceProvider.GetRequiredService<INewIndexerService>();
+        var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
         var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
         var embeddingChannel = scope.ServiceProvider.GetRequiredService<IEmbeddingChannel>();
         await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();

@@ -59,7 +59,6 @@ services.AddSingleton<Coral.Services.ChannelWrappers.IEmbeddingChannel, Coral.Se
 
 // Indexer services
 services.AddScoped<IIndexerService, IndexerService>();
-services.AddScoped<Coral.Services.Indexer.INewIndexerService, NewIndexerService>();
 services.AddScoped<IDirectoryScanner, DirectoryScanner>();
 services.AddScoped<ISearchService, SearchService>();
 services.AddScoped<IArtworkService, ArtworkService>();
@@ -112,7 +111,7 @@ using (var scope = serviceProvider.CreateScope())
     Console.WriteLine("Starting scan...");
 
     var scanner = scope.ServiceProvider.GetRequiredService<IDirectoryScanner>();
-    var indexer = scope.ServiceProvider.GetRequiredService<Coral.Services.Indexer.INewIndexerService>();
+    var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
 
     var expectedTracks = scanner.CountFiles(library, incremental: false);
     Console.WriteLine($"Expected tracks: {expectedTracks}");

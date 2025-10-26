@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Coral.BulkExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
@@ -14,6 +15,7 @@ namespace Coral.Services
     public interface ISearchService
     {
         public Task InsertKeywordsForTrack(Track track);
+        public Task InsertKeywordsForTracksBulk(List<Track> tracks);
         public Task<PaginatedCustomData<SearchResult>> Search(string query, int offset = 0, int limit = 100);
     }
 
@@ -72,6 +74,115 @@ namespace Coral.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task InsertKeywordsForTracksBulk(List<Track> tracks)
+        {
+            if (!tracks.Any())
+                return;
+
+            _logger.LogInformation("Starting bulk keyword insertion for {TrackCount} tracks", tracks.Count);
+
+            // Step 1: Extract all keywords from all tracks
+            var trackKeywords = new Dictionary<Guid, List<string>>();
+            var allKeywordValues = new HashSet<string>();
+
+            foreach (var track in tracks)
+            {
+                var keywords = ProcessInputString(track.ToString());
+                trackKeywords[track.Id] = keywords;
+                foreach (var keyword in keywords)
+                {
+                    allKeywordValues.Add(keyword);
+                }
+            }
+
+            _logger.LogDebug("Extracted {KeywordCount} unique keyword values from {TrackCount} tracks",
+                allKeywordValues.Count, tracks.Count);
+
+            // Step 2: Query database for existing keywords (single query)
+            var existingKeywords = await _context.Keywords
+                .Where(k => allKeywordValues.Contains(k.Value))
+                .ToListAsync();
+
+            var existingKeywordDict = existingKeywords.ToDictionary(k => k.Value, k => k);
+
+            _logger.LogDebug("Found {ExistingCount} existing keywords in database", existingKeywords.Count);
+
+            // Step 3: Create new keywords that don't exist yet
+            var newKeywordValues = allKeywordValues.Except(existingKeywords.Select(k => k.Value)).ToList();
+
+            if (newKeywordValues.Any())
+            {
+                _logger.LogInformation("Creating {NewKeywordCount} new keywords", newKeywordValues.Count);
+
+                // Use bulk insert for new keywords
+                foreach (var keywordValue in newKeywordValues)
+                {
+                    var keyword = await _context.Keywords.GetOrAddBulk(
+                        k => k.Value,
+                        () => new Keyword
+                        {
+                            Id = Guid.NewGuid(),
+                            Value = keywordValue,
+                            CreatedAt = DateTime.UtcNow,
+                            Tracks = new List<Track>()
+                        });
+
+                    existingKeywordDict[keywordValue] = keyword;
+                }
+
+                // Save new keywords
+                var keywordStats = await _context.SaveBulkChangesAsync(new BulkInsertOptions { Logger = _logger });
+                _logger.LogDebug("Inserted {Count} new keywords", keywordStats.TotalEntitiesInserted);
+            }
+
+            // Step 4: Build track-keyword relationships
+            var trackKeywordRelationships = new List<(Guid TrackId, Guid KeywordId)>();
+
+            foreach (var track in tracks)
+            {
+                var keywordValues = trackKeywords[track.Id];
+                foreach (var keywordValue in keywordValues)
+                {
+                    if (existingKeywordDict.TryGetValue(keywordValue, out var keyword))
+                    {
+                        trackKeywordRelationships.Add((track.Id, keyword.Id));
+                    }
+                }
+            }
+
+            _logger.LogInformation("Creating {RelationshipCount} track-keyword relationships",
+                trackKeywordRelationships.Count);
+
+            // Step 5: Bulk insert relationships using raw SQL (PostgreSQL specific)
+            if (trackKeywordRelationships.Any())
+            {
+                // Process in chunks to avoid parameter limits
+                var chunkSize = 5000;
+                var chunks = trackKeywordRelationships.Chunk(chunkSize);
+
+                foreach (var chunk in chunks)
+                {
+                    var trackIds = chunk.Select(r => r.TrackId).ToArray();
+                    var keywordIds = chunk.Select(r => r.KeywordId).ToArray();
+
+                    var sql = @"
+                        INSERT INTO ""KeywordTrack"" (""KeywordsId"", ""TracksId"")
+                        SELECT * FROM UNNEST(@keywordIds::uuid[], @trackIds::uuid[])
+                        ON CONFLICT DO NOTHING";
+
+                    await _context.Database.ExecuteSqlRawAsync(
+                        sql,
+                        new[]
+                        {
+                            new Npgsql.NpgsqlParameter("@keywordIds", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Uuid) { Value = keywordIds },
+                            new Npgsql.NpgsqlParameter("@trackIds", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Uuid) { Value = trackIds }
+                        });
+                }
+            }
+
+            _logger.LogInformation("Completed bulk keyword insertion for {TrackCount} tracks", tracks.Count);
         }
 
         public async Task<PaginatedCustomData<SearchResult>> Search(string query, int offset = 0, int limit = 100)

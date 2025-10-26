@@ -1,5 +1,6 @@
 using Coral.Database.Models;
-using Coral.Services.Indexer;
+using Coral.Events;
+using Coral.Services.ChannelWrappers;
 using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,8 +15,7 @@ namespace Coral.Services.Tests;
 internal class NewIndexerServices
 {
     public TestDatabase TestDatabase { get; set; } = null!;
-    public INewIndexerService IndexerService { get; set; } = null!;
-    public IDirectoryScanner DirectoryScanner { get; set; } = null!;
+    public IIndexerService IndexerService { get; set; } = null!;
 }
 
 public class NewIndexerServiceTests(ITestOutputHelper testOutputHelper)
@@ -43,30 +43,41 @@ public class NewIndexerServiceTests(ITestOutputHelper testOutputHelper)
             Substitute.For<ILogger<SearchService>>(), paginationService);
         var artworkService = new ArtworkService(testDatabase.Context,
             Substitute.For<ILogger<ArtworkService>>());
-        var indexerService = new NewIndexerService(testDatabase.Context, searchService, artworkService,
-            Substitute.For<ILogger<NewIndexerService>>());
-        var directoryScanner = new DirectoryScanner(testDatabase.Context,
-            Substitute.For<ILogger<DirectoryScanner>>());
+        var eventEmitter = new MusicLibraryRegisteredEventEmitter();
+        var embeddingChannel = new EmbeddingChannel();
+
+        var indexerService = new NewIndexerService(
+            testDatabase.Context,
+            searchService,
+            Substitute.For<ILogger<NewIndexerService>>(),
+            artworkService,
+            eventEmitter,
+            testDatabase.Mapper,
+            embeddingChannel);
 
         return new NewIndexerServices()
         {
             TestDatabase = testDatabase,
-            IndexerService = indexerService,
-            DirectoryScanner = directoryScanner
+            IndexerService = indexerService
         };
     }
 
     private async Task ScanLibrary(NewIndexerServices services, MusicLibrary library, bool incremental = false)
     {
-        var directoryGroups = services.DirectoryScanner.ScanLibrary(library, incremental);
-        var tracks = services.IndexerService.IndexDirectoryGroups(directoryGroups, library);
-
-        await foreach (var track in tracks)
+        // Save library to database if it hasn't been saved yet
+        if (library.Id == Guid.Empty)
         {
-            // Just consume the stream
+            library.Id = Guid.NewGuid();
+            library.AudioFiles = new List<AudioFile>();
+            library.CreatedAt = DateTime.UtcNow;
+            library.UpdatedAt = DateTime.UtcNow;
+            library.LastScan = DateTime.MinValue;
+            services.TestDatabase.Context.MusicLibraries.Add(library);
+            await services.TestDatabase.Context.SaveChangesAsync();
         }
 
-        await services.IndexerService.FinalizeIndexing(library);
+        // NewIndexerService now handles scanning internally with bulk operations
+        await services.IndexerService.ScanLibrary(library, incremental);
     }
 
     [Fact]

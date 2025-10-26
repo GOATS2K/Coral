@@ -39,7 +39,7 @@ namespace Coral.Api
 
             // Phase 2: Indexer refactored services
             services.AddScoped<IDirectoryScanner, DirectoryScanner>();
-            services.AddScoped<INewIndexerService, NewIndexerService>();
+            // services.AddScoped<INewIndexerService, NewIndexerService>();
             services.AddSingleton<IScanReporter, ScanReporter>();
         }
     }

@@ -1,3 +1,4 @@
+using Coral.BulkExtensions;
 using Coral.Configuration;
 using Coral.Database;
 using Coral.Database.Models;
@@ -16,6 +17,7 @@ namespace Coral.Services;
 public interface IArtworkService
 {
     Task ProcessArtwork(Album album, string artworkPath);
+    Task ProcessArtworksBulk(Dictionary<Album, string> albumsWithArtwork);
     Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
     Task<string?> GetArtworkPath(Guid artworkId);
     Task DeleteArtwork(Artwork artwork);
@@ -78,9 +80,9 @@ public class ArtworkService : IArtworkService
         var guid = Guid.NewGuid();
         var outputDir = Path.Join(ApplicationConfiguration.Thumbnails, guid.ToString());
         Directory.CreateDirectory(outputDir);
-        
+
         _logger.LogDebug("Processing artwork for album {AlbumTitle}", album.Name);
-        
+
         // add original cover
         using var originalImage = await Image.LoadAsync(artworkPath);
         var prominentColors = await GetProminentColorsForImage(artworkPath);
@@ -118,6 +120,94 @@ public class ArtworkService : IArtworkService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    public async Task ProcessArtworksBulk(Dictionary<Album, string> albumsWithArtwork)
+    {
+        if (!albumsWithArtwork.Any())
+            return;
+
+        _logger.LogInformation("Starting bulk artwork processing for {AlbumCount} albums", albumsWithArtwork.Count);
+
+        var sizes = new Dictionary<ArtworkSize, Size>()
+        {
+            {ArtworkSize.Small, new Size(100, 100)},
+            {ArtworkSize.Medium, new Size(300, 300)}
+        };
+
+        var artworksToInsert = new List<Artwork>();
+
+        // Process each album's artwork and create Artwork entities
+        foreach (var (album, artworkPath) in albumsWithArtwork)
+        {
+            try
+            {
+                var guid = Guid.NewGuid();
+                var outputDir = Path.Join(ApplicationConfiguration.Thumbnails, guid.ToString());
+                Directory.CreateDirectory(outputDir);
+
+                _logger.LogDebug("Processing artwork for album {AlbumName}", album.Name);
+
+                // Extract prominent colors once
+                var prominentColors = await GetProminentColorsForImage(artworkPath);
+
+                // Load original image to get dimensions
+                using var originalImage = await Image.LoadAsync(artworkPath);
+
+                // Create original artwork entity
+                artworksToInsert.Add(new Artwork
+                {
+                    Id = Guid.NewGuid(),
+                    Path = artworkPath,
+                    Size = ArtworkSize.Original,
+                    Height = originalImage.Height,
+                    Width = originalImage.Width,
+                    Colors = prominentColors,
+                    AlbumId = album.Id,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                // Process and create thumbnails
+                foreach (var (artworkSize, size) in sizes)
+                {
+                    using var imageToResize = await Image.LoadAsync(artworkPath);
+                    var outputFile = Path.Join(outputDir, $"{artworkSize.ToString()}.jpg");
+                    imageToResize.Mutate(i => i.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
+                    await imageToResize.SaveAsJpegAsync(outputFile);
+
+                    // Create thumbnail artwork entity
+                    artworksToInsert.Add(new Artwork
+                    {
+                        Id = Guid.NewGuid(),
+                        Path = outputFile,
+                        Height = size.Height,
+                        Width = size.Width,
+                        Size = artworkSize,
+                        Colors = prominentColors,
+                        AlbumId = album.Id,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                _logger.LogDebug("Processed artwork for album: {AlbumName}", album.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to process artwork for album {AlbumName}: {Exception}",
+                    album.Name, ex.ToString());
+            }
+        }
+
+        // Bulk insert all artworks using EF Core bulk extensions
+        if (artworksToInsert.Any())
+        {
+            await _context.Artworks.AddRangeAsync(artworksToInsert);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Bulk artwork processing completed: {Artworks} artworks inserted",
+                artworksToInsert.Count);
+        }
     }
     
     // https://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx

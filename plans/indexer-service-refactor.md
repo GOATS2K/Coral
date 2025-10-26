@@ -1,8 +1,57 @@
-# IndexerService Refactoring Plan
+# IndexerService Refactoring Plan - Index
 
-## Overview
+This document provides an overview and index to the staged implementation plans.
 
-Refactor IndexerService to support SignalR progress streaming while improving architecture through better separation of concerns, moving from event-based to channel-based orchestration, and improving FileSystemWatcher reliability.
+## Quick Navigation
+
+- **[Stage 1: Bulk Insertion Performance](./indexer-stage1-bulk-insertion.md)** ← **START HERE**
+- **[Stage 2: SignalR Progress Streaming](./indexer-stage2-signalr-progress.md)** (Deferred)
+- **[Stage 3: Worker Architecture Refactoring](./indexer-stage3-worker-refactoring.md)** (Deferred)
+
+---
+
+## Implementation Stages
+
+### Stage 1: Bulk Insertion Performance (CURRENT PRIORITY) ⭐
+- **File:** `indexer-stage1-bulk-insertion.md`
+- **Goal:** Reduce indexing time from ~10 minutes to ~2-3 minutes for 7k tracks (3-5x improvement)
+- **Approach:** Schema simplification + scan-and-cache + bulk inserts
+- **Status:** ✅ Ready for implementation
+
+**Key Changes:**
+- Remove `Album.Artists` redundant relationship
+- Add `Album.ReleaseDate`, `Track.OriginalArtistString`
+- Implement 4-phase scan-and-cache with bulk insertion
+- Use EFCore.BulkExtensions for staged bulk insert
+
+**Performance Target:** 7k tracks in ~3.3 minutes (was ~10 minutes)
+
+### Stage 2: SignalR Progress Streaming (FUTURE)
+- **File:** `indexer-stage2-signalr-progress.md`
+- **Goal:** Real-time progress updates during indexing
+- **Approach:** Channel-based orchestration, ScanReporter
+- **Status:** ⏸️ Deferred until Stage 1 complete
+
+### Stage 3: Worker Architecture Refactoring (FUTURE)
+- **File:** `indexer-stage3-worker-refactoring.md`
+- **Goal:** Better separation of concerns, improved FileSystemWatcher
+- **Approach:** ScanWorker, DirectoryScanner, LibraryService split
+- **Status:** ⏸️ Deferred until Stage 1 complete
+
+---
+
+## Why Staged?
+
+**Benefits:**
+1. **Focus:** Tackle performance bottleneck first (highest ROI)
+2. **Risk Management:** Validate each stage before adding complexity
+3. **Incremental Delivery:** Ship improvements as they're ready
+4. **Context Efficiency:** Only load relevant stage file when needed
+
+**Rationale:**
+- Stage 1 addresses critical pain point (slow indexing)
+- Stages 2-3 are architectural improvements that can wait
+- Need to measure Stage 1 results before committing to further changes
 
 ## Current State Analysis
 
@@ -2613,3 +2662,639 @@ private async Task IndexAlbum(List<ATL.Track> tracks, MusicLibrary library)
 - [ ] Can trigger directory rescan via API
 - [ ] All existing tests pass with refactored code
 - [ ] No regression in indexing accuracy or performance
+
+---
+
+## Phase 8: Bulk Insert Performance Optimization
+
+**Added:** 2025-10-23
+
+### Current Performance Baseline
+
+From `benchmark-results.md`:
+- **Speed:** 15.37 tracks/sec
+- **Test Library:** 3,795 tracks in 246.99 seconds (~4.1 minutes)
+- **CPU Usage:** 1-5% (mostly idle, waiting on database)
+- **Bottleneck:** N+1 query problem
+
+**Extrapolated:**
+- 50,000 tracks: ~54 minutes
+- 100,000 tracks: ~1.8 hours
+
+**Target:** 75-150 tracks/sec (5-10x improvement)
+
+### Root Cause Analysis
+
+The current NewIndexerService implementation hits performance walls due to:
+
+1. **EF Core change tracker bloat** - Tracking 1000+ entities causes memory growth and slower heap lookups
+2. **Complex many-to-many relationships** - Album↔ArtistWithRole and Track↔ArtistWithRole junction tables
+3. **Previous bulk insert attempt failed** - EFCore.BulkExtensions couldn't handle many-to-many relationships efficiently
+4. **Cache invalidation complexity** - After clearing change tracker, cached entities become detached, causing duplicate key violations on re-insert
+
+### Historical Context
+
+**Original IndexerService (EF Core 6):**
+- Called `SaveChangesAsync` on every artist creation
+- No caching - re-queried entities constantly
+- Result: 15-20 tracks/sec
+
+**Attempted Solution: EFCore.BulkExtensions**
+- Initial indexing was 5x faster
+- Many-to-many junction table inserts never completed
+- Insufficient logging to identify which junction table was the bottleneck
+
+**Current NewIndexerService:**
+- Added entity caching (Artists, Genres, Albums, ArtistWithRole)
+- Used AsNoTracking to reduce change tracker overhead
+- Batched SaveChanges every 100-1000 tracks
+- **Problem:** Clearing change tracker detaches cached entities → duplicate key errors
+- **Attempted fix:** Re-attach entities after clear → complexity explosion with navigation properties
+
+---
+
+# STAGE 1: BULK INSERTION PERFORMANCE
+
+## Overview
+
+Optimize indexing performance through schema simplification and bulk insertion strategy.
+
+**Performance Target:**
+- Current: 7k tracks in ~10 minutes (~12 tracks/sec)
+- Target: 7k tracks in ~2-3 minutes (~60-100 tracks/sec)
+
+## Implementation Strategy
+
+### Core Principles (CRITICAL)
+
+1. **No EF Core Concurrency:** DbContext is NOT thread-safe - all queries must be sequential
+2. **Scan-and-Cache:** Don't pre-load all data - query on first encounter, then cache
+3. **Deferred Work:** Process artwork and keywords AFTER bulk insert (need entity IDs)
+4. **Batch Operations:** Single SaveChanges per phase, not per entity
+
+### Proposed Solution: Schema Simplification + Staged Bulk Insert
+
+#### Part 1: Simplify Schema (Make Bulk-Insert Friendly)
+
+**Remove Album ↔ ArtistWithRole Many-to-Many:**
+
+Albums already have tracks, and tracks have artists. The album-artist relationship is redundant:
+
+```csharp
+// Current schema - redundant relationship
+Album ↔ ArtistWithRole (many-to-many junction table)
+  ↓
+Track ↔ ArtistWithRole (many-to-many junction table)
+
+// Simplified schema
+Album
+  ↓ (1-to-many)
+Track ↔ ArtistWithRole (only junction table during indexing)
+```
+
+**Changes Required:**
+
+1. Remove `Album.Artists` navigation property:
+```csharp
+public class Album : BaseTable {
+    public string Name { get; set; } = null!;
+    // public List<ArtistWithRole> Artists { get; set; } = null!;  ← REMOVE
+    public List<Track> Tracks { get; set; } = null!;
+    public AlbumType? Type { get; set; }
+    // ... rest unchanged
+}
+```
+
+2. Remove `ArtistWithRole.Albums` navigation property:
+```csharp
+public class ArtistWithRole : BaseTable {
+    public ArtistRole Role { get; set; }
+    public Guid ArtistId { get; set; }
+    public Artist Artist { get; set; } = null!;
+    public List<Track> Tracks { get; set; } = null!;
+    // public List<Album> Albums { get; set; } = null!;  ← REMOVE
+}
+```
+
+3. Derive album artists on-demand:
+```csharp
+// Service layer / DTO mapping
+var albumArtists = context.Tracks
+    .Where(t => t.AlbumId == albumId)
+    .SelectMany(t => t.Artists)
+    .DistinctBy(a => a.Id)
+    .ToList();
+```
+
+**Benefits:**
+- ✅ Eliminates one complex junction table during bulk insert
+- ✅ Reduces data duplication
+- ✅ Simpler indexer logic
+- ⚠️ Slight query overhead on album retrieval (acceptable tradeoff for 10x faster indexing)
+
+**Optionally: Embed AudioMetadata into AudioFile**
+
+Currently: AudioFile → AudioMetadata (1-to-1 separate table)
+
+Alternative: Store audio metadata inline on AudioFile:
+```csharp
+public class AudioFile : BaseTable {
+    public string FilePath { get; set; } = null!;
+    public decimal FileSizeInBytes { get; set; }
+    public Guid LibraryId { get; set; }
+    public MusicLibrary Library { get; set; } = null!;
+
+    // Embed metadata directly
+    public int? Bitrate { get; set; }
+    public int? Channels { get; set; }
+    public int? SampleRate { get; set; }
+    public string? Codec { get; set; }
+    public int? BitDepth { get; set; }
+}
+```
+
+**Benefits:**
+- Eliminates one table + FK
+- Reduces joins
+- Simpler bulk insert
+
+**Decision:** Evaluate if separation provides value. If not, inline it.
+
+**Defer Album.Type Calculation:**
+
+Don't calculate during indexing - compute in service layer or DTO mapping:
+```csharp
+// In service/DTO layer
+album.Type = AlbumTypeHelper.GetAlbumType(
+    albumArtists.Count(a => a.Role == ArtistRole.Main),
+    album.Tracks.Count
+);
+```
+
+#### Part 2: Many-to-Many Relationship Inventory
+
+After schema simplification, only **one** many-to-many remains during indexing:
+
+1. **Track ↔ ArtistWithRole** (unavoidable - essential data) ← Only complex junction table
+2. ~~Album ↔ ArtistWithRole~~ (removed ✅)
+3. **Track ↔ Keyword** (already deferred in NewIndexerService ✅)
+
+Not involved in indexing:
+4. **Playlist ↔ Track** (via PlaylistTrack)
+
+#### Part 3: Staged Bulk Insert Strategy
+
+**Implementation Options:**
+
+**Option A: Let EFCore.BulkExtensions Handle Everything**
+
+Test if removing Album.Artists makes bulk insert fast enough:
+```csharp
+await context.BulkInsertAsync(tracks, new BulkConfig {
+    IncludeGraph = true,  // Handles Track.Artists junction
+    SetOutputIdentity = true
+});
+```
+
+**If Option A is slow**, fall back to:
+
+**Option B: Manual Junction Table Insert**
+
+```csharp
+// Insert tracks without relationships
+await context.BulkInsertAsync(tracks, new BulkConfig {
+    IncludeGraph = false,  // Skip navigation properties
+    SetOutputIdentity = true
+});
+
+// Manually insert junction records
+var junctionRecords = tracks.SelectMany(t =>
+    t.Artists.Select(a => new { TrackId = t.Id, ArtistWithRoleId = a.Id })
+).ToList();
+
+// Use raw SQL or regular EF batching for junction
+await context.Database.ExecuteSqlRawAsync(
+    "INSERT INTO TrackArtistWithRole (TracksId, ArtistsId) VALUES ..."
+);
+```
+
+#### Part 4: Comprehensive Logging for Bottleneck Identification
+
+Add detailed timing for each stage:
+
+```csharp
+var sw = Stopwatch.StartNew();
+
+_logger.LogInformation("Stage 1: Inserting {Count} artists...", artists.Count);
+await context.BulkInsertAsync(artists);
+_logger.LogInformation("✓ Artists inserted in {Ms}ms", sw.ElapsedMilliseconds);
+sw.Restart();
+
+_logger.LogInformation("Stage 2: Inserting {Count} genres...", genres.Count);
+await context.BulkInsertAsync(genres);
+_logger.LogInformation("✓ Genres inserted in {Ms}ms", sw.ElapsedMilliseconds);
+sw.Restart();
+
+// ... continue for each stage ...
+
+_logger.LogInformation("Stage 6: Inserting {Count} tracks with {ArtistCount} artist relationships...",
+    tracks.Count, tracks.Sum(t => t.Artists.Count));
+await context.BulkInsertAsync(tracks, bulkConfig);
+_logger.LogInformation("✓ Tracks + relationships inserted in {Ms}ms", sw.ElapsedMilliseconds);
+```
+
+**Goal:** Identify exactly which stage is slow so we can optimize specifically.
+
+## Detailed Implementation Flow
+
+### Phase 1: Collect All File Metadata + Extract Artwork
+
+**Purpose:** Scan filesystem, read ATL metadata, extract artwork paths
+
+```csharp
+var allAtlTracks = new List<ATL.Track>();
+var albumArtworkPaths = new Dictionary<AlbumKey, string>();
+
+await foreach (var directoryGroup in _directoryScanner.ScanLibrary(library))
+{
+    var tracks = await ReadTracksInDirectory(directoryGroup.Files);
+    allAtlTracks.AddRange(tracks);
+
+    // Extract artwork ONCE per album (not per track!)
+    if (tracks.Any())
+    {
+        var firstTrack = tracks.First();
+        var albumKey = AlbumKey.FromTrack(firstTrack);
+
+        if (!albumArtworkPaths.ContainsKey(albumKey))
+        {
+            // Priority 1: External files (folder.jpg, cover.jpg)
+            // Priority 2: Embedded artwork (extracts to disk via ArtworkService)
+            var artworkPath = await GetAlbumArtwork(firstTrack);
+            if (artworkPath != null)
+            {
+                albumArtworkPaths[albumKey] = artworkPath;
+            }
+        }
+    }
+}
+```
+
+**Why extract artwork in Phase 1:**
+- Need access to `ATL.Track.EmbeddedPictures` (not available later)
+- `ExtractEmbeddedArtwork()` saves image to disk, returns file path
+- Deduplicates by album (not per track)
+
+**Output:**
+- `allAtlTracks` - All track metadata in memory
+- `albumArtworkPaths` - Artwork file paths keyed by AlbumKey
+
+---
+
+### Phase 2: Process Tracks with Scan-and-Cache
+
+**Purpose:** Build entity graph in memory, query DB only once per unique entity
+
+```csharp
+var ctx = new ScanContext(_context);
+var deferredArtwork = new List<ArtworkWork>();
+var deferredKeywords = new List<Track>();
+
+foreach (var atlTrack in allAtlTracks)
+{
+    // Scan-and-cache: Query DB on first encounter, cache result
+    var genre = !string.IsNullOrEmpty(atlTrack.Genre)
+        ? await ctx.GetOrCreateGenre(atlTrack.Genre)
+        : null;
+
+    var label = !string.IsNullOrEmpty(atlTrack.Publisher)
+        ? await ctx.GetOrCreateRecordLabel(atlTrack.Publisher)
+        : null;
+
+    var artists = await ParseAndCreateArtists(atlTrack, ctx);
+
+    var albumKey = AlbumKey.FromTrack(atlTrack);
+    var album = await ctx.GetOrCreateAlbum(albumKey, label);
+
+    // Defer artwork processing (needs album to be persisted)
+    if (ctx.IsNewAlbum(albumKey) && albumArtworkPaths.TryGetValue(albumKey, out var artworkPath))
+    {
+        if (!deferredArtwork.Any(a => a.Album.Id == album.Id))
+        {
+            deferredArtwork.Add(new ArtworkWork(album, artworkPath));
+        }
+    }
+
+    var track = await ctx.CreateOrUpdateTrack(atlTrack, album, genre, artists, library);
+
+    // Defer keyword indexing (needs Track.Id assigned after insert)
+    deferredKeywords.Add(track);
+}
+```
+
+**ScanContext with Lazy Caching:**
+
+```csharp
+private class ScanContext
+{
+    private readonly CoralDbContext _context;
+    private readonly Dictionary<string, Genre> _genreCache = new();
+    private readonly Dictionary<string, Artist> _artistCache = new();
+    private readonly Dictionary<AlbumKey, Album> _albumCache = new();
+    private readonly HashSet<AlbumKey> _newAlbumKeys = new();
+
+    public List<Genre> NewGenres { get; } = new();
+    public List<Artist> NewArtists { get; } = new();
+    public List<Album> NewAlbums { get; } = new();
+    public List<Track> NewTracks { get; } = new();
+    public List<Track> TracksToUpdate { get; } = new();
+
+    public async Task<Genre> GetOrCreateGenre(string name)
+    {
+        // 1. Check cache
+        if (_genreCache.TryGetValue(name, out var cached))
+            return cached;
+
+        // 2. Query DB (only once per unique genre!)
+        var existing = await _context.Genres
+            .AsNoTracking()
+            .FirstOrDefaultAsync(g => g.Name == name);
+
+        if (existing != null)
+        {
+            _genreCache[name] = existing;
+            return existing;
+        }
+
+        // 3. Create new
+        var genre = new Genre { Id = Guid.NewGuid(), Name = name, CreatedAt = DateTime.UtcNow };
+        _genreCache[name] = genre;
+        NewGenres.Add(genre);
+        return genre;
+    }
+
+    public bool IsNewAlbum(AlbumKey key) => _newAlbumKeys.Contains(key);
+}
+```
+
+**Query Count Estimate (7k tracks):**
+- ~500 genre queries (one per unique genre)
+- ~500 artist queries (one per unique artist)
+- ~700 album queries (one per unique album)
+- ~50 label queries (one per unique label)
+- ~7,000 track existence checks
+- **Total: ~8,750 queries** (vs original ~37,000!)
+
+**Output:**
+- `ctx.NewGenres`, `ctx.NewArtists`, `ctx.NewAlbums`, `ctx.NewTracks` - Entities to insert
+- `ctx.TracksToUpdate` - Existing tracks to update
+- `deferredArtwork` - Artwork to process after insert
+- `deferredKeywords` - Tracks needing keyword indexing
+
+---
+
+### Phase 3: Staged Bulk Insert with EFCore.BulkExtensions
+
+**Purpose:** Persist all entities in dependency order, single operation per entity type
+
+```csharp
+_logger.LogInformation("Phase 3: Bulk inserting entities...");
+var sw = Stopwatch.StartNew();
+
+// Stage 1: Artists (no dependencies)
+if (ctx.NewArtists.Any())
+{
+    _logger.LogInformation("  Stage 1: Inserting {Count} artists...", ctx.NewArtists.Count);
+    var stageSw = Stopwatch.StartNew();
+    await _context.BulkInsertAsync(ctx.NewArtists, new BulkConfig
+    {
+        SetOutputIdentity = true,
+        PreserveInsertOrder = true
+    });
+    _logger.LogInformation("  ✓ Artists inserted in {Ms}ms", stageSw.ElapsedMilliseconds);
+}
+
+// Stage 2: Genres (no dependencies)
+if (ctx.NewGenres.Any())
+{
+    _logger.LogInformation("  Stage 2: Inserting {Count} genres...", ctx.NewGenres.Count);
+    var stageSw = Stopwatch.StartNew();
+    await _context.BulkInsertAsync(ctx.NewGenres, new BulkConfig { SetOutputIdentity = true });
+    _logger.LogInformation("  ✓ Genres inserted in {Ms}ms", stageSw.ElapsedMilliseconds);
+}
+
+// Stage 3: RecordLabels (no dependencies)
+// Stage 4: ArtistWithRole (depends on Artist)
+// Stage 5: Albums (depends on RecordLabel)
+
+// Stage 6: Tracks (complex - has many-to-many with ArtistWithRole)
+if (ctx.NewTracks.Any())
+{
+    _logger.LogInformation("  Stage 6: Inserting {Count} tracks with {RelCount} artist relationships...",
+        ctx.NewTracks.Count, ctx.NewTracks.Sum(t => t.Artists.Count));
+    var stageSw = Stopwatch.StartNew();
+
+    try
+    {
+        // Try bulk insert with navigation properties
+        await _context.BulkInsertAsync(ctx.NewTracks, new BulkConfig
+        {
+            SetOutputIdentity = true,
+            IncludeGraph = true,  // Handle Track.Artists junction
+            PreserveInsertOrder = true
+        });
+        _logger.LogInformation("  ✓ Tracks + relationships inserted in {Ms}ms", stageSw.ElapsedMilliseconds);
+    }
+    catch (Exception ex)
+    {
+        // Fallback: Insert tracks, then manually insert junction records
+        _logger.LogWarning(ex, "  Bulk insert with graph failed, using manual junction insert");
+        // ... manual junction table insert ...
+    }
+}
+
+// Stage 7: Update existing tracks
+if (ctx.TracksToUpdate.Any())
+{
+    _logger.LogInformation("  Stage 7: Updating {Count} existing tracks...", ctx.TracksToUpdate.Count);
+    await _context.BulkUpdateAsync(ctx.TracksToUpdate);
+}
+
+_logger.LogInformation("Phase 3 complete: All entities persisted in {Ms}ms", sw.ElapsedMilliseconds);
+```
+
+---
+
+### Phase 4: Process Deferred Work (Sequential)
+
+**Purpose:** Process artwork and keywords (require persisted entity IDs)
+
+```csharp
+_logger.LogInformation("Phase 4: Processing deferred work...");
+
+// 4a: Artwork processing (SEQUENTIAL - ProcessArtwork calls SaveChangesAsync)
+if (deferredArtwork.Any())
+{
+    _logger.LogInformation("  Processing {Count} artwork files...", deferredArtwork.Count);
+    var artworkSw = Stopwatch.StartNew();
+
+    foreach (var work in deferredArtwork)
+    {
+        try
+        {
+            // Generates thumbnails + inserts Artwork entities (calls SaveChanges)
+            await _artworkService.ProcessArtwork(work.Album, work.ArtworkPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to process artwork for {Album}", work.Album.Name);
+        }
+    }
+
+    _logger.LogInformation("  ✓ Artwork processed in {Ms}ms", artworkSw.ElapsedMilliseconds);
+}
+
+// 4b: Keyword indexing (sequential)
+if (deferredKeywords.Any())
+{
+    _logger.LogInformation("  Indexing keywords for {Count} tracks...", deferredKeywords.Count);
+    var keywordSw = Stopwatch.StartNew();
+
+    foreach (var track in deferredKeywords)
+    {
+        try
+        {
+            await _searchService.InsertKeywordsForTrack(track);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to index keywords for {Track}", track.Title);
+        }
+    }
+
+    _logger.LogInformation("  ✓ Keywords indexed in {Ms}ms", keywordSw.ElapsedMilliseconds);
+}
+
+_logger.LogInformation("Phase 4 complete");
+```
+
+**Why Sequential:**
+- `ProcessArtwork` calls `SaveChangesAsync()` per album (EF Core concurrency issue)
+- Could refactor ArtworkService for parallelization (separate stage)
+
+**Performance Estimate (7k tracks):**
+- Artwork: 700 albums × 100ms = ~70 seconds
+- Keywords: 7,000 tracks × 5ms = ~35 seconds
+- **Total: ~105 seconds**
+
+---
+
+### Implementation Checklist
+
+**Schema Changes:**
+- [ ] Remove `Album.Artists` navigation property from Album model
+- [ ] Remove `ArtistWithRole.Albums` navigation property from ArtistWithRole model
+- [ ] Add `Album.ReleaseDate` (DateOnly?) for full release date support
+- [ ] Add `Track.OriginalArtistString` (string?) to preserve original tag formatting
+- [ ] Create `AlbumKey` record type for composite key lookups
+- [ ] Create migration for schema changes
+- [ ] Update all code that references `Album.Artists` to derive from tracks
+- [ ] Update AutoMapper `AlbumProfile` to derive artists from `album.Tracks.SelectMany(t => t.Artists).DistinctBy(a => a.ArtistId)`
+- [ ] Evaluate: Embed AudioMetadata into AudioFile (optional)
+- [ ] Defer Album.Type calculation to service/DTO layer
+
+**Bulk Insert Implementation:**
+- [ ] Add EFCore.BulkExtensions NuGet package (if not already present)
+- [ ] Implement in-memory collection phase (scan all tracks, deduplicate)
+- [ ] Implement staged bulk insert with comprehensive logging:
+  - [ ] Stage 1: Artists
+  - [ ] Stage 2: Genres
+  - [ ] Stage 3: RecordLabels
+  - [ ] Stage 4: ArtistWithRole (references Artist via FK)
+  - [ ] Stage 5: Albums (references RecordLabel via FK)
+  - [ ] Stage 6: Tracks (with Track↔ArtistWithRole many-to-many)
+- [ ] Test Option A (BulkInsert with IncludeGraph = true)
+- [ ] If slow, implement Option B (manual junction insert)
+- [ ] Handle existing entity detection (upsert vs insert)
+
+**Testing & Validation:**
+- [ ] Run benchmark against 3,795 track library
+- [ ] Compare results to baseline (15.37 tracks/sec)
+- [ ] Identify bottlenecks from detailed logs
+- [ ] Optimize based on measurements
+- [ ] Test with larger libraries (10k, 50k tracks if available)
+- [ ] Verify data integrity (spot check albums, artists, relationships)
+- [ ] Ensure Album.Type calculation works correctly in service layer
+
+### Expected Performance
+
+**Breakdown for 7,000 tracks:**
+- Phase 1 (File scan + artwork extraction): ~65 seconds
+- Phase 2 (Scan-and-cache entity building): ~20 seconds (~8,750 queries)
+- Phase 3 (Bulk insert): ~10 seconds
+- Phase 4 (Deferred work): ~105 seconds (artwork + keywords)
+- **Total: ~3.3 minutes (vs current ~10 minutes)**
+
+**Scaled Estimates:**
+
+**Conservative (5x improvement):**
+- 7,000 tracks: ~2-3 minutes (was ~10 minutes)
+- 50,000 tracks: ~15 minutes (was ~75 minutes)
+- 100,000 tracks: ~30 minutes (was ~2.5 hours)
+
+**Optimistic (10x improvement, if artwork can be parallelized):**
+- 7,000 tracks: ~1.5 minutes
+- 50,000 tracks: ~10 minutes
+- 100,000 tracks: ~20 minutes
+
+### Risk Mitigation
+
+1. **Breaking existing queries:** Audit all Album.Artists usage before migration
+2. **Bulk insert still slow:** Have fallback plan (batched EF Core saves with caching)
+3. **Data integrity issues:** Thorough testing on test database first
+4. **Migration failures:** Test migration rollback procedure
+
+### Open Questions
+
+1. Should AudioMetadata be embedded or stay separate?
+2. What's the acceptable memory limit for in-memory collection phase?
+3. Do we need to support incremental scans, or can we focus on full rescans?
+4. Should we parallelize file reading during collection phase?
+
+### Future Optimization Opportunities (Post-Stage 1)
+
+1. **Parallelize Artwork Processing:**
+   - Refactor `ArtworkService.ProcessArtwork` into two methods:
+     - `ProcessArtworkImages` - Pure image processing (parallelizable)
+     - Batch insert all Artwork entities at once
+   - Potential savings: ~35-50 seconds for 700 albums
+
+2. **Batch Keyword Insertion:**
+   - Refactor `SearchService.InsertKeywordsForTrack` to support bulk inserts
+   - Process all tracks in one operation instead of 7,000 individual calls
+
+3. **Consider AudioMetadata Inlining:**
+   - Embed AudioMetadata into AudioFile (eliminate 1-to-1 table)
+   - Reduces joins and simplifies bulk insert
+
+### Implementation Notes
+
+- **EF Core Concurrency:** DbContext is NOT thread-safe - no parallel queries
+- **Scan-and-Cache:** Query DB once per unique entity, cache thereafter
+- **Deferred Work:** Artwork/keywords need entity IDs from bulk insert
+- Keep Album.Type calculation simple (service layer, not database)
+- Use record types for cache keys (C# best practice: AlbumKey vs tuples)
+- Prefer KISS principle - implement, measure, then optimize
+- Let profiling guide optimization decisions
+
+---
+
+# STAGE 2: SIGNALR PROGRESS STREAMING (DEFERRED)
+
+See original plan sections for SignalR implementation details. Deferred until Stage 1 performance improvements are complete and measured.
+
+---
+
+# STAGE 3: WORKER ARCHITECTURE REFACTORING (DEFERRED)
+
+See original plan sections for ScanWorker, DirectoryScanner, LibraryService split. Deferred until Stage 1 complete.

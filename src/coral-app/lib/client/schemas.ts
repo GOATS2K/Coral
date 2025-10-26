@@ -79,7 +79,15 @@ export type AudioFile = {
    * @format double
    */
   fileSizeInBytes: number;
+  /**
+   * @format uuid
+   */
+  audioMetadataId: string;
   audioMetadata: AudioMetadata;
+  /**
+   * @format uuid
+   */
+  libraryId: string;
   library: MusicLibrary;
 };
 

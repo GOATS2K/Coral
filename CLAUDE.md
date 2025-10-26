@@ -187,3 +187,4 @@ The backend uses custom operation IDs based on controller method names for clean
 - Use `console.info` instead of `console.log` for logging.
 - Prefer using bunx to npx.
 - Do not make assumptions about library behaviors, always verify your assumptions by reading its source code.
+- Prefer using record types to tuples in C#.

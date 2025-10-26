@@ -1308,11 +1308,13 @@
       "AudioFile": {
         "required": [
           "audioMetadata",
+          "audioMetadataId",
           "createdAt",
           "filePath",
           "fileSizeInBytes",
           "id",
           "library",
+          "libraryId",
           "updatedAt"
         ],
         "type": "object",
@@ -1336,8 +1338,16 @@
             "type": "number",
             "format": "double"
           },
+          "audioMetadataId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "audioMetadata": {
             "$ref": "#/components/schemas/AudioMetadata"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
           },
           "library": {
             "$ref": "#/components/schemas/MusicLibrary"

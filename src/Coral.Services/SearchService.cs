@@ -25,6 +25,7 @@ namespace Coral.Services
         private readonly ILogger<SearchService> _logger;
         private readonly CoralDbContext _context;
         private readonly IPaginationService _paginationService;
+        private static readonly Regex _keywordExtractionRegex = SearchRegexPatterns.KeywordExtraction();
 
         public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
             IPaginationService paginationService)
@@ -50,7 +51,7 @@ namespace Coral.Services
 
             // in the event we've indexed all the keywords present on a track before
             if (existingKeywords.Count() == keywords.Count()
-                && missingKeywordsOnTrack.Count() == 0)
+                && !missingKeywordsOnTrack.Any())
             {
                 return;
             }
@@ -239,14 +240,12 @@ namespace Coral.Services
             // sanitize string for diacritics first
             var sanitized = inputString.RemoveDiacritics();
 
-            // split by word boundary and alphanumerical values
+            // split by word boundary and alphanumerical values using source-generated regex
             // \p{L}    => matches unicode letters / L     Letter
             // \p{Nd}   => matches unicode numbers / Nd    Decimal number
             // +        => one or more of
             // http://www.pcre.org/original/doc/html/pcrepattern.html
-            var pattern = @"[\p{L}\p{Nd}]+";
-            var expression = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            var matches = expression.Matches(sanitized);
+            var matches = _keywordExtractionRegex.Matches(sanitized);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

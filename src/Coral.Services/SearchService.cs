@@ -25,7 +25,7 @@ namespace Coral.Services
         private readonly ILogger<SearchService> _logger;
         private readonly CoralDbContext _context;
         private readonly IPaginationService _paginationService;
-        private static readonly Regex _keywordExtractionRegex = SearchRegexPatterns.KeywordExtraction();
+        private static readonly Regex _keywordExtractionRegex = RegexPatterns.KeywordExtraction();
 
         public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
             IPaginationService paginationService)

@@ -33,6 +33,9 @@ public class IndexerService : IIndexerService
 
     private static readonly string[] ImageFileFormats = [".jpg", ".png"];
 
+    private static readonly Regex _remixerParsingRegex = RegexPatterns.RemixerParsing();
+    private static readonly Regex _featuringArtistParsingRegex = RegexPatterns.FeaturingArtistParsing();
+
     public IndexerService(
         CoralDbContext context,
         ISearchService searchService,
@@ -520,18 +523,14 @@ public class IndexerService : IIndexerService
     private static string? ParseRemixers(string title)
     {
         // supports both (artist remix) and [artist remix]
-        var pattern = @"\(([^()]*)(?: Edit| Remix| VIP| Bootleg)\)|\[([^[\[\]]*)(?: Edit| Remix| VIP| Bootleg)\]";
-        var expression = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        var remixerMatch = expression.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
+        var remixerMatch = _remixerParsingRegex.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value.Trim();
         return parsedRemixers;
     }
 
     private static string? ParseFeaturingArtists(string title)
     {
-        var pattern = @"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)";
-        var expression = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        var featuringMatch = expression.Match(title);
+        var featuringMatch = _featuringArtistParsingRegex.Match(title);
         var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
         return parsedFeaturingArtists;
     }

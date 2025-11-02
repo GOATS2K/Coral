@@ -262,3 +262,88 @@ At the new rate of **36.24 tracks/sec**:
 - Still room for improvement in initial track processing phase
 
 ---
+
+## Optimization 4 - Source-Generated Regex with Caching
+
+**Date:** 2025-11-02
+
+### Changes Implemented
+
+1. **Migrated to Source-Generated Regex**
+   - Created `RegexPatterns` class (renamed from `SearchRegexPatterns`) with `[GeneratedRegex]` attributes
+   - Generates optimized IL code at compile-time instead of runtime compilation
+   - Eliminates regex compilation overhead and dynamic code generation
+
+2. **Cached Regex Instances in SearchService**
+   - Added `private static readonly Regex _keywordExtractionRegex` field
+   - Single regex instance reused for all 3,795 tracks instead of creating new instances
+   - Eliminates allocation overhead from repeated `KeywordExtraction()` method calls
+
+3. **Cached Artist Parsing Regex in IndexerService**
+   - Added `_remixerParsingRegex` static field for parsing remixer artists from titles
+   - Added `_featuringArtistParsingRegex` static field for parsing featuring artists
+   - Each pattern called once per track (7,590 total instantiations eliminated)
+   - Replaced runtime `new Regex()` calls with cached source-generated instances
+
+### Performance Issue Discovered
+
+**Uncached Source-Generated Regex Regression:**
+- Initial implementation called `RegexPatterns.KeywordExtraction()` on every use
+- Source-generated regex methods return **new instances** each time (no automatic caching)
+- Result: **40.4% slower** than compiled regex with internal .NET caching (128.49s vs 91.53s)
+- Lesson: Source-generated regex requires explicit caching for frequently-used patterns
+
+### Results
+
+```
+Total time:       72.50 seconds (~1.2 minutes)
+Tracks indexed:   3,795
+Speed:            52.35 tracks/sec
+Avg per track:    19.10 ms
+```
+
+### Performance Improvement vs Previous (Optimization 3)
+
+| Metric | Previous | Current | Improvement |
+|--------|----------|---------|-------------|
+| **Total Time** | 104.71s | 72.50s | **-32.21s (30.8% faster)** |
+| **Tracks/Second** | 36.24 | 52.35 | **+16.11 tracks/sec (44.5% faster)** |
+| **Time per Track** | 27.59 ms | 19.10 ms | **-8.49 ms (30.8% faster)** |
+
+### Performance Improvement vs Baseline
+
+| Metric | Baseline | Current | Total Improvement |
+|--------|----------|---------|-------------------|
+| **Total Time** | 246.99s | 72.50s | **-174.49s (70.6% faster)** |
+| **Tracks/Second** | 15.37 | 52.35 | **+36.98 tracks/sec (240.5% faster)** |
+| **Time per Track** | 65.08 ms | 19.10 ms | **-45.98 ms (70.6% faster)** |
+
+**Overall speedup: 3.41x vs baseline**
+
+### Breakdown of Regex Optimizations
+
+| Step | Time | Tracks/sec | Change |
+|------|------|------------|--------|
+| Last Commit (compiled regex) | 91.53s | 41.46 | - |
+| SearchService cached (keyword extraction) | 86.88s | 43.68 | -5.1% |
+| All regex cached (+ artist parsing) | 72.50s | 52.35 | -16.5% |
+| **Total regex optimization impact** | - | - | **-20.8%** |
+
+### Extrapolated Performance
+
+At the new rate of **52.35 tracks/sec**:
+- **7,000 tracks:**  ~2.2 minutes (vs. 7.6 minutes baseline, 70.6% faster)
+- **50,000 tracks:** ~16 minutes (vs. 54 minutes baseline, 70.6% faster)
+- **100,000 tracks:** ~32 minutes (vs. 1.8 hours baseline, 70.6% faster)
+
+### Analysis
+
+- **3.41x cumulative speedup** from baseline - more than tripled indexing performance
+- Source-generated regex with proper caching is measurably faster than compiled MSIL regex
+- Keyword extraction regex called 3,795 times (once per track during bulk keyword processing)
+- Artist parsing regexes called 7,590 times total (remixer + featuring, once per track each)
+- Eliminating ~11,385 regex instantiations removed significant allocation and initialization overhead
+- Important lesson: Source-generated regex methods don't automatically cache - explicit caching required
+- Further optimizations may focus on database operations or I/O bottlenecks
+
+---

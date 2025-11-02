@@ -1,9 +1,7 @@
 using System.Text.RegularExpressions;
-using AutoMapper;
 using Coral.BulkExtensions;
 using Coral.Database;
 using Coral.Database.Models;
-using Coral.Events;
 using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,10 +12,12 @@ public interface IIndexerService
 {
     Task DeleteTrack(string filePath);
     Task HandleRename(string oldPath, string newPath);
+
     IAsyncEnumerable<Track> IndexDirectoryGroups(
         IAsyncEnumerable<Indexer.DirectoryGroup> directoryGroups,
         MusicLibrary library,
         CancellationToken cancellationToken = default);
+
     Task FinalizeIndexing(MusicLibrary library, CancellationToken cancellationToken = default);
 }
 
@@ -28,13 +28,10 @@ public class IndexerService : IIndexerService
     private readonly IArtworkService _artworkService;
     private readonly ILogger<IndexerService> _logger;
 
-    private static readonly string[] AudioFileFormats =
-        [".flac", ".mp3", ".mp2", ".wav", ".m4a", ".ogg", ".alac", ".aif", ".opus"];
-
     private static readonly string[] ImageFileFormats = [".jpg", ".png"];
 
-    private static readonly Regex _remixerParsingRegex = RegexPatterns.RemixerParsing();
-    private static readonly Regex _featuringArtistParsingRegex = RegexPatterns.FeaturingArtistParsing();
+    private static readonly Regex RemixerParsingRegex = RegexPatterns.RemixerParsing();
+    private static readonly Regex FeaturingArtistParsingRegex = RegexPatterns.FeaturingArtistParsing();
 
     public IndexerService(
         CoralDbContext context,
@@ -48,7 +45,6 @@ public class IndexerService : IIndexerService
         _artworkService = artworkService;
     }
 
-    #region Public API Methods
 
     public async Task DeleteTrack(string filePath)
     {
@@ -81,9 +77,6 @@ public class IndexerService : IIndexerService
         await _context.SaveChangesAsync();
     }
 
-    #endregion
-
-    #region Core Indexing Logic - Bulk Operations
 
     private readonly Dictionary<Track, string> _tracksForKeywordInsertion = new();
     private readonly Dictionary<Guid, string> _albumsForArtworkProcessing = new();
@@ -173,7 +166,7 @@ public class IndexerService : IIndexerService
         // Check if track already exists (for rescans)
         var existingTrack = await _context.Tracks
             .Include(t => t.AudioFile)
-            .FirstOrDefaultAsync(t => t.AudioFile!.FilePath == atlTrack.Path);
+            .FirstOrDefaultAsync(t => t.AudioFile.FilePath == atlTrack.Path);
 
         if (existingTrack != null)
         {
@@ -204,7 +197,7 @@ public class IndexerService : IIndexerService
 
         // Get or create audio metadata (cached automatically)
         var audioMetadata = await _context.AudioMetadata.GetOrAddBulk(
-            am => new { am.Codec, am.Bitrate, am.SampleRate },
+            am => new {am.Codec, am.Bitrate, am.SampleRate},
             () => new AudioMetadata
             {
                 Id = Guid.NewGuid(),
@@ -238,14 +231,16 @@ public class IndexerService : IIndexerService
             () => new Track
             {
                 Id = Guid.NewGuid(),
-                Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path),
-                Comment = atlTrack.Comment,
+                Title = TextSanitizer.SanitizeForUtf8(!string.IsNullOrEmpty(atlTrack.Title)
+                    ? atlTrack.Title
+                    : Path.GetFileName(atlTrack.Path))!,
+                Comment = TextSanitizer.SanitizeForUtf8(atlTrack.Comment),
                 Genre = genre,
                 GenreId = genre?.Id,
                 DiscNumber = atlTrack.DiscNumber,
                 TrackNumber = atlTrack.TrackNumber,
                 DurationInSeconds = atlTrack.Duration,
-                Isrc = atlTrack.ISRC,
+                Isrc = TextSanitizer.SanitizeForUtf8(atlTrack.ISRC),
                 Album = album,
                 AlbumId = album.Id,
                 AudioFile = audioFile,
@@ -304,12 +299,14 @@ public class IndexerService : IIndexerService
         audioFile.FileSizeInBytes = currentFileInfo.Length;
 
         // Update existing track scalar properties
-        existingTrack.Title = !string.IsNullOrEmpty(atlTrack.Title) ? atlTrack.Title : Path.GetFileName(atlTrack.Path);
-        existingTrack.Comment = atlTrack.Comment;
+        existingTrack.Title = TextSanitizer.SanitizeForUtf8(!string.IsNullOrEmpty(atlTrack.Title)
+            ? atlTrack.Title
+            : Path.GetFileName(atlTrack.Path))!;
+        existingTrack.Comment = TextSanitizer.SanitizeForUtf8(atlTrack.Comment);
         existingTrack.DiscNumber = atlTrack.DiscNumber;
         existingTrack.TrackNumber = atlTrack.TrackNumber;
         existingTrack.DurationInSeconds = atlTrack.Duration;
-        existingTrack.Isrc = atlTrack.ISRC;
+        existingTrack.Isrc = TextSanitizer.SanitizeForUtf8(atlTrack.ISRC);
 
         // Update album if changed
         if (existingTrack.AlbumId != newAlbum.Id)
@@ -366,18 +363,17 @@ public class IndexerService : IIndexerService
         _logger.LogDebug("Updated existing track: {TrackPath}", atlTrack.Path);
     }
 
-    #endregion
-
-    #region Get Or Add Methods - Using Bulk Extensions
 
     private async Task<Genre> GetGenreBulk(string genreName)
     {
+        var sanitizedName = TextSanitizer.SanitizeForUtf8(genreName)!;
+
         return await _context.Genres.GetOrAddBulk(
             keySelector: g => g.Name,
             createFunc: () => new Genre
             {
                 Id = Guid.NewGuid(),
-                Name = genreName,
+                Name = sanitizedName,
                 CreatedAt = DateTime.UtcNow
             });
     }
@@ -386,15 +382,18 @@ public class IndexerService : IIndexerService
     {
         if (string.IsNullOrEmpty(artistName)) artistName = "Unknown Artist";
 
+        // Sanitize artist name for UTF-8 compatibility
+        var sanitizedName = TextSanitizer.SanitizeForUtf8(artistName)!;
+
         return await _context.Artists.GetOrAddBulk(
             keySelector: a => a.Name,
             createFunc: () =>
             {
-                _logger.LogDebug("Creating new artist: {Artist}", artistName);
+                _logger.LogDebug("Creating new artist: {Artist}", sanitizedName);
                 return new Artist
                 {
                     Id = Guid.NewGuid(),
-                    Name = artistName,
+                    Name = sanitizedName,
                     CreatedAt = DateTime.UtcNow
                 };
             });
@@ -408,7 +407,7 @@ public class IndexerService : IIndexerService
             var artist = await GetArtistBulk(artistName.Trim());
 
             var artistWithRole = await _context.ArtistsWithRoles.GetOrAddBulk(
-                keySelector: awr => new { awr.ArtistId, awr.Role },
+                keySelector: awr => new {awr.ArtistId, awr.Role},
                 createFunc: () => new ArtistWithRole
                 {
                     Id = Guid.NewGuid(),
@@ -422,7 +421,7 @@ public class IndexerService : IIndexerService
             // GetOrAddBulk might return an existing entity from DB without navigation properties loaded
             if (artistWithRole.Artist == null)
             {
-                artistWithRole.Artist = artist;
+                artistWithRole.Artist ??= artist;
             }
 
             artistsWithRoles.Add(artistWithRole);
@@ -459,12 +458,14 @@ public class IndexerService : IIndexerService
         var trackHasLabel = atlTrack.AdditionalFields.TryGetValue("LABEL", out var labelName);
         if (!trackHasLabel) return null;
 
+        var sanitizedName = TextSanitizer.SanitizeForUtf8(labelName)!;
+
         return await _context.RecordLabels.GetOrAddBulk(
             keySelector: l => l.Name,
             createFunc: () => new RecordLabel
             {
                 Id = Guid.NewGuid(),
-                Name = labelName!,
+                Name = sanitizedName,
                 CreatedAt = DateTime.UtcNow
             });
     }
@@ -489,11 +490,11 @@ public class IndexerService : IIndexerService
             createFunc: () => new Album
             {
                 Id = Guid.NewGuid(),
-                Name = albumName!,
+                Name = TextSanitizer.SanitizeForUtf8(albumName)!,
                 ReleaseYear = atlTrack.Year,
                 DiscTotal = atlTrack.DiscTotal,
                 TrackTotal = atlTrack.TrackTotal,
-                CatalogNumber = atlTrack.CatalogNumber,
+                CatalogNumber = TextSanitizer.SanitizeForUtf8(atlTrack.CatalogNumber),
                 Label = label,
                 Artworks = new List<Artwork>(),
                 CreatedAt = DateTime.UtcNow
@@ -508,14 +509,11 @@ public class IndexerService : IIndexerService
         return album;
     }
 
-    #endregion
-
-    #region Utility Methods (No DB Access)
 
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        string[] splitChars = { ",", "&", ";", " x " };
+        string[] splitChars = [",", "&", ";", " x "];
         var split = artistName.Split(splitChars, StringSplitOptions.TrimEntries);
         return split.Distinct().ToList();
     }
@@ -523,14 +521,14 @@ public class IndexerService : IIndexerService
     private static string? ParseRemixers(string title)
     {
         // supports both (artist remix) and [artist remix]
-        var remixerMatch = _remixerParsingRegex.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
+        var remixerMatch = RemixerParsingRegex.Match(title).Groups.Values.Where(a => !string.IsNullOrEmpty(a.Value));
         var parsedRemixers = remixerMatch.LastOrDefault()?.Value.Trim();
         return parsedRemixers;
     }
 
     private static string? ParseFeaturingArtists(string title)
     {
-        var featuringMatch = _featuringArtistParsingRegex.Match(title);
+        var featuringMatch = FeaturingArtistParsingRegex.Match(title);
         var parsedFeaturingArtists = featuringMatch.Groups.Values.LastOrDefault()?.Value.Trim();
         return parsedFeaturingArtists;
     }
@@ -545,9 +543,6 @@ public class IndexerService : IIndexerService
         return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
 
-    #endregion
-
-    #region Scanning and Cleanup Methods
 
     private static string BuildKeywordString(IEnumerable<ArtistWithRole> artists, Album album, string trackTitle)
     {
@@ -684,9 +679,6 @@ public class IndexerService : IIndexerService
         return analyzedTracks;
     }
 
-    #endregion
-
-    #region Streaming API for Benchmarks
 
     /// <summary>
     /// Indexes directory groups and yields tracks as they are indexed (streaming).
@@ -695,7 +687,8 @@ public class IndexerService : IIndexerService
     public async IAsyncEnumerable<Track> IndexDirectoryGroups(
         IAsyncEnumerable<Indexer.DirectoryGroup> directoryGroups,
         MusicLibrary library,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken)
     {
         library = await GetLibrary(library);
 
@@ -740,7 +733,8 @@ public class IndexerService : IIndexerService
             return;
 
         // Process artworks in parallel (CPU-intensive image operations)
-        _logger.LogInformation("Processing artworks for {AlbumCount} albums in parallel", _albumsForArtworkProcessing.Count);
+        _logger.LogInformation("Processing artworks for {AlbumCount} albums in parallel",
+            _albumsForArtworkProcessing.Count);
         var artworkEntities = await _artworkService.ProcessArtworksParallel(_albumsForArtworkProcessing);
         _albumsForArtworkProcessing.Clear();
 
@@ -748,13 +742,13 @@ public class IndexerService : IIndexerService
         foreach (var artwork in artworkEntities)
         {
             await _context.Artworks.GetOrAddBulk(
-                a => new { a.AlbumId, a.Size, a.Path },
+                a => new {a.AlbumId, a.Size, a.Path},
                 () => artwork);
         }
 
         // Save all bulk operations but retain cache for keyword relationship registration
         var stats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions { Logger = _logger },
+            new BulkInsertOptions {Logger = _logger},
             retainCache: true,
             cancellationToken);
 
@@ -774,7 +768,7 @@ public class IndexerService : IIndexerService
 
         // Save keywords and relationships in one bulk operation, now clear cache
         var keywordStats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions { Logger = _logger },
+            new BulkInsertOptions {Logger = _logger},
             retainCache: false,
             cancellationToken);
 
@@ -796,6 +790,4 @@ public class IndexerService : IIndexerService
         // Save library metadata
         await _context.SaveChangesAsync(cancellationToken);
     }
-
-    #endregion
 }

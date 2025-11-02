@@ -66,8 +66,17 @@ services.AddScoped<IPaginationService, PaginationService>();
 
 var serviceProvider = services.BuildServiceProvider();
 
+// Drop and recreate database for clean benchmark
+Console.WriteLine("Dropping existing database...");
+using (var scope = serviceProvider.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
+    await context.Database.EnsureDeletedAsync();
+    Console.WriteLine("Database dropped.");
+}
+
 // Ensure database exists and is migrated
-Console.WriteLine("Ensuring database is migrated...");
+Console.WriteLine("Creating and migrating database...");
 using (var scope = serviceProvider.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
@@ -133,6 +142,13 @@ using (var scope = serviceProvider.CreateScope())
             Console.WriteLine($"Progress: {tracksIndexed}/{expectedTracks} tracks ({tracksPerSec:F2} tracks/sec, {elapsed:F1}s elapsed)");
         }
     }
+
+    // Final progress update after all tracks scanned
+    var finalElapsed = stopwatch.Elapsed.TotalSeconds;
+    var finalTracksPerSec = tracksIndexed / finalElapsed;
+    Console.WriteLine($"Progress: {tracksIndexed}/{expectedTracks} tracks ({finalTracksPerSec:F2} tracks/sec, {finalElapsed:F1}s elapsed)");
+    Console.WriteLine();
+    Console.WriteLine("Finalizing indexing...");
 
     await indexer.FinalizeIndexing(library, CancellationToken.None);
 

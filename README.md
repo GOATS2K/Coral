@@ -11,7 +11,6 @@ A brand new take on a self-hosted music streaming platform.
 
 ## Build
 
-- PostgreSQL with pgvector extension
 - .NET 9
 - Bun
 - make

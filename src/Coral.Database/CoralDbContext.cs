@@ -42,11 +42,18 @@ public class CoralDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // SQLite: Convert string arrays to comma-separated strings
+        var stringArrayComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<string[]>(
+            (c1, c2) => c1!.SequenceEqual(c2!),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c.ToArray()
+        );
+
         modelBuilder.Entity<Models.Artwork>()
             .Property(a => a.Colors)
             .HasConversion(
                 v => string.Join(",", v),
                 v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
-            );
+            )
+            .Metadata.SetValueComparer(stringArrayComparer);
     }
 }

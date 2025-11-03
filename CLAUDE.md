@@ -10,7 +10,7 @@ Coral is a self-hosted music streaming platform with:
 - **Coral.Api**: C# ASP.NET Core backend API
 - **Coral.Essentia.Cli**: C++ CLI for audio feature extraction (replacing Python prototype)
 
-The backend uses PostgreSQL with pgvector for track embeddings and recommendations. Audio feature extraction for ML-based recommendations uses the Essentia C++ library via Coral.Essentia.Cli (cross-platform). A Python FastAPI prototype (Coral.Essentia.API) exists but is being phased out.
+The backend uses SQLite for transactional data and DuckDB for vector embeddings and recommendations. Audio feature extraction for ML-based recommendations uses the Essentia C++ library via Coral.Essentia.Cli (cross-platform). A Python FastAPI prototype (Coral.Essentia.API) exists but is being phased out.
 
 ## Build & Development
 
@@ -71,7 +71,7 @@ dotnet test tests/Coral.Encoders.Tests
 dotnet test tests/Coral.Dto.Tests
 ```
 
-Tests use xUnit with NSubstitute for mocking. The test projects include a Coral.TestProviders project for shared test utilities. Some tests use Testcontainers for PostgreSQL integration testing.
+Tests use xUnit with NSubstitute for mocking. The test projects include a Coral.TestProviders project for shared test utilities. Tests use in-memory SQLite for fast integration testing.
 
 ## Architecture
 
@@ -105,11 +105,14 @@ Tests use xUnit with NSubstitute for mocking. The test projects include a Coral.
 
 ### Database
 
-PostgreSQL with pgvector extension for track embeddings:
-- Connection configured in CoralDbContext (src/Coral.Database/CoralDbContext.cs:36)
-- Default: `Host=localhost;Username=postgres;Password=admin;Database=coral2`
-- HNSW index on TrackEmbedding.Embedding for cosine similarity search
-- Migrations run automatically on application startup (src/Coral.Api/Program.cs:108)
+Dual-database architecture for optimal performance:
+- **SQLite** (coral.db): Transactional data (tracks, albums, artists, playlists)
+  - Connection configured in CoralDbContext (src/Coral.Database/CoralDbContext.cs)
+  - Default path: `~/AppData/Local/Coral/coral.db`
+  - Migrations run automatically on application startup (src/Coral.Api/Program.cs:108)
+- **DuckDB** (embeddings.db): Vector embeddings for recommendations (planned)
+  - Default path: `~/AppData/Local/Coral/embeddings.db`
+  - Will use VSS extension with HNSW indexing for cosine similarity search
 
 ### Audio Feature Extraction Pipeline
 
@@ -117,7 +120,7 @@ Coral.Essentia.Cli (C++) handles audio feature extraction using the Essentia lib
 - Cross-platform CLI tool that uses TensorFlow models for audio analysis
 - Extracts 256-dimensional embeddings for track recommendations
 - InferenceService invokes this CLI tool as a subprocess
-- Embeddings stored in PostgreSQL with pgvector for cosine similarity search
+- Embeddings will be stored in DuckDB for cosine similarity search (migration in progress)
 - Legacy Python prototype (Coral.Essentia.API) exists but is being replaced
 
 ### Frontend Architecture

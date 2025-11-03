@@ -5,6 +5,7 @@ using Coral.Services;
 using Coral.Services.ChannelWrappers;
 using Coral.Services.Indexer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -30,13 +31,20 @@ if (!Directory.Exists(libraryPath))
 Console.WriteLine($"Library path: {libraryPath}");
 Console.WriteLine();
 
+// Load configuration
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .Build();
+
 // Set up DI container
 var services = new ServiceCollection();
 
-// Logging - minimal for benchmark
+// Logging - configured from appsettings.json
 services.AddLogging(builder =>
 {
-    builder.SetMinimumLevel(LogLevel.Warning); // Only show warnings/errors during benchmark
+    builder.AddConsole();
+    builder.AddConfiguration(configuration.GetSection("Logging"));
 });
 
 // Database

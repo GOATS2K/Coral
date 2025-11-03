@@ -1,10 +1,7 @@
 ﻿using System.Diagnostics;
 using Coral.Database;
-using Coral.Database.Models;
 using Coral.Services;
 using Coral.Services.ChannelWrappers;
-using Microsoft.EntityFrameworkCore;
-using Pgvector;
 
 namespace Coral.Api.Workers;
 
@@ -14,15 +11,17 @@ public class EmbeddingWorker : BackgroundService
     private readonly ILogger<EmbeddingWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly InferenceService _inferenceService;
+    private readonly IEmbeddingService _embeddingService;
     private readonly SemaphoreSlim _semaphore = new(10);
 
     public EmbeddingWorker(IEmbeddingChannel channel, ILogger<EmbeddingWorker> logger,
-        IServiceScopeFactory scopeFactory, InferenceService inferenceService)
+        IServiceScopeFactory scopeFactory, InferenceService inferenceService, IEmbeddingService embeddingService)
     {
         _channel = channel;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _inferenceService = inferenceService;
+        _embeddingService = embeddingService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -63,22 +62,18 @@ public class EmbeddingWorker : BackgroundService
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
-            await using var context = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
             var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
 
-            if (context.TrackEmbeddings.Any(a => a.TrackId == track.Id))
+            // Check if embedding already exists in DuckDB
+            if (await _embeddingService.HasEmbeddingAsync(track.Id))
                 return;
 
             var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
-            // TEMPORARY: Embeddings disabled during migration - will be moved to DuckDB (Phase 9)
-            // await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
-            // {
-            //     CreatedAt = DateTime.UtcNow,
-            //     Embedding = new Vector(embeddings),
-            //     TrackId = track.Id
-            // }, stoppingToken);
-            // await context.SaveChangesAsync(stoppingToken);
-            _logger.LogInformation("Stored embeddings for track {FilePath} in {Time} seconds",
+
+            // Store embedding in DuckDB
+            await _embeddingService.InsertEmbeddingAsync(track.Id, embeddings);
+
+            _logger.LogInformation("Stored embeddings for track {FilePath} in {Time:F2}s",
                 track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
 
             await reporter.ReportEmbeddingCompleted(job.RequestId);

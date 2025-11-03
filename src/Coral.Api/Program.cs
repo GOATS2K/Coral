@@ -115,9 +115,14 @@ try
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
     await db.Database.MigrateAsync();
+
+    // Initialize DuckDB embeddings database
+    var embeddingService = scope.ServiceProvider.GetRequiredService<Coral.Services.IEmbeddingService>();
+    await embeddingService.InitializeAsync();
 }
 catch (Exception ex)
 {
-    Console.WriteLine("Failed to run migrations.");
+    Console.WriteLine("Failed to run migrations or initialize databases.");
+    Console.WriteLine(ex.Message);
 }
 app.Run();

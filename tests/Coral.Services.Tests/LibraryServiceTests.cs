@@ -12,7 +12,8 @@ namespace Coral.Services.Tests
             TestDatabase.Context,
             TestDatabase.Mapper,
             new ScanChannel(),
-            Substitute.For<ILogger<LibraryService>>());
+            Substitute.For<ILogger<LibraryService>>(),
+            Substitute.For<IEmbeddingService>());
 
         [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()

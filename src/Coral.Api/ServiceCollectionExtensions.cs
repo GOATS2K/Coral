@@ -31,6 +31,7 @@ namespace Coral.Api
             services.AddSingleton<IActionDescriptorChangeProvider>(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton(MyActionDescriptorChangeProvider.Instance);
             services.AddSingleton<IEmbeddingChannel, EmbeddingChannel>();
+            services.AddSingleton<IEmbeddingService, EmbeddingService>();
             services.AddSingleton<InferenceService>();
 
             // Phase 1: New refactored services

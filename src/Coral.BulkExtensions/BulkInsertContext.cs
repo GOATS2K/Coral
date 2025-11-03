@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using Coral.BulkExtensions.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using NpgsqlTypes;
 
 namespace Coral.BulkExtensions;
 
@@ -21,6 +20,9 @@ public sealed class BulkInsertContext : IAsyncDisposable
     // Metadata caches for performance
     private readonly Dictionary<(Type, Type), JunctionTableInfo> _junctionTableCache = new();
     private readonly Dictionary<string, Delegate> _compiledSelectorCache = new();
+
+    // Track if SQLite optimizations have been applied
+    private bool _sqliteOptimized = false;
 
     internal BulkInsertContext(DbContext dbContext, BulkInsertOptions? options = null)
     {
@@ -365,8 +367,8 @@ public sealed class BulkInsertContext : IAsyncDisposable
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
-        // Insert entities in batches using raw SQL
-        await BulkInsertWithPostgresAsync(entityType, newEntities, ct);
+        // SQLite bulk insert
+        await BulkInsertWithSqliteAsync(entityType, newEntities, ct);
 
         stats.EntitiesInserted[entityType] = newEntities.Count;
 
@@ -375,7 +377,45 @@ public sealed class BulkInsertContext : IAsyncDisposable
             newEntities.Count / sw.Elapsed.TotalSeconds);
     }
 
-    private async Task BulkInsertWithPostgresAsync(
+    private async Task OptimizeSqliteForBulkInsert(System.Data.Common.DbConnection connection)
+    {
+        // Only optimize once, and not if we're inside a transaction
+        if (_sqliteOptimized)
+            return;
+
+        // Check if we're in a transaction - if so, skip optimizations
+        // (SQLite doesn't allow PRAGMA changes inside transactions)
+        try
+        {
+            var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA journal_mode";
+            var currentMode = await command.ExecuteScalarAsync();
+
+            // If we can read the pragma, we're not in a restrictive transaction state
+            // Apply optimizations
+            await ExecutePragmaAsync(connection, "PRAGMA journal_mode = WAL");
+            await ExecutePragmaAsync(connection, "PRAGMA synchronous = NORMAL");
+            await ExecutePragmaAsync(connection, "PRAGMA cache_size = -64000");
+            await ExecutePragmaAsync(connection, "PRAGMA temp_store = MEMORY");
+
+            _sqliteOptimized = true;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
+        {
+            // Error code 1 = "Safety level may not be changed inside a transaction"
+            // This is expected in test scenarios - just continue without optimization
+            _sqliteOptimized = true; // Don't try again
+        }
+    }
+
+    private async Task ExecutePragmaAsync(System.Data.Common.DbConnection connection, string pragma)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = pragma;
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task BulkInsertWithSqliteAsync(
         Type entityType,
         System.Collections.IList entities,
         CancellationToken ct)
@@ -386,102 +426,106 @@ public sealed class BulkInsertContext : IAsyncDisposable
         // Get entity metadata from EF Core
         var efEntityType = _dbContext.Model.FindEntityType(entityType);
         if (efEntityType == null)
-            throw new InvalidOperationException($"Entity type {entityType.Name} not found in DbContext model");
+            throw new InvalidOperationException(
+                $"Entity type {entityType.Name} not found in DbContext model");
 
         var tableName = efEntityType.GetTableName();
-        var schema = efEntityType.GetSchema();
-        var fullTableName = string.IsNullOrEmpty(schema)
-            ? $"\"{tableName}\""
-            : $"\"{schema}\".\"{tableName}\"";
-
-        // Get all properties that should be inserted (excluding navigation properties)
         var properties = efEntityType.GetProperties()
             .Where(p => !p.IsShadowProperty() && p.GetColumnName() != null)
             .ToList();
 
-        // Get connection from DbContext
-        var connection = (Npgsql.NpgsqlConnection)_dbContext.Database.GetDbConnection();
+        var columnNames = properties.Select(p => p.GetColumnName()).ToList();
+        var paramPlaceholders = string.Join(", ",
+            Enumerable.Range(0, columnNames.Count).Select(i => $"@p{i}"));
+
+        var columnNamesStr = string.Join(", ", columnNames.Select(c => $"\"{c}\""));
+        var insertSql = $"INSERT INTO \"{tableName}\" ({columnNamesStr}) VALUES ({paramPlaceholders})";
+
+        var connection = _dbContext.Database.GetDbConnection();
         if (connection.State != System.Data.ConnectionState.Open)
             await connection.OpenAsync(ct);
 
-        // Use PostgreSQL COPY for bulk insert
-        var columnNames = properties.Select(p => p.GetColumnName()).ToList();
-        var copyCommand = $"COPY {fullTableName} ({string.Join(", ", columnNames.Select(c => $"\"{c}\""))}) FROM STDIN (FORMAT BINARY)";
+        // Apply SQLite optimizations once
+        await OptimizeSqliteForBulkInsert(connection);
 
-        // Process entities in batches to manage memory
-        var entityBatches = entities.Cast<object>().Chunk(_options.EntityBatchSize);
+        // Use ADO.NET for optimal performance
+        using var command = connection.CreateCommand();
+        command.CommandText = insertSql;
 
-        foreach (var batch in entityBatches)
+        // Create parameters once and reuse (critical for performance)
+        var parameters = properties.Select((_, i) =>
         {
-            await using var writer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+            var param = command.CreateParameter();
+            param.ParameterName = $"@p{i}";
+            command.Parameters.Add(param);
+            return param;
+        }).ToArray();
+
+        // Batch inserts in transactions (optimal: ~1000 rows per transaction)
+        var batches = entities.Cast<object>().Chunk(_options.EntityBatchSize);
+
+        foreach (var batch in batches)
+        {
+            using var transaction = await connection.BeginTransactionAsync(ct);
+            command.Transaction = transaction;
 
             foreach (var entity in batch)
             {
-                await writer.StartRowAsync(ct);
-
-                foreach (var property in properties)
+                // Set parameter values (reusing parameter objects)
+                for (int i = 0; i < properties.Count; i++)
                 {
-                    var value = property.PropertyInfo?.GetValue(entity);
-                    var clrType = property.ClrType;
-
-                    // If this is a foreign key property and it's null, try to get the value from the navigation property
-                    if (value == null || (value is Guid guidValue && guidValue == Guid.Empty))
-                    {
-                        var foreignKeys = property.GetContainingForeignKeys();
-                        if (foreignKeys.Any())
-                        {
-                            var foreignKey = foreignKeys.First();
-                            var navigation = foreignKey.DependentToPrincipal;
-
-                            if (navigation != null && navigation.PropertyInfo != null)
-                            {
-                                var navigationValue = navigation.PropertyInfo.GetValue(entity);
-                                if (navigationValue != null)
-                                {
-                                    // Get the principal key value from the related entity (always Id for BaseTable)
-                                    value = navigationValue.GetType().GetProperty("Id")?.GetValue(navigationValue);
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle enums - convert to underlying integer type
-                    var underlyingType = Nullable.GetUnderlyingType(clrType) ?? clrType;
-                    if (underlyingType.IsEnum && value != null)
-                    {
-                        value = Convert.ToInt32(value);
-                    }
-
-                    // Map to NpgsqlDbType and write
-                    var dbType = MapClrToNpgsqlType(underlyingType.IsEnum ? typeof(int) : clrType);
-                    await writer.WriteAsync(value, dbType, ct);
+                    var property = properties[i];
+                    var value = GetPropertyValue(entity, property);
+                    parameters[i].Value = value ?? DBNull.Value;
                 }
+
+                await command.ExecuteNonQueryAsync(ct);
             }
 
-            await writer.CompleteAsync(ct);
+            await transaction.CommitAsync(ct);
         }
     }
 
-    private static readonly Dictionary<Type, NpgsqlDbType> _typeToNpgsqlTypeCache = new()
+    private object? GetPropertyValue(object entity, Microsoft.EntityFrameworkCore.Metadata.IProperty property)
     {
-        [typeof(Guid)] = NpgsqlDbType.Uuid,
-        [typeof(string)] = NpgsqlDbType.Text,
-        [typeof(string[])] = NpgsqlDbType.Array | NpgsqlDbType.Text,
-        [typeof(int)] = NpgsqlDbType.Integer,
-        [typeof(long)] = NpgsqlDbType.Bigint,
-        [typeof(DateTime)] = NpgsqlDbType.TimestampTz,
-        [typeof(bool)] = NpgsqlDbType.Boolean,
-        [typeof(decimal)] = NpgsqlDbType.Numeric,
-        [typeof(double)] = NpgsqlDbType.Double,
-        [typeof(float)] = NpgsqlDbType.Real
-    };
+        var value = property.PropertyInfo?.GetValue(entity);
+        var clrType = property.ClrType;
 
-    private static NpgsqlDbType MapClrToNpgsqlType(Type clrType)
-    {
+        // Handle null foreign keys - try to get value from navigation property
+        if (value == null || (value is Guid guidValue && guidValue == Guid.Empty))
+        {
+            var foreignKeys = property.GetContainingForeignKeys();
+            if (foreignKeys.Any())
+            {
+                var foreignKey = foreignKeys.First();
+                var navigation = foreignKey.DependentToPrincipal;
+
+                if (navigation?.PropertyInfo != null)
+                {
+                    var navigationValue = navigation.PropertyInfo.GetValue(entity);
+                    if (navigationValue != null)
+                    {
+                        value = navigationValue.GetType().GetProperty("Id")?.GetValue(navigationValue);
+                    }
+                }
+            }
+        }
+
+        // Apply EF Core value converter if one exists (e.g., string[] -> string)
+        var converter = property.GetValueConverter();
+        if (converter != null && value != null)
+        {
+            value = converter.ConvertToProvider(value);
+        }
+
+        // Handle enums - convert to underlying integer type
         var underlyingType = Nullable.GetUnderlyingType(clrType) ?? clrType;
-        return _typeToNpgsqlTypeCache.TryGetValue(underlyingType, out var npgsqlType)
-            ? npgsqlType
-            : NpgsqlDbType.Text; // Fallback
+        if (underlyingType.IsEnum && value != null)
+        {
+            value = Convert.ToInt32(value);
+        }
+
+        return value;
     }
 
     private async Task BulkInsertRelationshipsAsync(
@@ -491,7 +535,6 @@ public sealed class BulkInsertContext : IAsyncDisposable
         if (_relationships.Count == 0)
             return;
 
-        // Group relationships by junction table (already deduplicated by HashSet)
         var groupedRelationships = _relationships
             .GroupBy(r => r.JunctionInfo, new JunctionTableInfoComparer())
             .ToList();
@@ -512,7 +555,8 @@ public sealed class BulkInsertContext : IAsyncDisposable
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
-            await BulkInsertJunctionRecordsAsync(junctionInfo, records, ct);
+            // SQLite bulk insert (no provider abstraction)
+            await BulkInsertJunctionRecordsSqliteAsync(junctionInfo, records, ct);
 
             var relationshipKey = $"{junctionInfo.LeftType.Name} <-> {junctionInfo.RightType.Name}";
             stats.RelationshipsInserted[relationshipKey] = records.Count;
@@ -523,36 +567,47 @@ public sealed class BulkInsertContext : IAsyncDisposable
         }
     }
 
-    private async Task BulkInsertJunctionRecordsAsync(
+    private async Task BulkInsertJunctionRecordsSqliteAsync(
         JunctionTableInfo junctionInfo,
         List<(Guid Left, Guid Right)> records,
         CancellationToken ct)
     {
+        var fullTableName = $"\"{junctionInfo.TableName}\"";
+
+        // SQLite uses INSERT OR IGNORE instead of ON CONFLICT DO NOTHING
+        var sql = $"INSERT OR IGNORE INTO {fullTableName} (\"{junctionInfo.LeftColumnName}\", \"{junctionInfo.RightColumnName}\") VALUES (@left, @right)";
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+
+        // Create parameters once and reuse
+        var leftParam = command.CreateParameter();
+        leftParam.ParameterName = "@left";
+        var rightParam = command.CreateParameter();
+        rightParam.ParameterName = "@right";
+        command.Parameters.Add(leftParam);
+        command.Parameters.Add(rightParam);
+
+        // Batch in chunks with transactions
         var chunks = records.Chunk(_options.JunctionBatchSize);
 
         foreach (var chunk in chunks)
         {
-            var leftIds = chunk.Select(r => r.Left).ToArray();
-            var rightIds = chunk.Select(r => r.Right).ToArray();
+            using var transaction = await connection.BeginTransactionAsync(ct);
+            command.Transaction = transaction;
 
-            // PostgreSQL UNNEST with parameterized arrays
-            var fullTableName = string.IsNullOrEmpty(junctionInfo.Schema)
-                ? $"\"{junctionInfo.TableName}\""
-                : $"\"{junctionInfo.Schema}\".\"{junctionInfo.TableName}\"";
+            foreach (var (left, right) in chunk)
+            {
+                leftParam.Value = left;
+                rightParam.Value = right;
+                await command.ExecuteNonQueryAsync(ct);
+            }
 
-            var sql = $@"
-                INSERT INTO {fullTableName} (""{junctionInfo.LeftColumnName}"", ""{junctionInfo.RightColumnName}"")
-                SELECT * FROM UNNEST(@leftIds::uuid[], @rightIds::uuid[])
-                ON CONFLICT DO NOTHING";
-
-            await _dbContext.Database.ExecuteSqlRawAsync(
-                sql,
-                new[]
-                {
-                    new Npgsql.NpgsqlParameter("@leftIds", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = leftIds },
-                    new Npgsql.NpgsqlParameter("@rightIds", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = rightIds }
-                },
-                ct);
+            await transaction.CommitAsync(ct);
         }
     }
 

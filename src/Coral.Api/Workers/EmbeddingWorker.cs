@@ -70,13 +70,14 @@ public class EmbeddingWorker : BackgroundService
                 return;
 
             var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
-            await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
-            {
-                CreatedAt = DateTime.UtcNow,
-                Embedding = new Vector(embeddings),
-                TrackId = track.Id
-            }, stoppingToken);
-            await context.SaveChangesAsync(stoppingToken);
+            // TEMPORARY: Embeddings disabled during migration - will be moved to DuckDB (Phase 9)
+            // await context.TrackEmbeddings.AddAsync(new TrackEmbedding()
+            // {
+            //     CreatedAt = DateTime.UtcNow,
+            //     Embedding = new Vector(embeddings),
+            //     TrackId = track.Id
+            // }, stoppingToken);
+            // await context.SaveChangesAsync(stoppingToken);
             _logger.LogInformation("Stored embeddings for track {FilePath} in {Time} seconds",
                 track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
 

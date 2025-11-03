@@ -50,7 +50,7 @@ services.AddLogging(builder =>
 // Database
 services.AddDbContext<CoralDbContext>(options =>
 {
-    options.UseNpgsql(ApplicationConfiguration.DatabaseConnectionString, opt => opt.UseVector());
+    options.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}");
 });
 
 // Services

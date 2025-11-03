@@ -13,11 +13,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
-        <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.2"/>
-        <PackageReference Include="Testcontainers" Version="4.7.0"/>
-        <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0"/>
-        <PackageReference Include="Testcontainers.Xunit" Version="4.7.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0"/>
         <PackageReference Include="xunit" Version="2.9.3"/>
     </ItemGroup>
 

@@ -64,8 +64,10 @@ public static class ApplicationConfiguration
     public static string Plugins => Config.Paths.Plugins;
     public static string Models => Config.Paths.Models;
 
-    // New property for database
+    // Database properties
     public static string DatabaseConnectionString => Config.Database.ConnectionString;
+    public static string SqliteDbPath => Config.Paths.SqliteDbPath;
+    public static string DuckDbEmbeddingsPath => Config.Paths.DuckDbEmbeddingsPath;
 
     private static void EnsureDirectoriesCreated()
     {

@@ -18,7 +18,7 @@ public class CoralDbContext : DbContext
     public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
     public DbSet<RecordLabel> RecordLabels { get; set; } = null!;
-    public DbSet<TrackEmbedding> TrackEmbeddings { get; set; } = null!;
+    public DbSet<TrackEmbedding> TrackEmbeddings { get; set; } = null!;  // Will be removed when DuckDB service is implemented
     public DbSet<FavoriteTrack> FavoriteTracks { get; set; } = null!;
     public DbSet<FavoriteArtist> FavoriteArtists { get; set; } = null!;
     public DbSet<FavoriteAlbum> FavoriteAlbums { get; set; } = null!;
@@ -35,19 +35,18 @@ public class CoralDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseNpgsql(ApplicationConfiguration.DatabaseConnectionString, opt => opt.UseVector());
+            options.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}");
         }
     }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasPostgresExtension("vector");
-        
-        modelBuilder.Entity<TrackEmbedding>()
-            .HasIndex(i => i.Embedding)
-            .HasMethod("hnsw")
-            .HasOperators("vector_cosine_ops")
-            .HasStorageParameter("m", 16)
-            .HasStorageParameter("ef_construction", 64);
+        // SQLite: Convert string arrays to comma-separated strings
+        modelBuilder.Entity<Models.Artwork>()
+            .Property(a => a.Colors)
+            .HasConversion(
+                v => string.Join(",", v),
+                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            );
     }
 }

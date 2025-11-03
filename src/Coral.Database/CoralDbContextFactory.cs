@@ -9,7 +9,7 @@ public class CoralDbContextFactory : IDesignTimeDbContextFactory<CoralDbContext>
     public CoralDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<CoralDbContext>();
-        optionsBuilder.UseNpgsql(ApplicationConfiguration.DatabaseConnectionString, opt => opt.UseVector());
+        optionsBuilder.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}");
         return new CoralDbContext(optionsBuilder.Options);
     }
 }

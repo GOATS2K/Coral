@@ -8,7 +8,6 @@ using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Pgvector.EntityFrameworkCore;
 using Track = Coral.Database.Models.Track;
 
 namespace Coral.Services
@@ -175,47 +174,49 @@ namespace Coral.Services
 
         public async Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId)
         {
-            var trackEmbeddings = await _context.TrackEmbeddings.FirstOrDefaultAsync(t => t.TrackId == trackId);
-            if (trackEmbeddings == null)
-                return [];
+            // TEMPORARY: Recommendations disabled during migration - will use DuckDB (Phase 10)
+            return [];
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            // var trackEmbeddings = await _context.TrackEmbeddings.FirstOrDefaultAsync(t => t.TrackId == trackId);
+            // if (trackEmbeddings == null)
+            //     return [];
 
-            // Set HNSW ef_search parameter to allow exploring more candidates during search
-            // Default is 40, which limits results. Setting to 100 allows full result set.
-            await _context.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.ef_search = 100");
+            // await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            var recs = await _context.TrackEmbeddings
-                .Select(t => new {Entity = t, Distance = t.Embedding.CosineDistance(trackEmbeddings.Embedding)} )
-                .OrderBy(t => t.Distance)
-                .Take(100)
-                .ToListAsync();
+            // // Set HNSW ef_search parameter to allow exploring more candidates during search
+            // // Default is 40, which limits results. Setting to 100 allows full result set.
+            // await _context.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.ef_search = 100");
 
-            await transaction.CommitAsync();
+            // var recs = await _context.TrackEmbeddings
+            //     .Select(t => new {Entity = t, Distance = t.Embedding.CosineDistance(trackEmbeddings.Embedding)} )
+            //     .OrderBy(t => t.Distance)
+            //     .Take(100)
+            //     .ToListAsync();
 
-            var trackIds = recs
-                .Where(t => t.Distance < 0.2)
-                // tracks with identical distance are duplicates
-                .DistinctBy(t => t.Distance)
-                .Select(t => t.Entity.TrackId)
-                .Distinct().ToList();
+            // await transaction.CommitAsync();
 
-            var tracks = await _context.Tracks
-                .Where(t => trackIds.Contains(t.Id))
-                .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            // var trackIds = recs
+            //     .Where(t => t.Distance < 0.2)
+            //     // tracks with identical distance are duplicates
+            //     .DistinctBy(t => t.Distance)
+            //     .Select(t => t.Entity.TrackId)
+            //     .Distinct().ToList();
 
-            List<SimpleTrackDto> orderedTracks = [];
-            foreach (var track in recs)
-            {
-                var targetTrack = tracks.FirstOrDefault(t => t.Id == track.Entity.TrackId);
-                if (targetTrack == null)
-                    continue;
-                orderedTracks.Add(targetTrack);
-            }
+            // var tracks = await _context.Tracks
+            //     .Where(t => trackIds.Contains(t.Id))
+            //     .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
+            //     .ToListAsync();
 
+            // List<SimpleTrackDto> orderedTracks = [];
+            // foreach (var track in recs)
+            // {
+            //     var targetTrack = tracks.FirstOrDefault(t => t.Id == track.Entity.TrackId);
+            //     if (targetTrack == null)
+            //         continue;
+            //     orderedTracks.Add(targetTrack);
+            // }
 
-            return orderedTracks.DistinctBy(t => t.Title).ToList();
+            // return orderedTracks.DistinctBy(t => t.Title).ToList();
         }
 
         public async Task<List<MusicLibraryDto>> GetMusicLibraries()

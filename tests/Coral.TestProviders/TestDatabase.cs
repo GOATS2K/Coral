@@ -4,7 +4,6 @@ using Coral.Database.Models;
 using Coral.Dto.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Testcontainers.PostgreSql;
 
 namespace Coral.TestProviders;
 

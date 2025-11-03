@@ -1,44 +1,14 @@
 ﻿using Coral.Configuration;
 using Coral.Database;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Coral.TestProviders;
 
-public static class SharedPostgresContainer
-{
-    private static PostgreSqlContainer? _container;
-    private static readonly SemaphoreSlim _lock = new(1, 1);
-
-    public static async Task<PostgreSqlContainer> GetContainerAsync()
-    {
-        if (_container != null)
-            return _container;
-
-        await _lock.WaitAsync();
-        try
-        {
-            if (_container != null)
-                return _container;
-
-            _container = new PostgreSqlBuilder()
-                .WithImage("pgvector/pgvector:0.8.1-pg17-trixie")
-                .Build();
-            await _container.StartAsync();
-            return _container;
-        }
-        finally
-        {
-            _lock.Release();
-        }
-    }
-}
-
 public class DatabaseFixture : IAsyncLifetime
 {
-    private PostgreSqlContainer _container = null!;
-
+    private SqliteConnection? _connection;
     public TestDatabase TestDb { get; private set; } = null!;
 
     private void CleanUpTempLibraries()
@@ -87,11 +57,17 @@ public class DatabaseFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _container = await SharedPostgresContainer.GetContainerAsync();
+        // Create in-memory SQLite connection
+        // IMPORTANT: Must keep connection open for in-memory database to persist
+        _connection = new SqliteConnection("Data Source=:memory:");
+        await _connection.OpenAsync();
+
         TestDb = new TestDatabase(opt =>
         {
-            opt.UseNpgsql(_container.GetConnectionString(), p => p.UseVector());
+            opt.UseSqlite(_connection);
         });
+
+        // No Testcontainers, no Docker - instant startup!
     }
 
     public Task DisposeAsync()
@@ -99,6 +75,8 @@ public class DatabaseFixture : IAsyncLifetime
         CleanUpArtwork();
         CleanUpTempLibraries();
         TestDb?.Dispose();
+        _connection?.Close();
+        _connection?.Dispose();
         return Task.CompletedTask;
     }
 }

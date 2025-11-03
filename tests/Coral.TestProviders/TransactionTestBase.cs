@@ -1,23 +1,19 @@
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Xunit;
 
 namespace Coral.TestProviders;
 
 /// <summary>
-/// Base class for tests that use transaction-based isolation.
-/// Each test gets its own DbContext instance and runs in its own transaction
-/// that gets rolled back after the test completes.
-/// All tests share the same database container (via collection fixture).
+/// Base class for tests with isolated in-memory SQLite databases.
+/// Each test gets its own fresh in-memory database that's disposed after the test.
 /// </summary>
 [Collection(nameof(DatabaseCollection))]
 public abstract class TransactionTestBase : IAsyncLifetime
 {
     protected DatabaseFixture Fixture { get; }
     protected TestDatabase TestDatabase { get; private set; } = null!;
-
-    private IDbContextTransaction? _transaction;
+    private Microsoft.Data.Sqlite.SqliteConnection? _connection;
 
     protected TransactionTestBase(DatabaseFixture fixture)
     {
@@ -26,22 +22,22 @@ public abstract class TransactionTestBase : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var connectionString = Fixture.TestDb.Context.Database.GetConnectionString();
+        // Create a brand new in-memory database for this test
+        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        await _connection.OpenAsync();
+
         TestDatabase = new TestDatabase(opt =>
         {
-            opt.UseNpgsql(connectionString, p => p.UseVector());
+            opt.UseSqlite(_connection);
         });
-        _transaction = await TestDatabase.Context.Database.BeginTransactionAsync();
     }
 
     public async Task DisposeAsync()
     {
-        if (_transaction != null)
-        {
-            await _transaction.RollbackAsync();
-            await _transaction.DisposeAsync();
-        }
         TestDatabase.Context.ChangeTracker.Clear();
         TestDatabase.Dispose();
+        _connection?.Close();
+        _connection?.Dispose();
+        await Task.CompletedTask;
     }
 }

@@ -65,7 +65,6 @@ public static class ApplicationConfiguration
     public static string Models => Config.Paths.Models;
 
     // Database properties
-    public static string DatabaseConnectionString => Config.Database.ConnectionString;
     public static string SqliteDbPath => Config.Paths.SqliteDbPath;
     public static string DuckDbEmbeddingsPath => Config.Paths.DuckDbEmbeddingsPath;
 
@@ -112,7 +111,6 @@ public static class ApplicationConfiguration
         return new ServerConfiguration
         {
             ConfigVersion = ServerConfiguration.CurrentVersion,
-            Database = new DatabaseSettings(),
             Paths = new PathSettings
             {
                 Data = PathSettings.GetDefaultDataDirectory()

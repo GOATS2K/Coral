@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 Console.WriteLine("=== Coral Indexer Benchmark ===");
-Console.WriteLine($"Database: {ApplicationConfiguration.DatabaseConnectionString}");
+Console.WriteLine($"Database: SQLite at {ApplicationConfiguration.SqliteDbPath}");
 Console.WriteLine();
 
 if (args.Length == 0)

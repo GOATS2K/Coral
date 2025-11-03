@@ -1402,35 +1402,6 @@
         },
         "additionalProperties": false
       },
-      "DatabaseSettings": {
-        "required": [
-          "database",
-          "host",
-          "password",
-          "port",
-          "username"
-        ],
-        "type": "object",
-        "properties": {
-          "host": {
-            "type": "string"
-          },
-          "port": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "username": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "database": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
       "GenreDto": {
         "required": [
           "id",
@@ -1590,7 +1561,6 @@
       "ServerConfiguration": {
         "required": [
           "configVersion",
-          "database",
           "paths"
         ],
         "type": "object",
@@ -1598,9 +1568,6 @@
           "configVersion": {
             "type": "integer",
             "format": "int32"
-          },
-          "database": {
-            "$ref": "#/components/schemas/DatabaseSettings"
           },
           "paths": {
             "$ref": "#/components/schemas/PathSettings"

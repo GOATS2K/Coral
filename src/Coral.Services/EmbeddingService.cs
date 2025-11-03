@@ -126,7 +126,7 @@ public class EmbeddingService : IEmbeddingService
             return new List<(Guid, double)>();
         }
 
-        var sourceEmbedding = (float[])result;
+        var sourceEmbedding = result is float[] arr ? arr : ((List<float>)result).ToArray();
 
         // Find similar tracks using array_cosine_distance
         // Note: If HNSW index exists, DuckDB will use it automatically
@@ -149,8 +149,8 @@ public class EmbeddingService : IEmbeddingService
 
         while (await reader.ReadAsync())
         {
-            var id = Guid.Parse(reader.GetString(0));
-            var distance = reader.GetDouble(1);
+            var id = reader.GetGuid(0);
+            var distance = (double)reader.GetFloat(1);
 
             // Filter by max distance
             if (distance <= maxDistance)

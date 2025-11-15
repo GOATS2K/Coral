@@ -26,9 +26,9 @@ public class ArtworkController : ControllerBase
 
     [HttpGet]
     [Route("{artworkId}")]
-    public async Task<ActionResult> ArtworkFromId(Guid artworkId)
+    public async Task<ActionResult> ArtworkFromId(Guid artworkId, [FromQuery] ArtworkSize size = ArtworkSize.Original)
     {
-        var artworkPath = await _artworkService.GetArtworkPath(artworkId);
+        var artworkPath = await _artworkService.GetArtworkPath(artworkId, size);
         if (artworkPath == null) return NotFound();
         return new PhysicalFileResult(artworkPath,
             MimeTypeHelper.GetMimeTypeForExtension(Path.GetExtension(artworkPath)));

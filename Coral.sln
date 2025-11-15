@@ -37,6 +37,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coral.Events", "src\Coral.E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.Cli", "src\Coral.Cli\Coral.Cli.csproj", "{461E1A5D-16D3-4A0B-9926-6F07DB53E6CA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coral.BulkExtensions", "src\Coral.BulkExtensions\Coral.BulkExtensions.csproj", "{66714BD2-71B6-4A31-8363-F12307549349}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{461E1A5D-16D3-4A0B-9926-6F07DB53E6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{461E1A5D-16D3-4A0B-9926-6F07DB53E6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{461E1A5D-16D3-4A0B-9926-6F07DB53E6CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66714BD2-71B6-4A31-8363-F12307549349}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66714BD2-71B6-4A31-8363-F12307549349}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66714BD2-71B6-4A31-8363-F12307549349}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66714BD2-71B6-4A31-8363-F12307549349}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

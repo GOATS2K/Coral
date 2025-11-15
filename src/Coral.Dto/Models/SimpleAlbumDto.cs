@@ -9,7 +9,7 @@ namespace Coral.Dto.Models
         public IEnumerable<SimpleArtistDto> Artists { get; set; } = null!;
         public AlbumType? Type { get; set; }
         public int ReleaseYear { get; set; }
-        public ArtworkDto Artworks { get; set; } = null!;
+        public ArtworkDto? Artworks { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool Favorited { get; set; }
     }

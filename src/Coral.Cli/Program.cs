@@ -1,26 +1,82 @@
-﻿using Coral.Configuration;
+using System.Reflection;
+using System.Text;
+using Coral.Cli.Commands;
+using Coral.Cli.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using Spectre.Console.Cli.Extensions.DependencyInjection;
 
-Console.WriteLine("Coral Configuration Test - Testing live-reload");
-Console.WriteLine("Edit the config.json file while this is running to see changes take effect.");
-Console.WriteLine($"Config file location: {ApplicationConfiguration.ConfigurationFile}");
-Console.WriteLine("Press Ctrl+C to exit.\n");
+// Set up console encoding
+Console.OutputEncoding = Encoding.UTF8;
 
-while (true)
+// Get version info
+var appVersion = Assembly.GetExecutingAssembly()
+    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+    ?.InformationalVersion.Split("+")[0] ?? "1.0.0";
+
+// Load configuration
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .Build();
+
+// Configure services
+var serviceCollection = ConfigureServices();
+
+// Run CLI app
+await RunCommandLineApp(serviceCollection, args);
+
+ServiceCollection ConfigureServices()
 {
-    Console.WriteLine($"\n=== Configuration Check at {DateTime.Now:HH:mm:ss} ===");
+    var services = new ServiceCollection();
+    services.AddSingleton(configuration);
+    services.AddCoralServices(configuration);
+    return services;
+}
 
-    Console.WriteLine("Database Settings:");
-    Console.WriteLine($"  Host: {ApplicationConfiguration.GetConfiguration()["Database:Host"]}");
-    Console.WriteLine($"  Port: {ApplicationConfiguration.GetConfiguration()["Database:Port"]}");
-    Console.WriteLine($"  Database: {ApplicationConfiguration.GetConfiguration()["Database:Database"]}");
-    Console.WriteLine($"  Connection String: {ApplicationConfiguration.DatabaseConnectionString}");
+async Task RunCommandLineApp(ServiceCollection services, string[] args)
+{
+#pragma warning disable CA2000
+    var typeRegistrar = new DependencyInjectionRegistrar(services);
+#pragma warning restore CA2000
+    var app = new CommandApp(typeRegistrar);
 
-    Console.WriteLine("Path Settings:");
-    Console.WriteLine($"  Data: {ApplicationConfiguration.AppData}");
-    Console.WriteLine($"  Thumbnails: {ApplicationConfiguration.Thumbnails}");
-    Console.WriteLine($"  HLS: {ApplicationConfiguration.HLSDirectory}");
+    app.Configure(opt =>
+    {
+        opt.Settings.ApplicationName = "coral";
+        opt.Settings.ApplicationVersion = appVersion;
+        opt.SetExceptionHandler((exception, _) =>
+        {
+            AnsiConsole.WriteException(exception);
+            AnsiConsole.MarkupLine($"[red]Error:[/] {exception.Message}");
+        });
 
-    Console.WriteLine("Waiting 2 seconds before next refresh...");
+        // Index command - indexes a music library
+        opt.AddCommand<IndexCommand>("index")
+            .WithDescription("Index a music library directory")
+            .WithAlias("i")
+            .WithExample("index", "\"C:\\Music\"")
+            .WithExample("index", "\"C:\\Music\"", "--drop-database")
+            .WithExample("index", "\"C:\\Music\"", "--incremental");
 
-    await Task.Delay(2000);
+        // Embeddings command - generates embeddings for tracks
+        opt.AddCommand<EmbeddingsCommand>("embeddings")
+            .WithDescription("Generate embeddings for indexed tracks")
+            .WithAlias("e")
+            .WithExample("embeddings")
+            .WithExample("embeddings", "--concurrency 8")
+            .WithExample("embeddings", "--min-duration 30", "--max-duration 600");
+
+        // Benchmark command - benchmarks album fetching
+        opt.AddCommand<BenchmarkCommand>("benchmark")
+            .WithDescription("Benchmark album fetching performance")
+            .WithAlias("b")
+            .WithExample("benchmark")
+            .WithExample("benchmark", "\"search query\"")
+            .WithExample("benchmark", "\"Calibre\"", "--number 20", "--iterations 5");
+    });
+
+    await app.RunAsync(args);
 }

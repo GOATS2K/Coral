@@ -1,4 +1,5 @@
-﻿using Coral.TestProviders;
+﻿using Coral.Services.Helpers;
+using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -7,25 +8,24 @@ using Xunit.Abstractions;
 
 namespace Coral.Services.Tests
 {
-    public class SearchServiceTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+    public class SearchServiceTests(DatabaseFixture fixture) : TransactionTestBase(fixture)
     {
-        public ISearchService SearchService = null!;
-        private readonly DatabaseFixture _fixture;
-
-        public SearchServiceTests(DatabaseFixture fixture)
-        {
-            _fixture = fixture;
-        }
+        private ISearchService SearchService => new SearchService(
+            TestDatabase.Mapper,
+            TestDatabase.Context,
+            Substitute.For<ILogger<SearchService>>(),
+            new PaginationService(TestDatabase.Mapper, TestDatabase.Context),
+            Substitute.For<IArtworkMappingHelper>());
 
         [Fact]
         public async Task InsertKeywordsForTrack_NewTrack_InsertsKeywordsSuccessfully()
         {
             // arrange
-            var trackToFind = _fixture.TestDb.Starlight;
+            var trackToFind = TestDatabase.Starlight;
             // act
             await SearchService.InsertKeywordsForTrack(trackToFind);
             // assert
-            var starlightKeyword = await _fixture.TestDb
+            var starlightKeyword = await TestDatabase
                 .Context
                 .Keywords
                 .Where(k => k.Value == "starlight")
@@ -39,11 +39,11 @@ namespace Coral.Services.Tests
         {
             // arrange
             // generate keywords for tracks in album
-            foreach (var track in _fixture.TestDb.Radio.Tracks)
+            foreach (var track in TestDatabase.Radio.Tracks)
             {
                 await SearchService.InsertKeywordsForTrack(track);
             }
-            var trackToFind = _fixture.TestDb.Fuwarin;
+            var trackToFind = TestDatabase.Fuwarin;
 
             // act
             var results = await SearchService.Search(trackToFind.Title);
@@ -63,12 +63,12 @@ namespace Coral.Services.Tests
         {
             // arrange
             // generate keywords for all tracks in album
-            foreach (var track in _fixture.TestDb.ALittleWhileLonger.Tracks)
+            foreach (var track in TestDatabase.ALittleWhileLonger.Tracks)
             {
                 await SearchService.InsertKeywordsForTrack(track);
             }
 
-            var trackToFind = _fixture.TestDb.Starlight;
+            var trackToFind = TestDatabase.Starlight;
             // act
             var result = await SearchService.Search(query);
 
@@ -82,7 +82,7 @@ namespace Coral.Services.Tests
         public async Task Search_ALittleWhileLonger_FindsAlbum()
         {
             // arrange
-            foreach (var track in _fixture.TestDb.ALittleWhileLonger.Tracks)
+            foreach (var track in TestDatabase.ALittleWhileLonger.Tracks)
             {
                 await SearchService.InsertKeywordsForTrack(track);
             }
@@ -91,20 +91,7 @@ namespace Coral.Services.Tests
             var result = await SearchService.Search(query);
             // assert
             var album = result.Data.Albums.Single();
-            Assert.Equal(_fixture.TestDb.ALittleWhileLonger.Id, album.Id);
-        }
-
-        public Task InitializeAsync()
-        {
-            var logger = Substitute.For<ILogger<SearchService>>();
-            var paginationService = new PaginationService(_fixture.TestDb.Mapper, _fixture.TestDb.Context);
-            SearchService = new SearchService(_fixture.TestDb.Mapper, _fixture.TestDb.Context, logger, paginationService);
-            return Task.CompletedTask;
-        }
-
-        public Task DisposeAsync()
-        {
-            return Task.CompletedTask;
+            Assert.Equal(TestDatabase.ALittleWhileLonger.Id, album.Id);
         }
     }
 }

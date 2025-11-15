@@ -3,21 +3,23 @@ using Coral.Database.Models;
 
 namespace Coral.Services.ChannelWrappers;
 
+public record EmbeddingJob(Track Track, string? RequestId);
+
 public interface IEmbeddingChannel
 {
-    ChannelWriter<Track> GetWriter();
-    ChannelReader<Track> GetReader();
+    ChannelWriter<EmbeddingJob> GetWriter();
+    ChannelReader<EmbeddingJob> GetReader();
 }
 
 public class EmbeddingChannel : IEmbeddingChannel
 {
-    private readonly Channel<Track> _channel;
+    private readonly Channel<EmbeddingJob> _channel;
 
     public EmbeddingChannel()
     {
-        _channel = Channel.CreateUnbounded<Track>();
+        _channel = Channel.CreateUnbounded<EmbeddingJob>();
     }
 
-    public ChannelWriter<Track> GetWriter() => _channel.Writer;
-    public ChannelReader<Track> GetReader() => _channel.Reader;
+    public ChannelWriter<EmbeddingJob> GetWriter() => _channel.Writer;
+    public ChannelReader<EmbeddingJob> GetReader() => _channel.Reader;
 }

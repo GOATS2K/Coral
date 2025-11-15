@@ -9,12 +9,12 @@ namespace Coral.Api.Controllers
     [ApiController]
     public class OnboardingController : ControllerBase
     {
-        private readonly IIndexerService _indexerService;
+        private readonly ILibraryService _libraryService;
         private readonly IFileSystemService _fileSystemService;
 
-        public OnboardingController(IIndexerService indexerService, IFileSystemService fileSystemService)
+        public OnboardingController(ILibraryService libraryService, IFileSystemService fileSystemService)
         {
-            _indexerService = indexerService;
+            _libraryService = libraryService;
             _fileSystemService = fileSystemService;
         }
 
@@ -29,14 +29,14 @@ namespace Coral.Api.Controllers
         [Route("musicLibraries")]
         public async Task<ActionResult<List<MusicLibraryDto>>> MusicLibraries()
         {
-            return Ok(await _indexerService.GetMusicLibraries());
+            return Ok(await _libraryService.GetMusicLibraries());
         }
 
         [HttpPost]
         [Route("register")]
         public async Task<ActionResult<MusicLibrary>> RegisterMusicLibrary([FromQuery] string path)
         {
-            var library = await _indexerService.AddMusicLibrary(path);
+            var library = await _libraryService.AddMusicLibrary(path);
             return library != null ? Ok(library) : BadRequest(new { Message = "Failed to register library" });
         }
     }

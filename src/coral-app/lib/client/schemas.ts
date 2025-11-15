@@ -15,7 +15,7 @@ export type AlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  artworks: ArtworkDto;
+  artworks?: ArtworkDto;
   /**
    * @format date-time
    */
@@ -79,7 +79,15 @@ export type AudioFile = {
    * @format double
    */
   fileSizeInBytes: number;
+  /**
+   * @format uuid
+   */
+  audioMetadataId: string;
   audioMetadata: AudioMetadata;
+  /**
+   * @format uuid
+   */
+  libraryId: string;
   library: MusicLibrary;
 };
 
@@ -113,17 +121,6 @@ export type AudioMetadata = {
    */
   channels?: number | null;
   codec: string;
-};
-
-export type DatabaseSettings = {
-  host: string;
-  /**
-   * @format int32
-   */
-  port: number;
-  username: string;
-  password: string;
-  database: string;
 };
 
 export type GenreDto = {
@@ -200,7 +197,6 @@ export type ServerConfiguration = {
    * @format int32
    */
   configVersion: number;
-  database: DatabaseSettings;
   paths: PathSettings;
 };
 
@@ -216,7 +212,7 @@ export type SimpleAlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  artworks: ArtworkDto;
+  artworks?: ArtworkDto;
   /**
    * @format date-time
    */

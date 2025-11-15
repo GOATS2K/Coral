@@ -18,7 +18,6 @@ public class CoralDbContext : DbContext
     public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;
     public DbSet<RecordLabel> RecordLabels { get; set; } = null!;
-    public DbSet<TrackEmbedding> TrackEmbeddings { get; set; } = null!;
     public DbSet<FavoriteTrack> FavoriteTracks { get; set; } = null!;
     public DbSet<FavoriteArtist> FavoriteArtists { get; set; } = null!;
     public DbSet<FavoriteAlbum> FavoriteAlbums { get; set; } = null!;
@@ -35,19 +34,46 @@ public class CoralDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseNpgsql(ApplicationConfiguration.DatabaseConnectionString, opt => opt.UseVector());
+            options.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}", o =>
+            {
+                o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            });
         }
     }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasPostgresExtension("vector");
-        
-        modelBuilder.Entity<TrackEmbedding>()
-            .HasIndex(i => i.Embedding)
-            .HasMethod("hnsw")
-            .HasOperators("vector_cosine_ops")
-            .HasStorageParameter("m", 16)
-            .HasStorageParameter("ef_construction", 64);
+        // SQLite: Convert string arrays to comma-separated strings
+        var stringArrayComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<string[]>(
+            (c1, c2) => c1!.SequenceEqual(c2!),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c.ToArray()
+        );
+
+        modelBuilder.Entity<Models.Artwork>()
+            .Property(a => a.Colors)
+            .HasConversion(
+                v => string.Join(",", v),
+                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            )
+            .Metadata.SetValueComparer(stringArrayComparer);
+
+        // Configure Paths as JSON column containing a list
+        modelBuilder.Entity<Models.Artwork>()
+            .OwnsMany(a => a.Paths, pb =>
+            {
+                pb.ToJson();
+            });
+
+        // Performance: Index on AlbumId for artwork queries (no longer need Size since it's in JSON)
+        modelBuilder.Entity<Models.Artwork>()
+            .HasIndex(a => a.AlbumId);
+
+        // Performance: Composite indexes for join tables to improve join performance
+        modelBuilder.Entity<Models.Track>()
+            .HasIndex(t => new { t.AlbumId, t.DiscNumber, t.TrackNumber });
+
+        modelBuilder.Entity<Models.ArtistWithRole>()
+            .HasIndex(a => new { a.ArtistId, a.Role });
     }
 }

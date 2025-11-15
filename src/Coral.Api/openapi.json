@@ -50,6 +50,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ArtworkSize"
+            }
           }
         ],
         "responses": {
@@ -1122,7 +1129,6 @@
       "AlbumDto": {
         "required": [
           "artists",
-          "artworks",
           "createdAt",
           "favorited",
           "genres",
@@ -1308,11 +1314,13 @@
       "AudioFile": {
         "required": [
           "audioMetadata",
+          "audioMetadataId",
           "createdAt",
           "filePath",
           "fileSizeInBytes",
           "id",
           "library",
+          "libraryId",
           "updatedAt"
         ],
         "type": "object",
@@ -1336,8 +1344,16 @@
             "type": "number",
             "format": "double"
           },
+          "audioMetadataId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "audioMetadata": {
             "$ref": "#/components/schemas/AudioMetadata"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
           },
           "library": {
             "$ref": "#/components/schemas/MusicLibrary"
@@ -1387,35 +1403,6 @@
             "nullable": true
           },
           "codec": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "DatabaseSettings": {
-        "required": [
-          "database",
-          "host",
-          "password",
-          "port",
-          "username"
-        ],
-        "type": "object",
-        "properties": {
-          "host": {
-            "type": "string"
-          },
-          "port": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "username": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "database": {
             "type": "string"
           }
         },
@@ -1580,7 +1567,6 @@
       "ServerConfiguration": {
         "required": [
           "configVersion",
-          "database",
           "paths"
         ],
         "type": "object",
@@ -1588,9 +1574,6 @@
           "configVersion": {
             "type": "integer",
             "format": "int32"
-          },
-          "database": {
-            "$ref": "#/components/schemas/DatabaseSettings"
           },
           "paths": {
             "$ref": "#/components/schemas/PathSettings"
@@ -1601,7 +1584,6 @@
       "SimpleAlbumDto": {
         "required": [
           "artists",
-          "artworks",
           "createdAt",
           "favorited",
           "id",

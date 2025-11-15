@@ -3,10 +3,11 @@ using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
+using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Microsoft.EntityFrameworkCore;
-using Pgvector.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Track = Coral.Database.Models.Track;
 
 namespace Coral.Services
@@ -23,17 +24,29 @@ namespace Coral.Services
         public Task<string?> GetArtworkForAlbum(Guid albumId);
         public Task<AlbumDto?> GetAlbum(Guid albumId);
         public Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId);
+        public Task<List<MusicLibraryDto>> GetMusicLibraries();
+        public Task<MusicLibrary?> AddMusicLibrary(string path);
+        public Task RemoveMusicLibrary(Guid libraryId);
+        public Task<MusicLibrary?> GetMusicLibrary(Guid libraryId);
     }
 
     public class LibraryService : ILibraryService
     {
         private readonly CoralDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IScanChannel _scanChannel;
+        private readonly ILogger<LibraryService> _logger;
+        private readonly IEmbeddingService _embeddingService;
+        private readonly IArtworkMappingHelper _artworkMappingHelper;
 
-        public LibraryService(CoralDbContext context, IMapper mapper)
+        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger, IEmbeddingService embeddingService, IArtworkMappingHelper artworkMappingHelper)
         {
             _context = context;
             _mapper = mapper;
+            _scanChannel = scanChannel;
+            _logger = logger;
+            _embeddingService = embeddingService;
+            _artworkMappingHelper = artworkMappingHelper;
         }
 
         public async Task<Track?> GetTrack(Guid trackId)
@@ -79,12 +92,19 @@ namespace Coral.Services
                 .AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<SimpleAlbumDto> GetAlbums()
+        public async IAsyncEnumerable<SimpleAlbumDto> GetAlbums()
         {
-            return _context
+            var albums = await _context
                 .Albums
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
-                .AsAsyncEnumerable();
+                .ToListAsync();
+
+            await _artworkMappingHelper.MapArtworksToAlbums(albums);
+
+            foreach (var album in albums)
+            {
+                yield return album;
+            }
         }
 
         public async Task<ArtistDto?> GetArtist(Guid artistId)
@@ -105,21 +125,25 @@ namespace Coral.Services
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type != AlbumType.Compilation)
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(mainReleases);
 
             var featured = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Guest))
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(featured);
 
             var remixer = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Remixer))
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(remixer);
 
             var compilations = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type == AlbumType.Compilation)
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(compilations);
 
             return new ArtistDto()
             {
@@ -159,53 +183,108 @@ namespace Coral.Services
                 return null;
             }
 
+            await _artworkMappingHelper.MapArtworksToAlbums(album);
+
             album.Tracks = album.Tracks.OrderBy(t => t.DiscNumber).ThenBy(a => a.TrackNumber).ToList();
             return album;
         }
 
         public async Task<List<SimpleTrackDto>> GetRecommendationsForTrack(Guid trackId)
         {
-            var trackEmbeddings = await _context.TrackEmbeddings.FirstOrDefaultAsync(t => t.TrackId == trackId);
-            if (trackEmbeddings == null)
-                return [];
+            // Query DuckDB for similar tracks
+            var similarTracks = await _embeddingService.GetSimilarTracksAsync(
+                trackId,
+                limit: 100,
+                maxDistance: 0.2);
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            if (!similarTracks.Any())
+                return new List<SimpleTrackDto>();
 
-            // Set HNSW ef_search parameter to allow exploring more candidates during search
-            // Default is 40, which limits results. Setting to 100 allows full result set.
-            await _context.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.ef_search = 100");
+            // Get track IDs (filtering by distance already done in EmbeddingService)
+            var trackIds = similarTracks
+                .DistinctBy(t => t.Distance)  // Identical distances = duplicates
+                .Select(t => t.TrackId)
+                .ToList();
 
-            var recs = await _context.TrackEmbeddings
-                .Select(t => new {Entity = t, Distance = t.Embedding.CosineDistance(trackEmbeddings.Embedding)} )
-                .OrderBy(t => t.Distance)
-                .Take(100)
-                .ToListAsync();
-
-            await transaction.CommitAsync();
-
-            var trackIds = recs
-                .Where(t => t.Distance < 0.2)
-                // tracks with identical distance are duplicates
-                .DistinctBy(t => t.Distance)
-                .Select(t => t.Entity.TrackId)
-                .Distinct().ToList();
-
+            // Fetch full track info from SQLite
             var tracks = await _context.Tracks
                 .Where(t => trackIds.Contains(t.Id))
                 .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            List<SimpleTrackDto> orderedTracks = [];
-            foreach (var track in recs)
+            // Maintain order from similarity results
+            var trackDict = tracks.ToDictionary(t => t.Id);
+            var orderedTracks = trackIds
+                .Where(id => trackDict.ContainsKey(id))
+                .Select(id => trackDict[id])
+                .ToList();
+
+            return orderedTracks;
+        }
+
+        public async Task<List<MusicLibraryDto>> GetMusicLibraries()
+        {
+            return await _context
+                .MusicLibraries
+                .ProjectTo<MusicLibraryDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public async Task<MusicLibrary?> AddMusicLibrary(string path)
+        {
+            try
             {
-                var targetTrack = tracks.FirstOrDefault(t => t.Id == track.Entity.TrackId);
-                if (targetTrack == null)
-                    continue;
-                orderedTracks.Add(targetTrack);
+                var contentDirectory = new DirectoryInfo(path);
+                if (!contentDirectory.Exists)
+                {
+                    throw new ApplicationException("Content directory does not exist.");
+                }
+
+                var library = await _context.MusicLibraries.FirstOrDefaultAsync(m => m.LibraryPath == path)
+                              ?? new MusicLibrary()
+                              {
+                                  LibraryPath = path,
+                                  AudioFiles = new List<AudioFile>()
+                              };
+
+                _context.MusicLibraries.Add(library);
+                await _context.SaveChangesAsync();
+
+                // Queue initial scan after adding library
+                var requestId = Guid.NewGuid().ToString();
+                await _scanChannel.GetWriter().WriteAsync(new ScanJob(
+                    Library: library,
+                    SpecificDirectory: null,
+                    Incremental: false,
+                    RequestId: requestId,
+                    Trigger: ScanTrigger.LibraryAdded
+                ));
+
+                _logger.LogInformation("Library added and scan queued: {Path} (RequestId: {RequestId})", path, requestId);
+
+                return library;
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to add music library {Path}", path);
+                return null;
+            }
+        }
 
+        public async Task RemoveMusicLibrary(Guid libraryId)
+        {
+            var library = await _context.MusicLibraries.FindAsync(libraryId);
+            if (library != null)
+            {
+                _context.MusicLibraries.Remove(library);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Removed music library {LibraryId} ({Path})", libraryId, library.LibraryPath);
+            }
+        }
 
-            return orderedTracks.DistinctBy(t => t.Title).ToList();
+        public async Task<MusicLibrary?> GetMusicLibrary(Guid libraryId)
+        {
+            return await _context.MusicLibraries.FindAsync(libraryId);
         }
     }
 }

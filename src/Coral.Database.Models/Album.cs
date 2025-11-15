@@ -25,11 +25,12 @@ public class Album : BaseTable
     public int? DiscTotal { get; set; }
     public int? TrackTotal { get; set; }
     public string? CoverFilePath { get; set; }
+    public Guid? LabelId { get; set; }
     public RecordLabel? Label { get; set; }
     public string? CatalogNumber { get; set; }
     public string? Upc { get; set; }
 
-    public List<Artwork> Artworks { get; set; } = null!;
+    public Artwork? Artwork { get; set; }
 
     public FavoriteAlbum? Favorite { get; set; }
 }

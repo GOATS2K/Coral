@@ -8,6 +8,22 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+      <PackageReference Include="Spectre.Console" Version="0.50.0" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.50.0" />
+      <PackageReference Include="Spectre.Console.Cli.Extensions.DependencyInjection" Version="0.7.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\Coral.Configuration\Coral.Configuration.csproj" />
       <ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
     </ItemGroup>

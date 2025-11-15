@@ -1,19 +1,16 @@
 ﻿using Coral.Configuration;
 using Coral.Database;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Coral.TestProviders;
 
 public class DatabaseFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("pgvector/pgvector:0.8.1-pg17-trixie")
-        .Build();
-
+    private SqliteConnection? _connection;
     public TestDatabase TestDb { get; private set; } = null!;
-    
+
     private void CleanUpTempLibraries()
     {
         var libraries = TestDb.Context.MusicLibraries
@@ -38,40 +35,54 @@ public class DatabaseFixture : IAsyncLifetime
 
     private void CleanUpArtwork()
     {
-        var indexedArtwork = TestDb.Context.Artworks
-            .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
-                        || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
-            .Select(a => a.Path);
+        var indexedArtwork = TestDb.Context.Artworks.ToList();
 
-        foreach (var artworkPath in indexedArtwork)
+        foreach (var artwork in indexedArtwork)
         {
-            try
+            var paths = artwork.Paths
+                .Select(p => p.Path)
+                .Where(p => !string.IsNullOrEmpty(p) &&
+                           (p.StartsWith(ApplicationConfiguration.Thumbnails) ||
+                            p.StartsWith(ApplicationConfiguration.ExtractedArtwork)));
+
+            foreach (var artworkPath in paths)
             {
-                var directory = new DirectoryInfo(artworkPath).Parent;
-                File.Delete(artworkPath);
-                if (!directory!.GetFiles().Any())
+                try
                 {
-                    directory.Delete();
+                    var directory = new DirectoryInfo(artworkPath).Parent;
+                    File.Delete(artworkPath);
+                    if (!directory!.GetFiles().Any())
+                    {
+                        directory.Delete();
+                    }
                 }
+                catch (Exception) { }
             }
-            catch (Exception) { }
         }
     }
-    
+
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
+        // Create in-memory SQLite connection
+        // IMPORTANT: Must keep connection open for in-memory database to persist
+        _connection = new SqliteConnection("Data Source=:memory:");
+        await _connection.OpenAsync();
+
         TestDb = new TestDatabase(opt =>
         {
-            opt.UseNpgsql(_container.GetConnectionString(), p => p.UseVector());
+            opt.UseSqlite(_connection);
         });
+
+        // No Testcontainers, no Docker - instant startup!
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
         CleanUpArtwork();
         CleanUpTempLibraries();
-        await _container.StopAsync();
         TestDb?.Dispose();
+        _connection?.Close();
+        _connection?.Dispose();
+        return Task.CompletedTask;
     }
 }

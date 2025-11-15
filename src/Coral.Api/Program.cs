@@ -24,8 +24,8 @@ builder.Services.AddDbContext<CoralDbContext>();
 builder.Services.AddServices();
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<PluginInitializer>();
-builder.Services.AddHostedService<IndexerWorker>();
 builder.Services.AddHostedService<EmbeddingWorker>();
+builder.Services.AddHostedService<ScanWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {
@@ -33,6 +33,7 @@ builder.Services.AddAutoMapper(opt =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(conf =>
@@ -68,10 +69,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors(cors =>
 {
-    cors.
-    AllowAnyOrigin()
+    cors
+    .SetIsOriginAllowed(_ => true)
     .AllowAnyMethod()
-    .AllowAnyHeader();
+    .AllowAnyHeader()
+    .AllowCredentials();
 });
 
 app.UseHttpsRedirection();
@@ -101,6 +103,7 @@ app.UseStaticFiles();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<LibraryHub>("/hubs/library");
 // could probably remap these to use query params instead in the frontend
 app.MapFallbackToFile("/albums/{id}", "albums/[id].html");
 app.MapFallbackToFile("/artists/{id}", "artists/[id].html");
@@ -112,9 +115,14 @@ try
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CoralDbContext>();
     await db.Database.MigrateAsync();
+
+    // Initialize DuckDB embeddings database
+    var embeddingService = scope.ServiceProvider.GetRequiredService<Coral.Services.IEmbeddingService>();
+    await embeddingService.InitializeAsync();
 }
 catch (Exception ex)
 {
-    Console.WriteLine("Failed to run migrations.");
+    Console.WriteLine("Failed to run migrations or initialize databases.");
+    Console.WriteLine(ex.Message);
 }
 app.Run();

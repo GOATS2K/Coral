@@ -1,23 +1,27 @@
-﻿using Coral.TestProviders;
+﻿using Coral.Services.ChannelWrappers;
+using Coral.Services.Helpers;
+using Coral.TestProviders;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using Xunit;
 
 namespace Coral.Services.Tests
 {
-    public class LibraryServiceTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+    public class LibraryServiceTests(DatabaseFixture fixture) : TransactionTestBase(fixture)
     {
-        public ILibraryService LibraryService;
-        private readonly DatabaseFixture _fixture;
-
-        public LibraryServiceTests(DatabaseFixture fixture)
-        {
-            _fixture = fixture;
-        }
+        private ILibraryService LibraryService => new LibraryService(
+            TestDatabase.Context,
+            TestDatabase.Mapper,
+            new ScanChannel(),
+            Substitute.For<ILogger<LibraryService>>(),
+            Substitute.For<IEmbeddingService>(),
+            Substitute.For<IArtworkMappingHelper>());
 
         [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()
         {
             // arrange
-            var trackToFind = _fixture.TestDb.Believe;
+            var trackToFind = TestDatabase.Believe;
             // act
             var track = await LibraryService.GetTrack(trackToFind.Id);
             // assert
@@ -47,7 +51,7 @@ namespace Coral.Services.Tests
         public async Task GetArtworkForTrack_TrackWithNoArtwork_ReturnsNull()
         {
             // arrange
-            var trackWithoutArtwork = _fixture.TestDb.Believe;
+            var trackWithoutArtwork = TestDatabase.Believe;
 
             // act
             var artwork = await LibraryService.GetArtworkForTrack(trackWithoutArtwork.Id);
@@ -59,22 +63,11 @@ namespace Coral.Services.Tests
         public async Task GetArtworkForAlbum_AlbumWithArtwork_ReturnsArtworkPath()
         {
             // arrange
-            var albumWithArtwork = _fixture.TestDb.ALittleWhileLonger;
+            var albumWithArtwork = TestDatabase.ALittleWhileLonger;
             // act
             var artwork = await LibraryService.GetArtworkForAlbum(albumWithArtwork.Id);
             // assert
             Assert.NotNull(artwork);
-        }
-
-        public Task InitializeAsync()
-        {
-            LibraryService = new LibraryService(_fixture.TestDb.Context, _fixture.TestDb.Mapper);
-            return Task.CompletedTask;
-        }
-
-        public Task DisposeAsync()
-        {
-            return Task.CompletedTask;
         }
     }
 }

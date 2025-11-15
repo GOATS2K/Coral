@@ -64,8 +64,9 @@ public static class ApplicationConfiguration
     public static string Plugins => Config.Paths.Plugins;
     public static string Models => Config.Paths.Models;
 
-    // New property for database
-    public static string DatabaseConnectionString => Config.Database.ConnectionString;
+    // Database properties
+    public static string SqliteDbPath => Config.Paths.SqliteDbPath;
+    public static string DuckDbEmbeddingsPath => Config.Paths.DuckDbEmbeddingsPath;
 
     private static void EnsureDirectoriesCreated()
     {
@@ -110,7 +111,6 @@ public static class ApplicationConfiguration
         return new ServerConfiguration
         {
             ConfigVersion = ServerConfiguration.CurrentVersion,
-            Database = new DatabaseSettings(),
             Paths = new PathSettings
             {
                 Data = PathSettings.GetDefaultDataDirectory()
@@ -134,5 +134,6 @@ public static class ApplicationConfiguration
     {
         Directory.CreateDirectory(Config.Paths.Data);
         Directory.CreateDirectory(Config.Paths.HlsDirectory);
+        Directory.CreateDirectory(Plugins);
     }
 }

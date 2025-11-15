@@ -22,6 +22,12 @@ public class PathSettings
     [JsonIgnore]
     public string HlsDirectory => Path.Combine(Data, "HLS");
 
+    [JsonIgnore]
+    public string SqliteDbPath => Path.Combine(Data, "coral.db");
+
+    [JsonIgnore]
+    public string DuckDbEmbeddingsPath => Path.Combine(Data, "embeddings.db");
+
     public static string GetDefaultDataDirectory()
     {
         // Docker: use /data, Normal: use LocalApplicationData/Coral

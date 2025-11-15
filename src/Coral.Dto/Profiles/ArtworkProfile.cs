@@ -8,29 +8,26 @@ namespace Coral.Dto.Profiles
     {
         public ArtworkProfile()
         {
-            CreateMap<List<Artwork>, ArtworkDto>()
-                .ForMember(des => des.Original,
-                    opt => opt.MapFrom(src => BuildArtworkUrl(src.FirstOrDefault(a => a.Size == ArtworkSize.Original))))
-                .ForMember(des => des.Medium,
-                    opt => opt.MapFrom(src => BuildArtworkUrl(src.FirstOrDefault(a => a.Size == ArtworkSize.Medium))))
-                .ForMember(des => des.Small,
-                    opt => opt.MapFrom(src => BuildArtworkUrl(src.FirstOrDefault(a => a.Size == ArtworkSize.Small))))
-                .ForMember(des => des.Colors, opt => opt.MapFrom(src => GetColors(src.FirstOrDefault())));
+            // Map from JSON list structure to DTO using helper method
+            // ConvertUsing runs in-memory after query execution, avoiding SQL translation issues
+            CreateMap<Artwork, ArtworkDto>()
+                .ConvertUsing(src => new ArtworkDto
+                {
+                    Small = BuildArtworkUrl(src.Id, ArtworkSize.Small, src.GetPath(ArtworkSize.Small)),
+                    Medium = BuildArtworkUrl(src.Id, ArtworkSize.Medium, src.GetPath(ArtworkSize.Medium)),
+                    Original = BuildArtworkUrl(src.Id, ArtworkSize.Original, src.GetPath(ArtworkSize.Original)),
+                    Colors = src.Colors
+                });
         }
 
-        private static string[] GetColors(Artwork? artwork)
+        private static string BuildArtworkUrl(Guid artworkId, ArtworkSize size, string? path)
         {
-            return artwork == null ? [] : artwork.Colors;
-        }
-
-        public static string BuildArtworkUrl(Artwork? artwork)
-        {
-            if (artwork is null)
+            if (string.IsNullOrEmpty(path))
             {
                 return "";
             }
 
-            return $"/api/artwork/{artwork.Id}";
+            return $"/api/artwork/{artworkId}?size={size}";
         }
     }
 }

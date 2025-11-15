@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Models;
+using Coral.Services.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Services;
@@ -26,11 +27,13 @@ public class FavoritesService : IFavoritesService
 {
     private readonly CoralDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IArtworkMappingHelper _artworkMappingHelper;
 
-    public FavoritesService(CoralDbContext context, IMapper mapper)
+    public FavoritesService(CoralDbContext context, IMapper mapper, IArtworkMappingHelper artworkMappingHelper)
     {
         _context = context;
         _mapper = mapper;
+        _artworkMappingHelper = artworkMappingHelper;
     }
 
     public async Task AddAlbum(Guid albumId)
@@ -81,11 +84,14 @@ public class FavoritesService : IFavoritesService
     public async Task<List<SimpleAlbumDto>> GetAllAlbums()
     {
         var albumIds = _context.FavoriteAlbums.Select(t => t.AlbumId).ToList();
-        return await _context
+        var albums = await _context
             .Albums
             .Where(c => albumIds.Contains(c.Id))
             .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
+
+        await _artworkMappingHelper.MapArtworksToAlbums(albums);
+        return albums;
     }
 
     public async Task<List<SimpleTrackDto>> GetAllTracks()

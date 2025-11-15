@@ -22,11 +22,12 @@ namespace Coral.Api.Controllers
         private readonly IPlaybackService _playbackService;
         private readonly IFavoritesService _favoritesService;
         private readonly IScanChannel _scanChannel;
+        private readonly IArtworkMappingHelper _artworkMappingHelper;
 
         public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
             ISearchService searchService, IPaginationService paginationService,
             TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
-            IFavoritesService favoritesService, IScanChannel scanChannel)
+            IFavoritesService favoritesService, IScanChannel scanChannel, IArtworkMappingHelper artworkMappingHelper)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
@@ -35,6 +36,7 @@ namespace Coral.Api.Controllers
             _playbackService = playbackService;
             _favoritesService = favoritesService;
             _scanChannel = scanChannel;
+            _artworkMappingHelper = artworkMappingHelper;
         }
 
         [HttpPost]
@@ -323,6 +325,10 @@ namespace Coral.Api.Controllers
             [FromQuery] int offset = 0)
         {
             var result = await _paginationService.PaginateQuery<Album, SimpleAlbumDto>(offset, limit);
+
+            // Populate artworks for the albums
+            await _artworkMappingHelper.MapArtworksToAlbums(result.Data);
+
             return Ok(result);
         }
 

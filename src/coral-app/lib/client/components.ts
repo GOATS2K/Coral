@@ -110,10 +110,15 @@ export type ArtworkFromIdPathParams = {
   artworkId: string;
 };
 
+export type ArtworkFromIdQueryParams = {
+  size?: Schemas.ArtworkSize;
+};
+
 export type ArtworkFromIdError = Fetcher.ErrorWrapper<undefined>;
 
 export type ArtworkFromIdVariables = {
   pathParams: ArtworkFromIdPathParams;
+  queryParams?: ArtworkFromIdQueryParams;
 } & Context["fetcherOptions"];
 
 export const fetchArtworkFromId = (
@@ -125,7 +130,7 @@ export const fetchArtworkFromId = (
     ArtworkFromIdError,
     undefined,
     {},
-    {},
+    ArtworkFromIdQueryParams,
     ArtworkFromIdPathParams
   >({ url: "/api/Artwork/{artworkId}", method: "get", ...variables, signal });
 

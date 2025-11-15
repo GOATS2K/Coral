@@ -1,4 +1,5 @@
 ﻿using Coral.Services.ChannelWrappers;
+using Coral.Services.Helpers;
 using Coral.TestProviders;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -13,7 +14,8 @@ namespace Coral.Services.Tests
             TestDatabase.Mapper,
             new ScanChannel(),
             Substitute.For<ILogger<LibraryService>>(),
-            Substitute.For<IEmbeddingService>());
+            Substitute.For<IEmbeddingService>(),
+            Substitute.For<IArtworkMappingHelper>());
 
         [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()

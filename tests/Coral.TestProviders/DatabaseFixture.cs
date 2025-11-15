@@ -35,23 +35,29 @@ public class DatabaseFixture : IAsyncLifetime
 
     private void CleanUpArtwork()
     {
-        var indexedArtwork = TestDb.Context.Artworks
-            .Where(a => a.Path.StartsWith(ApplicationConfiguration.Thumbnails)
-                        || a.Path.StartsWith(ApplicationConfiguration.ExtractedArtwork))
-            .Select(a => a.Path);
+        var indexedArtwork = TestDb.Context.Artworks.ToList();
 
-        foreach (var artworkPath in indexedArtwork)
+        foreach (var artwork in indexedArtwork)
         {
-            try
+            var paths = artwork.Paths
+                .Select(p => p.Path)
+                .Where(p => !string.IsNullOrEmpty(p) &&
+                           (p.StartsWith(ApplicationConfiguration.Thumbnails) ||
+                            p.StartsWith(ApplicationConfiguration.ExtractedArtwork)));
+
+            foreach (var artworkPath in paths)
             {
-                var directory = new DirectoryInfo(artworkPath).Parent;
-                File.Delete(artworkPath);
-                if (!directory!.GetFiles().Any())
+                try
                 {
-                    directory.Delete();
+                    var directory = new DirectoryInfo(artworkPath).Parent;
+                    File.Delete(artworkPath);
+                    if (!directory!.GetFiles().Any())
+                    {
+                        directory.Delete();
+                    }
                 }
+                catch (Exception) { }
             }
-            catch (Exception) { }
         }
     }
 

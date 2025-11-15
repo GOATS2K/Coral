@@ -50,6 +50,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ArtworkSize"
+            }
           }
         ],
         "responses": {
@@ -1122,7 +1129,6 @@
       "AlbumDto": {
         "required": [
           "artists",
-          "artworks",
           "createdAt",
           "favorited",
           "genres",
@@ -1578,7 +1584,6 @@
       "SimpleAlbumDto": {
         "required": [
           "artists",
-          "artworks",
           "createdAt",
           "favorited",
           "id",

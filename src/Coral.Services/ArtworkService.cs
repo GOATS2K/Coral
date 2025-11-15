@@ -20,7 +20,7 @@ public interface IArtworkService
     Task ProcessArtworksBulk(Dictionary<Album, string> albumsWithArtwork);
     Task<List<Artwork>> ProcessArtworksParallel(Dictionary<Guid, string> albumArtworkPaths);
     Task<string?> ExtractEmbeddedArtwork(ATL.Track track);
-    Task<string?> GetArtworkPath(Guid artworkId);
+    Task<string?> GetArtworkPath(Guid artworkId, ArtworkSize size);
     Task DeleteArtwork(Artwork artwork);
     Task<string[]> GetProminentColors(Guid artworkId);
     Task<string?> GetAlbumArtwork(Guid albumId, ArtworkSize size);
@@ -41,20 +41,15 @@ public class ArtworkService : IArtworkService
         _semaphore = new SemaphoreSlim(Environment.ProcessorCount);
     }
 
-    public async Task<string?> GetPathForOriginalAlbumArtwork(Guid albumId)
+    public async Task<string?> GetArtworkPath(Guid artworkId, ArtworkSize size)
     {
-        return await _context.Artworks
-            .Where(a => a.Album.Id == albumId && a.Size == ArtworkSize.Original)
-            .Select(a => a.Path)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<string?> GetArtworkPath(Guid artworkId)
-    {
-        return await _context.Artworks
+        var artwork = await _context.Artworks
             .Where(a => a.Id == artworkId)
-            .Select(a => a.Path)
             .FirstOrDefaultAsync();
+
+        if (artwork == null) return null;
+
+        return artwork.GetPath(size);
     }
 
     public async Task<string?> ExtractEmbeddedArtwork(ATL.Track track)
@@ -86,41 +81,54 @@ public class ArtworkService : IArtworkService
 
         _logger.LogDebug("Processing artwork for album {AlbumTitle}", album.Name);
 
-        // add original cover
-        using var originalImage = await Image.LoadAsync(artworkPath);
+        // Extract prominent colors
         var prominentColors = await GetProminentColorsForImage(artworkPath);
-        album.Artworks.Add(new Artwork
-        {
-            Path = artworkPath,
-            Size = ArtworkSize.Original,
-            Height = originalImage.Height,
-            Width = originalImage.Width,
-            Colors = prominentColors,
-        });
 
+        // Process all sizes and collect paths
         var sizes = new Dictionary<ArtworkSize, Size>()
         {
             {ArtworkSize.Small, new Size(100, 100)},
             {ArtworkSize.Medium, new Size(300, 300)}
         };
 
+        var artworkPaths = new List<ArtworkPath>();
+
+        // Add original artwork with its dimensions
+        using (var originalImage = await Image.LoadAsync(artworkPath))
+        {
+            artworkPaths.Add(new ArtworkPath
+            {
+                Size = ArtworkSize.Original,
+                Height = originalImage.Height,
+                Width = originalImage.Width,
+                Path = artworkPath
+            });
+        }
+
+        // Process and add resized versions
         foreach (var (artworkSize, size) in sizes)
         {
-            // because image mutations affect the loaded image,
-            // we'll reload and dispose for each mutation
             using var imageToResize = await Image.LoadAsync(artworkPath);
             var outputFile = Path.Join(outputDir, $"{artworkSize.ToString()}.jpg");
             imageToResize.Mutate(i => i.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
             await imageToResize.SaveAsJpegAsync(outputFile);
-            album.Artworks.Add(new Artwork()
+
+            artworkPaths.Add(new ArtworkPath
             {
-                Path = outputFile,
+                Size = artworkSize,
                 Height = size.Height,
                 Width = size.Width,
-                Size = artworkSize,
-                Colors = prominentColors,
+                Path = outputFile
             });
         }
+
+        // Create single artwork with all paths in JSON
+        album.Artwork = new Artwork
+        {
+            Paths = artworkPaths,
+            Colors = prominentColors,
+            AlbumId = album.Id
+        };
 
         await _context.SaveChangesAsync();
     }
@@ -154,23 +162,22 @@ public class ArtworkService : IArtworkService
                 // Extract prominent colors once
                 var prominentColors = await GetProminentColorsForImage(artworkPath);
 
-                // Load original image to get dimensions
-                using var originalImage = await Image.LoadAsync(artworkPath);
+                // Process all sizes
+                var artworkPaths = new List<ArtworkPath>();
 
-                // Create original artwork entity
-                artworksToInsert.Add(new Artwork
+                // Add original artwork with its dimensions
+                using (var originalImage = await Image.LoadAsync(artworkPath))
                 {
-                    Id = Guid.NewGuid(),
-                    Path = artworkPath,
-                    Size = ArtworkSize.Original,
-                    Height = originalImage.Height,
-                    Width = originalImage.Width,
-                    Colors = prominentColors,
-                    AlbumId = album.Id,
-                    CreatedAt = DateTime.UtcNow
-                });
+                    artworkPaths.Add(new ArtworkPath
+                    {
+                        Size = ArtworkSize.Original,
+                        Height = originalImage.Height,
+                        Width = originalImage.Width,
+                        Path = artworkPath
+                    });
+                }
 
-                // Process and create thumbnails
+                // Process and add resized versions
                 foreach (var (artworkSize, size) in sizes)
                 {
                     using var imageToResize = await Image.LoadAsync(artworkPath);
@@ -178,19 +185,24 @@ public class ArtworkService : IArtworkService
                     imageToResize.Mutate(i => i.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
                     await imageToResize.SaveAsJpegAsync(outputFile);
 
-                    // Create thumbnail artwork entity
-                    artworksToInsert.Add(new Artwork
+                    artworkPaths.Add(new ArtworkPath
                     {
-                        Id = Guid.NewGuid(),
-                        Path = outputFile,
+                        Size = artworkSize,
                         Height = size.Height,
                         Width = size.Width,
-                        Size = artworkSize,
-                        Colors = prominentColors,
-                        AlbumId = album.Id,
-                        CreatedAt = DateTime.UtcNow
+                        Path = outputFile
                     });
                 }
+
+                // Create single artwork entity with JSON paths
+                artworksToInsert.Add(new Artwork
+                {
+                    Id = Guid.NewGuid(),
+                    Paths = artworkPaths,
+                    Colors = prominentColors,
+                    AlbumId = album.Id,
+                    CreatedAt = DateTime.UtcNow
+                });
 
                 _logger.LogDebug("Processed artwork for album: {AlbumName}", album.Name);
             }
@@ -201,15 +213,15 @@ public class ArtworkService : IArtworkService
             }
         }
 
-        // Bulk insert all artworks using EF Core bulk extensions
+        // Bulk insert all artworks
         if (artworksToInsert.Any())
         {
             await _context.Artworks.AddRangeAsync(artworksToInsert);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Bulk artwork processing completed: {Artworks} artworks inserted",
-                artworksToInsert.Count);
+                "Bulk artwork processing completed: {Artworks} artworks inserted for {Albums} albums",
+                artworksToInsert.Count, albumsWithArtwork.Count);
         }
     }
 
@@ -227,7 +239,7 @@ public class ArtworkService : IArtworkService
         };
 
         // Use ConcurrentBag for thread-safe collection
-        var artworkResults = new System.Collections.Concurrent.ConcurrentBag<List<Artwork>>();
+        var artworkResults = new System.Collections.Concurrent.ConcurrentBag<Artwork>();
 
         // Process albums in parallel with bounded parallelism
         var processingTasks = albumArtworkPaths.Select(async kvp =>
@@ -237,7 +249,6 @@ public class ArtworkService : IArtworkService
             {
                 var albumId = kvp.Key;
                 var artworkPath = kvp.Value;
-                var albumArtworks = new List<Artwork>();
 
                 var guid = Guid.NewGuid();
                 var outputDir = Path.Join(ApplicationConfiguration.Thumbnails, guid.ToString());
@@ -248,23 +259,22 @@ public class ArtworkService : IArtworkService
                 // Extract prominent colors once
                 var prominentColors = await GetProminentColorsForImage(artworkPath);
 
-                // Load original image to get dimensions
-                using var originalImage = await Image.LoadAsync(artworkPath);
+                // Process all sizes
+                var artworkPaths = new List<ArtworkPath>();
 
-                // Create original artwork entity
-                albumArtworks.Add(new Artwork
+                // Add original artwork with its dimensions
+                using (var originalImage = await Image.LoadAsync(artworkPath))
                 {
-                    Id = Guid.NewGuid(),
-                    Path = artworkPath,
-                    Size = ArtworkSize.Original,
-                    Height = originalImage.Height,
-                    Width = originalImage.Width,
-                    Colors = prominentColors,
-                    AlbumId = albumId,
-                    CreatedAt = DateTime.UtcNow
-                });
+                    artworkPaths.Add(new ArtworkPath
+                    {
+                        Size = ArtworkSize.Original,
+                        Height = originalImage.Height,
+                        Width = originalImage.Width,
+                        Path = artworkPath
+                    });
+                }
 
-                // Process and create thumbnails
+                // Process and add resized versions
                 foreach (var (artworkSize, size) in sizes)
                 {
                     using var imageToResize = await Image.LoadAsync(artworkPath);
@@ -272,21 +282,26 @@ public class ArtworkService : IArtworkService
                     imageToResize.Mutate(i => i.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
                     await imageToResize.SaveAsJpegAsync(outputFile);
 
-                    // Create thumbnail artwork entity
-                    albumArtworks.Add(new Artwork
+                    artworkPaths.Add(new ArtworkPath
                     {
-                        Id = Guid.NewGuid(),
-                        Path = outputFile,
+                        Size = artworkSize,
                         Height = size.Height,
                         Width = size.Width,
-                        Size = artworkSize,
-                        Colors = prominentColors,
-                        AlbumId = albumId,
-                        CreatedAt = DateTime.UtcNow
+                        Path = outputFile
                     });
                 }
 
-                artworkResults.Add(albumArtworks);
+                // Create single artwork entity
+                var artwork = new Artwork
+                {
+                    Id = Guid.NewGuid(),
+                    Paths = artworkPaths,
+                    Colors = prominentColors,
+                    AlbumId = albumId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                artworkResults.Add(artwork);
                 _logger.LogDebug("Processed artwork for album {AlbumId}", albumId);
             }
             catch (Exception ex)
@@ -302,8 +317,7 @@ public class ArtworkService : IArtworkService
         // Wait for all parallel processing to complete
         await Task.WhenAll(processingTasks);
 
-        // Flatten results
-        var allArtworks = artworkResults.SelectMany(a => a).ToList();
+        var allArtworks = artworkResults.ToList();
 
         _logger.LogInformation(
             "Parallel artwork processing completed: {Artworks} artworks created for {Albums} albums",
@@ -311,13 +325,13 @@ public class ArtworkService : IArtworkService
 
         return allArtworks;
     }
-    
+
     // https://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
     private static int GetBrightness(Rgba32 c)
     {
         return (int)Math.Sqrt(
-            c.R * c.R * .241 + 
-            c.G * c.G * .691 + 
+            c.R * c.R * .241 +
+            c.G * c.G * .691 +
             c.B * c.B * .068);
     }
 
@@ -329,13 +343,16 @@ public class ArtworkService : IArtworkService
         if (artwork == null)
             return [];
 
-        return await GetProminentColorsForImage(artwork.Path);
+        return artwork.Colors;
     }
 
     public async Task<string?> GetAlbumArtwork(Guid albumId, ArtworkSize size)
     {
-        var artwork = await _context.Artworks.FirstOrDefaultAsync(t => t.AlbumId == albumId && t.Size == size);
-        return artwork?.Path;
+        var artwork = await _context.Artworks.FirstOrDefaultAsync(t => t.AlbumId == albumId);
+
+        if (artwork == null) return null;
+
+        return artwork.GetPath(size);
     }
 
     private async Task<string[]> GetProminentColorsForImage(string filePath)
@@ -376,22 +393,34 @@ public class ArtworkService : IArtworkService
             .Select(c => $"#{c.Color.ToHex().Substring(0, 6)}")
             .Take(3)
             .ToArray();
-        
+
         _logger.LogDebug("Successfully got artwork colors for {FilePath}", filePath);
-        
+
         return colors;
     }
 
     public async Task DeleteArtwork(Artwork artwork)
     {
-        // remove artwork file if its in the AppData folder
-        if (artwork.Path.StartsWith(ApplicationConfiguration.AppData))
-        {
-            File.Delete(artwork.Path);
-            _logger.LogInformation("Deleted local artwork file: {ArtworkPath}", artwork.Path);
-            var parent = Directory.GetParent(artwork.Path)?.FullName;
+        // Delete all size variants from the Paths list
+        var paths = artwork.Paths
+            .Select(p => p.Path)
+            .Where(p => !string.IsNullOrEmpty(p) && p.StartsWith(ApplicationConfiguration.AppData));
 
-            if (parent != null && !Directory.GetFiles(parent).Any())
+        foreach (var path in paths)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                _logger.LogInformation("Deleted local artwork file: {ArtworkPath}", path);
+            }
+        }
+
+        // Clean up empty directories
+        var firstPath = artwork.Paths.FirstOrDefault()?.Path;
+        if (!string.IsNullOrEmpty(firstPath))
+        {
+            var parent = Directory.GetParent(firstPath)?.FullName;
+            if (parent != null && Directory.Exists(parent) && !Directory.GetFiles(parent).Any())
             {
                 Directory.Delete(parent);
             }

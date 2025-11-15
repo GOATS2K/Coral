@@ -1,4 +1,5 @@
-﻿using Coral.TestProviders;
+﻿using Coral.Services.Helpers;
+using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -13,7 +14,8 @@ namespace Coral.Services.Tests
             TestDatabase.Mapper,
             TestDatabase.Context,
             Substitute.For<ILogger<SearchService>>(),
-            new PaginationService(TestDatabase.Mapper, TestDatabase.Context));
+            new PaginationService(TestDatabase.Mapper, TestDatabase.Context),
+            Substitute.For<IArtworkMappingHelper>());
 
         [Fact]
         public async Task InsertKeywordsForTrack_NewTrack_InsertsKeywordsSuccessfully()

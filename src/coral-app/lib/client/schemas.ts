@@ -15,7 +15,7 @@ export type AlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  artworks: ArtworkDto;
+  artworks?: ArtworkDto;
   /**
    * @format date-time
    */
@@ -212,7 +212,7 @@ export type SimpleAlbumDto = {
    * @format int32
    */
   releaseYear: number;
-  artworks: ArtworkDto;
+  artworks?: ArtworkDto;
   /**
    * @format date-time
    */

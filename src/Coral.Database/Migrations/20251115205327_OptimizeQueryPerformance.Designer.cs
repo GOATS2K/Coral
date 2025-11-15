@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,12 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251115205327_OptimizeQueryPerformance")]
+    partial class OptimizeQueryPerformance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
 
             modelBuilder.Entity("AlbumArtistWithRole", b =>
                 {
@@ -156,13 +159,25 @@ namespace Coral.Database.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("AlbumId")
-                        .IsUnique();
+                    b.HasIndex("AlbumId", "Size");
 
                     b.ToTable("Artworks");
                 });
@@ -564,46 +579,12 @@ namespace Coral.Database.Migrations
             modelBuilder.Entity("Coral.Database.Models.Artwork", b =>
                 {
                     b.HasOne("Coral.Database.Models.Album", "Album")
-                        .WithOne("Artwork")
-                        .HasForeignKey("Coral.Database.Models.Artwork", "AlbumId")
+                        .WithMany("Artworks")
+                        .HasForeignKey("AlbumId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsMany("Coral.Database.Models.ArtworkPath", "Paths", b1 =>
-                        {
-                            b1.Property<Guid>("ArtworkId")
-                                .HasColumnType("TEXT");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAddOrUpdate()
-                                .HasColumnType("INTEGER");
-
-                            b1.Property<int>("Height")
-                                .HasColumnType("INTEGER");
-
-                            b1.Property<string>("Path")
-                                .IsRequired()
-                                .HasColumnType("TEXT");
-
-                            b1.Property<int>("Size")
-                                .HasColumnType("INTEGER");
-
-                            b1.Property<int>("Width")
-                                .HasColumnType("INTEGER");
-
-                            b1.HasKey("ArtworkId", "__synthesizedOrdinal");
-
-                            b1.ToTable("Artworks");
-
-                            b1.ToJson("Paths");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ArtworkId");
-                        });
-
                     b.Navigation("Album");
-
-                    b.Navigation("Paths");
                 });
 
             modelBuilder.Entity("Coral.Database.Models.AudioFile", b =>
@@ -719,7 +700,7 @@ namespace Coral.Database.Migrations
 
             modelBuilder.Entity("Coral.Database.Models.Album", b =>
                 {
-                    b.Navigation("Artwork");
+                    b.Navigation("Artworks");
 
                     b.Navigation("Favorite");
 

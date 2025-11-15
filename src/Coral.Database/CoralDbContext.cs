@@ -34,7 +34,10 @@ public class CoralDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}");
+            options.UseSqlite($"Data Source={ApplicationConfiguration.SqliteDbPath}", o =>
+            {
+                o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            });
         }
     }
     
@@ -54,5 +57,23 @@ public class CoralDbContext : DbContext
                 v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
             )
             .Metadata.SetValueComparer(stringArrayComparer);
+
+        // Configure Paths as JSON column containing a list
+        modelBuilder.Entity<Models.Artwork>()
+            .OwnsMany(a => a.Paths, pb =>
+            {
+                pb.ToJson();
+            });
+
+        // Performance: Index on AlbumId for artwork queries (no longer need Size since it's in JSON)
+        modelBuilder.Entity<Models.Artwork>()
+            .HasIndex(a => a.AlbumId);
+
+        // Performance: Composite indexes for join tables to improve join performance
+        modelBuilder.Entity<Models.Track>()
+            .HasIndex(t => new { t.AlbumId, t.DiscNumber, t.TrackNumber });
+
+        modelBuilder.Entity<Models.ArtistWithRole>()
+            .HasIndex(a => new { a.ArtistId, a.Role });
     }
 }

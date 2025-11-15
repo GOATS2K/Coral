@@ -496,7 +496,6 @@ public class IndexerService : IIndexerService
                 TrackTotal = atlTrack.TrackTotal,
                 CatalogNumber = TextSanitizer.SanitizeForUtf8(atlTrack.CatalogNumber),
                 Label = label,
-                Artworks = new List<Artwork>(),
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -615,10 +614,9 @@ public class IndexerService : IIndexerService
         }
 
         var emptyAlbumsArtwork = await _context.Albums
-            .Include(t => t.Artworks)
-            .Where(a => !a.Tracks.Any())
-            .Select(a => a.Artworks)
-            .SelectMany(x => x)
+            .Include(t => t.Artwork)
+            .Where(a => !a.Tracks.Any() && a.Artwork != null)
+            .Select(a => a.Artwork!)
             .ToListAsync();
 
         foreach (var artwork in emptyAlbumsArtwork)
@@ -742,7 +740,7 @@ public class IndexerService : IIndexerService
         foreach (var artwork in artworkEntities)
         {
             await _context.Artworks.GetOrAddBulk(
-                a => new {a.AlbumId, a.Size, a.Path},
+                a => new {a.AlbumId},
                 () => artwork);
         }
 

@@ -1,4 +1,6 @@
 using System.Linq.Expressions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Coral.BulkExtensions.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -430,11 +432,28 @@ public sealed class BulkInsertContext : IAsyncDisposable
                 $"Entity type {entityType.Name} not found in DbContext model");
 
         var tableName = efEntityType.GetTableName();
+
+        // Get scalar properties (columns)
         var properties = efEntityType.GetProperties()
             .Where(p => !p.IsShadowProperty() && p.GetColumnName() != null)
             .ToList();
 
+        // Get owned navigations that are mapped to JSON columns
+        var jsonNavigations = efEntityType.GetNavigations()
+            .Where(n => n.ForeignKey.IsOwnership && n.TargetEntityType.IsMappedToJson())
+            .ToList();
+
         var columnNames = properties.Select(p => p.GetColumnName()).ToList();
+
+        // Add JSON column names for owned navigations
+        foreach (var nav in jsonNavigations)
+        {
+            var columnName = nav.TargetEntityType.GetContainerColumnName();
+            if (columnName != null)
+            {
+                columnNames.Add(columnName);
+            }
+        }
         var paramPlaceholders = string.Join(", ",
             Enumerable.Range(0, columnNames.Count).Select(i => $"@p{i}"));
 
@@ -453,7 +472,8 @@ public sealed class BulkInsertContext : IAsyncDisposable
         command.CommandText = insertSql;
 
         // Create parameters once and reuse (critical for performance)
-        var parameters = properties.Select((_, i) =>
+        var totalParams = properties.Count + jsonNavigations.Count;
+        var parameters = Enumerable.Range(0, totalParams).Select(i =>
         {
             var param = command.CreateParameter();
             param.ParameterName = $"@p{i}";
@@ -471,12 +491,20 @@ public sealed class BulkInsertContext : IAsyncDisposable
 
             foreach (var entity in batch)
             {
-                // Set parameter values (reusing parameter objects)
+                // Set parameter values for scalar properties
                 for (int i = 0; i < properties.Count; i++)
                 {
                     var property = properties[i];
                     var value = GetPropertyValue(entity, property);
                     parameters[i].Value = value ?? DBNull.Value;
+                }
+
+                // Set parameter values for JSON navigations
+                for (int i = 0; i < jsonNavigations.Count; i++)
+                {
+                    var navigation = jsonNavigations[i];
+                    var value = GetNavigationPropertyValue(entity, navigation);
+                    parameters[properties.Count + i].Value = value ?? DBNull.Value;
                 }
 
                 await command.ExecuteNonQueryAsync(ct);
@@ -523,6 +551,23 @@ public sealed class BulkInsertContext : IAsyncDisposable
         if (underlyingType.IsEnum && value != null)
         {
             value = Convert.ToInt32(value);
+        }
+
+        return value;
+    }
+
+    private object? GetNavigationPropertyValue(object entity, Microsoft.EntityFrameworkCore.Metadata.INavigation navigation)
+    {
+        var value = navigation.PropertyInfo?.GetValue(entity);
+
+        // For JSON-configured owned navigations, serialize to JSON
+        if (navigation.TargetEntityType.IsMappedToJson() && value != null)
+        {
+            value = JsonSerializer.Serialize(value, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null, // Use exact property names
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never
+            });
         }
 
         return value;

@@ -134,5 +134,6 @@ public static class ApplicationConfiguration
     {
         Directory.CreateDirectory(Config.Paths.Data);
         Directory.CreateDirectory(Config.Paths.HlsDirectory);
+        Directory.CreateDirectory(Plugins);
     }
 }

@@ -52,22 +52,22 @@ public class EmbeddingService : IEmbeddingService
         _logger.LogInformation("DuckDB initialized with {Count} embeddings", count);
 
         // Create HNSW index if we have enough data (>1000 rows recommended)
-        if (count > 1000)
-        {
-            _logger.LogInformation("Creating HNSW index on {Count} embeddings...", count);
-            command.CommandText = @"
-                CREATE INDEX IF NOT EXISTS track_embeddings_hnsw_idx
-                ON track_embeddings
-                USING HNSW(embedding)
-                WITH (metric = 'cosine')";
-            await command.ExecuteNonQueryAsync();
-            _logger.LogInformation("HNSW index created successfully");
-        }
-        else if (count > 0)
-        {
-            _logger.LogInformation(
-                "Skipping HNSW index creation (need >1000 rows, have {Count})", count);
-        }
+        // if (count > 1000)
+        // {
+        //     _logger.LogInformation("Creating HNSW index on {Count} embeddings...", count);
+        //     command.CommandText = @"
+        //         CREATE INDEX IF NOT EXISTS track_embeddings_hnsw_idx
+        //         ON track_embeddings
+        //         USING HNSW(embedding)
+        //         WITH (metric = 'cosine')";
+        //     await command.ExecuteNonQueryAsync();
+        //     _logger.LogInformation("HNSW index created successfully");
+        // }
+        // else if (count > 0)
+        // {
+        //     _logger.LogInformation(
+        //         "Skipping HNSW index creation (need >1000 rows, have {Count})", count);
+        // }
     }
 
     public async Task InsertEmbeddingAsync(Guid trackId, float[] embedding)

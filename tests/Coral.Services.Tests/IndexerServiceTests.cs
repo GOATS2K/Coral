@@ -1,6 +1,7 @@
 using Coral.Database.Models;
 using Coral.Events;
 using Coral.Services.ChannelWrappers;
+using Coral.Services.Helpers;
 using Coral.Services.Indexer;
 using Coral.TestProviders;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,7 @@ public class IndexerServiceTests(DatabaseFixture fixture)
         var testDatabase = TestDatabase;
         var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context,
-            Substitute.For<ILogger<SearchService>>(), paginationService);
+            Substitute.For<ILogger<SearchService>>(), paginationService, Substitute.For<IArtworkMappingHelper>());
         var artworkService = new ArtworkService(testDatabase.Context,
             Substitute.For<ILogger<ArtworkService>>());
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();
@@ -108,14 +109,15 @@ public class IndexerServiceTests(DatabaseFixture fixture)
 
         await ScanLibrary(services, TestDataRepository.NeptuneDiscovery);
 
-        var album = await services.TestDatabase.Context.Albums.Include(a => a.Artworks)
+        var album = await services.TestDatabase.Context.Albums.Include(a => a.Artwork)
             .FirstOrDefaultAsync(a => a.Name == "Discovery");
         Assert.NotNull(album);
+        Assert.NotNull(album.Artwork);
 
-        var originalArtwork = album.Artworks.FirstOrDefault(a => a.Size == ArtworkSize.Original);
+        var originalArtwork = album.Artwork.Paths.FirstOrDefault(p => p.Size == ArtworkSize.Original);
         Assert.Equal(480, originalArtwork?.Height);
         Assert.Equal(480, originalArtwork?.Width);
-        Assert.Equal(3, album.Artworks.Count);
+        Assert.Equal(3, album.Artwork.Paths.Count);
     }
 
     [Fact]

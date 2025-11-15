@@ -4,6 +4,7 @@ using Coral.Database;
 using Coral.Database.Models;
 using Coral.Dto.Comparers;
 using Coral.Dto.Models;
+using Coral.Services.Helpers;
 using Coral.Services.Models;
 using Diacritics.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -25,15 +26,17 @@ namespace Coral.Services
         private readonly ILogger<SearchService> _logger;
         private readonly CoralDbContext _context;
         private readonly IPaginationService _paginationService;
+        private readonly IArtworkMappingHelper _artworkMappingHelper;
         private static readonly Regex _keywordExtractionRegex = RegexPatterns.KeywordExtraction();
 
         public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
-            IPaginationService paginationService)
+            IPaginationService paginationService, IArtworkMappingHelper artworkMappingHelper)
         {
             _mapper = mapper;
             _context = context;
             _logger = logger;
             _paginationService = paginationService;
+            _artworkMappingHelper = artworkMappingHelper;
         }
 
         public async Task InsertKeywordsForTrack(Track track)
@@ -176,11 +179,16 @@ namespace Coral.Services
             var artists = tracks.Select(a => a.Artists)
                 .SelectMany(a => a);
 
+            var albums = tracks.Select(t => t.Album)
+                .DistinctBy(t => t.Id)
+                .ToList();
+
+            // Populate artworks for albums
+            await _artworkMappingHelper.MapArtworksToAlbums(albums);
+
             var finalResults = new SearchResult()
             {
-                Albums = tracks.Select(t => t.Album)
-                    .DistinctBy(t => t.Id)
-                    .ToList(),
+                Albums = albums,
                 Artists = artists
                     .DistinctBy(t => t.Id)
                     .Select(t => new SimpleArtistDto()

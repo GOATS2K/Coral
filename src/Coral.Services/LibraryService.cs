@@ -37,14 +37,16 @@ namespace Coral.Services
         private readonly IScanChannel _scanChannel;
         private readonly ILogger<LibraryService> _logger;
         private readonly IEmbeddingService _embeddingService;
+        private readonly IArtworkMappingHelper _artworkMappingHelper;
 
-        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger, IEmbeddingService embeddingService)
+        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger, IEmbeddingService embeddingService, IArtworkMappingHelper artworkMappingHelper)
         {
             _context = context;
             _mapper = mapper;
             _scanChannel = scanChannel;
             _logger = logger;
             _embeddingService = embeddingService;
+            _artworkMappingHelper = artworkMappingHelper;
         }
 
         public async Task<Track?> GetTrack(Guid trackId)
@@ -90,12 +92,19 @@ namespace Coral.Services
                 .AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<SimpleAlbumDto> GetAlbums()
+        public async IAsyncEnumerable<SimpleAlbumDto> GetAlbums()
         {
-            return _context
+            var albums = await _context
                 .Albums
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
-                .AsAsyncEnumerable();
+                .ToListAsync();
+
+            await _artworkMappingHelper.MapArtworksToAlbums(albums);
+
+            foreach (var album in albums)
+            {
+                yield return album;
+            }
         }
 
         public async Task<ArtistDto?> GetArtist(Guid artistId)
@@ -116,21 +125,25 @@ namespace Coral.Services
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type != AlbumType.Compilation)
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(mainReleases);
 
             var featured = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Guest))
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(featured);
 
             var remixer = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Remixer))
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(remixer);
 
             var compilations = await _context.Albums
                 .Where(a => a.Artists.Any(albumArtist => albumArtist.ArtistId == artist.Id && albumArtist.Role == ArtistRole.Main) && a.Type == AlbumType.Compilation)
                 .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(compilations);
 
             return new ArtistDto()
             {
@@ -169,6 +182,8 @@ namespace Coral.Services
             {
                 return null;
             }
+
+            await _artworkMappingHelper.MapArtworksToAlbums(album);
 
             album.Tracks = album.Tracks.OrderBy(t => t.DiscNumber).ThenBy(a => a.TrackNumber).ToList();
             return album;

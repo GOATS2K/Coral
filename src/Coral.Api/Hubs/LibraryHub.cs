@@ -5,6 +5,7 @@ namespace Coral.Api;
 public interface ILibraryHubClient
 {
     Task LibraryScanProgress(ScanProgressDto progress);
+    Task LibraryScanComplete(ScanCompleteDto scanComplete);
 }
 
 public class LibraryHub : Hub<ILibraryHubClient>

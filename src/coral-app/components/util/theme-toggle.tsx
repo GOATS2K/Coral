@@ -1,6 +1,8 @@
 import { MoonStarIcon, SunIcon, MonitorIcon } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Text } from '@/components/ui/text';
 
 import * as React from 'react';
 
@@ -27,12 +29,19 @@ export function ThemeToggle() {
   };
 
   return (
-    <Button
-      onPressIn={cycleTheme}
-      size="icon"
-      variant="ghost"
-      className="rounded-full">
-      <Icon as={THEME_ICONS[themePreference]} className="size-5" />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onPressIn={cycleTheme}
+          size="icon"
+          variant="ghost"
+          className="rounded-full">
+          <Icon as={THEME_ICONS[themePreference]} className="size-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <Text>Toggle Theme</Text>
+      </TooltipContent>
+    </Tooltip>
   );
 }

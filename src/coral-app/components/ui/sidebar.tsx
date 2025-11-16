@@ -6,6 +6,7 @@ import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/util/theme-toggle';
+import { RescanButton } from '@/components/util/rescan-button';
 import { useState } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
@@ -144,8 +145,9 @@ export function Sidebar() {
           ))}
         </View>
       </View>
-      <View className={cn("flex-row", collapsed ? "justify-center" : "")}>
+      <View className={cn(collapsed ? "flex-col items-center gap-2" : "flex-row justify-between", "px-2")}>
         <ThemeToggle />
+        <RescanButton />
       </View>
     </View>
   );

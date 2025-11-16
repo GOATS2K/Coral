@@ -9,6 +9,8 @@ public interface IScanReporter
 {
     void RegisterScan(Guid? requestId, int expectedTracks, MusicLibrary library);
     Task ReportTrackIndexed(Guid? requestId);
+    Task ReportTracksDeleted(Guid? requestId, int count);
+    Task ReportTracksUnchanged(Guid? requestId, int count);
     Task ReportEmbeddingCompleted(Guid? requestId);
     Task CompleteScan(Guid? requestId);
     void CleanupOldScans(TimeSpan olderThan);
@@ -55,6 +57,28 @@ public class ScanReporter : IScanReporter
         }
     }
 
+    public async Task ReportTracksDeleted(Guid? requestId, int count)
+    {
+        if (requestId == null || count == 0) return;
+
+        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
+        {
+            Interlocked.Add(ref progress.TracksDeleted, count);
+            // Don't emit progress for deletions, just track internally
+        }
+    }
+
+    public async Task ReportTracksUnchanged(Guid? requestId, int count)
+    {
+        if (requestId == null || count == 0) return;
+
+        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
+        {
+            Interlocked.Add(ref progress.TracksUnchanged, count);
+            // Don't emit progress for unchanged, just track internally
+        }
+    }
+
     public async Task ReportEmbeddingCompleted(Guid? requestId)
     {
         if (requestId == null) return;
@@ -73,12 +97,25 @@ public class ScanReporter : IScanReporter
     {
         if (requestId == null) return;
 
-        if (_scanJobs.TryRemove(requestId.Value, out var progress))
+        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
         {
-            // Emit final progress before removing
-            await EmitProgress(requestId.Value, progress.LibraryName, progress.TracksIndexed, progress.EmbeddingsCompleted);
+            progress.CompletedAt = DateTime.UtcNow;
+            var duration = progress.CompletedAt.Value - progress.StartedAt;
 
-            // TODO: Consider sending a "ScanComplete" event to clients
+            // Emit completion event with full statistics
+            await EmitScanComplete(new ScanCompleteDto
+            {
+                RequestId = requestId.Value,
+                LibraryName = progress.LibraryName,
+                TracksAdded = progress.TracksIndexed,
+                TracksDeleted = progress.TracksDeleted,
+                TracksUnchanged = progress.TracksUnchanged,
+                EmbeddingsCompleted = progress.EmbeddingsCompleted,
+                Duration = duration
+            });
+
+            // Remove from active scans
+            _scanJobs.TryRemove(requestId.Value, out _);
         }
     }
 
@@ -117,5 +154,10 @@ public class ScanReporter : IScanReporter
             TracksIndexed = tracksIndexed,
             EmbeddingsCompleted = embeddingsCompleted
         });
+    }
+
+    private async Task EmitScanComplete(ScanCompleteDto scanComplete)
+    {
+        await _hubContext.Clients.All.LibraryScanComplete(scanComplete);
     }
 }

@@ -7,6 +7,8 @@ import { getArtworkUrl } from '@/lib/player/player-format-utils';
 import { PlaybackInitializer, PlaybackSource, themeAtom } from '@/lib/state';
 import { MoreVertical } from 'lucide-react-native';
 import { useAtomValue } from 'jotai';
+import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
+import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +31,12 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
   const mainArtists = track.artists.filter(a => a.role === 'Main');
   const router = useRouter();
   const theme = useAtomValue(themeAtom);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error state when track changes
+  useEffect(() => {
+    setImageError(false);
+  }, [track.id]);
 
   const handleTrackTitleClick = () => {
     if (!initializer) return;
@@ -55,14 +63,17 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
         <Link href={`/albums/${track.album?.id}`} asChild>
           <TooltipTrigger asChild>
             <Pressable>
-              {artworkUrl ? (
+              {artworkUrl && !imageError ? (
                 <Image
                   source={{ uri: artworkUrl }}
                   className="w-14 h-14 rounded"
                   resizeMode="cover"
+                  onError={() => setImageError(true)}
                 />
               ) : (
-                <View className="w-14 h-14 rounded bg-muted" />
+                <View className="w-14 h-14 rounded overflow-hidden">
+                  <MissingAlbumCover size={22} />
+                </View>
               )}
             </Pressable>
           </TooltipTrigger>

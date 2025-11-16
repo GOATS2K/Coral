@@ -26,6 +26,7 @@ public class IndexerService : IIndexerService
     private readonly CoralDbContext _context;
     private readonly ISearchService _searchService;
     private readonly IArtworkService _artworkService;
+    private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<IndexerService> _logger;
 
     private static readonly string[] ImageFileFormats = [".jpg", ".png"];
@@ -37,12 +38,14 @@ public class IndexerService : IIndexerService
         CoralDbContext context,
         ISearchService searchService,
         ILogger<IndexerService> logger,
-        IArtworkService artworkService)
+        IArtworkService artworkService,
+        IEmbeddingService embeddingService)
     {
         _context = context;
         _searchService = searchService;
         _logger = logger;
         _artworkService = artworkService;
+        _embeddingService = embeddingService;
     }
 
 
@@ -572,7 +575,16 @@ public class IndexerService : IIndexerService
 
         var missingFiles = indexedFiles
             .Where(f => !Path.Exists(f.FilePath))
-            .Select(f => f.Id);
+            .Select(f => f.Id)
+            .ToList();
+
+        if (!missingFiles.Any()) return;
+
+        // Get track IDs before deleting them (for embedding cleanup)
+        var trackIds = await _context.Tracks
+            .Where(t => missingFiles.Contains(t.AudioFile.Id))
+            .Select(t => t.Id)
+            .ToListAsync();
 
         var deletedTracks = await _context.Tracks
             .Where(f => missingFiles.Contains(f.AudioFile.Id))
@@ -581,6 +593,19 @@ public class IndexerService : IIndexerService
         if (deletedTracks > 0)
         {
             _logger.LogInformation("Deleted {Tracks} missing tracks", deletedTracks);
+
+            // Delete embeddings from DuckDB
+            if (trackIds.Any())
+            {
+                try
+                {
+                    await _embeddingService.DeleteEmbeddingsAsync(trackIds);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete embeddings for {Count} tracks", trackIds.Count);
+                }
+            }
         }
 
         await DeleteEmptyArtistsAndAlbums();

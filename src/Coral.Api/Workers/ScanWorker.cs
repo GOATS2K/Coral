@@ -80,7 +80,7 @@ public class ScanWorker : BackgroundService
 
         _logger.LogInformation("Completed scan of {Directory}", library.LibraryPath);
 
-        // Mark scan as complete and remove from active tracking
+        // Always mark scan as complete, even if no tracks were indexed (removal-only scan)
         await reporter.CompleteScan(job.RequestId);
     }
 }

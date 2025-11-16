@@ -9,6 +9,7 @@ public interface IEmbeddingService
     Task InitializeAsync();
     Task InsertEmbeddingAsync(Guid trackId, float[] embedding);
     Task<bool> HasEmbeddingAsync(Guid trackId);
+    Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds);
     Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(
         Guid trackId, int limit = 100, double maxDistance = 0.2);
 }
@@ -104,6 +105,34 @@ public class EmbeddingService : IEmbeddingService
 
         var count = (long)await command.ExecuteScalarAsync()!;
         return count > 0;
+    }
+
+    public async Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds)
+    {
+        var trackIdList = trackIds.ToList();
+        if (!trackIdList.Any()) return;
+
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+
+        // Build the IN clause with parameters
+        var parameters = trackIdList.Select((id, i) => $"${i + 1}").ToArray();
+        command.CommandText = $@"
+            DELETE FROM track_embeddings
+            WHERE track_id IN ({string.Join(", ", parameters)})";
+
+        foreach (var (trackId, index) in trackIdList.Select((id, i) => (id, i)))
+        {
+            command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+        }
+
+        var deletedCount = await command.ExecuteNonQueryAsync();
+        if (deletedCount > 0)
+        {
+            _logger.LogInformation("Deleted {Count} embeddings from DuckDB", deletedCount);
+        }
     }
 
     public async Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(

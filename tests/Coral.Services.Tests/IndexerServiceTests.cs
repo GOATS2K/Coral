@@ -35,7 +35,8 @@ public class IndexerServiceTests(DatabaseFixture fixture)
             testDatabase.Context,
             searchService,
             Substitute.For<ILogger<IndexerService>>(),
-            artworkService);
+            artworkService,
+            Substitute.For<IEmbeddingService>());
 
         var directoryScanner = new DirectoryScanner(
             testDatabase.Context,

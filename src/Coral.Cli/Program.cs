@@ -89,6 +89,12 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
         opt.AddCommand<SyncKeywordsCommand>("sync-keywords")
             .WithDescription("Fix missing keywords for tracks")
             .WithExample("sync-keywords");
+
+        // Clean orphaned embeddings command
+        opt.AddCommand<CleanOrphanedEmbeddingsCommand>("clean-orphaned-embeddings")
+            .WithDescription("Remove embeddings for tracks that no longer exist in the database")
+            .WithExample("clean-orphaned-embeddings")
+            .WithExample("clean-orphaned-embeddings", "--dry-run");
     });
 
     await app.RunAsync(args);

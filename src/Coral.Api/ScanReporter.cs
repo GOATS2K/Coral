@@ -10,6 +10,8 @@ public interface IScanReporter
     void RegisterScan(Guid? requestId, int expectedTracks, MusicLibrary library);
     Task ReportTrackIndexed(Guid? requestId);
     Task ReportEmbeddingCompleted(Guid? requestId);
+    Task CompleteScan(Guid? requestId);
+    void CleanupOldScans(TimeSpan olderThan);
     ScanJobProgress? GetProgress(Guid? requestId);
     List<ScanJobProgress> GetActiveScans();
 }
@@ -62,11 +64,35 @@ public class ScanReporter : IScanReporter
             var completed = Interlocked.Increment(ref progress.EmbeddingsCompleted);
             await EmitProgress(requestId.Value, progress.LibraryName, progress.TracksIndexed, completed);
 
-            // Auto-cleanup when scan is fully complete
-            if (completed == progress.ExpectedTracks)
-            {
-                _scanJobs.TryRemove(requestId.Value, out _);
-            }
+            // Note: Don't auto-remove here as it won't work correctly for incremental scans
+            // The IndexerService should explicitly call CompleteScan when done
+        }
+    }
+
+    public async Task CompleteScan(Guid? requestId)
+    {
+        if (requestId == null) return;
+
+        if (_scanJobs.TryRemove(requestId.Value, out var progress))
+        {
+            // Emit final progress before removing
+            await EmitProgress(requestId.Value, progress.LibraryName, progress.TracksIndexed, progress.EmbeddingsCompleted);
+
+            // TODO: Consider sending a "ScanComplete" event to clients
+        }
+    }
+
+    public void CleanupOldScans(TimeSpan olderThan)
+    {
+        var cutoffTime = DateTime.UtcNow - olderThan;
+        var staleScans = _scanJobs
+            .Where(kvp => kvp.Value.StartedAt < cutoffTime)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var requestId in staleScans)
+        {
+            _scanJobs.TryRemove(requestId, out _);
         }
     }
 

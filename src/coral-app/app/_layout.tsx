@@ -16,7 +16,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useAtomValue, useSetAtom } from 'jotai';
 import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
+import { ServerStatusBar } from '@/components/server-status-bar/server-status-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
+import { SignalRProvider } from '@/lib/signalr/signalr-provider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ToastContainer } from '@/components/toast-container';
 import { Sidebar } from '@/components/ui/sidebar';
@@ -156,31 +158,34 @@ function AppContent() {
       <BottomSheetModalProvider>
         <QueryClientProvider client={queryClient}>
           <PlayerProvider>
-            <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-              {Platform.OS === 'web' ? (
-                // Web: Sidebar + Content layout with player bar at bottom
-                <View className="flex-1 flex-col">
-                  <TitleBar />
-                  <View className="flex-1 flex-row">
-                    <Sidebar />
+            <SignalRProvider>
+              <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                {Platform.OS === 'web' ? (
+                  // Web: Sidebar + Content layout with player bar at bottom
+                  <View className="flex-1 flex-col bg-background">
+                    <TitleBar />
+                    <View className="flex-1 flex-row">
+                      <Sidebar />
+                      <View className="flex-1">
+                        <Stack screenOptions={{ headerShown: false }} />
+                      </View>
+                    </View>
+                    <WebPlayerBar />
+                    <ServerStatusBar />
+                  </View>
+                ) : (
+                  // Mobile: Full-screen Stack
+                  <View className="flex-1 flex-col">
                     <View className="flex-1">
                       <Stack screenOptions={{ headerShown: false }} />
                     </View>
                   </View>
-                  <WebPlayerBar />
-                </View>
-              ) : (
-                // Mobile: Full-screen Stack
-                <View className="flex-1 flex-col">
-                  <View className="flex-1">
-                    <Stack screenOptions={{ headerShown: false }} />
-                  </View>
-                </View>
-              )}
+                )}
               <PortalHost />
               <ToastContainer />
             </ThemeProvider>
+            </SignalRProvider>
           </PlayerProvider>
         </QueryClientProvider>
       </BottomSheetModalProvider>

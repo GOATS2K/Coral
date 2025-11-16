@@ -79,5 +79,8 @@ public class ScanWorker : BackgroundService
         await indexer.FinalizeIndexing(library, cancellationToken);
 
         _logger.LogInformation("Completed scan of {Directory}", library.LibraryPath);
+
+        // Mark scan as complete and remove from active tracking
+        await reporter.CompleteScan(job.RequestId);
     }
 }

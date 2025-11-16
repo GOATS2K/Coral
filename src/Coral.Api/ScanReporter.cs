@@ -2,18 +2,16 @@ using Coral.Database.Models;
 using Coral.Services.ChannelWrappers;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using Coral.Services.Indexer;
 
 namespace Coral.Api;
 
 public interface IScanReporter
 {
     void RegisterScan(Guid? requestId, int expectedTracks, MusicLibrary library);
-    Task ReportTrackIndexed(Guid? requestId);
-    Task ReportTracksDeleted(Guid? requestId, int count);
-    Task ReportTracksUnchanged(Guid? requestId, int count);
+    Task ReportIndexOperation(Guid? requestId, IndexEvent indexEvent);
     Task ReportEmbeddingCompleted(Guid? requestId);
     Task CompleteScan(Guid? requestId);
-    void CleanupOldScans(TimeSpan olderThan);
     ScanJobProgress? GetProgress(Guid? requestId);
     List<ScanJobProgress> GetActiveScans();
 }
@@ -38,7 +36,9 @@ public class ScanReporter : IScanReporter
             LibraryId = library.Id,
             LibraryName = library.LibraryPath,
             ExpectedTracks = expectedTracks,
-            TracksIndexed = 0,
+            TracksAdded = 0,
+            TracksUpdated = 0,
+            TracksDeleted = 0,
             EmbeddingsCompleted = 0,
             StartedAt = DateTime.UtcNow
         };
@@ -46,37 +46,26 @@ public class ScanReporter : IScanReporter
         _ = _scanJobs.TryAdd(requestId.Value, progress);
     }
 
-    public async Task ReportTrackIndexed(Guid? requestId)
+    public async Task ReportIndexOperation(Guid? requestId, IndexEvent indexEvent)
     {
         if (requestId == null) return;
 
-        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
+        if (!_scanJobs.TryGetValue(requestId.Value, out var progress)) return;
+        
+        switch (indexEvent.Operation)
         {
-            var indexed = Interlocked.Increment(ref progress.TracksIndexed);
-            await EmitProgress(requestId.Value, progress.LibraryName, indexed, progress.EmbeddingsCompleted);
+            case IndexerOperation.Create:
+                progress.TracksAdded += 1;
+                break;
+            case IndexerOperation.Update:
+                progress.TracksUpdated += 1;
+                break;
+            case IndexerOperation.Delete:
+                progress.TracksDeleted += 1;
+                break;
         }
-    }
 
-    public async Task ReportTracksDeleted(Guid? requestId, int count)
-    {
-        if (requestId == null || count == 0) return;
-
-        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
-        {
-            Interlocked.Add(ref progress.TracksDeleted, count);
-            // Don't emit progress for deletions, just track internally
-        }
-    }
-
-    public async Task ReportTracksUnchanged(Guid? requestId, int count)
-    {
-        if (requestId == null || count == 0) return;
-
-        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
-        {
-            Interlocked.Add(ref progress.TracksUnchanged, count);
-            // Don't emit progress for unchanged, just track internally
-        }
+        await EmitProgress(requestId.Value, progress);
     }
 
     public async Task ReportEmbeddingCompleted(Guid? requestId)
@@ -85,11 +74,8 @@ public class ScanReporter : IScanReporter
 
         if (_scanJobs.TryGetValue(requestId.Value, out var progress))
         {
-            var completed = Interlocked.Increment(ref progress.EmbeddingsCompleted);
-            await EmitProgress(requestId.Value, progress.LibraryName, progress.TracksIndexed, completed);
-
-            // Note: Don't auto-remove here as it won't work correctly for incremental scans
-            // The IndexerService should explicitly call CompleteScan when done
+            progress.EmbeddingsCompleted += 1;
+            await EmitProgress(requestId.Value, progress);
         }
     }
 
@@ -107,9 +93,9 @@ public class ScanReporter : IScanReporter
             {
                 RequestId = requestId.Value,
                 LibraryName = progress.LibraryName,
-                TracksAdded = progress.TracksIndexed,
+                TracksAdded = progress.TracksAdded,
+                TracksUpdated = progress.TracksUpdated,
                 TracksDeleted = progress.TracksDeleted,
-                TracksUnchanged = progress.TracksUnchanged,
                 EmbeddingsCompleted = progress.EmbeddingsCompleted,
                 Duration = duration
             });
@@ -118,21 +104,7 @@ public class ScanReporter : IScanReporter
             _scanJobs.TryRemove(requestId.Value, out _);
         }
     }
-
-    public void CleanupOldScans(TimeSpan olderThan)
-    {
-        var cutoffTime = DateTime.UtcNow - olderThan;
-        var staleScans = _scanJobs
-            .Where(kvp => kvp.Value.StartedAt < cutoffTime)
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        foreach (var requestId in staleScans)
-        {
-            _scanJobs.TryRemove(requestId, out _);
-        }
-    }
-
+    
     public ScanJobProgress? GetProgress(Guid? requestId)
     {
         if (requestId == null) return null;
@@ -145,14 +117,16 @@ public class ScanReporter : IScanReporter
         return _scanJobs.Values.ToList();
     }
 
-    private async Task EmitProgress(Guid requestId, string libraryName, int tracksIndexed, int embeddingsCompleted)
+    private async Task EmitProgress(Guid requestId, ScanJobProgress progress)
     {
         await _hubContext.Clients.All.LibraryScanProgress(new ScanProgressDto
         {
             RequestId = requestId,
-            LibraryName = libraryName,
-            TracksIndexed = tracksIndexed,
-            EmbeddingsCompleted = embeddingsCompleted
+            LibraryName = progress.LibraryName,
+            TracksDeleted = progress.TracksDeleted,
+            TracksAdded = progress.TracksAdded,
+            TracksUpdated = progress.TracksUpdated,
+            EmbeddingsCompleted = progress.EmbeddingsCompleted,
         });
     }
 

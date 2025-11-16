@@ -6,6 +6,7 @@ import {
   signalrConnectionStateAtom,
   updateScanProgressAtom,
   syncActivescansAtom,
+  removeScanProgressAtom,
   addSignalREventAtom,
 } from './signalr-atoms';
 
@@ -17,6 +18,7 @@ export function SignalRProvider({ children }: SignalRProviderProps) {
   const setConnectionState = useSetAtom(signalrConnectionStateAtom);
   const updateScanProgress = useSetAtom(updateScanProgressAtom);
   const syncActiveScans = useSetAtom(syncActivescansAtom);
+  const removeScanProgress = useSetAtom(removeScanProgressAtom);
   const addSignalREvent = useSetAtom(addSignalREventAtom);
 
   useEffect(() => {
@@ -50,6 +52,45 @@ export function SignalRProvider({ children }: SignalRProviderProps) {
           });
         });
 
+        signalRService.on('scanComplete', (complete) => {
+          if (!mounted) return;
+
+          console.info('[SignalRProvider] Scan complete:', complete);
+
+          // Show completion summary for 5 seconds before removing
+          const completionSummary = {
+            requestId: complete.requestId,
+            libraryName: complete.libraryName,
+            tracksAdded: complete.tracksAdded,
+            tracksUpdated: complete.tracksUpdated,
+            tracksDeleted: complete.tracksDeleted,
+            embeddingsCompleted: complete.embeddingsCompleted,
+            isComplete: true,
+          };
+
+          updateScanProgress(completionSummary);
+
+          // Remove after 5 seconds
+          setTimeout(() => {
+            if (mounted) {
+              removeScanProgress(complete.requestId);
+            }
+          }, 5000);
+
+          // Add as generic event for logging
+          addSignalREvent({
+            type: 'scanComplete',
+            data: complete,
+          });
+        });
+
+        signalRService.on('syncActiveScans', (scans) => {
+          if (!mounted) return;
+
+          console.info('[SignalRProvider] Syncing active scans:', scans);
+          syncActiveScans(scans);
+        });
+
         // Connect to SignalR hub
         await signalRService.connect();
         setConnectionState(HubConnectionState.Connected);
@@ -71,7 +112,7 @@ export function SignalRProvider({ children }: SignalRProviderProps) {
       // Disconnect when unmounting
       signalRService.disconnect().catch(console.error);
     };
-  }, [setConnectionState, updateScanProgress, addSignalREvent]);
+  }, [setConnectionState, updateScanProgress, removeScanProgress, syncActiveScans, addSignalREvent]);
 
   return <>{children}</>;
 }

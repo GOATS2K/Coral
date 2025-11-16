@@ -4,8 +4,11 @@ import { Config } from '../config';
 export interface ScanProgressData {
   requestId: string;
   libraryName: string;
-  tracksIndexed: number;
+  tracksAdded: number;
+  tracksUpdated: number;
+  tracksDeleted: number;
   embeddingsCompleted: number;
+  isComplete?: boolean; // Set to true when showing completion summary
 }
 
 export interface ScanJobProgress {
@@ -13,9 +16,21 @@ export interface ScanJobProgress {
   libraryId: string;
   libraryName: string;
   expectedTracks: number;
-  tracksIndexed: number;
+  tracksAdded: number;
+  tracksUpdated: number;
+  tracksDeleted: number;
   embeddingsCompleted: number;
   startedAt: string;
+}
+
+export interface ScanCompleteData {
+  requestId: string;
+  libraryName: string;
+  tracksAdded: number;
+  tracksUpdated: number;
+  tracksDeleted: number;
+  embeddingsCompleted: number;
+  duration: string; // TimeSpan format: "HH:MM:SS.mmmmmmm"
 }
 
 export class SignalRService {
@@ -86,6 +101,12 @@ export class SignalRService {
       this.emit('scanProgress', progress);
     });
 
+    // Library scan complete handler
+    this.connection.on('LibraryScanComplete', (complete: ScanCompleteData) => {
+      console.info('[SignalR] Scan complete:', complete);
+      this.emit('scanComplete', complete);
+    });
+
     // Add more handlers here as needed for future features
   }
 
@@ -103,7 +124,9 @@ export class SignalRService {
       const scanDataArray = activeScans.map(scan => ({
         requestId: scan.requestId,
         libraryName: scan.libraryName,
-        tracksIndexed: scan.tracksIndexed,
+        tracksAdded: scan.tracksAdded,
+        tracksUpdated: scan.tracksUpdated,
+        tracksDeleted: scan.tracksDeleted,
         embeddingsCompleted: scan.embeddingsCompleted,
       }));
 

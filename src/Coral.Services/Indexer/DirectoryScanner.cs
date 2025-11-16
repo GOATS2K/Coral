@@ -7,7 +7,7 @@ namespace Coral.Services.Indexer;
 
 public interface IDirectoryScanner
 {
-    int CountFiles(MusicLibrary library, bool incremental = false);
+    Task<int> CountFiles(MusicLibrary library, bool incremental = false);
     IAsyncEnumerable<DirectoryGroup> ScanLibrary(MusicLibrary library, bool incremental = false);
 }
 
@@ -32,25 +32,29 @@ public class DirectoryScanner : IDirectoryScanner
         _logger = logger;
     }
 
-    public int CountFiles(MusicLibrary library, bool incremental = false)
+    public async Task<int> CountFiles(MusicLibrary library, bool incremental = false)
     {
         var contentDirectory = new DirectoryInfo(library.LibraryPath);
 
         if (!incremental)
         {
-            // Count all audio files in library
-            return contentDirectory
-                .EnumerateFiles("*.*", SearchOption.AllDirectories)
-                .Count(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)));
-        }
-        else
-        {
-            // Count only new/modified files since last scan
+            // Match ScanLibrary logic - count only files that need processing
+            var existingFiles = await _context.AudioFiles
+                .Where(f => f.Library.Id == library.Id)
+                .ToListAsync();
+
             return contentDirectory
                 .EnumerateFiles("*.*", SearchOption.AllDirectories)
                 .Count(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) &&
-                           (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan));
+                           !existingFiles.Any(ef => ef.FilePath == f.FullName &&
+                                                    f.LastWriteTimeUtc == ef.UpdatedAt));
         }
+
+        // Incremental mode - count only new/modified files since last scan
+        return contentDirectory
+            .EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Count(f => AudioFileFormats.Contains(Path.GetExtension(f.FullName)) &&
+                        (f.LastWriteTimeUtc > library.LastScan || f.CreationTimeUtc > library.LastScan));
     }
 
     public async IAsyncEnumerable<DirectoryGroup> ScanLibrary(

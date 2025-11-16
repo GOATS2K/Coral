@@ -13,13 +13,20 @@ public interface IIndexerService
     Task DeleteTrack(string filePath);
     Task HandleRename(string oldPath, string newPath);
 
-    IAsyncEnumerable<Track> IndexDirectoryGroups(
+    IAsyncEnumerable<IndexEvent> IndexDirectoryGroups(
         IAsyncEnumerable<DirectoryGroup> directoryGroups,
         MusicLibrary library,
         CancellationToken cancellationToken = default);
 
     Task FinalizeIndexing(MusicLibrary library, CancellationToken cancellationToken = default);
 }
+
+public enum IndexerOperation
+{
+    Create, Update, Delete
+}
+
+public record IndexEvent(IndexerOperation Operation, string FilePath, Track? Track);
 
 public class IndexerService : IIndexerService
 {
@@ -84,7 +91,7 @@ public class IndexerService : IIndexerService
     private readonly Dictionary<Track, string> _tracksForKeywordInsertion = new();
     private readonly Dictionary<Guid, string> _albumsForArtworkProcessing = new();
 
-    private async Task IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
+    private async Task<List<IndexEvent>> IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
     {
         var analyzedTracks = await ReadTracksInDirectory(tracksInDirectory);
         bool folderIsAlbum = analyzedTracks
@@ -96,16 +103,14 @@ public class IndexerService : IIndexerService
         if (folderIsAlbum)
         {
             _logger.LogDebug("Indexing {Path} as album", parent);
-            await IndexAlbumBulk(analyzedTracks, library);
+            return await IndexAlbumBulk(analyzedTracks, library);
         }
-        else
-        {
-            _logger.LogDebug("Indexing {Path} as single files", parent);
-            await IndexSingleFilesBulk(analyzedTracks, library);
-        }
+
+        _logger.LogDebug("Indexing {Path} as single files", parent);
+        return await IndexSingleFilesBulk(analyzedTracks, library);
     }
 
-    private async Task IndexAlbumBulk(List<ATL.Track> tracks, MusicLibrary library)
+    private async Task<List<IndexEvent>> IndexAlbumBulk(List<ATL.Track> tracks, MusicLibrary library)
     {
         // Parse all artists for all tracks (deduplicated automatically by BulkInsertContext caching)
         var artistsForTracks = new Dictionary<ATL.Track, List<ArtistWithRole>>();
@@ -133,18 +138,22 @@ public class IndexerService : IIndexerService
         album.Type = albumType;
 
         // Index each track
+        List<IndexEvent> events = [];
         foreach (var trackToIndex in tracks)
         {
             var trackGenre = !string.IsNullOrEmpty(trackToIndex.Genre)
                 ? await GetGenreBulk(trackToIndex.Genre)
                 : null;
 
-            await IndexTrackBulk(artistsForTracks[trackToIndex], album, trackGenre, trackToIndex, library);
+            events.Add(await IndexTrackBulk(artistsForTracks[trackToIndex], album, trackGenre, trackToIndex, library));
         }
+
+        return events;
     }
 
-    private async Task IndexSingleFilesBulk(List<ATL.Track> tracks, MusicLibrary library)
+    private async Task<List<IndexEvent>> IndexSingleFilesBulk(List<ATL.Track> tracks, MusicLibrary library)
     {
+        List<IndexEvent> events = [];
         foreach (var track in tracks)
         {
             var artists = await ParseArtistsBulk(track.Artist, track.Title);
@@ -155,11 +164,12 @@ public class IndexerService : IIndexerService
             // Create single-track album
             var album = await GetAlbumBulk(artists, track);
 
-            await IndexTrackBulk(artists, album, genre, track, library);
+            events.Add(await IndexTrackBulk(artists, album, genre, track, library));
         }
+        return events;
     }
 
-    private async Task IndexTrackBulk(
+    private async Task<IndexEvent> IndexTrackBulk(
         List<ArtistWithRole> artists,
         Album album,
         Genre? genre,
@@ -171,17 +181,14 @@ public class IndexerService : IIndexerService
             .Include(t => t.AudioFile)
             .FirstOrDefaultAsync(t => t.AudioFile.FilePath == atlTrack.Path);
 
-        if (existingTrack != null)
-        {
-            await UpdateTrackBulk(existingTrack, artists, album, genre, atlTrack);
-        }
-        else
-        {
-            await CreateTrackBulk(artists, album, genre, atlTrack, library);
-        }
+        if (existingTrack == null)
+            return new IndexEvent(IndexerOperation.Create, atlTrack.Path,
+                await CreateTrackBulk(artists, album, genre, atlTrack, library));
+        
+        return new IndexEvent(IndexerOperation.Update, atlTrack.Path, await UpdateTrackBulk(existingTrack, artists, album, genre, atlTrack));
     }
 
-    private async Task CreateTrackBulk(
+    private async Task<Track> CreateTrackBulk(
         List<ArtistWithRole> artists,
         Album album,
         Genre? genre,
@@ -263,9 +270,10 @@ public class IndexerService : IIndexerService
         _tracksForKeywordInsertion[track] = BuildKeywordString(artists, album, track.Title);
 
         _logger.LogDebug("Created new track: {TrackPath}", atlTrack.Path);
+        return track;
     }
 
-    private async Task UpdateTrackBulk(
+    private async Task<Track> UpdateTrackBulk(
         Track existingTrack,
         List<ArtistWithRole> newArtists,
         Album newAlbum,
@@ -364,6 +372,7 @@ public class IndexerService : IIndexerService
         await _searchService.InsertKeywordsForTrack(reloadedTrack);
 
         _logger.LogDebug("Updated existing track: {TrackPath}", atlTrack.Path);
+        return reloadedTrack;
     }
 
 
@@ -510,8 +519,7 @@ public class IndexerService : IIndexerService
 
         return album;
     }
-
-
+    
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
@@ -544,8 +552,7 @@ public class IndexerService : IIndexerService
 
         return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
-
-
+    
     private static string BuildKeywordString(IEnumerable<ArtistWithRole> artists, Album album, string trackTitle)
     {
         var artistString = string.Join(", ", artists.Select(a => a.Artist.Name));
@@ -567,7 +574,7 @@ public class IndexerService : IIndexerService
         await _searchService.InsertKeywordsForTracksBulk(trackKeywordStrings);
     }
 
-    private async Task DeleteMissingTracks(MusicLibrary library)
+    private async Task<List<IndexEvent>> DeleteMissingTracks(MusicLibrary library)
     {
         var indexedFiles = _context.AudioFiles
             .Where(f => f.Library.Id == library.Id)
@@ -575,19 +582,20 @@ public class IndexerService : IIndexerService
 
         var missingFiles = indexedFiles
             .Where(f => !Path.Exists(f.FilePath))
-            .Select(f => f.Id)
+            .Select(f => new { f.Id, f.FilePath })
             .ToList();
+        var missingFileIds =  missingFiles.Select(f => f.Id).ToList();
 
-        if (!missingFiles.Any()) return;
+        if (!missingFiles.Any()) return [];
 
         // Get track IDs before deleting them (for embedding cleanup)
         var trackIds = await _context.Tracks
-            .Where(t => missingFiles.Contains(t.AudioFile.Id))
+            .Where(t => missingFileIds.Contains(t.AudioFile.Id))
             .Select(t => t.Id)
             .ToListAsync();
 
         var deletedTracks = await _context.Tracks
-            .Where(f => missingFiles.Contains(f.AudioFile.Id))
+            .Where(f => missingFileIds.Contains(f.AudioFile.Id))
             .ExecuteDeleteAsync();
 
         if (deletedTracks > 0)
@@ -612,8 +620,10 @@ public class IndexerService : IIndexerService
 
         // Finally, delete the missing file entries
         await _context.AudioFiles
-            .Where(f => missingFiles.Contains(f.Id))
+            .Where(f => missingFileIds.Contains(f.Id))
             .ExecuteDeleteAsync();
+        
+        return missingFiles.Select(m => new IndexEvent(IndexerOperation.Delete, m.FilePath, null)).ToList();
     }
 
     private async Task DeleteEmptyArtistsAndAlbums()
@@ -701,13 +711,8 @@ public class IndexerService : IIndexerService
 
         return analyzedTracks;
     }
-
-
-    /// <summary>
-    /// Indexes directory groups and yields tracks as they are indexed (streaming).
-    /// Used for progress reporting in benchmarks.
-    /// </summary>
-    public async IAsyncEnumerable<Track> IndexDirectoryGroups(
+    
+    public async IAsyncEnumerable<IndexEvent> IndexDirectoryGroups(
         IAsyncEnumerable<DirectoryGroup> directoryGroups,
         MusicLibrary library,
         [System.Runtime.CompilerServices.EnumeratorCancellation]
@@ -715,7 +720,11 @@ public class IndexerService : IIndexerService
     {
         library = await GetLibrary(library);
 
-        await DeleteMissingTracks(library);
+        var events = await DeleteMissingTracks(library);
+        foreach (var deleteEvent in events)
+        {
+            yield return deleteEvent;
+        }
 
         await foreach (var directoryGroup in directoryGroups.WithCancellation(cancellationToken))
         {
@@ -729,17 +738,10 @@ public class IndexerService : IIndexerService
                 continue;
             }
 
-            // Track how many tracks we had before indexing this directory
-            var tracksBeforeIndexing = _tracksForKeywordInsertion.Count;
-
             // Index the directory (stores in bulk context, doesn't save yet)
-            await IndexDirectory(filesInDirectory, library);
-
-            // Yield only the NEW tracks added by this directory
-            var newTracks = _tracksForKeywordInsertion.Keys.Skip(tracksBeforeIndexing).ToList();
-            foreach (var track in newTracks)
+            foreach (var indexEvent in await IndexDirectory(filesInDirectory, library))
             {
-                yield return track;
+                yield return indexEvent;
             }
 
             _logger.LogDebug("Completed indexing of {Path}", directoryGroup.DirectoryPath);

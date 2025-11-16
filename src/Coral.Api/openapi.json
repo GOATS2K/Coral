@@ -1733,11 +1733,15 @@
       },
       "ScanJobProgress": {
         "required": [
+          "embeddingsCompleted",
           "expectedTracks",
           "libraryId",
           "libraryName",
           "requestId",
-          "startedAt"
+          "startedAt",
+          "tracksAdded",
+          "tracksDeleted",
+          "tracksUpdated"
         ],
         "type": "object",
         "properties": {
@@ -1756,9 +1760,30 @@
             "type": "integer",
             "format": "int32"
           },
+          "tracksAdded": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracksUpdated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracksDeleted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "embeddingsCompleted": {
+            "type": "integer",
+            "format": "int32"
+          },
           "startedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false

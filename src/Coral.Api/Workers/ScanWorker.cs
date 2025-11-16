@@ -62,18 +62,19 @@ public class ScanWorker : BackgroundService
             return;
         }
 
-        var expectedTracks = scanner.CountFiles(library, job.Incremental);
+        var expectedTracks = await scanner.CountFiles(library, job.Incremental);
         _logger.LogInformation("Expecting {ExpectedTracks} tracks to process", expectedTracks);
 
         reporter.RegisterScan(job.RequestId, expectedTracks, library);
 
         var directoryGroups = scanner.ScanLibrary(library, job.Incremental);
-        var tracks = indexer.IndexDirectoryGroups(directoryGroups, library, cancellationToken);
+        var indexEvents = indexer.IndexDirectoryGroups(directoryGroups, library, cancellationToken);
 
-        await foreach (var track in tracks.WithCancellation(cancellationToken))
+        await foreach (var indexEvent in indexEvents)
         {
-            await reporter.ReportTrackIndexed(job.RequestId);
-            await embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(track, job.RequestId), cancellationToken);
+            await reporter.ReportIndexOperation(job.RequestId, indexEvent);
+            if (indexEvent is { Operation: IndexerOperation.Create, Track: not null})
+                await embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(indexEvent.Track, job.RequestId), cancellationToken);
         }
 
         await indexer.FinalizeIndexing(library, cancellationToken);

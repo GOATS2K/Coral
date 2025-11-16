@@ -62,6 +62,16 @@ export const syncActivescansAtom = atom(
   }
 );
 
+// Remove a specific scan from progress map
+export const removeScanProgressAtom = atom(
+  null,
+  (get, set, requestId: string) => {
+    const progressMap = new Map(get(scanProgressMapAtom));
+    progressMap.delete(requestId);
+    set(scanProgressMapAtom, progressMap);
+  }
+);
+
 // Clear all scan progress
 export const clearScanProgressAtom = atom(
   null,

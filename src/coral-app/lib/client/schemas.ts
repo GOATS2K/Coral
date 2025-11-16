@@ -198,9 +198,29 @@ export type ScanJobProgress = {
    */
   expectedTracks: number;
   /**
+   * @format int32
+   */
+  tracksAdded: number;
+  /**
+   * @format int32
+   */
+  tracksUpdated: number;
+  /**
+   * @format int32
+   */
+  tracksDeleted: number;
+  /**
+   * @format int32
+   */
+  embeddingsCompleted: number;
+  /**
    * @format date-time
    */
   startedAt: string;
+  /**
+   * @format date-time
+   */
+  completedAt?: string | null;
 };
 
 export type ScanRequestInfo = {

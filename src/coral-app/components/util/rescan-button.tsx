@@ -5,13 +5,29 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Text } from '@/components/ui/text';
 import { useRunIndexer } from '@/lib/client/components';
 import { useToast } from '@/lib/hooks/use-toast';
+import { useSetAtom } from 'jotai';
+import { updateScanProgressAtom } from '@/lib/signalr/signalr-atoms';
 
 export function RescanButton() {
   const { showToast } = useToast();
+  const updateScanProgress = useSetAtom(updateScanProgressAtom);
+
   const runIndexer = useRunIndexer({
     onSuccess: (data) => {
       showToast('Library scan started');
-      console.info('[RescanButton] Scan started with requestId:', data.requestId);
+      console.info('[RescanButton] Scan initiated:', data);
+
+      // Initialize scan progress for each library
+      data.scans.forEach((scan) => {
+        updateScanProgress({
+          requestId: scan.requestId,
+          libraryName: scan.libraryName,
+          tracksAdded: 0,
+          tracksUpdated: 0,
+          tracksDeleted: 0,
+          embeddingsCompleted: 0,
+        });
+      });
     },
     onError: (error) => {
       console.error('[RescanButton] Failed to start scan:', error);

@@ -22,38 +22,32 @@ export function ServerStatusBar() {
   }
 
   return (
-    <View
-      className={cn(
-        'mx-4 mb-4', // Margins for spacing
-        'py-2 px-4', // Internal padding
-        'rounded-md', // Slightly rounded corners
-        'bg-background', // Normal background color
-        'border', // Thin border for separation
-        // Inverted border: dark mode gets white border, light mode gets black border
-        'dark:border-white border-black',
-        'transition-all duration-300 ease-in-out'
-      )}
-    >
-      {/* Connection status indicator */}
-      {connectionState === HubConnectionState.Reconnecting && (
-        <View className="flex-row items-center justify-start">
-          <View className="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse" />
-          <Text className="text-sm text-foreground">
-            Reconnecting to server...
-          </Text>
-        </View>
-      )}
+    <View className="transition-all duration-300 ease-in-out">
+      {/* Horizontal rule separator */}
+      <View className="mx-4 mb-2 border-t border-border" />
 
-      {/* Scan progress indicators */}
-      {activeScans.map((scan) => (
-        <ScanProgressIndicator
-          key={scan.requestId}
-          progress={scan}
-        />
-      ))}
+      <View className="mx-4 mb-4 py-2 px-4">
+        {/* Connection status indicator */}
+        {connectionState === HubConnectionState.Reconnecting && (
+          <View className="flex-row items-center justify-start">
+            <View className="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse" />
+            <Text className="text-sm text-foreground">
+              Reconnecting to server...
+            </Text>
+          </View>
+        )}
 
-      {/* Future: Add more status indicators here */}
-      {/* e.g., Remote control status, sync status, etc. */}
+        {/* Scan progress indicators */}
+        {activeScans.map((scan) => (
+          <ScanProgressIndicator
+            key={scan.requestId}
+            progress={scan}
+          />
+        ))}
+
+        {/* Future: Add more status indicators here */}
+        {/* e.g., Remote control status, sync status, etc. */}
+      </View>
     </View>
   );
 }

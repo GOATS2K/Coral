@@ -18,6 +18,7 @@ public class ScanProgressDto
 {
     public required Guid RequestId { get; init; }
     public required string LibraryName { get; init; }
+    public required int ExpectedTracks { get; init; }
     public required int TracksAdded { get; init; }
     public required int TracksUpdated { get; init; }
     public required int TracksDeleted { get; init; }

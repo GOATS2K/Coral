@@ -4,6 +4,7 @@ import { Config } from '../config';
 export interface ScanProgressData {
   requestId: string;
   libraryName: string;
+  expectedTracks: number;
   tracksAdded: number;
   tracksUpdated: number;
   tracksDeleted: number;

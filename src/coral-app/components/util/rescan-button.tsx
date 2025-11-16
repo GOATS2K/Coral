@@ -22,6 +22,7 @@ export function RescanButton() {
         updateScanProgress({
           requestId: scan.requestId,
           libraryName: scan.libraryName,
+          expectedTracks: 0, // Will be updated when backend reports actual count
           tracksAdded: 0,
           tracksUpdated: 0,
           tracksDeleted: 0,

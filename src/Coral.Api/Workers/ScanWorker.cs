@@ -67,21 +67,38 @@ public class ScanWorker : BackgroundService
 
         reporter.RegisterScan(job.RequestId, expectedTracks, library);
 
+        // If no tracks need processing, complete immediately
+        if (expectedTracks == 0)
+        {
+            _logger.LogInformation("No tracks to process for {Directory}, completing scan immediately", library.LibraryPath);
+            await reporter.CompleteScan(job.RequestId);
+            return;
+        }
+
         var directoryGroups = scanner.ScanLibrary(library, job.Incremental);
         var indexEvents = indexer.IndexDirectoryGroups(directoryGroups, library, cancellationToken);
 
+        var hasCreateEvents = false;
         await foreach (var indexEvent in indexEvents)
         {
             await reporter.ReportIndexOperation(job.RequestId, indexEvent);
             if (indexEvent is { Operation: IndexerOperation.Create, Track: not null})
+            {
+                hasCreateEvents = true;
                 await embeddingChannel.GetWriter().WriteAsync(new EmbeddingJob(indexEvent.Track, job.RequestId), cancellationToken);
+            }
         }
 
         await indexer.FinalizeIndexing(library, cancellationToken);
 
-        _logger.LogInformation("Completed scan of {Directory}", library.LibraryPath);
+        _logger.LogInformation("Completed indexing of {Directory}", library.LibraryPath);
 
-        // Always mark scan as complete, even if no tracks were indexed (removal-only scan)
-        await reporter.CompleteScan(job.RequestId);
+        // If no Create events occurred, no embeddings will be generated, so complete immediately
+        if (!hasCreateEvents)
+        {
+            _logger.LogInformation("No new tracks created for {Directory}, completing scan immediately", library.LibraryPath);
+            await reporter.CompleteScan(job.RequestId);
+        }
+        // Otherwise, scan will auto-complete when all embeddings are processed (EmbeddingsCompleted == ExpectedTracks)
     }
 }

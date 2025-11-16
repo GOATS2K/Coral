@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { Progress } from '@/components/ui/progress';
 import type { ScanProgressData } from '@/lib/signalr/signalr-service';
 
 interface ScanProgressIndicatorProps {
@@ -14,6 +15,14 @@ export function ScanProgressIndicator({ progress }: ScanProgressIndicatorProps) 
   const embeddingProgress = filesProcessed > 0
     ? Math.round((progress.embeddingsCompleted / filesProcessed) * 100)
     : 0;
+
+  // Progress bar shows total progress: tracks added + embeddings stored
+  // expectedTracks * 2 because we need to add the track AND store its embedding
+  const totalSteps = progress.expectedTracks * 2;
+  const completedSteps = filesProcessed + progress.embeddingsCompleted;
+  const scanProgress = totalSteps > 0
+    ? Math.round((completedSteps / totalSteps) * 100)
+    : undefined; // undefined = indeterminate
 
   // Format the library path to just show the folder name if it's too long
   const libraryPath = progress.libraryName;
@@ -42,14 +51,26 @@ export function ScanProgressIndicator({ progress }: ScanProgressIndicatorProps) 
 
   // Add embedding progress if there are embeddings and not complete
   if (filesProcessed > 0 && !progress.isComplete) {
-    parts.push(`Embeddings: ${progress.embeddingsCompleted}/${filesProcessed} (${embeddingProgress}%)`);
+    parts.push(`Embeddings: ${progress.embeddingsCompleted}/${filesProcessed}`);
+  }
+
+  // Add overall progress percentage if not complete
+  if (!progress.isComplete && scanProgress !== undefined) {
+    parts.push(`${scanProgress}%`);
   }
 
   return (
-    <View className="flex-row items-center justify-start">
+    <View className="flex-col gap-1">
       <Text className="text-sm text-foreground">
         {parts.join(' • ')}
       </Text>
+      {!progress.isComplete && (
+        <Progress
+          value={scanProgress}
+          className="h-1"
+          indicatorClassName="bg-primary"
+        />
+      )}
     </View>
   );
 }

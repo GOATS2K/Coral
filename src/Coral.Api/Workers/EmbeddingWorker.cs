@@ -45,38 +45,47 @@ public class EmbeddingWorker : BackgroundService
     {
         var track = job.Track;
         var sw = Stopwatch.StartNew();
-        switch (track.DurationInSeconds)
-        {
-            case < 60:
-                _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too short.",
-                    track.AudioFile.FilePath);
-                return;
-            // if the track is longer than 15 minutes, it's probably a podcast/radio show/mix
-            case > 60 * 15:
-                _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too long.",
-                    track.AudioFile.FilePath);
-                return;
-        }
 
-        await _semaphore.WaitAsync(stoppingToken);
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
+
         try
         {
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
+            switch (track.DurationInSeconds)
+            {
+                case < 60:
+                    _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too short.",
+                        track.AudioFile.FilePath);
+                    return;
+                // if the track is longer than 15 minutes, it's probably a podcast/radio show/mix
+                case > 60 * 15:
+                    _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too long.",
+                        track.AudioFile.FilePath);
+                    return;
+            }
 
-            // Check if embedding already exists in DuckDB
-            if (await _embeddingService.HasEmbeddingAsync(track.Id))
-                return;
+            await _semaphore.WaitAsync(stoppingToken);
+            try
+            {
+                // Check if embedding already exists in DuckDB
+                if (await _embeddingService.HasEmbeddingAsync(track.Id))
+                {
+                    _logger.LogDebug("Embedding already exists for track {FilePath}", track.AudioFile.FilePath);
+                    return;
+                }
 
-            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
+                var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
 
-            // Store embedding in DuckDB
-            await _embeddingService.InsertEmbeddingAsync(track.Id, embeddings);
+                // Store embedding in DuckDB
+                await _embeddingService.InsertEmbeddingAsync(track.Id, embeddings);
 
-            _logger.LogInformation("Stored embeddings for track {FilePath} in {Time:F2}s",
-                track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
-
-            await reporter.ReportEmbeddingCompleted(job.RequestId);
+                _logger.LogInformation("Stored embeddings for track {FilePath} in {Time:F2}s",
+                    track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
         catch (Exception ex)
         {
@@ -84,7 +93,8 @@ public class EmbeddingWorker : BackgroundService
         }
         finally
         {
-            _semaphore.Release();
+            // Always report embedding completed (even if skipped) so scan can finish
+            await reporter.ReportEmbeddingCompleted(job.RequestId);
         }
     }
 }

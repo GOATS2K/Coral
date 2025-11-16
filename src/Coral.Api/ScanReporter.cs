@@ -75,7 +75,14 @@ public class ScanReporter : IScanReporter
         if (_scanJobs.TryGetValue(requestId.Value, out var progress))
         {
             progress.EmbeddingsCompleted += 1;
+            var completed = progress.EmbeddingsCompleted;
             await EmitProgress(requestId.Value, progress);
+
+            // If all expected tracks have been processed for embeddings, complete the scan
+            if (completed >= progress.ExpectedTracks)
+            {
+                await CompleteScan(requestId);
+            }
         }
     }
 
@@ -123,6 +130,7 @@ public class ScanReporter : IScanReporter
         {
             RequestId = requestId,
             LibraryName = progress.LibraryName,
+            ExpectedTracks = progress.ExpectedTracks,
             TracksDeleted = progress.TracksDeleted,
             TracksAdded = progress.TracksAdded,
             TracksUpdated = progress.TracksUpdated,

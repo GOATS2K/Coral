@@ -151,12 +151,14 @@ export default function ArtistScreen() {
           <View className="mt-6">
             {/* Album Sections */}
             <AlbumSection title="Albums" albums={albums} />
-            <AlbumSection
-              title="EPs"
-              albums={miniAlbums}
-              showDivider={eps.length > 0 && miniAlbums.length > 0}
-              albumsAfterDivider={eps}
-            />
+            {(miniAlbums.length > 0 || eps.length > 0) && (
+              <AlbumSection
+                title="EPs"
+                albums={miniAlbums.length > 0 ? miniAlbums : eps}
+                showDivider={miniAlbums.length > 0 && eps.length > 0}
+                albumsAfterDivider={miniAlbums.length > 0 ? eps : []}
+              />
+            )}
             <AlbumSection title="Singles" albums={singles} />
             <AlbumSection title="Featured In" albums={featuredIn} />
             <AlbumSection title="Remixer In" albums={remixerIn} />

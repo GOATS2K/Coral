@@ -84,7 +84,8 @@ export default function AlbumsScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={400}
       >
-        <View className="flex-row flex-wrap px-2 py-2">
+        <Text variant="h2" className="px-4 pt-8 pb-4 font-bold">Albums</Text>
+        <View className="flex-row flex-wrap px-2">
           {albums.map((album) => (
             <UniversalAlbumCard key={album.id} album={album} />
           ))}

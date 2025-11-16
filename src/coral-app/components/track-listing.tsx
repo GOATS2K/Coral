@@ -78,19 +78,19 @@ function TrackRow({
             <TrackArtwork albumId={track.album?.id || ''} />
           </View>
         ) : showTrackNumber ? (
-          <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+          <Text variant="small" className={`w-8 select-none text-xs ${isActive ? 'text-orange-700 dark:text-orange-500 font-bold' : 'text-muted-foreground'}`}>
             {formatTrackNumber(track, index)}
           </Text>
         ) : null}
         <View className="flex-1 min-w-0">
-          <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-primary font-medium' : 'text-foreground'}`} numberOfLines={1}>
+          <Text variant="default" className={`select-none leading-tight text-sm ${isActive ? 'text-orange-700 dark:text-orange-500 font-bold' : 'text-foreground'}`} numberOfLines={1}>
             {track.title}
           </Text>
-          <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-primary/80' : 'text-muted-foreground'}`} numberOfLines={1}>
+          <Text variant="small" className={`mt-0.5 select-none leading-tight text-xs ${isActive ? 'text-orange-700/80 dark:text-orange-500/80 font-semibold' : 'text-muted-foreground'}`} numberOfLines={1}>
             {track.artists.filter(a => a.role === 'Main').map(a => a.name).join(', ')}
           </Text>
         </View>
-        <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+        <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-orange-700 dark:text-orange-500 font-bold' : 'text-muted-foreground'}`}>
           {formatDuration(track.durationInSeconds)}
         </Text>
       </Pressable>

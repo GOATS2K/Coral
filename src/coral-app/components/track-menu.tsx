@@ -97,7 +97,7 @@ export function TrackMenu({ track, children, isQueueContext = false, isActive = 
     return (
       <ContextMenu>
         <ContextMenuTrigger>
-          <View className={`-mx-2 px-2 rounded-md ${isActive ? 'bg-primary/10' : ''}`}>
+          <View className="-mx-2 px-2 rounded-md">
             {children}
           </View>
         </ContextMenuTrigger>
@@ -120,7 +120,7 @@ export function TrackMenu({ track, children, isQueueContext = false, isActive = 
 
   // Mobile: use three-dot button + bottom sheet
   return (
-    <View className={`flex-row items-center -mx-2 px-2 rounded-md ${isActive ? 'bg-primary/10' : ''}`}>
+    <View className="flex-row items-center -mx-2 px-2 rounded-md">
       <View className="flex-1">{children}</View>
       <Pressable
         onPress={() => bottomSheetRef.current?.present()}

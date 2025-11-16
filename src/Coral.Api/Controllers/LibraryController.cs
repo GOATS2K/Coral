@@ -8,6 +8,7 @@ using Coral.Services.Helpers;
 using Coral.Services.Indexer;
 using Coral.Services.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Coral.Api.Controllers
 {
@@ -23,11 +24,13 @@ namespace Coral.Api.Controllers
         private readonly IFavoritesService _favoritesService;
         private readonly IScanChannel _scanChannel;
         private readonly IArtworkMappingHelper _artworkMappingHelper;
+        private readonly IMemoryCache _memoryCache;
 
         public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
             ISearchService searchService, IPaginationService paginationService,
             TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
-            IFavoritesService favoritesService, IScanChannel scanChannel, IArtworkMappingHelper artworkMappingHelper)
+            IFavoritesService favoritesService, IScanChannel scanChannel, IArtworkMappingHelper artworkMappingHelper,
+            IMemoryCache memoryCache)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
@@ -37,12 +40,16 @@ namespace Coral.Api.Controllers
             _favoritesService = favoritesService;
             _scanChannel = scanChannel;
             _artworkMappingHelper = artworkMappingHelper;
+            _memoryCache = memoryCache;
         }
 
         [HttpPost]
         [Route("scan")]
         public async Task<ActionResult> RunIndexer()
         {
+            // Note: Recommendation cache will naturally expire with sliding expiration
+            // New recommendations will be cached as they are requested
+
             var libraries = await _libraryService.GetMusicLibraries();
             foreach (var library in libraries)
             {
@@ -183,6 +190,40 @@ namespace Coral.Api.Controllers
             if (tracks.Count == 0)
                 return NotFound();
             return Ok(tracks);
+        }
+
+        [HttpGet]
+        [Route("albums/{albumId}/recommendations")]
+        public async Task<ActionResult<List<AlbumRecommendationDto>>> RecommendationsForAlbum(Guid albumId)
+        {
+            var cacheKey = $"album_recs:{albumId}";
+
+            // Try to get from cache first
+            if (_memoryCache.TryGetValue<List<AlbumRecommendationDto>>(cacheKey, out var cachedRecommendations))
+            {
+                if (cachedRecommendations != null)
+                {
+                    return Ok(cachedRecommendations);
+                }
+            }
+
+            // Not in cache, fetch from service
+            var recommendations = await _libraryService.GetRecommendationsForAlbum(albumId);
+
+            if (recommendations.Count == 0)
+                return NotFound();
+
+            // Cache the results with a sliding expiration of 2 hours
+            // Size = 1 means this entry counts as 1 towards the 1000 limit
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = TimeSpan.FromHours(2),
+                Size = 1
+            };
+
+            _memoryCache.Set(cacheKey, recommendations, cacheOptions);
+
+            return Ok(recommendations);
         }
 
         [HttpGet]

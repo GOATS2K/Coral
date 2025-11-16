@@ -17,6 +17,7 @@ import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { Icon } from '@/components/ui/icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DebouncedLoader } from '@/components/debounced-loader';
+import { SimilarAlbums } from '@/components/similar-albums';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -276,6 +277,7 @@ export default function Screen() {
             className="px-4 sm:px-6 pb-20 mt-1.5"
             initializer={{ source: PlaybackSource.Album, id: data.id }}
           />
+          <SimilarAlbums albumId={data.id} />
         </ScrollView>
       </View>
     </>

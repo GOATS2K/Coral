@@ -406,6 +406,56 @@
         }
       }
     },
+    "/api/Library/albums/{albumId}/recommendations": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "RecommendationsForAlbum",
+        "parameters": [
+          {
+            "name": "albumId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumRecommendationDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumRecommendationDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumRecommendationDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Library/tracks/favorites": {
       "get": {
         "tags": [
@@ -1219,6 +1269,28 @@
             "items": {
               "$ref": "#/components/schemas/GenreDto"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlbumRecommendationDto": {
+        "required": [
+          "album",
+          "similarityLabel",
+          "similarityPercentage"
+        ],
+        "type": "object",
+        "properties": {
+          "album": {
+            "$ref": "#/components/schemas/SimpleAlbumDto"
+          },
+          "similarityPercentage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "similarityLabel": {
+            "type": "string",
+            "readOnly": true
           }
         },
         "additionalProperties": false

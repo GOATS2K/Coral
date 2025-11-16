@@ -25,6 +25,15 @@ export type AlbumDto = {
   genres: GenreDto[];
 };
 
+export type AlbumRecommendationDto = {
+  album: SimpleAlbumDto;
+  /**
+   * @format int32
+   */
+  similarityPercentage: number;
+  similarityLabel: string;
+};
+
 export type AlbumType = "Single" | "EP" | "MiniAlbum" | "Album" | "Compilation";
 
 export type ArtistDto = {

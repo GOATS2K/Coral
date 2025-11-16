@@ -14,6 +14,12 @@ namespace Coral.Api
     {
         public static void AddServices(this IServiceCollection services)
         {
+            // Add memory caching for recommendations with size limit
+            services.AddMemoryCache(options =>
+            {
+                options.SizeLimit = 1000; // Maximum 1000 cached entries
+            });
+
             services.AddScoped<IArtworkMappingHelper, ArtworkMappingHelper>();
             services.AddScoped<ILibraryService, LibraryService>();
             services.AddScoped<IIndexerService, IndexerService>();

@@ -76,6 +76,14 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
             .WithExample("benchmark")
             .WithExample("benchmark", "\"search query\"")
             .WithExample("benchmark", "\"Calibre\"", "--number 20", "--iterations 5");
+
+        // Test album recommendations command
+        opt.AddCommand<TestAlbumRecommendationsCommand>("test-album-recommendations")
+            .WithDescription("Test album recommendations using track intersection algorithm")
+            .WithAlias("tar")
+            .WithExample("test-album-recommendations", "--album-name", "\"4LYFE\"")
+            .WithExample("test-album-recommendations", "--album-id", "\"00000000-0000-0000-0000-000000000000\"")
+            .WithExample("test-album-recommendations", "--album-name", "\"A Little While Longer\"", "--verbose", "--limit 20");
     });
 
     await app.RunAsync(args);

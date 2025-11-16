@@ -1003,6 +1003,128 @@ export const useRecommendationsForTrack = <
   });
 };
 
+export type RecommendationsForAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type RecommendationsForAlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecommendationsForAlbumResponse = Schemas.AlbumRecommendationDto[];
+
+export type RecommendationsForAlbumVariables = {
+  pathParams: RecommendationsForAlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRecommendationsForAlbum = (
+  variables: RecommendationsForAlbumVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    undefined,
+    {},
+    {},
+    RecommendationsForAlbumPathParams
+  >({
+    url: "/api/Library/albums/{albumId}/recommendations",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<RecommendationsForAlbumResponse>;
+};
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecommendationsForAlbumResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/albums/{albumId}/recommendations",
+      operationId: "recommendationsForAlbum",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecommendationsForAlbum(variables, signal),
+  };
+}
+
+export const useSuspenseRecommendationsForAlbum = <
+  TData = RecommendationsForAlbumResponse,
+>(
+  variables: RecommendationsForAlbumVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForAlbumResponse,
+      RecommendationsForAlbumError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    TData
+  >({
+    ...recommendationsForAlbumQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecommendationsForAlbum = <
+  TData = RecommendationsForAlbumResponse,
+>(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForAlbumResponse,
+      RecommendationsForAlbumError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    TData
+  >({
+    ...recommendationsForAlbumQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type FavoriteTracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type FavoriteTracksResponse = Schemas.SimpleTrackDto[];
@@ -2853,6 +2975,11 @@ export type QueryOperation =
       path: "/api/Library/tracks/{trackId}/recommendations";
       operationId: "recommendationsForTrack";
       variables: RecommendationsForTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/albums/{albumId}/recommendations";
+      operationId: "recommendationsForAlbum";
+      variables: RecommendationsForAlbumVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/tracks/favorites";

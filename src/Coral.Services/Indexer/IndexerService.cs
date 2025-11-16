@@ -280,20 +280,23 @@ public class IndexerService : IIndexerService
         Genre? newGenre,
         ATL.Track atlTrack)
     {
-        // Load existing relationships for comparison
-        await _context.Entry(existingTrack).Collection(t => t.Artists).LoadAsync();
+        // Query existing artist IDs directly from the database without loading the collection
+        // This avoids tracking the ArtistWithRole entities, which would cause conflicts later
+        // when we try to add new artists with the same IDs
+        var existingArtistIds = await _context.ArtistsWithRoles
+            .Where(awr => awr.Tracks.Any(t => t.Id == existingTrack.Id))
+            .OrderBy(awr => awr.ArtistId)
+            .ThenBy(awr => awr.Role)
+            .Select(awr => new { awr.ArtistId, awr.Role })
+            .AsNoTracking()
+            .ToListAsync();
 
-        // Check if artists changed by comparing IDs and roles
-        var existingArtistIds = existingTrack.Artists
-            .OrderBy(a => a.ArtistId)
-            .ThenBy(a => a.Role)
-            .Select(a => (a.ArtistId, a.Role))
-            .ToList();
         var newArtistIds = newArtists
             .OrderBy(a => a.ArtistId)
             .ThenBy(a => a.Role)
-            .Select(a => (a.ArtistId, a.Role))
+            .Select(a => new { a.ArtistId, a.Role })
             .ToList();
+
         var artistsChanged = !existingArtistIds.SequenceEqual(newArtistIds);
 
         // If album, genre, or artists changed, we need to persist the bulk cache first
@@ -319,13 +322,51 @@ public class IndexerService : IIndexerService
         existingTrack.DurationInSeconds = atlTrack.Duration;
         existingTrack.Isrc = TextSanitizer.SanitizeForUtf8(atlTrack.ISRC);
 
-        // Update album if changed
+        // Update album - instead of creating a new album when metadata changes,
+        // update the existing album's properties to preserve artwork and other data
         if (existingTrack.AlbumId != newAlbum.Id)
         {
-            existingTrack.Album = newAlbum;
-            existingTrack.AlbumId = newAlbum.Id;
-            _logger.LogDebug("Track {TrackPath} album changed to {NewAlbum}",
-                atlTrack.Path, newAlbum.Name);
+            // Load the existing album if not already loaded
+            if (existingTrack.Album == null)
+            {
+                await _context.Entry(existingTrack).Reference(t => t.Album).LoadAsync();
+            }
+
+            // Check if metadata changed vs completely different album
+            // Update the existing album's properties instead of creating a new one
+            // This preserves artwork and treats it as the same album with updated metadata
+            if (existingTrack.Album != null)
+            {
+                var albumName = !string.IsNullOrEmpty(atlTrack.Album)
+                    ? atlTrack.Album
+                    : Directory.GetParent(atlTrack.Path)?.Name;
+
+                existingTrack.Album.Name = TextSanitizer.SanitizeForUtf8(albumName)!;
+                existingTrack.Album.ReleaseYear = atlTrack.Year;
+                existingTrack.Album.DiscTotal = atlTrack.DiscTotal;
+                existingTrack.Album.TrackTotal = atlTrack.TrackTotal;
+                existingTrack.Album.CatalogNumber = TextSanitizer.SanitizeForUtf8(atlTrack.CatalogNumber);
+                existingTrack.Album.UpdatedAt = DateTime.UtcNow;
+
+                // Update label if needed
+                var newLabel = await GetRecordLabelBulk(atlTrack);
+                if (existingTrack.Album.LabelId != newLabel?.Id)
+                {
+                    existingTrack.Album.Label = newLabel;
+                    existingTrack.Album.LabelId = newLabel?.Id;
+                }
+
+                _logger.LogDebug("Track {TrackPath} album metadata updated: {AlbumName}",
+                    atlTrack.Path, existingTrack.Album.Name);
+            }
+            else
+            {
+                // No existing album, use the new one from GetAlbumBulk
+                existingTrack.Album = newAlbum;
+                existingTrack.AlbumId = newAlbum.Id;
+                _logger.LogDebug("Track {TrackPath} assigned to new album: {NewAlbum}",
+                    atlTrack.Path, newAlbum.Name);
+            }
         }
 
         // Update genre if changed
@@ -340,11 +381,22 @@ public class IndexerService : IIndexerService
         // Update artist relationships if changed
         if (artistsChanged)
         {
+            // Load the Artists collection so we can clear it
+            // We must load it here because we didn't load it earlier (to avoid tracking conflicts)
+            await _context.Entry(existingTrack).Collection(t => t.Artists).LoadAsync();
+
             // Clear existing artist relationships (EF Core will handle the junction table)
             existingTrack.Artists.Clear();
 
-            // Add new artist relationships
-            foreach (var artistWithRole in newArtists)
+            // Query for ArtistWithRole entities fresh from the database by their IDs
+            // We fetch them fresh to get clean instances that aren't being tracked yet
+            var artistIds = newArtists.Select(a => a.Id).ToList();
+            var freshArtists = await _context.ArtistsWithRoles
+                .Where(awr => artistIds.Contains(awr.Id))
+                .ToListAsync();
+
+            // Add the freshly-queried artist relationships
+            foreach (var artistWithRole in freshArtists)
             {
                 existingTrack.Artists.Add(artistWithRole);
             }

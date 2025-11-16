@@ -427,6 +427,101 @@ public class IndexerServiceTests(DatabaseFixture fixture)
         Assert.Equal(destinationFileName, updatedTrack.AudioFile.FilePath);
     }
 
+    [Fact]
+    public async Task ScanLibrary_UpdateMultipleTracksWithSharedArtists_ShouldNotThrowTrackingConflict()
+    {
+        var services = CreateServices();
+        var testFolder = Directory.CreateDirectory(TestDataRepository.GetTestFolder(Guid.NewGuid().ToString()));
+        var discovery = TestDataRepository.NeptuneDiscovery.LibraryPath;
+        CopyDirectory(discovery, Path.Combine(testFolder.FullName, Path.GetFileName(discovery)), recursive: true);
+
+        var library = new MusicLibrary
+        {
+            LibraryPath = testFolder.FullName,
+            LastScan = DateTime.UtcNow,
+            AudioFiles = new List<AudioFile>()
+        };
+        services.TestDatabase.Context.MusicLibraries.Add(library);
+        await services.TestDatabase.Context.SaveChangesAsync();
+
+        // Initial scan
+        await ScanLibrary(services, library);
+
+        var indexedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.AudioFile)
+            .Include(t => t.Album)
+            .Include(t => t.Artists)
+            .ThenInclude(a => a.Artist)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(indexedTracks);
+        Assert.Equal(2, indexedTracks.Count);
+
+        var originalAlbumName = indexedTracks.First().Album.Name;
+        var originalAlbumId = indexedTracks.First().Album.Id;
+
+        // Verify both tracks share the same artist (Neptune)
+        var allArtists = indexedTracks.SelectMany(t => t.Artists).Select(a => a.Artist.Name).Distinct().ToList();
+        Assert.Single(allArtists);
+        Assert.Equal("Neptune", allArtists.First());
+
+        // Modify BOTH tracks' album AND artist tags
+        // This simulates the user's scenario: changing metadata on both tracks
+        // The key is that both tracks will have THE SAME artist after modification
+        // which causes them to share the same ArtistWithRole entities from the bulk cache
+        var firstTrack = new ATL.Track(indexedTracks[0].AudioFile.FilePath);
+        firstTrack.Album = "Modified Album Name";
+        firstTrack.Title = "Modified Title";
+        firstTrack.Artist = "Neptune & Saturn"; // Add a second artist
+        await firstTrack.SaveAsync();
+
+        var secondTrack = new ATL.Track(indexedTracks[1].AudioFile.FilePath);
+        secondTrack.Album = "Modified Album Name";
+        secondTrack.Artist = "Neptune & Saturn"; // Same artists as first track
+        await secondTrack.SaveAsync();
+
+        // This should NOT throw an entity tracking conflict
+        // The bug occurs because both tracks share the same ArtistWithRole entities
+        // and UpdateTrackBulk tries to attach them to both tracks sequentially
+        await ScanLibrary(services, library);
+
+        services.TestDatabase.Context.ChangeTracker.Clear();
+
+        var updatedTracks = await services.TestDatabase.Context.Tracks
+            .Include(t => t.Album)
+            .Include(t => t.Artists)
+            .ThenInclude(a => a.Artist)
+            .Where(t => t.AudioFile.Library.Id == library.Id)
+            .ToListAsync();
+        Assert.NotEmpty(updatedTracks);
+
+        // All tracks should now have the modified album
+        Assert.All(updatedTracks, track =>
+        {
+            Assert.Equal("Modified Album Name", track.Album.Name);
+        });
+
+        // First track should have modified title
+        var modifiedTrack = updatedTracks.FirstOrDefault(t => t.Title == "Modified Title");
+        Assert.NotNull(modifiedTrack);
+
+        // Artists should still be correctly associated (both Neptune and Saturn)
+        Assert.All(updatedTracks, track =>
+        {
+            Assert.Equal(2, track.Artists.Count);
+            var artistNames = track.Artists.Select(a => a.Artist.Name).OrderBy(n => n).ToList();
+            Assert.Contains("Neptune", artistNames);
+            Assert.Contains("Saturn", artistNames);
+        });
+
+        // The original album should still exist but with updated metadata
+        // (not deleted and recreated, which preserves artwork)
+        var updatedAlbum = await services.TestDatabase.Context.Albums
+            .FirstOrDefaultAsync(a => a.Id == originalAlbumId);
+        Assert.NotNull(updatedAlbum);
+        Assert.Equal("Modified Album Name", updatedAlbum.Name);
+    }
+
     static void CopyDirectory(string sourceDir, string destinationDir, bool recursive = false)
     {
         var dir = new DirectoryInfo(sourceDir);

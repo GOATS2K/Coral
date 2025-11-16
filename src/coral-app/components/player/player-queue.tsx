@@ -93,7 +93,7 @@ const QueueItem = memo(function QueueItem({
     <ContextMenu>
       <ContextMenuTrigger>
         <div
-          draggable
+          draggable={true}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -178,10 +178,12 @@ export function PlayerQueue({
   const handleDragStart = useCallback((index: number, e: any) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
   }, []);
 
   const handleDragOver = useCallback((index: number, draggedIdx: number | null, e: any) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     if (draggedIdx === null || draggedIdx === index) return;
     setDragOverIndex(index);
   }, []);
@@ -189,7 +191,19 @@ export function PlayerQueue({
   const handleDrop = useCallback((index: number, draggedIdx: number | null, e: any) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === index) return;
-    reorderQueue(draggedIdx, index);
+
+    // The visual line appears above the item at 'index'
+    // This means the user wants to insert the dragged item BEFORE the item at 'index'
+    // However, we need to account for index shifting when moving items
+    let targetIndex = index;
+
+    // If dragging from above to below, the removal shifts indices
+    // so we need to adjust the target
+    if (draggedIdx < index) {
+      targetIndex = index - 1;
+    }
+
+    reorderQueue(draggedIdx, targetIndex);
     setDraggedIndex(null);
     setDragOverIndex(null);
   }, [reorderQueue]);

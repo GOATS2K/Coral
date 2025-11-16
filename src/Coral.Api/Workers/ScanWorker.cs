@@ -33,7 +33,7 @@ public class ScanWorker : BackgroundService
                     "Received scan job for library {Library} (Trigger: {Trigger}, RequestId: {RequestId})",
                     job.Library.LibraryPath,
                     job.Trigger,
-                    job.RequestId ?? "none");
+                    job.RequestId?.ToString() ?? "none");
 
                 await ProcessScan(job, stoppingToken);
             }

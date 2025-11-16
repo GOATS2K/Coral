@@ -14,7 +14,7 @@ public interface IIndexerService
     Task HandleRename(string oldPath, string newPath);
 
     IAsyncEnumerable<Track> IndexDirectoryGroups(
-        IAsyncEnumerable<Indexer.DirectoryGroup> directoryGroups,
+        IAsyncEnumerable<DirectoryGroup> directoryGroups,
         MusicLibrary library,
         CancellationToken cancellationToken = default);
 
@@ -683,7 +683,7 @@ public class IndexerService : IIndexerService
     /// Used for progress reporting in benchmarks.
     /// </summary>
     public async IAsyncEnumerable<Track> IndexDirectoryGroups(
-        IAsyncEnumerable<Indexer.DirectoryGroup> directoryGroups,
+        IAsyncEnumerable<DirectoryGroup> directoryGroups,
         MusicLibrary library,
         [System.Runtime.CompilerServices.EnumeratorCancellation]
         CancellationToken cancellationToken)

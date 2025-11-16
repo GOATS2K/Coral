@@ -23,14 +23,15 @@ namespace Coral.Api.Controllers
         private readonly IPlaybackService _playbackService;
         private readonly IFavoritesService _favoritesService;
         private readonly IScanChannel _scanChannel;
+        private readonly IScanReporter _scanReporter;
         private readonly IArtworkMappingHelper _artworkMappingHelper;
         private readonly IMemoryCache _memoryCache;
 
         public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
             ISearchService searchService, IPaginationService paginationService,
             TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
-            IFavoritesService favoritesService, IScanChannel scanChannel, IArtworkMappingHelper artworkMappingHelper,
-            IMemoryCache memoryCache)
+            IFavoritesService favoritesService, IScanChannel scanChannel, IScanReporter scanReporter,
+            IArtworkMappingHelper artworkMappingHelper, IMemoryCache memoryCache)
         {
             _libraryService = libraryService;
             _transcoderService = transcoderService;
@@ -39,30 +40,63 @@ namespace Coral.Api.Controllers
             _playbackService = playbackService;
             _favoritesService = favoritesService;
             _scanChannel = scanChannel;
+            _scanReporter = scanReporter;
             _artworkMappingHelper = artworkMappingHelper;
             _memoryCache = memoryCache;
         }
 
         [HttpPost]
         [Route("scan")]
-        public async Task<ActionResult> RunIndexer()
+        public async Task<ActionResult<ScanInitiatedDto>> RunIndexer()
         {
             // Note: Recommendation cache will naturally expire with sliding expiration
             // New recommendations will be cached as they are requested
 
+            var scans = new List<ScanRequestInfo>();
             var libraries = await _libraryService.GetMusicLibraries();
+
             foreach (var library in libraries)
             {
                 var dbLibrary = await _libraryService.GetMusicLibrary(library.Id);
                 if (dbLibrary != null)
                 {
+                    var requestId = Guid.NewGuid();
                     await _scanChannel.GetWriter().WriteAsync(new ScanJob(
                         dbLibrary,
+                        RequestId: requestId,
                         Trigger: ScanTrigger.Manual
                     ));
+
+                    scans.Add(new ScanRequestInfo
+                    {
+                        RequestId = requestId,
+                        LibraryId = library.Id,
+                        LibraryName = library.LibraryPath
+                    });
                 }
             }
-            return Ok();
+
+            return Ok(new ScanInitiatedDto { Scans = scans });
+        }
+
+        [HttpGet]
+        [Route("scan/progress/{requestId}")]
+        public ActionResult<ScanJobProgress> GetScanProgress(Guid requestId)
+        {
+            var progress = _scanReporter.GetProgress(requestId);
+            if (progress == null)
+            {
+                return NotFound($"No active scan found with RequestId: {requestId}");
+            }
+            return Ok(progress);
+        }
+
+        [HttpGet]
+        [Route("scan/active")]
+        public ActionResult<List<ScanJobProgress>> GetActiveScans()
+        {
+            var activeScans = _scanReporter.GetActiveScans();
+            return Ok(activeScans);
         }
 
         [HttpGet]

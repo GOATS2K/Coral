@@ -134,7 +134,104 @@
         "operationId": "RunIndexer",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanInitiatedDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanInitiatedDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanInitiatedDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Library/scan/progress/{requestId}": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "GetScanProgress",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanJobProgress"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanJobProgress"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanJobProgress"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Library/scan/active": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "GetActiveScans",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScanJobProgress"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScanJobProgress"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScanJobProgress"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1614,6 +1711,75 @@
         "type": "object",
         "properties": {
           "data": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScanInitiatedDto": {
+        "required": [
+          "scans"
+        ],
+        "type": "object",
+        "properties": {
+          "scans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScanRequestInfo"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScanJobProgress": {
+        "required": [
+          "expectedTracks",
+          "libraryId",
+          "libraryName",
+          "requestId",
+          "startedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryName": {
+            "type": "string"
+          },
+          "expectedTracks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScanRequestInfo": {
+        "required": [
+          "libraryId",
+          "libraryName",
+          "requestId"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryName": {
             "type": "string"
           }
         },

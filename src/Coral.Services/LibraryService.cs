@@ -464,7 +464,7 @@ namespace Coral.Services
                 await _context.SaveChangesAsync();
 
                 // Queue initial scan after adding library
-                var requestId = Guid.NewGuid().ToString();
+                var requestId = Guid.NewGuid();
                 await _scanChannel.GetWriter().WriteAsync(new ScanJob(
                     Library: library,
                     SpecificDirectory: null,

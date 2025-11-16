@@ -179,6 +179,42 @@ export type PathSettings = {
   data: string;
 };
 
+export type ScanInitiatedDto = {
+  scans: ScanRequestInfo[];
+};
+
+export type ScanJobProgress = {
+  /**
+   * @format uuid
+   */
+  requestId: string;
+  /**
+   * @format uuid
+   */
+  libraryId: string;
+  libraryName: string;
+  /**
+   * @format int32
+   */
+  expectedTracks: number;
+  /**
+   * @format date-time
+   */
+  startedAt: string;
+};
+
+export type ScanRequestInfo = {
+  /**
+   * @format uuid
+   */
+  requestId: string;
+  /**
+   * @format uuid
+   */
+  libraryId: string;
+  libraryName: string;
+};
+
 export type SearchResult = {
   artists: SimpleArtistDto[];
   albums: SimpleAlbumDto[];

@@ -3,7 +3,7 @@ using Coral.Database.Models;
 
 namespace Coral.Services.ChannelWrappers;
 
-public record EmbeddingJob(Track Track, string? RequestId);
+public record EmbeddingJob(Track Track, Guid? RequestId);
 
 public interface IEmbeddingChannel
 {

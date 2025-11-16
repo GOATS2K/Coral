@@ -13,7 +13,7 @@ public record ScanJob(
     MusicLibrary Library,
     string? SpecificDirectory = null,  // null = full library scan
     bool Incremental = false,
-    string? RequestId = null,          // For SignalR progress correlation
+    Guid? RequestId = null,          // For SignalR progress correlation
     ScanTrigger Trigger = ScanTrigger.Manual
 );
 

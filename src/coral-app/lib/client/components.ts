@@ -347,7 +347,7 @@ export const fetchRunIndexer = (
   variables: RunIndexerVariables,
   signal?: AbortSignal,
 ) =>
-  fetch<undefined, RunIndexerError, undefined, {}, {}, {}>({
+  fetch<Schemas.ScanInitiatedDto, RunIndexerError, undefined, {}, {}, {}>({
     url: "/api/Library/scan",
     method: "post",
     ...variables,
@@ -357,7 +357,7 @@ export const fetchRunIndexer = (
 export const useRunIndexer = (
   options?: Omit<
     reactQuery.UseMutationOptions<
-      undefined,
+      Schemas.ScanInitiatedDto,
       RunIndexerError,
       RunIndexerVariables
     >,
@@ -366,13 +366,223 @@ export const useRunIndexer = (
 ) => {
   const { fetcherOptions } = useContext();
   return reactQuery.useMutation<
-    undefined,
+    Schemas.ScanInitiatedDto,
     RunIndexerError,
     RunIndexerVariables
   >({
     mutationFn: (variables: RunIndexerVariables) =>
       fetchRunIndexer(deepMerge(fetcherOptions, variables)),
     ...options,
+  });
+};
+
+export type GetScanProgressPathParams = {
+  /**
+   * @format uuid
+   */
+  requestId: string;
+};
+
+export type GetScanProgressError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetScanProgressVariables = {
+  pathParams: GetScanProgressPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchGetScanProgress = (
+  variables: GetScanProgressVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    undefined,
+    {},
+    {},
+    GetScanProgressPathParams
+  >({
+    url: "/api/Library/scan/progress/{requestId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getScanProgressQuery(variables: GetScanProgressVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>;
+};
+
+export function getScanProgressQuery(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>)
+    | reactQuery.SkipToken;
+};
+
+export function getScanProgressQuery(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/scan/progress/{requestId}",
+      operationId: "getScanProgress",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetScanProgress(variables, signal),
+  };
+}
+
+export const useSuspenseGetScanProgress = <TData = Schemas.ScanJobProgress,>(
+  variables: GetScanProgressVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ScanJobProgress,
+      GetScanProgressError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    TData
+  >({
+    ...getScanProgressQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetScanProgress = <TData = Schemas.ScanJobProgress,>(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ScanJobProgress,
+      GetScanProgressError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    TData
+  >({
+    ...getScanProgressQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type GetActiveScansError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetActiveScansResponse = Schemas.ScanJobProgress[];
+
+export type GetActiveScansVariables = Context["fetcherOptions"];
+
+export const fetchGetActiveScans = (
+  variables: GetActiveScansVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<GetActiveScansResponse, GetActiveScansError, undefined, {}, {}, {}>({
+    url: "/api/Library/scan/active",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getActiveScansQuery(variables: GetActiveScansVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<GetActiveScansResponse>;
+};
+
+export function getActiveScansQuery(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<GetActiveScansResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function getActiveScansQuery(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/scan/active",
+      operationId: "getActiveScans",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetActiveScans(variables, signal),
+  };
+}
+
+export const useSuspenseGetActiveScans = <TData = GetActiveScansResponse,>(
+  variables: GetActiveScansVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      GetActiveScansResponse,
+      GetActiveScansError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    GetActiveScansResponse,
+    GetActiveScansError,
+    TData
+  >({
+    ...getActiveScansQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetActiveScans = <TData = GetActiveScansResponse,>(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      GetActiveScansResponse,
+      GetActiveScansError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    GetActiveScansResponse,
+    GetActiveScansError,
+    TData
+  >({
+    ...getActiveScansQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
   });
 };
 
@@ -2945,6 +3155,16 @@ export type QueryOperation =
       path: "/api/Configuration";
       operationId: "getConfiguration";
       variables: GetConfigurationVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/scan/progress/{requestId}";
+      operationId: "getScanProgress";
+      variables: GetScanProgressVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/scan/active";
+      operationId: "getActiveScans";
+      variables: GetActiveScansVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/search";

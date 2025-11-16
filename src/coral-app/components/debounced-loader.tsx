@@ -100,7 +100,10 @@ export function DebouncedLoader({
   if (fadeIn) {
     return (
       <Animated.View
-        style={{ opacity: fadeAnim }}
+        style={[
+          { opacity: fadeAnim },
+          fullScreen && { flex: 1, alignItems: 'center', justifyContent: 'center' }
+        ]}
         className={containerClasses}
         pointerEvents={shouldShowLoading ? 'auto' : 'none'}
       >
@@ -114,7 +117,10 @@ export function DebouncedLoader({
   }
 
   return (
-    <View className={containerClasses}>
+    <View
+      style={fullScreen ? { flex: 1, alignItems: 'center', justifyContent: 'center' } : undefined}
+      className={containerClasses}
+    >
       {loadingContent}
     </View>
   );

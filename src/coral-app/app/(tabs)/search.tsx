@@ -12,6 +12,7 @@ import { useAtom } from 'jotai';
 import { lastSearchQueryAtom, PlaybackSource } from '@/lib/state';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/icon';
+import { useDebouncedLoading } from '@/hooks/use-debounced-loading';
 
 export default function SearchScreen() {
   const params = useLocalSearchParams();
@@ -27,7 +28,6 @@ export default function SearchScreen() {
     artists: false,
     albums: false,
   });
-  const [showLoading, setShowLoading] = useState(false);
 
   const INITIAL_LIMIT = 6;
   const INITIAL_ALBUMS_LIMIT = 12;
@@ -105,17 +105,8 @@ export default function SearchScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Delayed loading indicator
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setShowLoading(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowLoading(false);
-    }
-  }, [isLoading]);
+  // Use debounced loading with 250ms delay
+  const shouldShowLoading = useDebouncedLoading(isLoading, 250);
 
   // Flatten paginated data
   const artists = data?.pages.flatMap((page) => page.data.artists) ?? [];
@@ -175,7 +166,7 @@ export default function SearchScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {showLoading && debouncedQuery.trim().length > 0 && (
+          {shouldShowLoading && debouncedQuery.trim().length > 0 && (
             <View className="py-8 items-center">
               <ActivityIndicator size="large" />
             </View>

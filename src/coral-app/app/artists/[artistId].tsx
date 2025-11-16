@@ -9,6 +9,7 @@ import { Heart } from 'lucide-react-native';
 import { useToggleFavoriteArtist } from '@/lib/hooks/use-toggle-favorite-artist';
 import { Icon } from '@/components/ui/icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -88,9 +89,9 @@ export default function ArtistScreen() {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center gap-8 p-4 bg-background">
+        <DebouncedLoader isLoading={isLoading || !data}>
           <ActivityIndicator size="large" />
-        </View>
+        </DebouncedLoader>
       </>
     );
   }

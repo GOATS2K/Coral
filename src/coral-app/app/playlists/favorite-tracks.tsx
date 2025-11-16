@@ -12,6 +12,7 @@ import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
 import { Icon } from '@/components/ui/icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -132,9 +133,9 @@ export default function FavoriteTracksScreen() {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center gap-8 p-4 bg-background">
+        <DebouncedLoader isLoading={isLoading}>
           <Text className="text-muted-foreground">Loading...</Text>
-        </View>
+        </DebouncedLoader>
       </>
     );
   }

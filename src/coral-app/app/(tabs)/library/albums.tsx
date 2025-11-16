@@ -3,6 +3,7 @@ import { Text } from '@/components/ui/text';
 import { fetchPaginatedAlbums } from '@/lib/client/components';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { UniversalAlbumCard } from '@/components/universal-album-card';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -61,9 +62,9 @@ export default function AlbumsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <DebouncedLoader isLoading={isLoading}>
         <ActivityIndicator size="large" />
-      </View>
+      </DebouncedLoader>
     );
   }
 

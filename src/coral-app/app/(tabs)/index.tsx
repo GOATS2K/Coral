@@ -6,6 +6,7 @@ import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { ArtistCard } from '@/components/artist-card';
 import { Heart } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -28,9 +29,9 @@ export default function HomeScreen() {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center bg-background">
+        <DebouncedLoader isLoading={isLoading}>
           <ActivityIndicator size="large" />
-        </View>
+        </DebouncedLoader>
       </>
     );
   }

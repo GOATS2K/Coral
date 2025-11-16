@@ -16,6 +16,7 @@ import { usePlayer } from '@/lib/player/use-player';
 import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { Icon } from '@/components/ui/icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 const SCREEN_OPTIONS = {
     headerShown: false
@@ -250,9 +251,9 @@ export default function Screen() {
     return (
       <>
         <Stack.Screen options={SCREEN_OPTIONS} />
-        <View className="flex-1 items-center justify-center gap-8 p-4 bg-background">
+        <DebouncedLoader isLoading={!data}>
           <Text className="text-muted-foreground">Loading...</Text>
-        </View>
+        </DebouncedLoader>
       </>
     );
   }

@@ -23,6 +23,7 @@ import { Sidebar } from '@/components/ui/sidebar';
 import { Config } from '@/lib/config';
 import OnboardingScreen from './onboarding';
 import { TitleBar } from '@/components/title-bar';
+import { DebouncedLoader } from '@/components/debounced-loader';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -132,9 +133,9 @@ function AppContent() {
   // Show loading screen while checking configuration
   if (!isReady) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
+      <DebouncedLoader isLoading={!isReady}>
         <ActivityIndicator size="large" />
-      </View>
+      </DebouncedLoader>
     );
   }
 

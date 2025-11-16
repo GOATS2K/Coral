@@ -221,6 +221,8 @@ export type ScanJobProgress = {
    * @format date-time
    */
   completedAt?: string | null;
+  isFailed: boolean;
+  errorMessage?: string | null;
 };
 
 export type ScanRequestInfo = {

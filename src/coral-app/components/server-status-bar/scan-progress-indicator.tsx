@@ -30,45 +30,55 @@ export function ScanProgressIndicator({ progress }: ScanProgressIndicatorProps) 
   // Build status message parts
   const parts: string[] = [];
 
+  // Check if this is a failure
+  if (progress.isFailed) {
+    parts.push(`Scan failed: ${libraryPath}`);
+    if (progress.errorMessage) {
+      parts.push(progress.errorMessage);
+    }
+  }
   // Check if this is a completion summary
-  if (progress.isComplete) {
+  else if (progress.isComplete) {
     parts.push(`Scan complete: ${libraryPath}`);
   } else {
     parts.push(`Scanning: ${libraryPath}`);
   }
 
-  // Add change summary if there are any changes
-  const changes: string[] = [];
-  if (progress.tracksAdded > 0) changes.push(`Added: ${progress.tracksAdded}`);
-  if (progress.tracksUpdated > 0) changes.push(`Updated: ${progress.tracksUpdated}`);
-  if (progress.tracksDeleted > 0) changes.push(`Deleted: ${progress.tracksDeleted}`);
+  // Only show detailed progress if not failed
+  if (!progress.isFailed) {
+    // Add change summary if there are any changes
+    const changes: string[] = [];
+    if (progress.tracksAdded > 0) changes.push(`Added: ${progress.tracksAdded}`);
+    if (progress.tracksUpdated > 0) changes.push(`Updated: ${progress.tracksUpdated}`);
+    if (progress.tracksDeleted > 0) changes.push(`Deleted: ${progress.tracksDeleted}`);
 
-  if (changes.length > 0) {
-    parts.push(changes.join(' • '));
-  } else if (progress.isComplete) {
-    parts.push('No changes');
-  }
+    if (changes.length > 0) {
+      parts.push(changes.join(' • '));
+    } else if (progress.isComplete) {
+      parts.push('No changes');
+    }
 
-  // Add embedding progress if there are embeddings and not complete
-  if (filesProcessed > 0 && !progress.isComplete) {
-    parts.push(`Embeddings: ${progress.embeddingsCompleted}/${filesProcessed}`);
-  }
+    // Add embedding progress if there are embeddings and not complete
+    if (filesProcessed > 0 && !progress.isComplete) {
+      parts.push(`Embeddings: ${progress.embeddingsCompleted}/${filesProcessed}`);
+    }
 
-  // Add overall progress percentage if not complete
-  if (!progress.isComplete && scanProgress !== undefined) {
-    parts.push(`${scanProgress}%`);
+    // Add overall progress percentage if not complete
+    if (!progress.isComplete && scanProgress !== undefined) {
+      parts.push(`${scanProgress}%`);
+    }
   }
 
   return (
     <View className="flex-col gap-1">
-      <Text className="text-sm text-foreground">
+      <Text className={progress.isFailed ? "text-sm text-destructive" : "text-sm text-foreground"}>
         {parts.join(' • ')}
       </Text>
-      {!progress.isComplete && (
+      {!progress.isComplete && !progress.isFailed && (
         <Progress
           value={scanProgress}
           className="h-1"
-          indicatorClassName="bg-primary"
+          indicatorClassName={progress.isFailed ? "bg-destructive" : "bg-primary"}
         />
       )}
     </View>

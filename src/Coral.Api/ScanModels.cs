@@ -12,6 +12,8 @@ public class ScanJobProgress
     public int EmbeddingsCompleted { get; set; }
     public required DateTime StartedAt { get; init; }
     public DateTime? CompletedAt { get; set; }
+    public bool IsFailed { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class ScanProgressDto
@@ -45,5 +47,13 @@ public class ScanCompleteDto
     public required int TracksDeleted { get; init; }
     public required int TracksUpdated { get; init; }
     public required int EmbeddingsCompleted { get; init; }
+    public required TimeSpan Duration { get; init; }
+}
+
+public class ScanFailedDto
+{
+    public required Guid RequestId { get; init; }
+    public required string LibraryName { get; init; }
+    public required string ErrorMessage { get; init; }
     public required TimeSpan Duration { get; init; }
 }

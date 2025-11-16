@@ -27,6 +27,7 @@ public class ScanWorker : BackgroundService
 
         await foreach (var job in _scanChannel.GetReader().ReadAllAsync(stoppingToken))
         {
+            IScanReporter? reporter = null;
             try
             {
                 _logger.LogInformation(
@@ -35,11 +36,19 @@ public class ScanWorker : BackgroundService
                     job.Trigger,
                     job.RequestId?.ToString() ?? "none");
 
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
+
                 await ProcessScan(job, stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process scan job for library {Library}", job.Library.LibraryPath);
+
+                if (reporter != null && job.RequestId != null)
+                {
+                    await reporter.FailScan(job.RequestId, ex.Message);
+                }
             }
         }
 

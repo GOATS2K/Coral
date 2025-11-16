@@ -6,6 +6,7 @@ public interface ILibraryHubClient
 {
     Task LibraryScanProgress(ScanProgressDto progress);
     Task LibraryScanComplete(ScanCompleteDto scanComplete);
+    Task LibraryScanFailed(ScanFailedDto scanFailed);
 }
 
 public class LibraryHub : Hub<ILibraryHubClient>

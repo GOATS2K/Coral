@@ -12,6 +12,7 @@ public interface IScanReporter
     Task ReportIndexOperation(Guid? requestId, IndexEvent indexEvent);
     Task ReportEmbeddingCompleted(Guid? requestId);
     Task CompleteScan(Guid? requestId);
+    Task FailScan(Guid? requestId, string errorMessage);
     ScanJobProgress? GetProgress(Guid? requestId);
     List<ScanJobProgress> GetActiveScans();
 }
@@ -111,6 +112,31 @@ public class ScanReporter : IScanReporter
             _scanJobs.TryRemove(requestId.Value, out _);
         }
     }
+
+    public async Task FailScan(Guid? requestId, string errorMessage)
+    {
+        if (requestId == null) return;
+
+        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
+        {
+            progress.CompletedAt = DateTime.UtcNow;
+            progress.IsFailed = true;
+            progress.ErrorMessage = errorMessage;
+            var duration = progress.CompletedAt.Value - progress.StartedAt;
+
+            // Emit failure event
+            await EmitScanFailed(new ScanFailedDto
+            {
+                RequestId = requestId.Value,
+                LibraryName = progress.LibraryName,
+                ErrorMessage = errorMessage,
+                Duration = duration
+            });
+
+            // Remove from active scans
+            _scanJobs.TryRemove(requestId.Value, out _);
+        }
+    }
     
     public ScanJobProgress? GetProgress(Guid? requestId)
     {
@@ -141,5 +167,10 @@ public class ScanReporter : IScanReporter
     private async Task EmitScanComplete(ScanCompleteDto scanComplete)
     {
         await _hubContext.Clients.All.LibraryScanComplete(scanComplete);
+    }
+
+    private async Task EmitScanFailed(ScanFailedDto scanFailed)
+    {
+        await _hubContext.Clients.All.LibraryScanFailed(scanFailed);
     }
 }

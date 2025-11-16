@@ -1735,6 +1735,7 @@
         "required": [
           "embeddingsCompleted",
           "expectedTracks",
+          "isFailed",
           "libraryId",
           "libraryName",
           "requestId",
@@ -1783,6 +1784,13 @@
           "completedAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          },
+          "isFailed": {
+            "type": "boolean"
+          },
+          "errorMessage": {
+            "type": "string",
             "nullable": true
           }
         },

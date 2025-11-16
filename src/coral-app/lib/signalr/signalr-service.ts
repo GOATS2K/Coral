@@ -10,6 +10,8 @@ export interface ScanProgressData {
   tracksDeleted: number;
   embeddingsCompleted: number;
   isComplete?: boolean; // Set to true when showing completion summary
+  isFailed?: boolean; // Set to true when scan failed
+  errorMessage?: string; // Error message if failed
 }
 
 export interface ScanJobProgress {
@@ -31,6 +33,13 @@ export interface ScanCompleteData {
   tracksUpdated: number;
   tracksDeleted: number;
   embeddingsCompleted: number;
+  duration: string; // TimeSpan format: "HH:MM:SS.mmmmmmm"
+}
+
+export interface ScanFailedData {
+  requestId: string;
+  libraryName: string;
+  errorMessage: string;
   duration: string; // TimeSpan format: "HH:MM:SS.mmmmmmm"
 }
 
@@ -106,6 +115,12 @@ export class SignalRService {
     this.connection.on('LibraryScanComplete', (complete: ScanCompleteData) => {
       console.info('[SignalR] Scan complete:', complete);
       this.emit('scanComplete', complete);
+    });
+
+    // Library scan failed handler
+    this.connection.on('LibraryScanFailed', (failed: ScanFailedData) => {
+      console.info('[SignalR] Scan failed:', failed);
+      this.emit('scanFailed', failed);
     });
 
     // Add more handlers here as needed for future features

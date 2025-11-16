@@ -84,6 +84,39 @@ export function SignalRProvider({ children }: SignalRProviderProps) {
           });
         });
 
+        signalRService.on('scanFailed', (failed) => {
+          if (!mounted) return;
+
+          console.info('[SignalRProvider] Scan failed:', failed);
+
+          // Show failure message for 10 seconds before removing
+          const failureSummary = {
+            requestId: failed.requestId,
+            libraryName: failed.libraryName,
+            tracksAdded: 0,
+            tracksUpdated: 0,
+            tracksDeleted: 0,
+            embeddingsCompleted: 0,
+            isFailed: true,
+            errorMessage: failed.errorMessage,
+          };
+
+          updateScanProgress(failureSummary);
+
+          // Remove after 10 seconds (longer than success to ensure user sees error)
+          setTimeout(() => {
+            if (mounted) {
+              removeScanProgress(failed.requestId);
+            }
+          }, 10000);
+
+          // Add as generic event for logging
+          addSignalREvent({
+            type: 'scanFailed',
+            data: failed,
+          });
+        });
+
         signalRService.on('syncActiveScans', (scans) => {
           if (!mounted) return;
 

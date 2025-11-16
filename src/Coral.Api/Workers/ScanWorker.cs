@@ -76,14 +76,8 @@ public class ScanWorker : BackgroundService
 
         reporter.RegisterScan(job.RequestId, expectedTracks, library);
 
-        // If no tracks need processing, complete immediately
-        if (expectedTracks == 0)
-        {
-            _logger.LogInformation("No tracks to process for {Directory}, completing scan immediately", library.LibraryPath);
-            await reporter.CompleteScan(job.RequestId);
-            return;
-        }
-
+        // Always run the indexing process even if expectedTracks == 0
+        // because DeleteMissingTracks needs to run to clean up orphaned tracks
         var directoryGroups = scanner.ScanLibrary(library, job.Incremental);
         var indexEvents = indexer.IndexDirectoryGroups(directoryGroups, library, cancellationToken);
 

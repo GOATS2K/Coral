@@ -633,7 +633,7 @@ public class IndexerService : IIndexerService
             .AsEnumerable();
 
         var missingFiles = indexedFiles
-            .Where(f => !Path.Exists(f.FilePath))
+            .Where(f => !File.Exists(f.FilePath))
             .Select(f => new { f.Id, f.FilePath })
             .ToList();
         var missingFileIds =  missingFiles.Select(f => f.Id).ToList();

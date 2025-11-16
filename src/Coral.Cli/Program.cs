@@ -84,6 +84,11 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
             .WithExample("test-album-recommendations", "--album-name", "\"4LYFE\"")
             .WithExample("test-album-recommendations", "--album-id", "\"00000000-0000-0000-0000-000000000000\"")
             .WithExample("test-album-recommendations", "--album-name", "\"A Little While Longer\"", "--verbose", "--limit 20");
+
+        // Sync keywords command
+        opt.AddCommand<SyncKeywordsCommand>("sync-keywords")
+            .WithDescription("Fix missing keywords for tracks")
+            .WithExample("sync-keywords");
     });
 
     await app.RunAsync(args);

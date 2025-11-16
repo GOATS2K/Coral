@@ -147,16 +147,27 @@ namespace Coral.Services
             }
 
             // Step 4: Register track-keyword relationships using BulkContext
-            // Note: Tracks should already be in BulkContext cache from previous save with retainCache=true
+            // First ensure all tracks are in BulkContext cache (handles both new and existing tracks during rescan)
+            // IMPORTANT: We must use the returned track instances from GetOrAddBulk for relationship registration
+            var cachedTracks = new Dictionary<Guid, Track>();
+            foreach (var (track, _) in trackKeywordStrings)
+            {
+                var cachedTrack = await _context.Tracks.GetOrAddBulk(
+                    t => t.Id,
+                    () => track);
+                cachedTracks[track.Id] = cachedTrack;
+            }
+
             var relationshipCount = 0;
             foreach (var (track, _) in trackKeywordStrings)
             {
+                var cachedTrack = cachedTracks[track.Id];
                 var keywordValues = trackKeywords[track.Id];
                 foreach (var keywordValue in keywordValues)
                 {
                     if (existingKeywordDict.TryGetValue(keywordValue, out var keyword))
                     {
-                        _context.AddRelationshipBulk<Keyword, Track>(keyword, track);
+                        _context.AddRelationshipBulk<Keyword, Track>(keyword, cachedTrack);
                         relationshipCount++;
                     }
                 }

@@ -6,6 +6,7 @@ import { ListMusic, Play } from 'lucide-react-native';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { getArtistNames, getArtworkUrl } from '@/lib/player/player-format-utils';
 import { Icon } from '@/components/ui/icon';
+import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -60,6 +61,12 @@ const QueueItem = memo(function QueueItem({
 }: QueueItemProps) {
   const trackArtworkUrl = getArtworkUrl(track.album?.id);
   const trackArtists = getArtistNames(track);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error state when track changes
+  useEffect(() => {
+    setImageError(false);
+  }, [track.id]);
 
   // Create bound handlers inside component to avoid creating new functions in parent
   const handleDragStart = useCallback((e: any) => {
@@ -101,14 +108,17 @@ const QueueItem = memo(function QueueItem({
           }}
         >
           <div className="relative w-10 h-10">
-            {trackArtworkUrl ? (
+            {trackArtworkUrl && !imageError ? (
               <Image
                 source={{ uri: trackArtworkUrl }}
                 className="w-10 h-10 rounded"
                 resizeMode="cover"
+                onError={() => setImageError(true)}
               />
             ) : (
-              <View className="w-10 h-10 rounded bg-muted" />
+              <View className="w-10 h-10 rounded overflow-hidden">
+                <MissingAlbumCover size={16} />
+              </View>
             )}
             {isHovered && (
               <button

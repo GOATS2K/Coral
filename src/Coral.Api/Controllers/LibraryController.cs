@@ -202,6 +202,14 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
+        [Route("albums/recently-added")]
+        public async Task<ActionResult<List<SimpleAlbumDto>>> RecentlyAddedAlbums()
+        {
+            var albums = await _libraryService.GetRecentlyAddedAlbums();
+            return Ok(albums);
+        }
+
+        [HttpGet]
         [Route("artists/favorites")]
         public async Task<ActionResult<List<SimpleArtistDto>>> FavoriteArtists()
         {

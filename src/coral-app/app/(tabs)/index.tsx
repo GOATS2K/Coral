@@ -1,7 +1,7 @@
 import { View, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { Text } from '@/components/ui/text';
-import { useFavoriteArtists, useFavoriteAlbums, usePaginatedAlbums } from '@/lib/client/components';
+import { useFavoriteArtists, useFavoriteAlbums, useRecentlyAddedAlbums } from '@/lib/client/components';
 import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { ArtistCard } from '@/components/artist-card';
 import { Heart } from 'lucide-react-native';
@@ -15,9 +15,7 @@ const SCREEN_OPTIONS = {
 export default function HomeScreen() {
   const { data: favoriteArtists, isLoading: artistsLoading } = useFavoriteArtists({});
   const { data: favoriteAlbums, isLoading: albumsLoading } = useFavoriteAlbums({});
-  const { data: recentAlbums, isLoading: recentAlbumsLoading } = usePaginatedAlbums({
-    queryParams: { limit: 12, offset: 0 },
-  });
+  const { data: recentAlbums, isLoading: recentAlbumsLoading } = useRecentlyAddedAlbums({});
 
   const isLoading = artistsLoading || albumsLoading || recentAlbumsLoading;
 
@@ -42,11 +40,11 @@ export default function HomeScreen() {
       <View className="flex-1 bg-background">
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Recently Added Section */}
-          {recentAlbums && recentAlbums.data.length > 0 && (
+          {recentAlbums && recentAlbums.length > 0 && (
             <View className="mb-8">
               <Text variant="h2" className="px-4 pt-8 mb-4 font-bold">Recently Added</Text>
               <View className="px-2 flex-row flex-wrap">
-                {recentAlbums.data.map((album) => (
+                {recentAlbums.map((album) => (
                   <UniversalAlbumCard key={album.id} album={album} />
                 ))}
               </View>
@@ -60,7 +58,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {!hasFavorites && !recentAlbums?.data.length && (
+          {!hasFavorites && !recentAlbums?.length && (
             <View className="flex-1 items-center justify-center py-16 px-2">
               <Icon as={Heart} size={64} className="text-muted-foreground mb-4" />
               <Text variant="h3" className="text-center mb-2">No favorites yet</Text>

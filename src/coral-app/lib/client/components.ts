@@ -1199,6 +1199,115 @@ export const useFavoriteAlbums = <TData = FavoriteAlbumsResponse,>(
   });
 };
 
+export type RecentlyAddedAlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecentlyAddedAlbumsResponse = Schemas.SimpleAlbumDto[];
+
+export type RecentlyAddedAlbumsVariables = Context["fetcherOptions"];
+
+export const fetchRecentlyAddedAlbums = (
+  variables: RecentlyAddedAlbumsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    undefined,
+    {},
+    {},
+    {}
+  >({
+    url: "/api/Library/albums/recently-added",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>;
+};
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Library/albums/recently-added",
+      operationId: "recentlyAddedAlbums",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecentlyAddedAlbums(variables, signal),
+  };
+}
+
+export const useSuspenseRecentlyAddedAlbums = <
+  TData = RecentlyAddedAlbumsResponse,
+>(
+  variables: RecentlyAddedAlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecentlyAddedAlbumsResponse,
+      RecentlyAddedAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    TData
+  >({
+    ...recentlyAddedAlbumsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecentlyAddedAlbums = <TData = RecentlyAddedAlbumsResponse,>(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecentlyAddedAlbumsResponse,
+      RecentlyAddedAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    TData
+  >({
+    ...recentlyAddedAlbumsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type FavoriteArtistsError = Fetcher.ErrorWrapper<undefined>;
 
 export type FavoriteArtistsResponse = Schemas.SimpleArtistDto[];
@@ -2754,6 +2863,11 @@ export type QueryOperation =
       path: "/albums/favorites";
       operationId: "favoriteAlbums";
       variables: FavoriteAlbumsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Library/albums/recently-added";
+      operationId: "recentlyAddedAlbums";
+      variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/artists/favorites";

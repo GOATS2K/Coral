@@ -28,6 +28,7 @@ namespace Coral.Services
         public Task<MusicLibrary?> AddMusicLibrary(string path);
         public Task RemoveMusicLibrary(Guid libraryId);
         public Task<MusicLibrary?> GetMusicLibrary(Guid libraryId);
+        Task<List<SimpleAlbumDto>> GetRecentlyAddedAlbums();
     }
 
     public class LibraryService : ILibraryService
@@ -47,6 +48,18 @@ namespace Coral.Services
             _logger = logger;
             _embeddingService = embeddingService;
             _artworkMappingHelper = artworkMappingHelper;
+        }
+
+        public async Task<List<SimpleAlbumDto>> GetRecentlyAddedAlbums()
+        {
+            var albums = await _context
+                .Albums
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(20)
+                .ProjectTo<SimpleAlbumDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+            await _artworkMappingHelper.MapArtworksToAlbums(albums);
+            return albums;
         }
 
         public async Task<Track?> GetTrack(Guid trackId)

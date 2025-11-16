@@ -9,7 +9,7 @@
     "web": "expo start -c --web",
     "clean": "rm -rf .expo node_modules",
     "generate-client": "openapi-codegen gen client",
-    "electron:dev": "concurrently \"cross-env BROWSER=none bun run web\" \"cross-env NODE_ENV=development electron electron/main.mjs\"",
+    "electron:dev": "cross-env NODE_ENV=development electron electron/main.mjs",
     "electron:build": "bun run web:export && electron-builder",
     "electron:build:mac": "bun run web:export && electron-builder --mac",
     "electron:build:win": "bun run web:export && electron-builder --win",

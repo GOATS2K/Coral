@@ -95,6 +95,13 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
             .WithDescription("Remove embeddings for tracks that no longer exist in the database")
             .WithExample("clean-orphaned-embeddings")
             .WithExample("clean-orphaned-embeddings", "--dry-run");
+
+        // Test file watcher command
+        opt.AddCommand<TestFileWatcherCommand>("test-filewatcher")
+            .WithDescription("Test file watcher debouncing logic with live monitoring")
+            .WithAlias("tfw")
+            .WithExample("test-filewatcher", "\"C:\\Music\"")
+            .WithExample("test-filewatcher", "\"C:\\Music\"", "--debounce-seconds 3");
     });
 
     await app.RunAsync(args);

@@ -82,7 +82,7 @@ internal class IndexCommand : AsyncCommand<IndexCommand.Settings>
         // Start indexing
         var stopwatch = Stopwatch.StartNew();
 
-        var expectedTracks = _directoryScanner.CountFiles(library, incremental: settings.Incremental);
+        var expectedTracks = await _directoryScanner.CountFiles(library, incremental: settings.Incremental);
         _console.MarkupLine($"[blue]Expected tracks:[/] {expectedTracks}");
         _console.WriteLine();
 

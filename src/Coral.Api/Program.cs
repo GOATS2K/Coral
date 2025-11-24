@@ -26,6 +26,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddHostedService<PluginInitializer>();
 builder.Services.AddHostedService<EmbeddingWorker>();
 builder.Services.AddHostedService<ScanWorker>();
+builder.Services.AddHostedService<FileSystemWatcherWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {

@@ -11,11 +11,19 @@ public interface IScanChannel
 
 public record ScanJob(
     MusicLibrary Library,
-    string? SpecificDirectory = null,  // null = full library scan
-    bool Incremental = false,
-    Guid? RequestId = null,          // For SignalR progress correlation
-    ScanTrigger Trigger = ScanTrigger.Manual
+    ScanType Type = ScanType.Index,     // Type of scan operation
+    string? SpecificDirectory = null,   // null = full library scan (for Index type)
+    bool Incremental = false,            // For Index type
+    Guid? RequestId = null,              // For SignalR progress correlation
+    ScanTrigger Trigger = ScanTrigger.Manual,
+    List<FileRename>? Renames = null    // For Rename type
 );
+
+public enum ScanType
+{
+    Index,   // Regular library indexing (full or incremental)
+    Rename   // Handle file renames to preserve metadata
+}
 
 public enum ScanTrigger
 {
@@ -23,6 +31,11 @@ public enum ScanTrigger
     FileSystemEvent, // FileSystemWatcher detected change
     LibraryAdded     // Initial scan after library registration
 }
+
+public record FileRename(
+    string OldPath,
+    string NewPath
+);
 
 public class ScanChannel : IScanChannel
 {

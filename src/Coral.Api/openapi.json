@@ -1616,6 +1616,19 @@
         },
         "additionalProperties": false
       },
+      "FileWatcherSettings": {
+        "required": [
+          "debounceSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "debounceSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "GenreDto": {
         "required": [
           "id",
@@ -1640,7 +1653,8 @@
           "id",
           "lastScan",
           "libraryPath",
-          "updatedAt"
+          "updatedAt",
+          "watchForChanges"
         ],
         "type": "object",
         "properties": {
@@ -1662,6 +1676,9 @@
           "lastScan": {
             "type": "string",
             "format": "date-time"
+          },
+          "watchForChanges": {
+            "type": "boolean"
           },
           "audioFiles": {
             "type": "array",
@@ -1877,6 +1894,7 @@
       "ServerConfiguration": {
         "required": [
           "configVersion",
+          "fileWatcher",
           "paths"
         ],
         "type": "object",
@@ -1887,6 +1905,9 @@
           },
           "paths": {
             "$ref": "#/components/schemas/PathSettings"
+          },
+          "fileWatcher": {
+            "$ref": "#/components/schemas/FileWatcherSettings"
           }
         },
         "additionalProperties": false

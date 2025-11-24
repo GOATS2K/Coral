@@ -132,6 +132,13 @@ export type AudioMetadata = {
   codec: string;
 };
 
+export type FileWatcherSettings = {
+  /**
+   * @format int32
+   */
+  debounceSeconds: number;
+};
+
 export type GenreDto = {
   /**
    * @format uuid
@@ -158,6 +165,7 @@ export type MusicLibrary = {
    * @format date-time
    */
   lastScan: string;
+  watchForChanges: boolean;
   audioFiles: AudioFile[];
 };
 
@@ -265,6 +273,7 @@ export type ServerConfiguration = {
    */
   configVersion: number;
   paths: PathSettings;
+  fileWatcher: FileWatcherSettings;
 };
 
 export type SimpleAlbumDto = {

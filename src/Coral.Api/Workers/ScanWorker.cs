@@ -57,6 +57,23 @@ public class ScanWorker : BackgroundService
 
     private async Task ProcessScan(ScanJob job, CancellationToken cancellationToken)
     {
+        // Dispatch to appropriate handler based on scan type
+        switch (job.Type)
+        {
+            case ScanType.Index:
+                await ProcessIndexScan(job, cancellationToken);
+                break;
+            case ScanType.Rename:
+                await ProcessRenameScan(job, cancellationToken);
+                break;
+            default:
+                _logger.LogError("Unknown scan type {ScanType} for library {Library}", job.Type, job.Library.LibraryPath);
+                break;
+        }
+    }
+
+    private async Task ProcessIndexScan(ScanJob job, CancellationToken cancellationToken)
+    {
         await using var scope = _scopeFactory.CreateAsyncScope();
         var scanner = scope.ServiceProvider.GetRequiredService<IDirectoryScanner>();
         var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
@@ -103,5 +120,51 @@ public class ScanWorker : BackgroundService
             await reporter.CompleteScan(job.RequestId);
         }
         // Otherwise, scan will auto-complete when all embeddings are processed (EmbeddingsCompleted == ExpectedTracks)
+    }
+
+    private async Task ProcessRenameScan(ScanJob job, CancellationToken cancellationToken)
+    {
+        if (job.Renames == null || !job.Renames.Any())
+        {
+            _logger.LogWarning("ProcessRenameScan called without any renames for library {Library}", job.Library.LibraryPath);
+            return;
+        }
+
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var indexer = scope.ServiceProvider.GetRequiredService<IIndexerService>();
+        var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
+
+        _logger.LogInformation("Processing {Count} rename operations for library {Library}",
+            job.Renames.Count, job.Library.LibraryPath);
+
+        // Register scan with reporter (no expected tracks for renames)
+        reporter.RegisterScan(job.RequestId, 0, job.Library);
+
+        // Process each rename operation
+        foreach (var rename in job.Renames)
+        {
+            try
+            {
+                await indexer.HandleRename(rename.OldPath, rename.NewPath);
+                _logger.LogInformation("Successfully renamed {OldPath} to {NewPath}", rename.OldPath, rename.NewPath);
+
+                // Report rename operation
+                await reporter.ReportIndexOperation(job.RequestId, new IndexEvent(
+                    IndexerOperation.Update,
+                    rename.NewPath,
+                    null  // Track will be populated by indexer if needed
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to rename {OldPath} to {NewPath}", rename.OldPath, rename.NewPath);
+                // Continue with other renames even if one fails
+            }
+        }
+
+        // Complete the scan immediately (no embeddings needed for renames)
+        await reporter.CompleteScan(job.RequestId);
+        _logger.LogInformation("Completed processing {Count} renames for library {Library}",
+            job.Renames.Count, job.Library.LibraryPath);
     }
 }

@@ -43,6 +43,21 @@ public class CoralDbContext : DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Configure CURRENT_TIMESTAMP defaults for all BaseTable entities
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseTable).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(BaseTable.CreatedAt))
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(BaseTable.UpdatedAt))
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            }
+        }
+
         // SQLite: Convert string arrays to comma-separated strings
         var stringArrayComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<string[]>(
             (c1, c2) => c1!.SequenceEqual(c2!),

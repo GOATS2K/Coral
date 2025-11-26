@@ -70,7 +70,11 @@ export async function fetch<
     const response = await axios<TData>({
       url: `${baseUrl}${resolveUrl(url, pathParams)}`,
       method,
-      headers: { ...headers },
+      headers: {
+        // Always set Content-Type for requests with body (handles primitives like numbers)
+        ...(body !== undefined && body !== null ? { 'Content-Type': 'application/json' } : {}),
+        ...headers,
+      },
       params: queryParams,
       data: body,
       signal,

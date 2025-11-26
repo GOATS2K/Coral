@@ -1337,15 +1337,13 @@ export const useRecommendationsForAlbum = <
 
 export type FavoriteTracksError = Fetcher.ErrorWrapper<undefined>;
 
-export type FavoriteTracksResponse = Schemas.SimpleTrackDto[];
-
 export type FavoriteTracksVariables = Context["fetcherOptions"];
 
 export const fetchFavoriteTracks = (
   variables: FavoriteTracksVariables,
   signal?: AbortSignal,
 ) =>
-  fetch<FavoriteTracksResponse, FavoriteTracksError, undefined, {}, {}, {}>({
+  fetch<Schemas.PlaylistDto, FavoriteTracksError, undefined, {}, {}, {}>({
     url: "/api/Library/tracks/favorites",
     method: "get",
     ...variables,
@@ -1354,7 +1352,7 @@ export const fetchFavoriteTracks = (
 
 export function favoriteTracksQuery(variables: FavoriteTracksVariables): {
   queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<FavoriteTracksResponse>;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.PlaylistDto>;
 };
 
 export function favoriteTracksQuery(
@@ -1362,7 +1360,7 @@ export function favoriteTracksQuery(
 ): {
   queryKey: reactQuery.QueryKey;
   queryFn:
-    | ((options: QueryFnOptions) => Promise<FavoriteTracksResponse>)
+    | ((options: QueryFnOptions) => Promise<Schemas.PlaylistDto>)
     | reactQuery.SkipToken;
 };
 
@@ -1383,20 +1381,16 @@ export function favoriteTracksQuery(
   };
 }
 
-export const useSuspenseFavoriteTracks = <TData = FavoriteTracksResponse,>(
+export const useSuspenseFavoriteTracks = <TData = Schemas.PlaylistDto,>(
   variables: FavoriteTracksVariables,
   options?: Omit<
-    reactQuery.UseQueryOptions<
-      FavoriteTracksResponse,
-      FavoriteTracksError,
-      TData
-    >,
+    reactQuery.UseQueryOptions<Schemas.PlaylistDto, FavoriteTracksError, TData>,
     "queryKey" | "queryFn" | "initialData"
   >,
 ) => {
   const { queryOptions, fetcherOptions } = useContext(options);
   return reactQuery.useSuspenseQuery<
-    FavoriteTracksResponse,
+    Schemas.PlaylistDto,
     FavoriteTracksError,
     TData
   >({
@@ -1406,23 +1400,15 @@ export const useSuspenseFavoriteTracks = <TData = FavoriteTracksResponse,>(
   });
 };
 
-export const useFavoriteTracks = <TData = FavoriteTracksResponse,>(
+export const useFavoriteTracks = <TData = Schemas.PlaylistDto,>(
   variables: FavoriteTracksVariables | reactQuery.SkipToken,
   options?: Omit<
-    reactQuery.UseQueryOptions<
-      FavoriteTracksResponse,
-      FavoriteTracksError,
-      TData
-    >,
+    reactQuery.UseQueryOptions<Schemas.PlaylistDto, FavoriteTracksError, TData>,
     "queryKey" | "queryFn" | "initialData"
   >,
 ) => {
   const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    FavoriteTracksResponse,
-    FavoriteTracksError,
-    TData
-  >({
+  return reactQuery.useQuery<Schemas.PlaylistDto, FavoriteTracksError, TData>({
     ...favoriteTracksQuery(
       variables === reactQuery.skipToken
         ? variables
@@ -1840,6 +1826,60 @@ export const useRemoveFavoriteTrack = (
   >({
     mutationFn: (variables: RemoveFavoriteTrackVariables) =>
       fetchRemoveFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type ReorderFavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  playlistTrackId: string;
+};
+
+export type ReorderFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type ReorderFavoriteTrackVariables = {
+  body?: number;
+  pathParams: ReorderFavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchReorderFavoriteTrack = (
+  variables: ReorderFavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ReorderFavoriteTrackError,
+    number,
+    {},
+    {},
+    ReorderFavoriteTrackPathParams
+  >({
+    url: "/api/Library/tracks/favorites/{playlistTrackId}/reorder",
+    method: "put",
+    ...variables,
+    signal,
+  });
+
+export const useReorderFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      ReorderFavoriteTrackError,
+      ReorderFavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    ReorderFavoriteTrackError,
+    ReorderFavoriteTrackVariables
+  >({
+    mutationFn: (variables: ReorderFavoriteTrackVariables) =>
+      fetchReorderFavoriteTrack(deepMerge(fetcherOptions, variables)),
     ...options,
   });
 };

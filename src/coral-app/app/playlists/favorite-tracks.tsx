@@ -1,18 +1,19 @@
 import { ColorValue, Platform, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { useFavoriteTracks } from '@/lib/client/components';
+import { useFavoriteTracks, useReorderFavoriteTrack } from '@/lib/client/components';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAtomValue } from 'jotai';
 import { themeAtom, playerStateAtom, PlaybackSource } from '@/lib/state';
-import { TrackListing } from '@/components/track-listing';
+import { ReorderableTrackListing, ReorderableTrack } from '@/components/reorderable-track-listing';
 import { Heart, Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '@/lib/player/use-player';
 import { Icon } from '@/components/ui/icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DebouncedLoader } from '@/components/debounced-loader';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SCREEN_OPTIONS = {
   headerShown: false
@@ -22,7 +23,7 @@ function FavoriteTracksHeader() {
   const theme = useAtomValue(themeAtom);
   const { play, togglePlayPause, isPlaying } = usePlayer();
   const playerState = useAtomValue(playerStateAtom);
-  const { data: favoriteTracks } = useFavoriteTracks({});
+  const { data: playlist } = useFavoriteTracks({});
 
   // Check if favorites are currently playing
   const isFavoritesPlaying =
@@ -35,8 +36,9 @@ function FavoriteTracksHeader() {
       togglePlayPause();
     } else {
       // Start playing favorites from beginning
-      if (favoriteTracks && favoriteTracks.length > 0) {
-        play(favoriteTracks, 0, {
+      const tracks = playlist?.tracks?.map(pt => pt.track);
+      if (tracks && tracks.length > 0) {
+        play(tracks, 0, {
           source: PlaybackSource.Favorites,
           id: 'tracks',
         });
@@ -51,7 +53,7 @@ function FavoriteTracksHeader() {
   const gradientColors = ['#60a5fa80', '#3b82f680', backgroundColor] as ColorValue[];
   const gradientLocations = [0, 0.3, 1];
 
-  const trackCount = favoriteTracks?.length || 0;
+  const trackCount = playlist?.tracks?.length || 0;
 
   return (
     <View className="overflow-hidden">
@@ -115,8 +117,27 @@ function FavoriteTracksHeader() {
 }
 
 export default function FavoriteTracksScreen() {
-  const { data: favoriteTracks, isLoading, error } = useFavoriteTracks({});
+  const { data: playlist, isLoading, error } = useFavoriteTracks({});
   const insets = useSafeAreaInsets();
+  const reorderMutation = useReorderFavoriteTrack();
+  const queryClient = useQueryClient();
+
+  const handleReorder = async (fromIndex: number, toIndex: number) => {
+    if (!playlist) return;
+
+    const playlistTrack = playlist.tracks[fromIndex];
+    if (!playlistTrack) return;
+
+    try {
+      await reorderMutation.mutateAsync({
+        pathParams: { playlistTrackId: playlistTrack.id },
+        body: toIndex,
+      });
+      await queryClient.invalidateQueries();
+    } catch (err) {
+      console.error('Failed to reorder track:', err);
+    }
+  };
 
   if (error) {
     return (
@@ -140,7 +161,13 @@ export default function FavoriteTracksScreen() {
     );
   }
 
-  const hasTracks = favoriteTracks && favoriteTracks.length > 0;
+  const hasTracks = playlist && playlist.tracks && playlist.tracks.length > 0;
+
+  // Transform PlaylistTrackDto[] to ReorderableTrack[]
+  const reorderableTracks: ReorderableTrack[] = playlist?.tracks?.map(pt => ({
+    id: pt.id,
+    track: pt.track,
+  })) || [];
 
   return (
     <>
@@ -149,12 +176,12 @@ export default function FavoriteTracksScreen() {
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <FavoriteTracksHeader />
           {hasTracks ? (
-            <TrackListing
-              tracks={favoriteTracks}
-              showTrackNumber={false}
-              showCoverArt={true}
+            <ReorderableTrackListing
+              tracks={reorderableTracks}
+              onReorder={handleReorder}
               className="px-4 sm:px-6 pb-20 mt-6"
               initializer={{ source: PlaybackSource.Favorites, id: 'tracks' }}
+              showTrackNumber
             />
           ) : (
             <View className="flex-1 items-center justify-center py-16 px-4">

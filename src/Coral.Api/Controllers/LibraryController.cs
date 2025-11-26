@@ -22,6 +22,7 @@ namespace Coral.Api.Controllers
         private readonly IPaginationService _paginationService;
         private readonly IPlaybackService _playbackService;
         private readonly IFavoritesService _favoritesService;
+        private readonly IPlaylistService _playlistService;
         private readonly IScanChannel _scanChannel;
         private readonly IScanReporter _scanReporter;
         private readonly IArtworkMappingHelper _artworkMappingHelper;
@@ -30,7 +31,7 @@ namespace Coral.Api.Controllers
         public LibraryController(ILibraryService libraryService, ITranscoderService transcoderService,
             ISearchService searchService, IPaginationService paginationService,
             TrackPlaybackEventEmitter eventEmitter, IPlaybackService playbackService,
-            IFavoritesService favoritesService, IScanChannel scanChannel, IScanReporter scanReporter,
+            IFavoritesService favoritesService, IPlaylistService playlistService, IScanChannel scanChannel, IScanReporter scanReporter,
             IArtworkMappingHelper artworkMappingHelper, IMemoryCache memoryCache)
         {
             _libraryService = libraryService;
@@ -38,6 +39,7 @@ namespace Coral.Api.Controllers
             _searchService = searchService;
             _paginationService = paginationService;
             _playbackService = playbackService;
+            _playlistService = playlistService;
             _favoritesService = favoritesService;
             _scanChannel = scanChannel;
             _scanReporter = scanReporter;
@@ -262,10 +264,10 @@ namespace Coral.Api.Controllers
 
         [HttpGet]
         [Route("tracks/favorites")]
-        public async Task<ActionResult<List<SimpleTrackDto>>> FavoriteTracks()
+        public async Task<ActionResult<PlaylistDto>> FavoriteTracks()
         {
-            var tracks = await _favoritesService.GetAllTracks();
-            return Ok(tracks);
+            var playlist = await _favoritesService.GetAllTracks();
+            return Ok(playlist);
         }
 
         [HttpGet]
@@ -314,6 +316,21 @@ namespace Coral.Api.Controllers
             try
             {
                 await _favoritesService.RemoveTrack(trackId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+
+        [HttpPut]
+        [Route("tracks/favorites/{playlistTrackId}/reorder")]
+        public async Task<ActionResult> ReorderFavoriteTrack(Guid playlistTrackId, [FromBody] int newPosition)
+        {
+            try
+            {
+                await _playlistService.ReorderTrack(playlistTrackId, newPosition);
                 return Ok();
             }
             catch (Exception ex)

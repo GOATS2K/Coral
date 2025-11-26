@@ -27,16 +27,18 @@ namespace Coral.Services
         private readonly CoralDbContext _context;
         private readonly IPaginationService _paginationService;
         private readonly IArtworkMappingHelper _artworkMappingHelper;
+        private readonly IFavoritedMappingHelper _favoritedMappingHelper;
         private static readonly Regex _keywordExtractionRegex = RegexPatterns.KeywordExtraction();
 
         public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
-            IPaginationService paginationService, IArtworkMappingHelper artworkMappingHelper)
+            IPaginationService paginationService, IArtworkMappingHelper artworkMappingHelper, IFavoritedMappingHelper favoritedMappingHelper)
         {
             _mapper = mapper;
             _context = context;
             _logger = logger;
             _paginationService = paginationService;
             _artworkMappingHelper = artworkMappingHelper;
+            _favoritedMappingHelper = favoritedMappingHelper;
         }
 
         public async Task InsertKeywordsForTrack(Track track)
@@ -196,6 +198,7 @@ namespace Coral.Services
 
             // Populate artworks for albums
             await _artworkMappingHelper.MapArtworksToAlbums(albums);
+            await _favoritedMappingHelper.MapFavoritedToTracks(tracks);
 
             var finalResults = new SearchResult()
             {

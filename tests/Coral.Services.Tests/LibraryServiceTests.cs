@@ -15,7 +15,8 @@ namespace Coral.Services.Tests
             new ScanChannel(),
             Substitute.For<ILogger<LibraryService>>(),
             Substitute.For<IEmbeddingService>(),
-            Substitute.For<IArtworkMappingHelper>());
+            Substitute.For<IArtworkMappingHelper>(),
+            Substitute.For<IFavoritedMappingHelper>());
 
         [Fact]
         public async Task GetTrack_Believe_ReturnsBelieveDto()

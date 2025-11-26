@@ -21,12 +21,14 @@ namespace Coral.Api
             });
 
             services.AddScoped<IArtworkMappingHelper, ArtworkMappingHelper>();
+            services.AddScoped<IFavoritedMappingHelper, FavoritedMappingHelper>();
             services.AddScoped<ILibraryService, LibraryService>();
             services.AddScoped<IIndexerService, IndexerService>();
             services.AddScoped<ISearchService, SearchService>();
             services.AddScoped<IArtworkService, ArtworkService>();
             services.AddScoped<IPaginationService, PaginationService>();
             services.AddScoped<IPlaybackService, PlaybackService>();
+            services.AddScoped<IPlaylistService, PlaylistService>();
             services.AddScoped<IFileSystemService, FileSystemService>();
             services.AddScoped<IFavoritesService, FavoritesService>();
             services.AddSingleton<IHostServiceProxy, HostServiceProxy>();

@@ -1,6 +1,6 @@
 import { Pressable, View, Image } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { SimpleTrackDto, AlbumDto } from '@/lib/client/schemas';
+import { SimpleTrackDto, AlbumDto, PlaylistTrackDto } from '@/lib/client/schemas';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { baseUrl } from '@/lib/client/fetcher';
 import { MissingAlbumCover } from '@/components/ui/missing-album-cover';

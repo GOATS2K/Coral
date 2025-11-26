@@ -102,6 +102,11 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
             .WithAlias("tfw")
             .WithExample("test-filewatcher", "\"C:\\Music\"")
             .WithExample("test-filewatcher", "\"C:\\Music\"", "--debounce-seconds 3");
+
+        // Debug playlist command
+        opt.AddCommand<DebugPlaylistCommand>("debug-playlist")
+            .WithDescription("Debug playlist migration and AutoMapper projection")
+            .WithExample("debug-playlist");
     });
 
     await app.RunAsync(args);

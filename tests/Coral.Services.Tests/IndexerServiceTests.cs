@@ -26,7 +26,8 @@ public class IndexerServiceTests(DatabaseFixture fixture)
         var testDatabase = TestDatabase;
         var paginationService = new PaginationService(testDatabase.Mapper, testDatabase.Context);
         var searchService = new SearchService(testDatabase.Mapper, testDatabase.Context,
-            Substitute.For<ILogger<SearchService>>(), paginationService, Substitute.For<IArtworkMappingHelper>());
+            Substitute.For<ILogger<SearchService>>(), paginationService, Substitute.For<IArtworkMappingHelper>(),
+            Substitute.For<IFavoritedMappingHelper>());
         var artworkService = new ArtworkService(testDatabase.Context,
             Substitute.For<ILogger<ArtworkService>>());
         var eventEmitter = new MusicLibraryRegisteredEventEmitter();

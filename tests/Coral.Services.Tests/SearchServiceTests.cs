@@ -15,7 +15,8 @@ namespace Coral.Services.Tests
             TestDatabase.Context,
             Substitute.For<ILogger<SearchService>>(),
             new PaginationService(TestDatabase.Mapper, TestDatabase.Context),
-            Substitute.For<IArtworkMappingHelper>());
+            Substitute.For<IArtworkMappingHelper>(),
+            Substitute.For<IFavoritedMappingHelper>());
 
         [Fact]
         public async Task InsertKeywordsForTrack_NewTrack_InsertsKeywordsSuccessfully()

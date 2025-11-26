@@ -74,7 +74,6 @@ export function WebPlayerBar() {
       <View className="flex-row items-center gap-5 flex-1 justify-end">
         <PlayerQueue
           queue={queue}
-          currentIndex={currentIndex}
           reorderQueue={(fromIndex, toIndex) => setState({ type: 'reorder', from: fromIndex, to: toIndex })}
           playFromIndex={playFromIndex}
         />

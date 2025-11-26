@@ -40,8 +40,9 @@ namespace Coral.Services
         private readonly ILogger<LibraryService> _logger;
         private readonly IEmbeddingService _embeddingService;
         private readonly IArtworkMappingHelper _artworkMappingHelper;
+        private readonly IFavoritedMappingHelper _favoritedMappingHelper;
 
-        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger, IEmbeddingService embeddingService, IArtworkMappingHelper artworkMappingHelper)
+        public LibraryService(CoralDbContext context, IMapper mapper, IScanChannel scanChannel, ILogger<LibraryService> logger, IEmbeddingService embeddingService, IArtworkMappingHelper artworkMappingHelper, IFavoritedMappingHelper favoritedMappingHelper)
         {
             _context = context;
             _mapper = mapper;
@@ -49,6 +50,7 @@ namespace Coral.Services
             _logger = logger;
             _embeddingService = embeddingService;
             _artworkMappingHelper = artworkMappingHelper;
+            _favoritedMappingHelper = favoritedMappingHelper;
         }
 
         public async Task<List<SimpleAlbumDto>> GetRecentlyAddedAlbums()
@@ -73,9 +75,16 @@ namespace Coral.Services
 
         public async Task<TrackDto?> GetTrackDto(Guid trackId)
         {
-            return await _context.Tracks.Where(t => t.Id == trackId)
+            var track = await _context.Tracks.Where(t => t.Id == trackId)
                 .ProjectTo<TrackDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
+
+            if (track != null)
+            {
+                await _favoritedMappingHelper.MapFavoritedToTracks(track);
+            }
+
+            return track;
         }
 
         public async Task<TrackStream> GetStreamForTrack(Guid trackId)
@@ -198,6 +207,7 @@ namespace Coral.Services
             }
 
             await _artworkMappingHelper.MapArtworksToAlbums(album);
+            await _favoritedMappingHelper.MapFavoritedToTracks(album.Tracks);
 
             album.Tracks = album.Tracks.OrderBy(t => t.DiscNumber).ThenBy(a => a.TrackNumber).ToList();
             return album;
@@ -232,6 +242,8 @@ namespace Coral.Services
                 .Where(id => trackDict.ContainsKey(id))
                 .Select(id => trackDict[id])
                 .ToList();
+
+            await _favoritedMappingHelper.MapFavoritedToTracks(orderedTracks);
 
             return orderedTracks;
         }

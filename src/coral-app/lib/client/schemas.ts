@@ -187,6 +187,40 @@ export type PathSettings = {
   data: string;
 };
 
+export type PlaylistDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  name: string;
+  description: string;
+  tracks: PlaylistTrackDto[];
+  /**
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * @format date-time
+   */
+  updatedAt: string;
+};
+
+export type PlaylistTrackDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  /**
+   * @format int32
+   */
+  position: number;
+  /**
+   * @format date-time
+   */
+  addedAt: string;
+  track: SimpleTrackDto;
+};
+
 export type ScanInitiatedDto = {
   scans: ScanRequestInfo[];
 };

@@ -19,7 +19,7 @@ public interface IFavoritesService
     Task RemoveArtist(Guid artistId);
 
     Task<List<SimpleAlbumDto>> GetAllAlbums();
-    Task<List<SimpleTrackDto>> GetAllTracks();
+    Task<PlaylistDto> GetAllTracks();
     Task<List<SimpleArtistDto>> GetAllArtists();
 }
 
@@ -28,12 +28,14 @@ public class FavoritesService : IFavoritesService
     private readonly CoralDbContext _context;
     private readonly IMapper _mapper;
     private readonly IArtworkMappingHelper _artworkMappingHelper;
+    private readonly IPlaylistService _playlistService;
 
-    public FavoritesService(CoralDbContext context, IMapper mapper, IArtworkMappingHelper artworkMappingHelper)
+    public FavoritesService(CoralDbContext context, IMapper mapper, IArtworkMappingHelper artworkMappingHelper, IPlaylistService playlistService)
     {
         _context = context;
         _mapper = mapper;
         _artworkMappingHelper = artworkMappingHelper;
+        _playlistService = playlistService;
     }
 
     public async Task AddAlbum(Guid albumId)
@@ -47,11 +49,7 @@ public class FavoritesService : IFavoritesService
 
     public async Task AddTrack(Guid trackId)
     {
-        if (await _context.FavoriteTracks.AnyAsync(a => a.TrackId == trackId))
-            return;
-        
-        await _context.FavoriteTracks.AddAsync(new FavoriteTrack {TrackId = trackId});
-        await _context.SaveChangesAsync();
+        await _playlistService.AddTrackToLikedSongs(trackId);
     }
 
     public async Task AddArtist(Guid artistId)
@@ -71,8 +69,7 @@ public class FavoritesService : IFavoritesService
 
     public async Task RemoveTrack(Guid trackId)
     {
-        await _context.FavoriteTracks.Where(t => t.TrackId == trackId).ExecuteDeleteAsync();
-        await _context.SaveChangesAsync();
+        await _playlistService.RemoveTrackFromLikedSongs(trackId);
     }
 
     public async Task RemoveArtist(Guid artistId)
@@ -94,14 +91,9 @@ public class FavoritesService : IFavoritesService
         return albums;
     }
 
-    public async Task<List<SimpleTrackDto>> GetAllTracks()
+    public async Task<PlaylistDto> GetAllTracks()
     {
-        var trackIds =  _context.FavoriteTracks.Select(t => t.TrackId).ToList();
-        return await _context
-            .Tracks
-            .Where(c => trackIds.Contains(c.Id))
-            .ProjectTo<SimpleTrackDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+        return await _playlistService.GetLikedSongsPlaylist();
     }
 
     public async Task<List<SimpleArtistDto>> GetAllArtists()

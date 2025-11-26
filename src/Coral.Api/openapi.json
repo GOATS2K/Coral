@@ -565,26 +565,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SimpleTrackDto"
-                  }
+                  "$ref": "#/components/schemas/PlaylistDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SimpleTrackDto"
-                  }
+                  "$ref": "#/components/schemas/PlaylistDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SimpleTrackDto"
-                  }
+                  "$ref": "#/components/schemas/PlaylistDto"
                 }
               }
             }
@@ -748,6 +739,52 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Library/tracks/favorites/{playlistTrackId}/reorder": {
+      "put": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "ReorderFavoriteTrack",
+        "parameters": [
+          {
+            "name": "playlistTrackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -1729,6 +1766,71 @@
         "properties": {
           "data": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlaylistDto": {
+        "required": [
+          "createdAt",
+          "description",
+          "id",
+          "name",
+          "tracks",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistTrackDto"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlaylistTrackDto": {
+        "required": [
+          "addedAt",
+          "id",
+          "position",
+          "track"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "track": {
+            "$ref": "#/components/schemas/SimpleTrackDto"
           }
         },
         "additionalProperties": false

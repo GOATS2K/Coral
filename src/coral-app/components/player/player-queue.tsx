@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ListMusic } from 'lucide-react-native';
+import { ListMusic, SquareArrowOutUpRight } from 'lucide-react-native';
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import { Icon } from '@/components/ui/icon';
 import { ReorderableTrackListing, ReorderableTrack } from '@/components/reorderable-track-listing';
+import { useRouter } from 'expo-router';
 
 interface PlayerQueueProps {
   queue: SimpleTrackDto[];
@@ -17,6 +19,9 @@ export function PlayerQueue({
   reorderQueue,
   playFromIndex,
 }: PlayerQueueProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
   // Transform SimpleTrackDto[] to ReorderableTrack[]
   // Use track.id + index for unique key since same track can appear multiple times
   const reorderableTracks: ReorderableTrack[] = queue.map((track, index) => ({
@@ -24,8 +29,13 @@ export function PlayerQueue({
     track,
   }));
 
+  const handleOpenFullQueue = () => {
+    setOpen(false);
+    router.push('/queue');
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Pressable className="web:hover:opacity-70 active:opacity-50">
           <Icon as={ListMusic} size={20} className="text-foreground" />
@@ -35,8 +45,14 @@ export function PlayerQueue({
         className="w-96 max-h-96 overflow-hidden p-0"
         align="end"
       >
-        <View className="p-3 border-b border-border">
+        <View className="p-3 border-b border-border flex-row items-center justify-between">
           <Text className="font-semibold">Queue ({queue.length})</Text>
+          <Pressable
+            onPress={handleOpenFullQueue}
+            className="p-1 rounded web:hover:bg-muted/50"
+          >
+            <Icon as={SquareArrowOutUpRight} size={16} className="text-muted-foreground" />
+          </Pressable>
         </View>
         <div
           className="overflow-y-auto max-h-80"

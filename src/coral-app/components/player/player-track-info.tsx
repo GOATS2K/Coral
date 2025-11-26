@@ -49,6 +49,8 @@ export function PlayerTrackInfo({ track, initializer }: PlayerTrackInfoProps) {
         router.push({ pathname: '/search', params: { q: initializer.id } });
         break;
       case PlaybackSource.Favorites:
+        router.push('/playlists/favorite-tracks');
+        break;
       case PlaybackSource.Home:
         router.push('/');
         break;

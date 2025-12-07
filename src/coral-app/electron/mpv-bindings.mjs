@@ -23,11 +23,13 @@ function getPlatformLibPath() {
     ? path.join(__dirname, 'native/libmpv')
     : path.join(process.resourcesPath, 'native/libmpv');
 
+  const brewDir = '/opt/homebrew/lib'
+
   switch (platform) {
     case 'win32':
       return path.join(baseDir, 'win', 'libmpv-2.dll');
     case 'darwin':
-      return path.join(baseDir, 'darwin', 'libmpv.dylib');
+      return path.join(brewDir, 'libmpv.dylib');
     case 'linux':
       return path.join(baseDir, 'linux', 'libmpv.so');
     default:

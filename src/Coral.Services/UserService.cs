@@ -13,6 +13,7 @@ public interface IUserService
     Task<User?> GetUserByUsernameAsync(string username);
     Task<bool> IsFirstUserAsync();
     PasswordVerificationResult ValidatePassword(User user, string password);
+    Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
 }
 
 public class UserService : IUserService
@@ -67,5 +68,25 @@ public class UserService : IUserService
     public PasswordVerificationResult ValidatePassword(User user, string password)
     {
         return _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return false;
+        }
+
+        var result = ValidatePassword(user, currentPassword);
+        if (result == PasswordVerificationResult.Failed)
+        {
+            return false;
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 }

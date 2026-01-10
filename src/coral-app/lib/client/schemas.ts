@@ -137,6 +137,11 @@ export type AuthStatusResponse = {
   isAuthenticated: boolean;
 };
 
+export type ChangePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 export type DeviceDto = {
   /**
    * @format uuid

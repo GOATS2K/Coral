@@ -28,7 +28,7 @@ import LoginScreen from './(auth)/login';
 import SetupScreen from './(auth)/setup';
 import { TitleBar } from '@/components/title-bar';
 import { DebouncedLoader } from '@/components/debounced-loader';
-import { fetchGetStatus } from '@/lib/client/components';
+import { fetchGetStatus, fetchGetCurrentUser } from '@/lib/client/components';
 import { onUnauthorized } from '@/lib/client/fetcher';
 import { useAuth } from '@/lib/hooks/use-auth';
 
@@ -101,12 +101,21 @@ function AppContent() {
           setAppState('login');
         } else {
           console.info('[RootLayout] Authenticated');
+          const user = await fetchGetCurrentUser({});
+          setCurrentUser(user);
           setAppState('authenticated');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[RootLayout] Error checking initial state:', error);
-        // On network error, show onboarding to allow reconfiguring server URL
-        setAppState('onboarding');
+        // Check if this is a network error (no server connection)
+        // vs an auth error (401) which is handled by onUnauthorized listener
+        if (error?.status === 'unknown' || error?.message?.includes('Network Error')) {
+          // Network error - show onboarding to allow reconfiguring server URL
+          setAppState('onboarding');
+        } else {
+          // Auth or other server error - go to login
+          setAppState('login');
+        }
       }
     }
 

@@ -5,6 +5,7 @@ using Coral.Dto;
 using Coral.Dto.Auth;
 using Coral.Services;
 using Coral.Services.Exceptions;
+using Coral.Api.Attributes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -28,10 +29,26 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("status")]
+    [SkipSessionValidation]
     public async Task<ActionResult<AuthStatusResponse>> GetStatus()
     {
         var requiresSetup = await _userService.IsFirstUserAsync();
-        var isAuthenticated = User.Identity?.IsAuthenticated == true;
+
+        // Check if user has a valid session (not just a valid cookie)
+        var isAuthenticated = false;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var deviceIdClaim = User.FindFirst(AuthConstants.ClaimTypes.DeviceId)?.Value;
+            var tokenIdClaim = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value
+                ?? User.FindFirst(AuthConstants.ClaimTypes.TokenId)?.Value;
+
+            if (Guid.TryParse(deviceIdClaim, out var deviceId) &&
+                Guid.TryParse(tokenIdClaim, out var tokenId))
+            {
+                var result = await _authService.ValidateAndExtendSessionAsync(deviceId, tokenId);
+                isAuthenticated = result.IsValid;
+            }
+        }
 
         return Ok(new AuthStatusResponse(requiresSetup, isAuthenticated));
     }
@@ -68,6 +85,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [SkipSessionValidation]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);
@@ -125,6 +143,27 @@ public class AuthController : ControllerBase
         }
 
         return Ok(_mapper.Map<UserDto>(user));
+    }
+
+    [HttpPost("changePassword")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var success = await _userService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+        if (!success)
+        {
+            return BadRequest(new ApiError("Current password is incorrect"));
+        }
+
+        return Ok();
     }
 
     private bool IsWebClient(DeviceInfo device)

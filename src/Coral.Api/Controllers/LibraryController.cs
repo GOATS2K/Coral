@@ -62,22 +62,20 @@ namespace Coral.Api.Controllers
             foreach (var library in libraries)
             {
                 var dbLibrary = await _libraryService.GetMusicLibrary(library.Id);
-                if (dbLibrary != null)
-                {
-                    var requestId = Guid.NewGuid();
-                    await _scanChannel.GetWriter().WriteAsync(new ScanJob(
-                        dbLibrary,
-                        RequestId: requestId,
-                        Trigger: ScanTrigger.Manual
-                    ));
+                if (dbLibrary == null) continue;
+                var requestId = Guid.NewGuid();
+                await _scanChannel.GetWriter().WriteAsync(new ScanJob(
+                    dbLibrary,
+                    RequestId: requestId,
+                    Trigger: ScanTrigger.Manual
+                ));
 
-                    scans.Add(new ScanRequestInfo
-                    {
-                        RequestId = requestId,
-                        LibraryId = library.Id,
-                        LibraryName = library.LibraryPath
-                    });
-                }
+                scans.Add(new ScanRequestInfo
+                {
+                    RequestId = requestId,
+                    LibraryId = library.Id,
+                    LibraryName = library.LibraryPath
+                });
             }
 
             return Ok(new ScanInitiatedDto { Scans = scans });

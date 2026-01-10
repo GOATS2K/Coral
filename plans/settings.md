@@ -3,12 +3,37 @@
 ## Overview
 
 This plan covers the implementation of Coral's settings system, including:
-1. **Main settings page** - Central hub for all app configuration
-2. **Music library management** - Add, remove, and scan music libraries on-demand
-3. **General settings** - Backend URL configuration, app preferences
-4. **About section** - Version info, credits
+1. **Account management** - View logged-in user, change password, logout
+2. **Main settings page** - Central hub for all app configuration
+3. **Music library management** - Add, remove, and scan music libraries on-demand
+4. **General settings** - Backend URL configuration, app preferences
+5. **About section** - Version info, credits
 
 ## Current State Analysis
+
+### Authentication System
+Coral now has a full authentication system:
+- **User entity** with username, password hash, and role (Admin/User)
+- **Device tracking** for session management across devices
+- **Cookie-based auth** for web/Electron, JWT for native apps
+
+**Existing endpoints:**
+- `GET /api/auth/status` - Check if setup required and auth status
+- `POST /api/auth/register` - Register first user (admin) or new users
+- `POST /api/auth/login` - Login with username/password
+- `POST /api/auth/logout` - Logout current session
+- `GET /api/auth/me` - Get current user info
+- `POST /api/auth/changePassword` - Change current user's password
+
+**Frontend state:**
+- `currentUserAtom` - Stores logged-in user (id, username, role)
+- `useAuth()` hook - Provides login, logout, register functions
+- Auth is initialized on app load and persisted
+
+**Missing UI:**
+- No way to see who is logged in
+- No logout button accessible from main UI
+- No password change form
 
 ### Music Library System
 Coral's backend currently has:
@@ -42,6 +67,7 @@ app/
     search.tsx
   settings/              # New
     index.tsx           # Main settings page
+    account.tsx         # Account settings (user info, password, logout)
     theme.tsx           # Theme customization (see theme.md)
     libraries.tsx       # Music library management
   artists/
@@ -63,6 +89,11 @@ app/
 
 ```typescript
 Settings
+├─ Account
+│  ├─ [Avatar] Username                              [>]
+│  │           Role: Admin
+│  └─ (navigates to account settings page)
+│
 ├─ General
 │  ├─ Backend URL: https://coral.example.com [Edit]
 │  └─ App Version: 1.0.0
@@ -86,8 +117,18 @@ Settings
 // app/settings/index.tsx
 
 export default function SettingsPage() {
+  const currentUser = useAtomValue(currentUserAtom);
+
   return (
     <ScrollView>
+      <SettingsSection title="Account">
+        <AccountCard
+          username={currentUser?.username}
+          role={currentUser?.role}
+          onPress={() => router.push('/settings/account')}
+        />
+      </SettingsSection>
+
       <SettingsSection title="General">
         <SettingItem
           label="Backend URL"
@@ -117,6 +158,168 @@ export default function SettingsPage() {
         <SettingItem label="GitHub" onPress={() => openURL(...)} />
       </SettingsSection>
     </ScrollView>
+  );
+}
+```
+
+---
+
+## Account Settings Page
+
+**Location:** `app/settings/account.tsx`
+
+**UI Structure:**
+
+```typescript
+Account Settings
+
+┌─────────────────────────────────────────────────────────┐
+│  [Avatar]  Username                                     │
+│            Role: Admin                                  │
+└─────────────────────────────────────────────────────────┘
+
+Security
+├─ Change Password                                    [>]
+│  └─ Opens inline form or modal
+│
+└─ Active Sessions (future)                           [>]
+   └─ View and manage logged-in devices
+
+Danger Zone
+└─ [Log Out]
+   └─ Red destructive button, logs out current session
+```
+
+**Component Structure:**
+
+```typescript
+// app/settings/account.tsx
+
+export default function AccountSettingsPage() {
+  const currentUser = useAtomValue(currentUserAtom);
+  const { logout, isLoading } = useAuth();
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+
+  return (
+    <ScrollView>
+      {/* User Info Card */}
+      <View className="p-4 bg-card rounded-lg mb-6">
+        <View className="flex-row items-center gap-4">
+          <Avatar size="lg" />
+          <View>
+            <Text className="text-xl font-semibold">{currentUser?.username}</Text>
+            <Text className="text-muted-foreground">{currentUser?.role}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Security Section */}
+      <SettingsSection title="Security">
+        <SettingItem
+          icon={KeyIcon}
+          label="Change Password"
+          onPress={() => setShowPasswordForm(true)}
+        />
+      </SettingsSection>
+
+      {/* Password Change Form (inline or modal) */}
+      {showPasswordForm && (
+        <PasswordChangeForm
+          onSuccess={() => setShowPasswordForm(false)}
+          onCancel={() => setShowPasswordForm(false)}
+        />
+      )}
+
+      {/* Danger Zone */}
+      <SettingsSection title="Danger Zone">
+        <Button
+          variant="destructive"
+          onPress={logout}
+          disabled={isLoading}
+        >
+          <LogOutIcon />
+          <Text>Log Out</Text>
+        </Button>
+      </SettingsSection>
+    </ScrollView>
+  );
+}
+```
+
+**Password Change Form:**
+
+```typescript
+// components/settings/password-change-form.tsx
+
+interface PasswordChangeFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
+}
+
+export function PasswordChangeForm({ onSuccess, onCancel }: PasswordChangeFormProps) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const changePasswordMutation = useChangePassword();
+  const { showToast } = useToast();
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToast('Please fill in all fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await changePasswordMutation.mutateAsync({
+        body: { currentPassword, newPassword }
+      });
+      showToast('Password changed successfully');
+      onSuccess();
+    } catch (error) {
+      showToast('Current password is incorrect');
+    }
+  };
+
+  return (
+    <View className="p-4 bg-card rounded-lg gap-4">
+      <Text className="font-medium">Change Password</Text>
+      <Input
+        placeholder="Current password"
+        secureTextEntry
+        value={currentPassword}
+        onChangeText={setCurrentPassword}
+      />
+      <Input
+        placeholder="New password"
+        secureTextEntry
+        value={newPassword}
+        onChangeText={setNewPassword}
+      />
+      <Input
+        placeholder="Confirm new password"
+        secureTextEntry
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+      />
+      <View className="flex-row gap-2 justify-end">
+        <Button variant="ghost" onPress={onCancel}>
+          <Text>Cancel</Text>
+        </Button>
+        <Button onPress={handleSubmit} disabled={changePasswordMutation.isPending}>
+          <Text>{changePasswordMutation.isPending ? 'Saving...' : 'Save'}</Text>
+        </Button>
+      </View>
+    </View>
   );
 }
 ```
@@ -335,47 +538,56 @@ export function useScanLibraries() {
 
 ## Implementation Steps
 
-### Phase 1: Backend - Music Library Management
-1. Add `RemoveMusicLibrary` method to `IIndexerService` and `IndexerService`
-2. Add `DELETE /api/musicLibraries/{libraryId}` endpoint to `OnboardingController` or `LibraryController`
-3. Test endpoint with Swagger/Postman
-4. Verify cascade delete behavior (tracks/albums should be removed)
-5. Regenerate OpenAPI spec and run `bun generate-client` in coral-app
-
-### Phase 2: Settings Infrastructure
-6. Create reusable settings components:
+### Phase 1: Settings Infrastructure
+1. Create reusable settings components:
    - `SettingsSection` (section header + children)
-   - `SettingItem` (label, value, navigation arrow)
+   - `SettingItem` (label, value, navigation arrow, optional icon)
    - `SettingToggle` (label + switch)
-7. Create `app/settings/index.tsx` (main settings page)
-8. Add navigation to settings from sidebar (web) and/or tab bar (mobile)
+   - `AccountCard` (avatar, username, role)
+2. Create `app/settings/index.tsx` (main settings page)
+3. Add navigation to settings from sidebar (web) and/or tab bar (mobile)
 
-### Phase 3: Music Library UI Components
-9. Create `DirectoryPicker` component
-10. Create `LibraryList` component
-11. Create `use-music-libraries.ts` React Query hooks
-12. Create confirmation dialog component (or use existing)
+### Phase 2: Account Settings (Priority - enables logout and password change)
+4. Create `app/settings/account.tsx` (account settings page)
+5. Create `PasswordChangeForm` component
+6. Wire up logout functionality using `useAuth()` hook
+7. Wire up password change using `useChangePassword()` from generated client
+8. Test login → settings → logout flow
+9. Test password change flow
 
-### Phase 4: Music Libraries Page
-13. Create `app/settings/libraries.tsx`
-14. Wire up library list with data fetching
-15. Implement add library flow with directory picker
-16. Implement remove library flow with confirmation
-17. Implement scan all libraries functionality
-18. Add loading states and error handling
+### Phase 3: Backend - Music Library Management
+10. Add `RemoveMusicLibrary` method to `IIndexerService` and `IndexerService`
+11. Add `DELETE /api/musicLibraries/{libraryId}` endpoint to `OnboardingController` or `LibraryController`
+12. Test endpoint with Swagger/Postman
+13. Verify cascade delete behavior (tracks/albums should be removed)
+14. Regenerate OpenAPI spec and run `bun generate-client` in coral-app
 
-### Phase 5: General Settings
-19. Add backend URL editor (reuse from onboarding)
-20. Add app version display
-21. Add about section with links
+### Phase 4: Music Library UI Components
+15. Create `DirectoryPicker` component
+16. Create `LibraryList` component
+17. Create `use-music-libraries.ts` React Query hooks
+18. Create confirmation dialog component (or use existing)
 
-### Phase 6: Polish & Testing
-22. Add loading states and error handling for all operations
-23. Test on iOS, Android, and Web
-24. Add user feedback (toast notifications for all actions)
-25. Ensure accessibility (screen reader labels, keyboard navigation)
-26. Add empty states (no libraries configured)
-27. Test edge cases (invalid paths, duplicate libraries, etc.)
+### Phase 5: Music Libraries Page
+19. Create `app/settings/libraries.tsx`
+20. Wire up library list with data fetching
+21. Implement add library flow with directory picker
+22. Implement remove library flow with confirmation
+23. Implement scan all libraries functionality
+24. Add loading states and error handling
+
+### Phase 6: General Settings
+25. Add backend URL editor (reuse from onboarding)
+26. Add app version display
+27. Add about section with links
+
+### Phase 7: Polish & Testing
+28. Add loading states and error handling for all operations
+29. Test on iOS, Android, and Web
+30. Add user feedback (toast notifications for all actions)
+31. Ensure accessibility (screen reader labels, keyboard navigation)
+32. Add empty states (no libraries configured)
+33. Test edge cases (invalid paths, duplicate libraries, etc.)
 
 ---
 
@@ -471,7 +683,11 @@ export function useScanLibraries() {
 ## Files to Create/Modify
 
 ### Backend (C#)
-**Files to modify:**
+**Already complete:**
+- `POST /api/auth/changePassword` endpoint (implemented in AuthController.cs)
+- `ChangePasswordAsync` method in UserService.cs
+
+**Files to modify for library management:**
 - `src/Coral.Api/Controllers/OnboardingController.cs` OR `src/Coral.Api/Controllers/LibraryController.cs` (add DELETE endpoint)
 - `src/Coral.Services/IIndexerService.cs` (add RemoveMusicLibrary method signature)
 - `src/Coral.Services/IndexerService.cs` (implement RemoveMusicLibrary method)
@@ -479,12 +695,15 @@ export function useScanLibraries() {
 
 ### Frontend (React Native)
 **New files:**
-- `lib/hooks/use-music-libraries.ts`
 - `components/settings/settings-section.tsx`
 - `components/settings/setting-item.tsx`
+- `components/settings/account-card.tsx`
+- `components/settings/password-change-form.tsx`
 - `components/settings/directory-picker.tsx`
 - `components/settings/library-list.tsx`
+- `lib/hooks/use-music-libraries.ts`
 - `app/settings/index.tsx`
+- `app/settings/account.tsx`
 - `app/settings/libraries.tsx`
 
 **Files to modify:**

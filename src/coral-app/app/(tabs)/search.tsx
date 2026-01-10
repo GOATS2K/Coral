@@ -1,14 +1,13 @@
-import { View, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
-import { Input } from '@/components/ui/input';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchSearch } from '@/lib/client/components';
 import { TrackListing } from '@/components/track-listing';
 import { ArtistCard } from '@/components/artist-card';
 import { CompactAlbumCard } from '@/components/compact-album-card';
 import { Music2 } from 'lucide-react-native';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { lastSearchQueryAtom, PlaybackSource } from '@/lib/state';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/icon';
@@ -16,14 +15,10 @@ import { useDebouncedLoading } from '@/hooks/use-debounced-loading';
 
 export default function SearchScreen() {
   const params = useLocalSearchParams();
-  const router = useRouter();
-  const [lastSearchQuery, setLastSearchQuery] = useAtom(lastSearchQueryAtom);
-  const isUpdatingUrlRef = useRef(false);
+  const setLastSearchQuery = useSetAtom(lastSearchQueryAtom);
 
-  // Initialize from URL param, fallback to atom
-  const initialQuery = (params.q as string) || lastSearchQuery;
-  const [query, setQuery] = useState(initialQuery);
-  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  // Query comes from URL params (set by title bar search)
+  const query = (params.q as string) || '';
   const [expandedSections, setExpandedSections] = useState({
     artists: false,
     albums: false,
@@ -35,46 +30,17 @@ export default function SearchScreen() {
   const EXPANDED_ALBUMS_CAP = 100;
   const ITEMS_PER_PAGE = 50;
 
-  // Sync URL param changes to local state (browser back/forward)
+  // Save query to atom so title bar can display it
   useEffect(() => {
-    if (isUpdatingUrlRef.current) {
-      isUpdatingUrlRef.current = false;
-      return;
+    if (query) {
+      setLastSearchQuery(query);
     }
-    const urlQuery = (params.q as string) || lastSearchQuery;
-    setQuery(urlQuery);
-    setDebouncedQuery(urlQuery);
-  }, [params.q, lastSearchQuery]);
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  // Save debounced query to atom and URL parameter
-  useEffect(() => {
-    if (debouncedQuery) {
-      setLastSearchQuery(debouncedQuery);
-      // Only update URL if it's different from current param
-      if (params.q !== debouncedQuery) {
-        isUpdatingUrlRef.current = true;
-        router.setParams({ q: debouncedQuery });
-      }
-    } else {
-      if (params.q) {
-        isUpdatingUrlRef.current = true;
-        router.setParams({ q: undefined });
-      }
-    }
-  }, [debouncedQuery, setLastSearchQuery, router, params.q]);
+  }, [query, setLastSearchQuery]);
 
   // Reset expanded sections when query changes
   useEffect(() => {
     setExpandedSections({ artists: false, albums: false });
-  }, [debouncedQuery]);
+  }, [query]);
 
   const {
     data,
@@ -84,11 +50,11 @@ export default function SearchScreen() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['search', debouncedQuery],
+    queryKey: ['search', query],
     queryFn: ({ pageParam }) =>
       fetchSearch({
         queryParams: {
-          query: debouncedQuery,
+          query: query,
           limit: ITEMS_PER_PAGE,
           offset: pageParam,
         },
@@ -101,7 +67,7 @@ export default function SearchScreen() {
       }
       return undefined;
     },
-    enabled: debouncedQuery.trim().length > 0,
+    enabled: query.trim().length > 0,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -148,25 +114,14 @@ export default function SearchScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 bg-background">
-        {/* Search Input */}
-        <View className="px-4 pt-4 pb-2">
-          <Input
-            placeholder="Search for artists, albums, or tracks..."
-            value={query}
-            onChangeText={setQuery}
-            className="text-base"
-            autoFocus={Platform.OS === 'web'}
-          />
-        </View>
-
         {/* Results */}
         <ScrollView
-          className="flex-1 px-4"
+          className="flex-1 px-4 pt-8"
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {shouldShowLoading && debouncedQuery.trim().length > 0 && (
+          {shouldShowLoading && query.trim().length > 0 && (
             <View className="py-8 items-center">
               <ActivityIndicator size="large" />
             </View>
@@ -178,7 +133,7 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {!isLoading && debouncedQuery.trim().length > 0 && !hasResults && (
+          {!isLoading && query.trim().length > 0 && !hasResults && (
             <View className="py-8 items-center">
               <Icon as={Music2} size={48} className="text-muted-foreground mb-2" />
               <Text className="text-muted-foreground">No results found</Text>
@@ -253,14 +208,14 @@ export default function SearchScreen() {
                     tracks={tracks}
                     showTrackNumber={false}
                     showCoverArt={true}
-                    initializer={{ source: PlaybackSource.Search, id: debouncedQuery }}
+                    initializer={{ source: PlaybackSource.Search, id: query }}
                   />
                 </View>
               )}
             </>
           )}
 
-          {debouncedQuery.trim().length === 0 && (
+          {query.trim().length === 0 && (
             <View className="py-8 items-center">
               <Icon as={Music2} size={48} className="text-muted-foreground mb-2" />
               <Text className="text-muted-foreground">Start typing to search</Text>

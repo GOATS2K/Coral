@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
 import { Config } from '@/lib/config';
 import { resetBaseUrl } from '@/lib/client/fetcher';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,28 @@ export default function OnboardingScreen() {
     }
 
     setIsLoading(true);
+
+    // Validate server is reachable and is a Coral server
+    try {
+      const response = await axios.get(`${serverUrl}/api/Auth/status`, {
+        timeout: 5000,
+      });
+
+      // Verify response has expected shape
+      if (typeof response.data?.requiresSetup !== 'boolean') {
+        setError('Server does not appear to be a Coral server');
+        setIsLoading(false);
+        return;
+      }
+    } catch (err: any) {
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+        setError('Could not connect to server. Please check the URL and try again.');
+      } else {
+        setError('Server does not appear to be a Coral server');
+      }
+      setIsLoading(false);
+      return;
+    }
 
     try {
       await Config.setBackendUrl(serverUrl);
@@ -87,7 +110,7 @@ export default function OnboardingScreen() {
           </View>
 
           <Button onPress={handleContinue} disabled={isLoading} className="w-full">
-            <Text>{isLoading ? 'Saving...' : 'Continue'}</Text>
+            <Text>{isLoading ? 'Checking...' : 'Continue'}</Text>
           </Button>
         </View>
     </View>

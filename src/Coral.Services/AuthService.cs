@@ -74,10 +74,7 @@ public class AuthService : IAuthService
     public async Task<SessionValidationResult> ValidateAndExtendSessionAsync(Guid deviceId, Guid tokenId)
     {
         var device = await _context.Devices.FindAsync(deviceId);
-        if (device == null || device.TokenId != tokenId)
-            return new SessionValidationResult(false, false);
-
-        if (device.SessionExpiresAt == null || device.SessionExpiresAt < DateTime.UtcNow)
+        if (device == null || device.TokenId != tokenId || device.SessionExpiresAt == null || device.SessionExpiresAt < DateTime.UtcNow)
             return new SessionValidationResult(false, false);
 
         // Update last seen

@@ -1,11 +1,10 @@
 import { View, Pressable } from 'react-native';
 import { Link, usePathname } from 'expo-router';
-import { HomeIcon, SearchIcon, LibraryIcon, MenuIcon, Heart } from 'lucide-react-native';
+import { HomeIcon, LibraryIcon, MenuIcon, Heart } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
 import { cn } from '@/lib/utils';
-import { ThemeToggle } from '@/components/util/theme-toggle';
 import { RescanButton } from '@/components/util/rescan-button';
 import { useState } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -81,7 +80,6 @@ export function Sidebar() {
 
   const navItems = [
     { href: '/', icon: HomeIcon, label: 'Home' },
-    { href: '/search', icon: SearchIcon, label: 'Search' },
     { href: '/library/albums', icon: LibraryIcon, label: 'Library' },
   ];
 
@@ -145,8 +143,7 @@ export function Sidebar() {
           ))}
         </View>
       </View>
-      <View className={cn(collapsed ? "flex-col items-center gap-2" : "flex-row justify-between", "px-2")}>
-        <ThemeToggle />
+      <View className={cn(collapsed ? "flex-col items-center" : "flex-row items-center justify-center", "px-2")}>
         <RescanButton />
       </View>
     </View>

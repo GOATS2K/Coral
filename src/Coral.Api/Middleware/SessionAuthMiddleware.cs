@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Coral.Api.Attributes;
 using Coral.Dto;
 using Coral.Dto.Auth;
 using Coral.Services;
@@ -16,6 +17,14 @@ public class SessionAuthMiddleware
 
     public async Task InvokeAsync(HttpContext context, IAuthService authService)
     {
+        // Skip validation for endpoints marked with [SkipSessionValidation]
+        var endpoint = context.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<SkipSessionValidationAttribute>() != null)
+        {
+            await _next(context);
+            return;
+        }
+
         // Skip validation for unauthenticated requests
         if (context.User.Identity?.IsAuthenticated != true)
         {

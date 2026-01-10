@@ -478,6 +478,47 @@ export const useGetCurrentUser = <TData = Schemas.UserDto,>(
   });
 };
 
+export type ChangePasswordError = Fetcher.ErrorWrapper<undefined>;
+
+export type ChangePasswordVariables = {
+  body: Schemas.ChangePasswordRequest;
+} & Context["fetcherOptions"];
+
+export const fetchChangePassword = (
+  variables: ChangePasswordVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ChangePasswordError,
+    Schemas.ChangePasswordRequest,
+    {},
+    {},
+    {}
+  >({ url: "/api/Auth/changePassword", method: "post", ...variables, signal });
+
+export const useChangePassword = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      ChangePasswordError,
+      ChangePasswordVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    ChangePasswordError,
+    ChangePasswordVariables
+  >({
+    mutationFn: (variables: ChangePasswordVariables) =>
+      fetchChangePassword(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
 export type GetConfigurationError = Fetcher.ErrorWrapper<undefined>;
 
 export type GetConfigurationVariables = Context["fetcherOptions"];

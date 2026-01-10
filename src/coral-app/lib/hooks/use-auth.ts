@@ -6,7 +6,6 @@ import { useLogin, useRegister, useLogout } from '@/lib/client/components';
 import { currentUserAtom, accessTokenAtom, deviceIdAtom } from '@/lib/state';
 import { Config } from '@/lib/config';
 import { setAccessToken } from '@/lib/client/fetcher';
-import { useToast } from '@/lib/hooks/use-toast';
 import type { DeviceInfo, OperatingSystem } from '@/lib/client/schemas';
 
 /**
@@ -96,7 +95,6 @@ interface UseAuthResult {
 
 export function useAuth(): UseAuthResult {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
 
   const [currentUser, setCurrentUser] = useAtom(currentUserAtom);
   const setAccessTokenAtom = useSetAtom(accessTokenAtom);
@@ -170,8 +168,6 @@ export function useAuth(): UseAuthResult {
       return true;
     } catch (error: any) {
       console.error('[useAuth] Login failed:', error);
-      const message = error?.error || 'Login failed';
-      showToast(message);
       return false;
     }
   };
@@ -192,8 +188,6 @@ export function useAuth(): UseAuthResult {
       return true;
     } catch (error: any) {
       console.error('[useAuth] Registration failed:', error);
-      const message = error?.error || 'Registration failed';
-      showToast(message);
       return false;
     }
   };

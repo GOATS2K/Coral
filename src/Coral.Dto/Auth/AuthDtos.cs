@@ -17,6 +17,11 @@ public record RegisterRequest(
     DeviceInfo Device
 );
 
+public record ChangePasswordRequest(
+    string CurrentPassword,
+    string NewPassword
+);
+
 public record DeviceInfo(
     string Name,
     DeviceType Type,

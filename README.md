@@ -15,10 +15,12 @@ A brand new take on a self-hosted music streaming platform.
 - Bun
 - make
 - ffmpeg
+- libmpv
 
 Install frontend dependencies.
 
 ```bash
+$ git submodule update --init --recursive
 $ cd src/coral-app
 $ bun install
 ```

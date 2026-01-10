@@ -131,6 +131,14 @@ configure:
 # Build the project
 build:
 	cmake --build build --config Debug
+# Copy Windows build structure so the Coral.Api copy target works
+ifeq ($(PLATFORM),macOS)
+	mkdir -p build/Debug
+	mv build/Coral.Essentia.Cli build/Debug
+	mv lib/libessentia.1.dylib build/Debug
+	install_name_tool -change "@rpath/libessentia.1.dylib" "@executable_path/libessentia.1.dylib" Coral.Essentia.Cli
+endif
+
 
 # Clean build artifacts
 clean:

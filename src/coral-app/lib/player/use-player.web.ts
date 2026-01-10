@@ -114,6 +114,9 @@ export function usePlayerActions() {
 
     setState({ type: 'setQueue', queue: tracks, index: startIndex, initializer });
     await player.loadQueue(tracks, startIndex);
+    if (!player.getIsPlaying()) {
+      player.togglePlayPause();
+    }
   };
 
   const togglePlayPause = async () => {

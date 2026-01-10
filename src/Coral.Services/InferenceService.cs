@@ -15,7 +15,7 @@ internal class Embeddings
 
 public class InferenceService
 {
-    private const string Executable = "Coral.Essentia.Cli.exe";
+    private const string Executable = "Coral.Essentia.Cli";
     private const string ModelUrl = "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs_track_embeddings-effnet-bs64-1.pb";
     private const string ModelFileName = "discogs_track_embeddings-effnet-bs64-1.pb";
     private readonly HttpClient _httpClient;
@@ -44,12 +44,17 @@ public class InferenceService
         Console.WriteLine($"Model downloaded successfully to {_modelPath}");
     }
 
+    private string GetExecutableName()
+    {
+        return OperatingSystem.IsWindows() ? $"{Executable}.exe" : Executable;
+    }
+
     public async Task<float[]> RunInference(string filePath)
     {
         var outputFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
-        var cmd = Cli.Wrap(Executable)
+        var cmd = Cli.Wrap(GetExecutableName())
             .WithArguments([filePath, _modelPath, outputFile], escape: true)
             .WithValidation(CommandResultValidation.ZeroExitCode)
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))

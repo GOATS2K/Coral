@@ -27,5 +27,12 @@ namespace Coral.Services
         /// </summary>
         [GeneratedRegex(@"\([fF](?:ea)?t(?:uring)?\.? (.*?)\)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
         internal static partial Regex FeaturingArtistParsing();
+
+        /// <summary>
+        /// Source-generated regex for validating usernames.
+        /// Allows alphanumeric characters, dashes, and underscores.
+        /// </summary>
+        [GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
+        internal static partial Regex Username();
     }
 }

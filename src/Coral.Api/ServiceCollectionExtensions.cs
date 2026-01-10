@@ -1,4 +1,5 @@
-﻿using Coral.Encoders;
+using Coral.Database.Models;
+using Coral.Encoders;
 using Coral.Events;
 using Coral.PluginBase;
 using Coral.PluginHost;
@@ -6,6 +7,7 @@ using Coral.Services;
 using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Coral.Services.Indexer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Coral.Api
@@ -50,6 +52,13 @@ namespace Coral.Api
             // Phase 2: Indexer refactored services
             services.AddScoped<IDirectoryScanner, DirectoryScanner>();
             services.AddSingleton<IScanReporter, ScanReporter>();
+
+            // Auth services
+            services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IDeviceService, DeviceService>();
+            services.AddSingleton<ISignedUrlService, SignedUrlService>();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Coral.Database.Models;
+using Coral.Database.Models;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Events;
@@ -7,6 +7,7 @@ using Coral.Services.ChannelWrappers;
 using Coral.Services.Helpers;
 using Coral.Services.Indexer;
 using Coral.Services.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -14,6 +15,7 @@ namespace Coral.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LibraryController : ControllerBase
     {
         private readonly ILibraryService _libraryService;

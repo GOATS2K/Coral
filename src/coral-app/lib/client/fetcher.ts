@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { Platform } from 'react-native';
 import { Context } from './context';
 import { Config } from '../config';
 

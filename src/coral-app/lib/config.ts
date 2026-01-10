@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const CONFIG_KEYS = {
   SERVER_URL: 'server_url',
   FIRST_RUN: 'first_run',
+  ACCESS_TOKEN: 'access_token',
+  DEVICE_ID: 'device_id',
 } as const;
 
 // Default server URL (development)
@@ -96,6 +98,84 @@ export class Config {
     } catch (error) {
       console.error('Failed to get all config:', error);
       return {};
+    }
+  }
+
+  // Auth-related methods
+
+  /**
+   * Get the access token (for native platforms)
+   */
+  static async getAccessToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(CONFIG_KEYS.ACCESS_TOKEN);
+    } catch (error) {
+      console.error('Failed to get access token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Set the access token (for native platforms)
+   */
+  static async setAccessToken(token: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(CONFIG_KEYS.ACCESS_TOKEN, token);
+    } catch (error) {
+      console.error('Failed to set access token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the device ID (server-assigned)
+   */
+  static async getDeviceId(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(CONFIG_KEYS.DEVICE_ID);
+    } catch (error) {
+      console.error('Failed to get device ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Set the device ID (server-assigned)
+   */
+  static async setDeviceId(deviceId: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(CONFIG_KEYS.DEVICE_ID, deviceId);
+    } catch (error) {
+      console.error('Failed to set device ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all auth data (for logout)
+   */
+  static async clearAuth(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        CONFIG_KEYS.ACCESS_TOKEN,
+        CONFIG_KEYS.DEVICE_ID,
+      ]);
+    } catch (error) {
+      console.error('Failed to clear auth:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if the user is authenticated (has a token stored)
+   */
+  static async isAuthenticated(): Promise<boolean> {
+    try {
+      const token = await AsyncStorage.getItem(CONFIG_KEYS.ACCESS_TOKEN);
+      return token !== null;
+    } catch (error) {
+      console.error('Failed to check authentication:', error);
+      return false;
     }
   }
 }

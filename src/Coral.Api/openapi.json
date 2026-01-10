@@ -66,6 +66,177 @@
         }
       }
     },
+    "/api/Auth/status": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "GetStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatusResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatusResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Logout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "GetCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Configuration": {
       "get": {
         "tags": [
@@ -119,6 +290,69 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Devices": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "GetDevices",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Devices/{id}": {
+      "delete": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "DeleteDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1653,6 +1887,88 @@
         },
         "additionalProperties": false
       },
+      "AuthStatusResponse": {
+        "required": [
+          "isAuthenticated",
+          "requiresSetup"
+        ],
+        "type": "object",
+        "properties": {
+          "requiresSetup": {
+            "type": "boolean"
+          },
+          "isAuthenticated": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceDto": {
+        "required": [
+          "hasActiveSession",
+          "id",
+          "isCurrent",
+          "lastSeenAt",
+          "name",
+          "os",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "os": {
+            "$ref": "#/components/schemas/OperatingSystem"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasActiveSession": {
+            "type": "boolean"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceInfo": {
+        "required": [
+          "name",
+          "os",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "os": {
+            "$ref": "#/components/schemas/OperatingSystem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceType": {
+        "enum": [
+          "Web",
+          "Native",
+          "Electron"
+        ],
+        "type": "string"
+      },
       "FileWatcherSettings": {
         "required": [
           "debounceSeconds"
@@ -1679,6 +1995,69 @@
           },
           "name": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JwtSettings": {
+        "required": [
+          "secret",
+          "sessionExpirationDays"
+        ],
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string"
+          },
+          "sessionExpirationDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "required": [
+          "device",
+          "password",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceInfo"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginResponse": {
+        "required": [
+          "deviceId",
+          "user"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
           }
         },
         "additionalProperties": false
@@ -1747,6 +2126,16 @@
           }
         },
         "additionalProperties": false
+      },
+      "OperatingSystem": {
+        "enum": [
+          "Windows",
+          "MacOS",
+          "Linux",
+          "Android",
+          "iOS"
+        ],
+        "type": "string"
       },
       "OutputFormat": {
         "enum": [
@@ -1831,6 +2220,26 @@
           },
           "track": {
             "$ref": "#/components/schemas/SimpleTrackDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterRequest": {
+        "required": [
+          "device",
+          "password",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceInfo"
           }
         },
         "additionalProperties": false
@@ -1997,6 +2406,7 @@
         "required": [
           "configVersion",
           "fileWatcher",
+          "jwt",
           "paths"
         ],
         "type": "object",
@@ -2010,6 +2420,9 @@
           },
           "fileWatcher": {
             "$ref": "#/components/schemas/FileWatcherSettings"
+          },
+          "jwt": {
+            "$ref": "#/components/schemas/JwtSettings"
           }
         },
         "additionalProperties": false
@@ -2304,6 +2717,34 @@
           }
         },
         "additionalProperties": false
+      },
+      "UserDto": {
+        "required": [
+          "id",
+          "role",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserRole": {
+        "enum": [
+          "User",
+          "Admin"
+        ],
+        "type": "string"
       }
     }
   }

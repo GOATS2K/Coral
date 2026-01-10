@@ -198,6 +198,286 @@ export const useArtworkFromId = <TData = undefined,>(
   });
 };
 
+export type GetStatusError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetStatusVariables = Context["fetcherOptions"];
+
+export const fetchGetStatus = (
+  variables: GetStatusVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<Schemas.AuthStatusResponse, GetStatusError, undefined, {}, {}, {}>({
+    url: "/api/Auth/status",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getStatusQuery(variables: GetStatusVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.AuthStatusResponse>;
+};
+
+export function getStatusQuery(
+  variables: GetStatusVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.AuthStatusResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function getStatusQuery(
+  variables: GetStatusVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Auth/status",
+      operationId: "getStatus",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchGetStatus(variables, signal),
+  };
+}
+
+export const useSuspenseGetStatus = <TData = Schemas.AuthStatusResponse,>(
+  variables: GetStatusVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.AuthStatusResponse,
+      GetStatusError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.AuthStatusResponse,
+    GetStatusError,
+    TData
+  >({
+    ...getStatusQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetStatus = <TData = Schemas.AuthStatusResponse,>(
+  variables: GetStatusVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.AuthStatusResponse,
+      GetStatusError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.AuthStatusResponse, GetStatusError, TData>(
+    {
+      ...getStatusQuery(
+        variables === reactQuery.skipToken
+          ? variables
+          : deepMerge(fetcherOptions, variables),
+      ),
+      ...options,
+      ...queryOptions,
+    },
+  );
+};
+
+export type RegisterError = Fetcher.ErrorWrapper<undefined>;
+
+export type RegisterVariables = {
+  body: Schemas.RegisterRequest;
+} & Context["fetcherOptions"];
+
+export const fetchRegister = (
+  variables: RegisterVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.LoginResponse,
+    RegisterError,
+    Schemas.RegisterRequest,
+    {},
+    {},
+    {}
+  >({ url: "/api/Auth/register", method: "post", ...variables, signal });
+
+export const useRegister = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.LoginResponse,
+      RegisterError,
+      RegisterVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.LoginResponse,
+    RegisterError,
+    RegisterVariables
+  >({
+    mutationFn: (variables: RegisterVariables) =>
+      fetchRegister(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type LoginError = Fetcher.ErrorWrapper<undefined>;
+
+export type LoginVariables = {
+  body: Schemas.LoginRequest;
+} & Context["fetcherOptions"];
+
+export const fetchLogin = (variables: LoginVariables, signal?: AbortSignal) =>
+  fetch<Schemas.LoginResponse, LoginError, Schemas.LoginRequest, {}, {}, {}>({
+    url: "/api/Auth/login",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useLogin = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.LoginResponse,
+      LoginError,
+      LoginVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.LoginResponse,
+    LoginError,
+    LoginVariables
+  >({
+    mutationFn: (variables: LoginVariables) =>
+      fetchLogin(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type LogoutError = Fetcher.ErrorWrapper<undefined>;
+
+export type LogoutVariables = Context["fetcherOptions"];
+
+export const fetchLogout = (variables: LogoutVariables, signal?: AbortSignal) =>
+  fetch<undefined, LogoutError, undefined, {}, {}, {}>({
+    url: "/api/Auth/logout",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useLogout = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<undefined, LogoutError, LogoutVariables>,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<undefined, LogoutError, LogoutVariables>({
+    mutationFn: (variables: LogoutVariables) =>
+      fetchLogout(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type GetCurrentUserError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetCurrentUserVariables = Context["fetcherOptions"];
+
+export const fetchGetCurrentUser = (
+  variables: GetCurrentUserVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<Schemas.UserDto, GetCurrentUserError, undefined, {}, {}, {}>({
+    url: "/api/Auth/me",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getCurrentUserQuery(variables: GetCurrentUserVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.UserDto>;
+};
+
+export function getCurrentUserQuery(
+  variables: GetCurrentUserVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.UserDto>)
+    | reactQuery.SkipToken;
+};
+
+export function getCurrentUserQuery(
+  variables: GetCurrentUserVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Auth/me",
+      operationId: "getCurrentUser",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetCurrentUser(variables, signal),
+  };
+}
+
+export const useSuspenseGetCurrentUser = <TData = Schemas.UserDto,>(
+  variables: GetCurrentUserVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.UserDto, GetCurrentUserError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.UserDto,
+    GetCurrentUserError,
+    TData
+  >({
+    ...getCurrentUserQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetCurrentUser = <TData = Schemas.UserDto,>(
+  variables: GetCurrentUserVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.UserDto, GetCurrentUserError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.UserDto, GetCurrentUserError, TData>({
+    ...getCurrentUserQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type GetConfigurationError = Fetcher.ErrorWrapper<undefined>;
 
 export type GetConfigurationVariables = Context["fetcherOptions"];
@@ -335,6 +615,139 @@ export const useUpdateConfiguration = (
   >({
     mutationFn: (variables: UpdateConfigurationVariables) =>
       fetchUpdateConfiguration(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type GetDevicesError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetDevicesResponse = Schemas.DeviceDto[];
+
+export type GetDevicesVariables = Context["fetcherOptions"];
+
+export const fetchGetDevices = (
+  variables: GetDevicesVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<GetDevicesResponse, GetDevicesError, undefined, {}, {}, {}>({
+    url: "/api/Devices",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getDevicesQuery(variables: GetDevicesVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<GetDevicesResponse>;
+};
+
+export function getDevicesQuery(
+  variables: GetDevicesVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<GetDevicesResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function getDevicesQuery(
+  variables: GetDevicesVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Devices",
+      operationId: "getDevices",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchGetDevices(variables, signal),
+  };
+}
+
+export const useSuspenseGetDevices = <TData = GetDevicesResponse,>(
+  variables: GetDevicesVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<GetDevicesResponse, GetDevicesError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    GetDevicesResponse,
+    GetDevicesError,
+    TData
+  >({
+    ...getDevicesQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetDevices = <TData = GetDevicesResponse,>(
+  variables: GetDevicesVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<GetDevicesResponse, GetDevicesError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<GetDevicesResponse, GetDevicesError, TData>({
+    ...getDevicesQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type DeleteDevicePathParams = {
+  /**
+   * @format uuid
+   */
+  id: string;
+};
+
+export type DeleteDeviceError = Fetcher.ErrorWrapper<undefined>;
+
+export type DeleteDeviceVariables = {
+  pathParams: DeleteDevicePathParams;
+} & Context["fetcherOptions"];
+
+export const fetchDeleteDevice = (
+  variables: DeleteDeviceVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    DeleteDeviceError,
+    undefined,
+    {},
+    {},
+    DeleteDevicePathParams
+  >({ url: "/api/Devices/{id}", method: "delete", ...variables, signal });
+
+export const useDeleteDevice = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      DeleteDeviceError,
+      DeleteDeviceVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    DeleteDeviceError,
+    DeleteDeviceVariables
+  >({
+    mutationFn: (variables: DeleteDeviceVariables) =>
+      fetchDeleteDevice(deepMerge(fetcherOptions, variables)),
     ...options,
   });
 };
@@ -3192,9 +3605,24 @@ export type QueryOperation =
       variables: ArtworkFromIdVariables | reactQuery.SkipToken;
     }
   | {
+      path: "/api/Auth/status";
+      operationId: "getStatus";
+      variables: GetStatusVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Auth/me";
+      operationId: "getCurrentUser";
+      variables: GetCurrentUserVariables | reactQuery.SkipToken;
+    }
+  | {
       path: "/api/Configuration";
       operationId: "getConfiguration";
       variables: GetConfigurationVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Devices";
+      operationId: "getDevices";
+      variables: GetDevicesVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Library/scan/progress/{requestId}";

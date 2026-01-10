@@ -1,14 +1,21 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 using Coral.Api;
+using Coral.Api.Middleware;
+using Coral.Dto.Auth;
 using Coral.Api.Workers;
 using Coral.Configuration;
 using Coral.Configuration.Models;
 using Coral.Database;
 using Coral.Dto.Profiles;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Reflection;
 
 // Load Coral configuration
 var coralConfig = ApplicationConfiguration.GetConfiguration();
@@ -35,6 +42,67 @@ builder.Services.AddAutoMapper(opt =>
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+
+// Authentication with Cookie + JWT Bearer schemes
+var jwtSettings = coralConfig.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+var jwtKey = new SymmetricSecurityKey(Convert.FromBase64String(jwtSettings.Secret));
+
+builder.Services.AddAuthentication(options =>
+{
+    // Default scheme selection based on request
+    options.DefaultScheme = AuthConstants.Schemes.CoralAuth;
+    options.DefaultChallengeScheme = AuthConstants.Schemes.CoralAuth;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.Cookie.Name = AuthConstants.Cookies.AuthCookie;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.ExpireTimeSpan = TimeSpan.FromDays(jwtSettings.SessionExpirationDays);
+    options.SlidingExpiration = true;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+})
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = jwtKey,
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        RequireExpirationTime = false, // Session validity is controlled by the database
+        NameClaimType = JwtRegisteredClaimNames.Sub,
+        RoleClaimType = AuthConstants.ClaimTypes.Role
+    };
+})
+.AddPolicyScheme(AuthConstants.Schemes.CoralAuth, "Cookie or JWT", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        // Check for Authorization header with Bearer token
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+
+        // Check for cookie
+        if (context.Request.Cookies.ContainsKey(AuthConstants.Cookies.AuthCookie))
+        {
+            return CookieAuthenticationDefaults.AuthenticationScheme;
+        }
+
+        // Default to JWT (will fail auth if no token, which is correct behavior)
+        return JwtBearerDefaults.AuthenticationScheme;
+    };
+});
+builder.Services.AddAuthorization();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(conf =>
@@ -101,6 +169,8 @@ app.UseStaticFiles(new StaticFileOptions()
 // serve SPA route
 app.UseStaticFiles();
 
+app.UseAuthentication();
+app.UseSessionValidation();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -1,12 +1,14 @@
-﻿using Coral.Database.Models;
+using Coral.Database.Models;
 using Coral.Dto.Models;
 using Coral.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OnboardingController : ControllerBase
     {
         private readonly ILibraryService _libraryService;

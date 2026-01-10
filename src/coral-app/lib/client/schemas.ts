@@ -132,6 +132,35 @@ export type AudioMetadata = {
   codec: string;
 };
 
+export type AuthStatusResponse = {
+  requiresSetup: boolean;
+  isAuthenticated: boolean;
+};
+
+export type DeviceDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  name: string;
+  type: DeviceType;
+  os: OperatingSystem;
+  /**
+   * @format date-time
+   */
+  lastSeenAt: string;
+  hasActiveSession: boolean;
+  isCurrent: boolean;
+};
+
+export type DeviceInfo = {
+  name: string;
+  type: DeviceType;
+  os: OperatingSystem;
+};
+
+export type DeviceType = "Web" | "Native" | "Electron";
+
 export type FileWatcherSettings = {
   /**
    * @format int32
@@ -145,6 +174,33 @@ export type GenreDto = {
    */
   id: string;
   name: string;
+};
+
+export type JwtSettings = {
+  secret: string;
+  /**
+   * @format int32
+   */
+  sessionExpirationDays: number;
+};
+
+export type LoginRequest = {
+  username: string;
+  password: string;
+  device: DeviceInfo;
+  /**
+   * @format uuid
+   */
+  deviceId?: string | null;
+};
+
+export type LoginResponse = {
+  accessToken?: string | null;
+  /**
+   * @format uuid
+   */
+  deviceId: string;
+  user: UserDto;
 };
 
 export type MusicLibrary = {
@@ -180,6 +236,8 @@ export type MusicLibraryDto = {
    */
   lastScan: string;
 };
+
+export type OperatingSystem = "Windows" | "MacOS" | "Linux" | "Android" | "iOS";
 
 export type OutputFormat = "AAC" | "MP3" | "Ogg" | "Opus" | "Remux";
 
@@ -219,6 +277,12 @@ export type PlaylistTrackDto = {
    */
   addedAt: string;
   track: SimpleTrackDto;
+};
+
+export type RegisterRequest = {
+  username: string;
+  password: string;
+  device: DeviceInfo;
 };
 
 export type ScanInitiatedDto = {
@@ -308,6 +372,7 @@ export type ServerConfiguration = {
   configVersion: number;
   paths: PathSettings;
   fileWatcher: FileWatcherSettings;
+  jwt: JwtSettings;
 };
 
 export type SimpleAlbumDto = {
@@ -446,3 +511,14 @@ export type TranscodeInfoDto = {
   bitrate: number;
   codec?: string | null;
 };
+
+export type UserDto = {
+  /**
+   * @format uuid
+   */
+  id: string;
+  username: string;
+  role: UserRole;
+};
+
+export type UserRole = "User" | "Admin";

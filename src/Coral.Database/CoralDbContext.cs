@@ -23,6 +23,9 @@ public class CoralDbContext : DbContext
     public DbSet<Playlist> Playlists { get; set; } = null!;
     public DbSet<PlaylistTrack> PlaylistTracks { get; set; } = null!;
 
+    // Auth
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Device> Devices { get; set; } = null!;
 
     public CoralDbContext(DbContextOptions<CoralDbContext> options)
         : base(options)
@@ -89,5 +92,10 @@ public class CoralDbContext : DbContext
 
         modelBuilder.Entity<Models.ArtistWithRole>()
             .HasIndex(a => new { a.ArtistId, a.Role });
+
+        // Auth: Unique indexes
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
     }
 }

@@ -100,10 +100,11 @@ function getTitleBarColors(theme) {
 
 // App lifecycle
 app.whenReady().then(async () => {
-  await createMainWindow();
-
-  // Initialize MPV IPC handlers
+  // Initialize MPV IPC handlers BEFORE creating window to avoid race condition
+  // (renderer may try to invoke handlers immediately on load)
   setupMpvIpcHandlers(DEFAULT_BACKEND_URL);
+
+  await createMainWindow();
 
   // IPC handler for theme changes (Windows titleBarOverlay)
   ipcMain.on('theme:changed', (event, theme) => {

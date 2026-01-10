@@ -2,13 +2,64 @@
 
 ## Overview
 
-Spotify Connect-style feature allowing users to control playback on remote devices. Users can seamlessly transfer playback between their own devices or use one device to control another as a "jukebox".
+Spotify Connect-style feature allowing users to control playback on remote devices. Users can seamlessly transfer playback between their own devices or use one device to control another.
+
+## Architecture Model
+
+**Single Active Player with Multiple Controllers:**
+
+```
+                              SERVER
+  ┌────────────────────────────────────────────────────────────┐
+  │  Tracks: activePlayerId, connectedDevices                  │
+  │  Receives state from active player → can trigger Last.fm   │
+  │  Relays state to all connected devices                     │
+  │  Routes commands to active player                          │
+  └────────────────────────────────────────────────────────────┘
+         ▲ state              │ state              │ state
+         │                    ▼                    ▼
+    ┌────┴─────┐        ┌───────────┐        ┌───────────┐
+    │ Device A │        │ Device B  │        │ Device C  │
+    │ (active) │◀──cmd──│(controller│◀──cmd──│(controller│
+    │ playing  │        │  or idle) │        │  or idle) │
+    └──────────┘        └───────────┘        └───────────┘
+```
+
+**Key Rules:**
+1. **One active player** - only one device plays audio at a time
+2. **Broadcasting on playback** - when a device plays anything, it becomes active and broadcasts state
+3. **Multiple controllers** - any connected device can send commands to the active player
+4. **Transfer = takeover** - transferring to a new device copies state, new device becomes active, old device auto-pauses
+5. **Server-side scrobbling** - server receives state updates, can trigger Last.fm integration
+
+## Implementation Decisions
+
+- **Auth**: Single-user mode (no authentication) - all devices share implicit user
+- **Device ID**: localStorage + UUID (generated on first load)
+- **Device Naming**: Electron uses hostname, web uses "$browser on $OS" (via navigator.userAgent)
+- **Platform**: Web-only first (native platforms deferred)
+- **Connection**: Auto-connect to SignalR hub on app load (devices always visible)
+- **Active player is source of truth**: Device playing audio owns state, broadcasts to server
+
+## Codebase Integration Notes
+
+### Backend
+- SignalR already configured in `Program.cs` (line 37)
+- Existing `LibraryHub` at `/hubs/library` provides pattern to follow
+- `ScanReporter` shows how to broadcast via `IHubContext<THub, TClient>`
+- New hub should be singleton (like `IScanReporter`)
+
+### Frontend
+- Player state managed via Jotai atoms in `lib/state.ts`
+- `playerStateAtom` (queue/track) and `playbackStateAtom` (position/playing)
+- Platform-specific player providers in `lib/player/player-provider.web.tsx`
+- Player events already emit via `PlayerEvent` enum - hook state sync here
 
 ## Key Principles
 
-- **User-scoped**: Users can only see and control their own devices
-- **Stateless on disconnect**: If the controlled device disconnects, remote control session ends
-- **Seamless handoff**: Clients detect active playback on other devices and offer control/takeover options
+- **Single active player**: Only one device plays audio at a time
+- **Stateless on disconnect**: If the active player disconnects, playback session ends for controllers
+- **Seamless handoff**: Transfer playback copies state (queue, position) to new device
 - **Universal client**: Single React Native codebase works across all platforms (Web/Electron/iOS/Android)
 
 ## Architecture
@@ -20,206 +71,276 @@ Spotify Connect-style feature allowing users to control playback on remote devic
 ```csharp
 namespace Coral.Api.Hubs;
 
-[Authorize]
-public class PlaybackHub : Hub
+public interface IPlaybackHubClient
+{
+    Task DeviceConnected(RemoteDeviceDto device);
+    Task DeviceDisconnected(string deviceId);
+    Task ActivePlayerChanged(string? deviceId, PlaybackStateDto? state);
+    Task PlaybackStateUpdated(PlaybackStateDto state);
+    Task ReceiveCommand(PlaybackCommandDto command);
+    Task TransferRequested(PlaybackStateDto state);
+}
+
+public class PlaybackHub : Hub<IPlaybackHubClient>
 {
     private readonly IPlaybackCoordinatorService _coordinator;
-    private readonly IDeviceService _deviceService;
 
-    // Client -> Server: Announce device is ready to receive commands
-    public async Task RegisterForRemoteControl(string deviceId)
+    public PlaybackHub(IPlaybackCoordinatorService coordinator)
     {
-        var userId = GetCurrentUserId();
-        await _coordinator.RegisterDevice(userId, deviceId, Context.ConnectionId);
-
-        // Notify user's other devices that this device is available
-        await Clients.User(userId.ToString()).SendAsync("DeviceAvailable", new {
-            deviceId,
-            deviceName = await _deviceService.GetDeviceName(userId, deviceId)
-        });
+        _coordinator = coordinator;
     }
 
-    // Client -> Server: Send playback state update
-    public async Task UpdatePlaybackState(string deviceId, PlaybackState state)
+    // Client -> Server: Register device on connection
+    public async Task RegisterDevice(string deviceId, string deviceName)
     {
-        var userId = GetCurrentUserId();
-        await _coordinator.UpdatePlaybackState(userId, deviceId, state);
+        _coordinator.RegisterDevice(deviceId, deviceName, Context.ConnectionId);
 
-        // Broadcast to user's other devices
-        await Clients.User(userId.ToString()).SendAsync("PlaybackStateUpdated", deviceId, state);
-    }
+        // Send current device list and active player to new connection
+        var devices = _coordinator.GetAllDevices();
+        var activePlayerId = _coordinator.GetActivePlayerId();
+        var activeState = _coordinator.GetActivePlayerState();
 
-    // Client -> Server: Send command to remote device
-    public async Task SendCommand(string targetDeviceId, PlaybackCommand command)
-    {
-        var userId = GetCurrentUserId();
-        var targetConnection = await _coordinator.GetDeviceConnection(userId, targetDeviceId);
-
-        if (targetConnection == null)
+        // Notify all other devices about new connection
+        await Clients.Others.DeviceConnected(new RemoteDeviceDto
         {
-            await Clients.Caller.SendAsync("CommandFailed", new {
-                error = "Device not available",
-                deviceId = targetDeviceId
-            });
-            return;
+            DeviceId = deviceId,
+            DeviceName = deviceName,
+            IsActivePlayer = false
+        });
+
+        // Send current active player state to caller if exists
+        if (activePlayerId != null)
+        {
+            await Clients.Caller.ActivePlayerChanged(activePlayerId, activeState);
+        }
+    }
+
+    // Client -> Server: Device starts playing, becomes active player
+    public async Task BecomeActivePlayer(PlaybackStateDto state)
+    {
+        var deviceId = _coordinator.GetDeviceIdByConnection(Context.ConnectionId);
+        if (deviceId == null) return;
+
+        _coordinator.SetActivePlayer(deviceId, state);
+
+        // Notify all devices about new active player
+        await Clients.All.ActivePlayerChanged(deviceId, state);
+    }
+
+    // Client -> Server: Active player broadcasts state update
+    public async Task UpdatePlaybackState(PlaybackStateDto state)
+    {
+        var deviceId = _coordinator.GetDeviceIdByConnection(Context.ConnectionId);
+        var activePlayerId = _coordinator.GetActivePlayerId();
+
+        // Only accept state updates from active player
+        if (deviceId != activePlayerId) return;
+
+        _coordinator.UpdateActivePlayerState(state);
+
+        // Broadcast to all other devices
+        await Clients.Others.PlaybackStateUpdated(state);
+    }
+
+    // Client -> Server: Send command to active player
+    public async Task SendCommand(PlaybackCommandDto command)
+    {
+        var activePlayerId = _coordinator.GetActivePlayerId();
+        if (activePlayerId == null) return;
+
+        var activeConnection = _coordinator.GetConnectionId(activePlayerId);
+        if (activeConnection == null) return;
+
+        await Clients.Client(activeConnection).ReceiveCommand(command);
+    }
+
+    // Client -> Server: Transfer playback to another device
+    public async Task TransferPlayback(string targetDeviceId)
+    {
+        var currentState = _coordinator.GetActivePlayerState();
+        var activePlayerId = _coordinator.GetActivePlayerId();
+
+        if (currentState == null) return;
+
+        // Pause current active player
+        if (activePlayerId != null)
+        {
+            var activeConnection = _coordinator.GetConnectionId(activePlayerId);
+            if (activeConnection != null)
+            {
+                await Clients.Client(activeConnection).ReceiveCommand(new PlaybackCommandDto
+                {
+                    Type = PlaybackCommandType.Pause
+                });
+            }
         }
 
-        // Send command only to target device
-        await Clients.Client(targetConnection).SendAsync("ReceiveCommand", command);
-    }
-
-    // Client -> Server: Request current state from a device
-    public async Task RequestPlaybackState(string targetDeviceId)
-    {
-        var userId = GetCurrentUserId();
-        var targetConnection = await _coordinator.GetDeviceConnection(userId, targetDeviceId);
-
+        // Tell target device to start playing with current state
+        var targetConnection = _coordinator.GetConnectionId(targetDeviceId);
         if (targetConnection != null)
         {
-            await Clients.Client(targetConnection).SendAsync("StateRequested", Context.ConnectionId);
+            await Clients.Client(targetConnection).TransferRequested(currentState);
         }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = GetCurrentUserId();
-        var deviceId = await _coordinator.GetDeviceIdByConnection(Context.ConnectionId);
+        var deviceId = _coordinator.GetDeviceIdByConnection(Context.ConnectionId);
+        var wasActivePlayer = deviceId == _coordinator.GetActivePlayerId();
+
+        _coordinator.UnregisterDevice(Context.ConnectionId);
 
         if (deviceId != null)
         {
-            await _coordinator.UnregisterDevice(userId, deviceId);
+            // Notify others about disconnection
+            await Clients.Others.DeviceDisconnected(deviceId);
 
-            // Notify user's other devices
-            await Clients.User(userId.ToString()).SendAsync("DeviceUnavailable", deviceId);
+            // If active player disconnected, clear active player state
+            if (wasActivePlayer)
+            {
+                await Clients.All.ActivePlayerChanged(null, null);
+            }
         }
 
         await base.OnDisconnectedAsync(exception);
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = Context.User?.FindFirst(ClaimTypes.NameIdentifier);
-        return Guid.Parse(userIdClaim!.Value);
     }
 }
 ```
 
 #### PlaybackCoordinatorService
 
-Manages in-memory device registry and playback state.
+Manages in-memory device registry and active player state.
 
 ```csharp
 namespace Coral.Services;
 
 public interface IPlaybackCoordinatorService
 {
-    Task RegisterDevice(Guid userId, string deviceId, string connectionId);
-    Task UnregisterDevice(Guid userId, string deviceId);
-    Task UpdatePlaybackState(Guid userId, string deviceId, PlaybackState state);
-    Task<PlaybackState?> GetPlaybackState(Guid userId, string deviceId);
-    Task<string?> GetDeviceConnection(Guid userId, string deviceId);
-    Task<string?> GetDeviceIdByConnection(string connectionId);
-    Task<List<ActiveDevice>> GetUserActiveDevices(Guid userId);
+    // Device management
+    void RegisterDevice(string deviceId, string deviceName, string connectionId);
+    void UnregisterDevice(string connectionId);
+    string? GetConnectionId(string deviceId);
+    string? GetDeviceIdByConnection(string connectionId);
+    List<RemoteDeviceDto> GetAllDevices();
+
+    // Active player management
+    string? GetActivePlayerId();
+    void SetActivePlayer(string deviceId, PlaybackStateDto state);
+    void ClearActivePlayer();
+    void UpdateActivePlayerState(PlaybackStateDto state);
+    PlaybackStateDto? GetActivePlayerState();
 }
 
 public class PlaybackCoordinatorService : IPlaybackCoordinatorService
 {
-    // In-memory registry: userId -> (deviceId -> ActiveDevice)
-    private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<string, ActiveDevice>> _registry = new();
+    // Device registry: deviceId -> DeviceInfo
+    private readonly ConcurrentDictionary<string, DeviceInfo> _devices = new();
 
-    // Reverse lookup: connectionId -> (userId, deviceId)
-    private readonly ConcurrentDictionary<string, (Guid userId, string deviceId)> _connections = new();
+    // Reverse lookup: connectionId -> deviceId
+    private readonly ConcurrentDictionary<string, string> _connections = new();
 
-    public Task RegisterDevice(Guid userId, string deviceId, string connectionId)
+    // Active player state
+    private string? _activePlayerId;
+    private PlaybackStateDto? _activePlayerState;
+    private readonly object _activePlayerLock = new();
+
+    public void RegisterDevice(string deviceId, string deviceName, string connectionId)
     {
-        var userDevices = _registry.GetOrAdd(userId, _ => new ConcurrentDictionary<string, ActiveDevice>());
-
-        userDevices[deviceId] = new ActiveDevice
+        _devices[deviceId] = new DeviceInfo
         {
             DeviceId = deviceId,
-            ConnectionId = connectionId,
-            LastSeen = DateTime.UtcNow
+            DeviceName = deviceName,
+            ConnectionId = connectionId
         };
-
-        _connections[connectionId] = (userId, deviceId);
-
-        return Task.CompletedTask;
+        _connections[connectionId] = deviceId;
     }
 
-    public Task UnregisterDevice(Guid userId, string deviceId)
+    public void UnregisterDevice(string connectionId)
     {
-        if (_registry.TryGetValue(userId, out var userDevices))
+        if (_connections.TryRemove(connectionId, out var deviceId))
         {
-            if (userDevices.TryRemove(deviceId, out var device))
+            _devices.TryRemove(deviceId, out _);
+
+            // Clear active player if it was this device
+            lock (_activePlayerLock)
             {
-                _connections.TryRemove(device.ConnectionId, out _);
+                if (_activePlayerId == deviceId)
+                {
+                    _activePlayerId = null;
+                    _activePlayerState = null;
+                }
             }
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task UpdatePlaybackState(Guid userId, string deviceId, PlaybackState state)
+    public string? GetConnectionId(string deviceId)
     {
-        if (_registry.TryGetValue(userId, out var userDevices) &&
-            userDevices.TryGetValue(deviceId, out var device))
-        {
-            device.PlaybackState = state;
-            device.LastSeen = DateTime.UtcNow;
-        }
-
-        return Task.CompletedTask;
+        return _devices.TryGetValue(deviceId, out var info) ? info.ConnectionId : null;
     }
 
-    public Task<PlaybackState?> GetPlaybackState(Guid userId, string deviceId)
+    public string? GetDeviceIdByConnection(string connectionId)
     {
-        if (_registry.TryGetValue(userId, out var userDevices) &&
-            userDevices.TryGetValue(deviceId, out var device))
-        {
-            return Task.FromResult(device.PlaybackState);
-        }
-
-        return Task.FromResult<PlaybackState?>(null);
+        return _connections.TryGetValue(connectionId, out var deviceId) ? deviceId : null;
     }
 
-    public Task<string?> GetDeviceConnection(Guid userId, string deviceId)
+    public List<RemoteDeviceDto> GetAllDevices()
     {
-        if (_registry.TryGetValue(userId, out var userDevices) &&
-            userDevices.TryGetValue(deviceId, out var device))
+        return _devices.Values.Select(d => new RemoteDeviceDto
         {
-            return Task.FromResult<string?>(device.ConnectionId);
-        }
-
-        return Task.FromResult<string?>(null);
+            DeviceId = d.DeviceId,
+            DeviceName = d.DeviceName,
+            IsActivePlayer = d.DeviceId == _activePlayerId
+        }).ToList();
     }
 
-    public Task<string?> GetDeviceIdByConnection(string connectionId)
+    public string? GetActivePlayerId()
     {
-        if (_connections.TryGetValue(connectionId, out var mapping))
+        lock (_activePlayerLock)
         {
-            return Task.FromResult<string?>(mapping.deviceId);
+            return _activePlayerId;
         }
-
-        return Task.FromResult<string?>(null);
     }
 
-    public Task<List<ActiveDevice>> GetUserActiveDevices(Guid userId)
+    public void SetActivePlayer(string deviceId, PlaybackStateDto state)
     {
-        if (_registry.TryGetValue(userId, out var userDevices))
+        lock (_activePlayerLock)
         {
-            return Task.FromResult(userDevices.Values.ToList());
+            _activePlayerId = deviceId;
+            _activePlayerState = state;
         }
+    }
 
-        return Task.FromResult(new List<ActiveDevice>());
+    public void ClearActivePlayer()
+    {
+        lock (_activePlayerLock)
+        {
+            _activePlayerId = null;
+            _activePlayerState = null;
+        }
+    }
+
+    public void UpdateActivePlayerState(PlaybackStateDto state)
+    {
+        lock (_activePlayerLock)
+        {
+            _activePlayerState = state;
+        }
+    }
+
+    public PlaybackStateDto? GetActivePlayerState()
+    {
+        lock (_activePlayerLock)
+        {
+            return _activePlayerState;
+        }
     }
 }
 
-public class ActiveDevice
+public class DeviceInfo
 {
-    public string DeviceId { get; set; } = null!;
-    public string ConnectionId { get; set; } = null!;
-    public PlaybackState? PlaybackState { get; set; }
-    public DateTime LastSeen { get; set; }
+    public required string DeviceId { get; init; }
+    public required string DeviceName { get; init; }
+    public required string ConnectionId { get; init; }
 }
 ```
 
@@ -228,37 +349,56 @@ public class ActiveDevice
 ```csharp
 namespace Coral.Dto.RemotePlayback;
 
-public class PlaybackState
+public class PlaybackStateDto
 {
     public Guid? CurrentTrackId { get; set; }
     public int PositionMs { get; set; }
     public bool IsPlaying { get; set; }
-    public List<QueueItem> Queue { get; set; } = new();
+    public List<Guid> Queue { get; set; } = new();
+    public int CurrentIndex { get; set; }
+    public bool IsShuffled { get; set; }
+    public RepeatMode RepeatMode { get; set; }
     public DateTime Timestamp { get; set; }
 }
 
-public class QueueItem
+public enum RepeatMode
 {
-    public Guid TrackId { get; set; }
-    public int Index { get; set; }
+    Off,
+    All,
+    One
 }
 
-public class PlaybackCommand
+public class PlaybackCommandDto
 {
     public PlaybackCommandType Type { get; set; }
-    public object? Payload { get; set; }
+    public JsonElement? Payload { get; set; }
 }
 
 public enum PlaybackCommandType
 {
+    // Playback control
     Play,
     Pause,
-    Seek,           // Payload: { positionMs: number }
     Skip,
     Previous,
-    AppendToQueue,  // Payload: { trackIds: Guid[] }
-    SetQueue,       // Payload: { queue: QueueItem[], startIndex: number }
-    SetVolume       // Payload: { volume: number }
+    Seek,              // Payload: { positionMs: int }
+
+    // Mode control
+    ToggleShuffle,     // No payload
+    SetRepeatMode,     // Payload: { mode: RepeatMode }
+
+    // Queue mutations
+    AddToQueue,        // Payload: { trackIds: Guid[] }
+    RemoveFromQueue,   // Payload: { index: int }
+    ReorderQueue,      // Payload: { fromIndex: int, toIndex: int }
+    SetQueue           // Payload: { queue: Guid[], startIndex: int }
+}
+
+public class RemoteDeviceDto
+{
+    public required string DeviceId { get; set; }
+    public required string DeviceName { get; set; }
+    public bool IsActivePlayer { get; set; }
 }
 ```
 
@@ -278,66 +418,62 @@ app.MapHub<PlaybackHub>("/hubs/playback");
 
 ## Frontend (React Native Universal)
 
-### Playback Modes
-
-The app operates in one of three modes:
-
-1. **Local Playback** - Playing music on this device
-2. **Remote Control** - Controlling another device
-3. **Jukebox Mode** - Being controlled by another device
-
 ### State Management (Jotai Atoms)
 
 ```typescript
 // lib/state/remote-playback.ts
 import { atom } from 'jotai';
+import { getDeviceId } from '@/lib/device';
 
-export const playbackModeAtom = atom<'local' | 'remote' | 'jukebox'>('local');
+// Types
+interface PlaybackState {
+  currentTrackId: string | null;
+  positionMs: number;
+  isPlaying: boolean;
+  queue: string[];
+  currentIndex: number;
+  isShuffled: boolean;
+  repeatMode: 'off' | 'all' | 'one';
+  timestamp: Date;
+}
 
-// When in remote control mode, this is the device being controlled
-export const remoteDeviceAtom = atom<RemoteDevice | null>(null);
+interface RemoteDevice {
+  deviceId: string;
+  deviceName: string;
+  isActivePlayer: boolean;
+}
 
-// List of available devices for this user
-export const availableDevicesAtom = atom<RemoteDevice[]>([]);
+// Connected devices (including self)
+export const connectedDevicesAtom = atom<RemoteDevice[]>([]);
 
-// Last known state from remote device (when in remote control mode)
-export const remotePlaybackStateAtom = atom<PlaybackState | null>(null);
+// Active player info (null if nothing playing anywhere)
+export const activePlayerIdAtom = atom<string | null>(null);
+export const activePlayerStateAtom = atom<PlaybackState | null>(null);
 
-// Derived atom: Get the current playback state (local or remote)
+// Derived: Am I the active player?
+export const isActivePlayerAtom = atom((get) => {
+  const activeId = get(activePlayerIdAtom);
+  return activeId === getDeviceId();
+});
+
+// Derived: Is there a remote active player I can control?
+export const remoteActivePlayerAtom = atom((get) => {
+  const activeId = get(activePlayerIdAtom);
+  const devices = get(connectedDevicesAtom);
+  if (!activeId || activeId === getDeviceId()) return null;
+  return devices.find(d => d.deviceId === activeId) ?? null;
+});
+
+// Derived: Current playback state (local or remote)
 export const currentPlaybackStateAtom = atom((get) => {
-  const mode = get(playbackModeAtom);
-
-  if (mode === 'remote') {
-    // When controlling a remote device, use remote state
-    return get(remotePlaybackStateAtom);
+  const isActive = get(isActivePlayerAtom);
+  if (isActive) {
+    // We're the active player, use local state
+    return get(localPlaybackStateAtom);
   } else {
-    // When playing locally or in jukebox mode, use local player state
-    return get(localPlayerStateAtom);
+    // Remote device is playing, use their state
+    return get(activePlayerStateAtom);
   }
-});
-
-// Derived atom: Get the current track
-export const currentTrackAtom = atom((get) => {
-  const state = get(currentPlaybackStateAtom);
-  return state?.currentTrackId ? getTrackById(state.currentTrackId) : null;
-});
-
-// Derived atom: Is currently playing?
-export const isPlayingAtom = atom((get) => {
-  const state = get(currentPlaybackStateAtom);
-  return state?.isPlaying ?? false;
-});
-
-// Derived atom: Current playback position
-export const playbackPositionAtom = atom((get) => {
-  const state = get(currentPlaybackStateAtom);
-  return state?.positionMs ?? 0;
-});
-
-// Derived atom: Current queue
-export const currentQueueAtom = atom((get) => {
-  const state = get(currentPlaybackStateAtom);
-  return state?.queue ?? [];
 });
 ```
 
@@ -346,96 +482,74 @@ export const currentQueueAtom = atom((get) => {
 ```typescript
 // lib/signalr/playback-hub.ts
 import * as SignalR from '@microsoft/signalr';
-import { getToken } from '@/lib/auth';
+import { getDeviceId, getDeviceName } from '@/lib/device';
 
 class PlaybackHubClient {
   private connection: SignalR.HubConnection | null = null;
-  private deviceId: string;
-
-  constructor() {
-    this.deviceId = getDeviceId(); // From AsyncStorage
-  }
 
   async connect() {
-    const token = await getToken();
-
     this.connection = new SignalR.HubConnectionBuilder()
-      .withUrl('https://your-api/hubs/playback', {
-        accessTokenFactory: () => token
-      })
+      .withUrl('/hubs/playback')
       .withAutomaticReconnect()
       .build();
 
-    // Server -> Client: Another device is available
-    this.connection.on('DeviceAvailable', (device: RemoteDevice) => {
-      // Add to available devices
-      addAvailableDevice(device);
+    // Server -> Client: Another device connected
+    this.connection.on('DeviceConnected', (device: RemoteDevice) => {
+      // Add to connected devices atom
+      addConnectedDevice(device);
     });
 
     // Server -> Client: Device disconnected
-    this.connection.on('DeviceUnavailable', (deviceId: string) => {
-      removeAvailableDevice(deviceId);
-
-      // If we were controlling this device, reset to local
-      const currentRemoteDevice = getAtomValue(remoteDeviceAtom);
-      if (currentRemoteDevice?.deviceId === deviceId) {
-        setAtomValue(playbackModeAtom, 'local');
-        setAtomValue(remoteDeviceAtom, null);
-      }
+    this.connection.on('DeviceDisconnected', (deviceId: string) => {
+      removeConnectedDevice(deviceId);
     });
 
-    // Server -> Client: Playback state updated from another device
-    this.connection.on('PlaybackStateUpdated', (deviceId: string, state: PlaybackState) => {
-      const currentRemoteDevice = getAtomValue(remoteDeviceAtom);
-
-      // If this is the device we're controlling, update remote state
-      // This triggers UI updates even though no audio is playing locally
-      if (currentRemoteDevice?.deviceId === deviceId) {
-        setAtomValue(remotePlaybackStateAtom, state);
-        // UI components reading from currentPlaybackStateAtom will update automatically
-      }
-
-      // Check if another device started playing (for takeover prompt)
-      if (deviceId !== this.deviceId && state.isPlaying) {
-        showPlaybackActiveNotification(deviceId);
-      }
+    // Server -> Client: Active player changed
+    this.connection.on('ActivePlayerChanged', (deviceId: string | null, state: PlaybackState | null) => {
+      setAtomValue(activePlayerIdAtom, deviceId);
+      setAtomValue(activePlayerStateAtom, state);
     });
 
-    // Server -> Client: Receive command from another device
+    // Server -> Client: Active player state updated
+    this.connection.on('PlaybackStateUpdated', (state: PlaybackState) => {
+      setAtomValue(activePlayerStateAtom, state);
+    });
+
+    // Server -> Client: Receive command (we are the active player)
     this.connection.on('ReceiveCommand', async (command: PlaybackCommand) => {
       await executePlaybackCommand(command);
-
-      // After executing command, send updated state back
-      const state = getCurrentPlaybackState();
-      await this.updatePlaybackState(state);
     });
 
-    // Server -> Client: Another device requested our state
-    this.connection.on('StateRequested', async (requesterId: string) => {
-      const state = getCurrentPlaybackState();
-      await this.updatePlaybackState(state);
+    // Server -> Client: Transfer playback to us
+    this.connection.on('TransferRequested', async (state: PlaybackState) => {
+      // Load the transferred state and start playing
+      await loadAndPlayState(state);
     });
 
     await this.connection.start();
 
-    // Register this device for remote control
-    await this.registerForRemoteControl();
+    // Register this device
+    await this.connection.invoke('RegisterDevice', getDeviceId(), getDeviceName());
   }
 
-  async registerForRemoteControl() {
-    await this.connection?.invoke('RegisterForRemoteControl', this.deviceId);
+  // Called when local device starts playing
+  async becomeActivePlayer(state: PlaybackState) {
+    await this.connection?.invoke('BecomeActivePlayer', state);
   }
 
+  // Called by active player to sync state (debounced)
   async updatePlaybackState(state: PlaybackState) {
-    await this.connection?.invoke('UpdatePlaybackState', this.deviceId, state);
+    await this.connection?.invoke('UpdatePlaybackState', state);
   }
 
-  async sendCommand(targetDeviceId: string, command: PlaybackCommand) {
-    await this.connection?.invoke('SendCommand', targetDeviceId, command);
+  // Send command to active player (whoever it is)
+  async sendCommand(command: PlaybackCommand) {
+    await this.connection?.invoke('SendCommand', command);
   }
 
-  async requestPlaybackState(targetDeviceId: string) {
-    await this.connection?.invoke('RequestPlaybackState', targetDeviceId);
+  // Transfer playback to another device
+  async transferPlayback(targetDeviceId: string) {
+    await this.connection?.invoke('TransferPlayback', targetDeviceId);
   }
 }
 
@@ -472,18 +586,26 @@ export function initializePlayerStateSync() {
   }, 1000);
 }
 
-// Called when player backend state changes
-async function syncPlaybackState() {
-  const mode = getAtomValue(playbackModeAtom);
+// Called when local playback starts (user plays a track locally)
+async function onLocalPlaybackStarted() {
+  const state = getCurrentPlaybackState();
+  await playbackHub.becomeActivePlayer(state);
+}
 
-  // Only sync if we're the active player (local or jukebox)
-  // Don't sync if we're in remote control mode
-  if (mode === 'local' || mode === 'jukebox') {
+// Called when player backend state changes (debounced)
+async function syncPlaybackState() {
+  const isActive = getAtomValue(isActivePlayerAtom);
+
+  // Only sync if we're the active player
+  if (isActive) {
     const state: PlaybackState = {
       currentTrackId: getCurrentTrack()?.id ?? null,
       positionMs: await getPlaybackPosition(),
       isPlaying: isPlaying(),
-      queue: getQueue().map((track, index) => ({ trackId: track.id, index })),
+      queue: getQueue().map(track => track.id),
+      currentIndex: getCurrentIndex(),
+      isShuffled: getIsShuffled(),
+      repeatMode: getRepeatMode(),
       timestamp: new Date()
     };
 
@@ -491,23 +613,15 @@ async function syncPlaybackState() {
   }
 }
 
-// Execute command received from remote controller
+// Execute command received from a controller
 export async function executePlaybackCommand(command: PlaybackCommand) {
-  // Mark as jukebox mode when we receive first command
-  const currentMode = getAtomValue(playbackModeAtom);
-  if (currentMode !== 'jukebox') {
-    setAtomValue(playbackModeAtom, 'jukebox');
-  }
-
   switch (command.type) {
+    // Playback control
     case 'Play':
       await play();
       break;
     case 'Pause':
       await pause();
-      break;
-    case 'Seek':
-      await seek(command.payload.positionMs);
       break;
     case 'Skip':
       await skipToNext();
@@ -515,42 +629,58 @@ export async function executePlaybackCommand(command: PlaybackCommand) {
     case 'Previous':
       await skipToPrevious();
       break;
-    case 'AppendToQueue':
-      await appendToQueue(command.payload.trackIds);
+    case 'Seek':
+      await seek(command.payload.positionMs);
+      break;
+
+    // Mode control
+    case 'ToggleShuffle':
+      await toggleShuffle();
+      break;
+    case 'SetRepeatMode':
+      await setRepeatMode(command.payload.mode);
+      break;
+
+    // Queue mutations
+    case 'AddToQueue':
+      await addToQueue(command.payload.trackIds);
+      break;
+    case 'RemoveFromQueue':
+      await removeFromQueue(command.payload.index);
+      break;
+    case 'ReorderQueue':
+      await reorderQueue(command.payload.fromIndex, command.payload.toIndex);
       break;
     case 'SetQueue':
       await setQueue(command.payload.queue, command.payload.startIndex);
       break;
-    case 'SetVolume':
-      await setVolume(command.payload.volume);
-      break;
+  }
+  // State sync happens automatically via player event listeners
+}
+
+// Load transferred state and start playing
+export async function loadAndPlayState(state: PlaybackState) {
+  // Load the queue
+  await loadQueue(state.queue, state.currentIndex);
+
+  // Restore shuffle and repeat modes
+  if (state.isShuffled) {
+    await setShuffle(true);
+  }
+  await setRepeatMode(state.repeatMode);
+
+  // Seek to position
+  await seek(state.positionMs);
+
+  // Start playing (this triggers becomeActivePlayer via event listener)
+  if (state.isPlaying) {
+    await play();
   }
 }
 
-// When user wants to control a remote device
-export async function connectToRemoteDevice(device: RemoteDevice) {
-  // Stop local playback
-  await pause();
-
-  // Switch to remote control mode
-  setAtomValue(playbackModeAtom, 'remote');
-  setAtomValue(remoteDeviceAtom, device);
-
-  // Request current state from remote device
-  await playbackHub.requestPlaybackState(device.deviceId);
-}
-
-// When user wants to take over playback locally
-export async function takeoverPlayback() {
-  setAtomValue(playbackModeAtom, 'local');
-  setAtomValue(remoteDeviceAtom, null);
-  setAtomValue(remotePlaybackStateAtom, null);
-
-  // Optionally: send pause command to other playing devices
-  const activeDevices = getAtomValue(availableDevicesAtom).filter(d => d.isPlaying);
-  for (const device of activeDevices) {
-    await playbackHub.sendCommand(device.deviceId, { type: 'Pause' });
-  }
+// Transfer playback to another device
+export async function transferToDevice(targetDeviceId: string) {
+  await playbackHub.transferPlayback(targetDeviceId);
 }
 ```
 
@@ -562,9 +692,10 @@ export async function takeoverPlayback() {
 // components/DevicePickerModal.tsx
 
 export function DevicePickerModal() {
-  const availableDevices = useAtomValue(availableDevicesAtom);
-  const currentMode = useAtomValue(playbackModeAtom);
-  const remoteDevice = useAtomValue(remoteDeviceAtom);
+  const devices = useAtomValue(connectedDevicesAtom);
+  const activePlayerId = useAtomValue(activePlayerIdAtom);
+  const isActivePlayer = useAtomValue(isActivePlayerAtom);
+  const activeState = useAtomValue(activePlayerStateAtom);
   const currentDeviceId = getDeviceId();
 
   return (
@@ -574,107 +705,82 @@ export function DevicePickerModal() {
       {/* Current device */}
       <DeviceItem
         name="This device"
-        icon={getDeviceIcon(currentDeviceId)}
-        active={currentMode === 'local'}
-        onPress={() => takeoverPlayback()}
+        isActivePlayer={isActivePlayer}
+        onPress={() => transferToDevice(currentDeviceId)}
       />
 
-      {/* Other available devices */}
-      {availableDevices.map(device => (
-        <DeviceItem
-          key={device.deviceId}
-          name={device.deviceName}
-          icon={getDeviceIcon(device.deviceId)}
-          active={currentMode === 'remote' && remoteDevice?.deviceId === device.deviceId}
-          isPlaying={device.isPlaying}
-          onPress={() => connectToRemoteDevice(device)}
-        />
-      ))}
+      {/* Other connected devices */}
+      {devices
+        .filter(d => d.deviceId !== currentDeviceId)
+        .map(device => (
+          <DeviceItem
+            key={device.deviceId}
+            name={device.deviceName}
+            isActivePlayer={device.deviceId === activePlayerId}
+            trackInfo={device.deviceId === activePlayerId ? activeState : null}
+            onPress={() => transferToDevice(device.deviceId)}
+          />
+        ))}
     </Modal>
   );
 }
 
-function DeviceItem({ name, icon, active, isPlaying, onPress }: Props) {
+function DeviceItem({ name, isActivePlayer, trackInfo, onPress }: Props) {
   return (
-    <Pressable onPress={onPress} style={[styles.item, active && styles.active]}>
-      <Icon name={icon} />
+    <Pressable onPress={onPress} style={[styles.item, isActivePlayer && styles.active]}>
+      <Icon name="speaker" />
       <View>
-        <Text style={{ fontWeight: active ? 'bold' : 'normal' }}>{name}</Text>
-        {isPlaying && !active && <Text style={{ fontSize: 12 }}>Currently playing</Text>}
-        {active && <Text style={{ fontSize: 12, color: 'green' }}>Active</Text>}
+        <Text style={{ fontWeight: isActivePlayer ? 'bold' : 'normal' }}>{name}</Text>
+        {isActivePlayer && trackInfo && (
+          <Text style={{ fontSize: 12 }}>Playing: {trackInfo.currentTrackId}</Text>
+        )}
       </View>
     </Pressable>
   );
 }
 ```
 
-#### Playback Active Notification
-
-When another device starts playing, show a subtle notification:
-
-```typescript
-// components/PlaybackActiveNotification.tsx
-
-export function PlaybackActiveNotification({ deviceName }: { deviceName: string }) {
-  return (
-    <Notification>
-      <Text>Playing on {deviceName}</Text>
-      <Button onPress={() => connectToRemoteDevice(device)}>
-        Control
-      </Button>
-      <Button onPress={() => takeoverPlayback()}>
-        Play here
-      </Button>
-    </Notification>
-  );
-}
-```
-
 ### Player UI Updates
 
-The UI layer should be completely agnostic to playback mode - it always reads from the derived atoms:
+The UI layer reads from derived atoms that abstract whether playback is local or remote:
 
 ```typescript
 // components/Player.tsx
 import { useAtomValue } from 'jotai';
 import {
-  currentTrackAtom,
-  isPlayingAtom,
-  playbackPositionAtom,
-  currentQueueAtom,
-  playbackModeAtom,
-  remoteDeviceAtom
+  activePlayerIdAtom,
+  activePlayerStateAtom,
+  isActivePlayerAtom,
+  remoteActivePlayerAtom
 } from '@/lib/state/remote-playback';
 
 export function Player() {
-  const currentTrack = useAtomValue(currentTrackAtom);
-  const isPlaying = useAtomValue(isPlayingAtom);
-  const position = useAtomValue(playbackPositionAtom);
-  const queue = useAtomValue(currentQueueAtom);
-  const mode = useAtomValue(playbackModeAtom);
-  const remoteDevice = useAtomValue(remoteDeviceAtom);
+  const isActivePlayer = useAtomValue(isActivePlayerAtom);
+  const remotePlayer = useAtomValue(remoteActivePlayerAtom);
+  const activeState = useAtomValue(activePlayerStateAtom);
 
-  // UI always reflects current state, whether local or remote
+  // Show banner when remote device is the active player
+  const showRemoteBanner = remotePlayer !== null;
+
   return (
     <View>
-      {/* Prominent indicator when controlling a remote device */}
-      {mode === 'remote' && (
-        <RemoteControlBanner
-          deviceName={remoteDevice?.deviceName}
-          onTakeoverPress={() => takeoverPlayback()}
+      {/* Banner when viewing remote player state */}
+      {showRemoteBanner && (
+        <RemotePlayerBanner
+          deviceName={remotePlayer.deviceName}
+          onTransferPress={() => transferToDevice(getDeviceId())}
         />
       )}
 
-      <TrackInfo track={currentTrack} />
-      <ProgressBar position={position} duration={currentTrack?.duration} />
-      <PlayPauseButton isPlaying={isPlaying} onPress={handlePlayPause} />
-      <Queue items={queue} />
+      <TrackInfo track={activeState?.currentTrackId} />
+      <ProgressBar position={activeState?.positionMs} />
+      <PlayPauseButton isPlaying={activeState?.isPlaying} onPress={handlePlayPause} />
     </View>
   );
 }
 
-// Prominent banner to show user they're controlling a remote device
-function RemoteControlBanner({ deviceName, onTakeoverPress }: Props) {
+// Banner showing "Playing on {device}" with transfer option
+function RemotePlayerBanner({ deviceName, onTransferPress }: Props) {
   return (
     <View style={{ backgroundColor: 'blue', padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -683,46 +789,44 @@ function RemoteControlBanner({ deviceName, onTakeoverPress }: Props) {
           Playing on {deviceName}
         </Text>
       </View>
-      <Button onPress={onTakeoverPress}>
+      <Button onPress={onTransferPress}>
         Play on this device
       </Button>
     </View>
   );
 }
 
-// Playback controls route to either local player or remote command
+// Playback controls route to active player
 async function handlePlayPause() {
-  const mode = getAtomValue(playbackModeAtom);
+  const isActive = getAtomValue(isActivePlayerAtom);
+  const isPlaying = getAtomValue(activePlayerStateAtom)?.isPlaying;
 
-  if (mode === 'remote') {
-    const remoteDevice = getAtomValue(remoteDeviceAtom);
-    const isPlaying = getAtomValue(isPlayingAtom);
-
-    await playbackHub.sendCommand(remoteDevice.deviceId, {
+  if (isActive) {
+    // We are the active player - control locally
+    await togglePlayPause();
+  } else {
+    // Remote device is active - send command
+    await playbackHub.sendCommand({
       type: isPlaying ? 'Pause' : 'Play'
     });
-  } else {
-    // Local playback
-    await togglePlayPause();
   }
 }
 ```
 
 **Key points:**
 
-When in **remote control mode** (controlling a jukebox):
-- UI reads from `remotePlaybackStateAtom` via derived atoms
-- **No local audio playback** - this device is silent
-- All control buttons send SignalR commands instead of controlling local player
-- Progress bar, track info, queue display all update from remote state broadcasts
-- **Display prominent "Playing on {device name}" indicator** so user knows they're controlling a remote device
-- UI updates in real-time as jukebox state changes
-
-When in **local/jukebox mode**:
-- UI reads from `localPlayerStateAtom` via derived atoms
+When **this device is the active player**:
+- UI reads from local player state
 - Local audio plays normally
 - Control buttons interact with local player
-- No special UI indicators needed (plays like normal)
+- State is broadcast to other devices
+
+When **remote device is the active player**:
+- UI reads from `activePlayerStateAtom` (remote state)
+- **No local audio playback** - this device is silent
+- All control buttons send SignalR commands to active player
+- Progress bar, track info update from remote state broadcasts
+- **Display prominent "Playing on {device name}" banner**
 
 ## State Synchronization Strategy
 
@@ -806,41 +910,50 @@ The key is that we listen to the **player's** state, not the control interface. 
 
 ## Future Enhancements
 
-- [ ] Transfer playback state when switching devices (continue queue on new device)
+- [ ] Volume control command
 - [ ] Multi-room sync (play same music on multiple devices simultaneously)
+- [ ] Last.fm scrobbling from server based on active player state
 - [ ] Guest access (temporary device linking for parties)
 - [ ] Offline mode detection (graceful degradation)
 - [ ] Device groups (control multiple devices as one)
+- [ ] Native platform support (iOS, Android, Electron)
 
 ## Implementation Checklist
 
 ### Backend
-- [ ] Create `PlaybackHub` (SignalR)
-- [ ] Create `PlaybackCoordinatorService` (in-memory device registry)
-- [ ] Add DTOs: `PlaybackState`, `PlaybackCommand`
-- [ ] Configure SignalR in `Program.cs`
-- [ ] Add `/hubs/playback` endpoint
+- [ ] Create `src/Coral.Api/Hubs/PlaybackHub.cs` with `IPlaybackHubClient` interface
+- [ ] Create `src/Coral.Services/PlaybackCoordinatorService.cs` (singleton, active player + device registry)
+- [ ] Create `src/Coral.Dto/RemotePlayback/` folder with DTOs:
+  - [ ] `PlaybackStateDto.cs`
+  - [ ] `PlaybackCommandDto.cs`
+  - [ ] `RemoteDeviceDto.cs`
+- [ ] Register hub and service in `src/Coral.Api/Program.cs`
 
 ### Frontend
 - [ ] Install `@microsoft/signalr` package
-- [ ] Create `playback-hub.ts` client
-- [ ] Add Jotai atoms for remote playback state (including derived atoms)
-- [ ] Update all UI components to read from derived atoms instead of local player state
-- [ ] Implement control handlers that route to local player OR remote commands based on mode
-- [ ] Implement `executePlaybackCommand()` handler
-- [ ] Create `DevicePickerModal` component
-- [ ] Create `RemoteControlBanner` component (prominent indicator)
-- [ ] Add device picker button to player UI
-- [ ] Update player UI to show `RemoteControlBanner` when in remote mode
-- [ ] Implement state sync (debounced updates from player backend events)
-- [ ] Handle reconnection logic
-- [ ] Add playback active notification
+- [ ] Create `src/coral-app/lib/device.ts` - device ID (localStorage + UUID) and name utilities
+- [ ] Create `src/coral-app/lib/state/remote-playback.ts` - Jotai atoms:
+  - [ ] `connectedDevicesAtom`
+  - [ ] `activePlayerIdAtom` / `activePlayerStateAtom`
+  - [ ] `isActivePlayerAtom` / `remoteActivePlayerAtom` (derived)
+- [ ] Create `src/coral-app/lib/signalr/playback-hub.ts` - SignalR client singleton
+- [ ] Create `src/coral-app/lib/signalr/playback-hub-provider.tsx` - React provider
+- [ ] Modify `src/coral-app/lib/player/player-provider.web.tsx`:
+  - [ ] Call `becomeActivePlayer()` when playback starts
+  - [ ] Call `updatePlaybackState()` on state changes (debounced)
+  - [ ] Handle `ReceiveCommand` and `TransferRequested`
+- [ ] Create `src/coral-app/components/player/device-picker.tsx`
+- [ ] Modify `src/coral-app/components/player/web-player-bar.tsx`:
+  - [ ] Add device picker button
+  - [ ] Show "Playing on {device}" banner when remote is active
+  - [ ] Route controls based on `isActivePlayerAtom`
 
 ## Testing Scenarios
 
-1. **Basic remote control**: Control playback on Device B from Device A
-2. **Disconnect handling**: Disconnect Device B while being controlled from A
-3. **Simultaneous control**: Two devices try to control the same device
-4. **Takeover**: Device A playing, Device B takes over
-5. **Multiple devices**: User has 3+ devices online simultaneously
-6. **Network issues**: Reconnect after temporary disconnection
+1. **Device discovery**: Open app in two tabs, both appear in device picker
+2. **Active player broadcast**: Play on Tab A, Tab B sees state updates
+3. **Remote control**: From Tab B, send play/pause to Tab A
+4. **Transfer playback**: From Tab B, transfer to self - A pauses, B starts playing
+5. **Disconnect handling**: Close Tab A while active - Tab B sees ActivePlayerChanged(null)
+6. **Multiple controllers**: Tab B and C both send commands to Tab A
+7. **Network reconnect**: Disconnect/reconnect, state recovers correctly

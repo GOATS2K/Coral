@@ -1,14 +1,14 @@
 import type { SimpleTrackDto } from '@/lib/client/schemas';
 import type { RepeatMode } from '@/lib/state';
 import EventEmitter from 'eventemitter3';
-import type { PlayerEvents } from './mse-web-audio-player';
-import { PlayerEventNames } from './mse-web-audio-player';
+import type { PlayerBackend, PlayerEvents } from './player-backend';
+import { PlayerEventNames } from './player-backend';
 
 /**
  * IPC Proxy for MpvPlayer that runs in the Electron renderer process
  * Communicates with the main process via IPC to control the MpvPlayer instance
  */
-export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
+export class MpvIpcProxy extends EventEmitter<PlayerEvents> implements PlayerBackend {
   private trackChangeCallback: ((index: number) => void) | null = null;
   private isInitialized = false;
   private dummyAudio: HTMLAudioElement | null = null;
@@ -92,7 +92,7 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> {
     ipcRenderer.on('mpv:timeUpdate', (_: any, position: number, duration: number) => {
       this.cachedState.currentTime = position;
       this.cachedState.duration = duration;
-      this.emit(PlayerEventNames.TIME_UPDATE, { position, duration });
+      this.emit('timeUpdate', { position, duration });
     });
   }
 

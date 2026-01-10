@@ -1,15 +1,14 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
-import { MSEWebAudioPlayer as WebAudioPlayer, PlayerEventNames } from './mse-web-audio-player';
+import { MSEWebAudioPlayer } from './mse-web-audio-player';
 import { MpvIpcProxy } from './mpv-ipc-proxy';
+import type { PlayerBackend } from './player-backend';
+import { PlayerEventNames } from './player-backend';
 import { playerStateAtom, playbackStateAtom } from '@/lib/state';
 import { Config } from '@/lib/config';
 
-// Type union for both player types
-type Player = WebAudioPlayer | MpvIpcProxy;
-
 export interface WebPlayerContext {
-  player: Player | null;
+  player: PlayerBackend | null;
 }
 
 const PlayerContext = createContext<WebPlayerContext | null>(null);
@@ -18,7 +17,7 @@ const PlayerContext = createContext<WebPlayerContext | null>(null);
 const isElectron = Config.isElectron();
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const [player, setPlayer] = useState<Player | null>(null);
+  const [player, setPlayer] = useState<PlayerBackend | null>(null);
   const [state, setState] = useAtom(playerStateAtom);
   const setPlaybackState = useSetAtom(playbackStateAtom);
 
@@ -27,7 +26,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const playerType = isElectron ? 'MpvPlayer (Electron)' : 'MSE Web Audio Player';
     console.info(`[PlayerProvider] Initializing ${playerType}...`);
     let mounted = true;
-    let playerInstance: Player | null = null;
+    let playerInstance: PlayerBackend | null = null;
 
     const initializePlayer = async () => {
       if (isElectron) {
@@ -38,7 +37,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         playerInstance = mpvPlayer;
       } else {
         // Web: Use MSE player (no async initialization needed)
-        playerInstance = new WebAudioPlayer();
+        playerInstance = new MSEWebAudioPlayer();
       }
 
       if (mounted) {

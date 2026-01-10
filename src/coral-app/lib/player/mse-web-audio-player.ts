@@ -2,21 +2,14 @@ import type { SimpleTrackDto } from '@/lib/client/schemas';
 import type { RepeatMode } from '@/lib/state';
 import EventEmitter from 'eventemitter3';
 import { MSEAudioLoader } from './mse-audio-loader';
+import type { PlayerBackend, PlayerEvents } from './player-backend';
+import { PlayerEventNames } from './player-backend';
 
-export interface PlayerEvents {
-  playbackStateChanged: { isPlaying: boolean };
-  trackChanged: { index: number };
-  bufferingStateChanged: { isBuffering: boolean };
-}
+// Re-export for backwards compatibility
+export type { PlayerEvents };
+export { PlayerEventNames };
 
-// Event name constants
-export const PlayerEventNames = {
-  PLAYBACK_STATE_CHANGED: 'playbackStateChanged',
-  TRACK_CHANGED: 'trackChanged',
-  BUFFERING_STATE_CHANGED: 'bufferingStateChanged',
-} as const;
-
-export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> {
+export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> implements PlayerBackend {
   private audioContext: AudioContext;
   private gainNode: GainNode;
   private mediaElementSource: MediaElementAudioSourceNode | null = null;

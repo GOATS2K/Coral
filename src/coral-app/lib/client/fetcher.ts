@@ -6,6 +6,33 @@ import { Config } from '../config';
 // Base URL - initialized synchronously with default, then updated from config
 export let baseUrl = 'http://localhost:5031';
 
+// Auth token - cached for non-web platforms
+let cachedAccessToken: string | null = null;
+
+// Event emitter for auth events (like 401 responses)
+type AuthEventListener = () => void;
+const authEventListeners: AuthEventListener[] = [];
+
+export const onUnauthorized = (listener: AuthEventListener) => {
+  authEventListeners.push(listener);
+  return () => {
+    const index = authEventListeners.indexOf(listener);
+    if (index > -1) authEventListeners.splice(index, 1);
+  };
+};
+
+const emitUnauthorized = () => {
+  authEventListeners.forEach(listener => listener());
+};
+
+// Set the access token (called after login)
+export const setAccessToken = (token: string | null) => {
+  cachedAccessToken = token;
+};
+
+// Get the cached access token
+export const getAccessToken = () => cachedAccessToken;
+
 // Initialize base URL from config
 let isInitialized = false;
 const initializeBaseUrl = async () => {
@@ -68,17 +95,26 @@ export async function fetch<
 }: FetcherOptions<TBody, THeaders, TQueryParams, TPathParams>): Promise<TData> {
   try {
     const baseUrl = await getBaseUrl();
+
+    // Build auth headers for non-web platforms (web uses cookies)
+    const authHeaders: Record<string, string> = {};
+    if (Platform.OS !== 'web' && cachedAccessToken) {
+      authHeaders['Authorization'] = `Bearer ${cachedAccessToken}`;
+    }
+
     const response = await axios<TData>({
       url: `${baseUrl}${resolveUrl(url, pathParams)}`,
       method,
       headers: {
         // Always set Content-Type for requests with body (handles primitives like numbers)
         ...(body !== undefined && body !== null ? { 'Content-Type': 'application/json' } : {}),
+        ...authHeaders,
         ...headers,
       },
       params: queryParams,
       data: body,
       signal,
+      withCredentials: Platform.OS === 'web', // Send cookies on web platform
       ...rest, // Spread any extra options from the context
     });
 
@@ -88,6 +124,10 @@ export async function fetch<
     if (axios.isAxiosError<TError>(error)) {
       // The server responded with an error (e.g., 4xx, 5xx).
       if (error.response) {
+        // Handle 401 Unauthorized - emit event for auth handling
+        if (error.response.status === 401) {
+          emitUnauthorized();
+        }
         // The error payload is in `error.response.data`, already parsed by Axios.
         throw error.response.data;
       } else {

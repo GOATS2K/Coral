@@ -129,7 +129,8 @@ public class AuthController : ControllerBase
 
     private bool IsWebClient(DeviceInfo device)
     {
-        return device.Type == Database.Models.DeviceType.Web;
+        // Web and Electron both run in browser context and use cookies
+        return device.Type is Database.Models.DeviceType.Web or Database.Models.DeviceType.Electron;
     }
 
     private async Task SignInWithCookieAsync(AuthResult authResult)

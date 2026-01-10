@@ -14,7 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useAtomValue, useSetAtom } from 'jotai';
-import { themeAtom, systemThemeAtom, themePreferenceAtom } from '@/lib/state';
+import { themeAtom, systemThemeAtom, themePreferenceAtom, currentUserAtom } from '@/lib/state';
 import { WebPlayerBar } from '@/components/player/web-player-bar';
 import { ServerStatusBar } from '@/components/server-status-bar/server-status-bar';
 import { PlayerProvider } from '@/lib/player/player-provider';
@@ -24,8 +24,13 @@ import { ToastContainer } from '@/components/toast-container';
 import { Sidebar } from '@/components/ui/sidebar';
 import { Config } from '@/lib/config';
 import OnboardingScreen from './onboarding';
+import LoginScreen from './(auth)/login';
+import SetupScreen from './(auth)/setup';
 import { TitleBar } from '@/components/title-bar';
 import { DebouncedLoader } from '@/components/debounced-loader';
+import { fetchGetStatus } from '@/lib/client/components';
+import { onUnauthorized } from '@/lib/client/fetcher';
+import { useAuth } from '@/lib/hooks/use-auth';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -45,17 +50,29 @@ const queryClient = new QueryClient({
   },
 });
 
+type AppState = 'loading' | 'onboarding' | 'setup' | 'login' | 'authenticated';
+
 function AppContent() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const resolvedTheme = useAtomValue(themeAtom);
   const setSystemTheme = useSetAtom(systemThemeAtom);
   const setThemePreference = useSetAtom(themePreferenceAtom);
-  const [isReady, setIsReady] = useState(false);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const currentUser = useAtomValue(currentUserAtom);
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const [appState, setAppState] = useState<AppState>('loading');
+  const { initializeAuth } = useAuth();
 
-  // Check configuration on app startup
+  // Watch for auth state changes (login/logout)
   useEffect(() => {
-    async function checkInitialConfig() {
+    if (currentUser && appState !== 'authenticated') {
+      console.info('[RootLayout] User logged in, transitioning to authenticated');
+      setAppState('authenticated');
+    }
+  }, [currentUser, appState]);
+
+  // Check configuration and auth status on app startup
+  useEffect(() => {
+    async function checkInitialState() {
       try {
         console.info('[RootLayout] Checking initial config...');
         const isFirstRun = await Config.isFirstRun();
@@ -65,23 +82,46 @@ function AppContent() {
 
         if (isFirstRun || !backendUrl) {
           console.info('[RootLayout] Onboarding needed');
-          setNeedsOnboarding(true);
+          setAppState('onboarding');
+          return;
+        }
+
+        // Initialize auth (load stored token/deviceId)
+        await initializeAuth();
+
+        // Check auth status from server
+        console.info('[RootLayout] Checking auth status...');
+        const status = await fetchGetStatus({});
+
+        if (status.requiresSetup) {
+          console.info('[RootLayout] Server requires setup');
+          setAppState('setup');
+        } else if (!status.isAuthenticated) {
+          console.info('[RootLayout] Not authenticated');
+          setAppState('login');
         } else {
-          console.info('[RootLayout] Config exists, no onboarding needed');
-          setNeedsOnboarding(false);
+          console.info('[RootLayout] Authenticated');
+          setAppState('authenticated');
         }
       } catch (error) {
-        console.error('[RootLayout] Error checking initial config:', error);
-        // On error, show onboarding to be safe
-        setNeedsOnboarding(true);
-      } finally {
-        console.info('[RootLayout] Config check complete, setting ready');
-        setIsReady(true);
+        console.error('[RootLayout] Error checking initial state:', error);
+        // On network error, show onboarding to allow reconfiguring server URL
+        setAppState('onboarding');
       }
     }
 
-    checkInitialConfig();
-  }, [])
+    checkInitialState();
+  }, [initializeAuth]);
+
+  // Listen for 401 responses to redirect to login
+  useEffect(() => {
+    const unsubscribe = onUnauthorized(() => {
+      console.info('[RootLayout] Received 401, redirecting to login');
+      setCurrentUser(null);
+      setAppState('login');
+    });
+    return unsubscribe;
+  }, [setCurrentUser]);
 
   useEffect(() => {
     // On native platforms, load theme preference from AsyncStorage
@@ -133,16 +173,16 @@ function AppContent() {
   }, [resolvedTheme]);
 
   // Show loading screen while checking configuration
-  if (!isReady) {
+  if (appState === 'loading') {
     return (
-      <DebouncedLoader isLoading={!isReady}>
+      <DebouncedLoader isLoading={true}>
         <ActivityIndicator size="large" />
       </DebouncedLoader>
     );
   }
 
-  // If onboarding is needed, show onboarding screen directly
-  if (needsOnboarding) {
+  // Show onboarding screen for server URL configuration
+  if (appState === 'onboarding') {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
@@ -153,41 +193,63 @@ function AppContent() {
     );
   }
 
+  // Show setup screen for first-time account creation
+  if (appState === 'setup') {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <SetupScreen />
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Show login screen for unauthenticated users
+  if (appState === 'login') {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <LoginScreen />
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
-        <QueryClientProvider client={queryClient}>
-          <PlayerProvider>
-            <SignalRProvider>
-              <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
-                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-                {Platform.OS === 'web' ? (
-                  // Web: Sidebar + Content layout with player bar at bottom
-                  <View className="flex-1 flex-col bg-background">
-                    <TitleBar />
-                    <View className="flex-1 flex-row">
-                      <Sidebar />
-                      <View className="flex-1">
-                        <Stack screenOptions={{ headerShown: false }} />
-                      </View>
-                    </View>
-                    <WebPlayerBar />
-                    <ServerStatusBar />
-                  </View>
-                ) : (
-                  // Mobile: Full-screen Stack
-                  <View className="flex-1 flex-col">
+        <PlayerProvider>
+          <SignalRProvider>
+            <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              {Platform.OS === 'web' ? (
+                // Web: Sidebar + Content layout with player bar at bottom
+                <View className="flex-1 flex-col bg-background">
+                  <TitleBar />
+                  <View className="flex-1 flex-row">
+                    <Sidebar />
                     <View className="flex-1">
                       <Stack screenOptions={{ headerShown: false }} />
                     </View>
                   </View>
-                )}
+                  <WebPlayerBar />
+                  <ServerStatusBar />
+                </View>
+              ) : (
+                // Mobile: Full-screen Stack
+                <View className="flex-1 flex-col">
+                  <View className="flex-1">
+                    <Stack screenOptions={{ headerShown: false }} />
+                  </View>
+                </View>
+              )}
               <PortalHost />
               <ToastContainer />
             </ThemeProvider>
-            </SignalRProvider>
-          </PlayerProvider>
-        </QueryClientProvider>
+          </SignalRProvider>
+        </PlayerProvider>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
@@ -197,7 +259,9 @@ export default function RootLayout() {
   return (
     <Provider>
       <SafeAreaProvider>
-        <AppContent />
+        <QueryClientProvider client={queryClient}>
+          <AppContent />
+        </QueryClientProvider>
       </SafeAreaProvider>
     </Provider>
   );

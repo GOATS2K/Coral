@@ -1,6 +1,6 @@
 import { atom } from 'jotai'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SimpleTrackDto } from './client/schemas'
+import { SimpleTrackDto, UserDto } from './client/schemas'
 import { Appearance, Platform } from 'react-native'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
@@ -336,3 +336,11 @@ export const playbackStateAtom = atom<PlaybackState>({
   isPlaying: false,
   isBuffering: false
 })
+
+// Auth state atoms
+export const currentUserAtom = atom<UserDto | null>(null)
+export const accessTokenAtom = atom<string | null>(null)
+export const deviceIdAtom = atom<string | null>(null)
+
+// Derived atom for auth status
+export const isAuthenticatedAtom = atom((get) => get(currentUserAtom) !== null)

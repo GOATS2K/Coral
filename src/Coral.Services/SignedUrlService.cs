@@ -14,16 +14,18 @@ public interface ISignedUrlService
 public class SignedUrlService : ISignedUrlService
 {
     private readonly byte[] _secretBytes;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _defaultExpiry = TimeSpan.FromHours(24);
 
-    public SignedUrlService(IOptions<ServerConfiguration> config)
+    public SignedUrlService(IOptions<ServerConfiguration> config, TimeProvider timeProvider)
     {
         _secretBytes = Encoding.UTF8.GetBytes(config.Value.Jwt.Secret);
+        _timeProvider = timeProvider;
     }
 
     public string GenerateSignedUrl(string path, TimeSpan? expiresIn = null)
     {
-        var expires = DateTimeOffset.UtcNow.Add(expiresIn ?? _defaultExpiry).ToUnixTimeSeconds();
+        var expires = _timeProvider.GetUtcNow().Add(expiresIn ?? _defaultExpiry).ToUnixTimeSeconds();
         var signature = ComputeSignature(path, expires);
 
         var separator = path.Contains('?') ? '&' : '?';
@@ -34,7 +36,7 @@ public class SignedUrlService : ISignedUrlService
     {
         // Check if expired
         var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expires);
-        if (expiresAt < DateTimeOffset.UtcNow)
+        if (expiresAt < _timeProvider.GetUtcNow())
             return false;
 
         // Validate signature

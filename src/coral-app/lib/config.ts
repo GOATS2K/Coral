@@ -152,14 +152,12 @@ export class Config {
   }
 
   /**
-   * Clear all auth data (for logout)
+   * Clear auth session data (for logout)
+   * Note: Device ID is preserved so the same device is reused on next login
    */
   static async clearAuth(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([
-        CONFIG_KEYS.ACCESS_TOKEN,
-        CONFIG_KEYS.DEVICE_ID,
-      ]);
+      await AsyncStorage.removeItem(CONFIG_KEYS.ACCESS_TOKEN);
     } catch (error) {
       console.error('Failed to clear auth:', error);
       throw error;

@@ -54,7 +54,7 @@ async function createMainWindow() {
     const initialColors = getTitleBarColors(systemIsDark ? 'dark' : 'light');
     windowOptions.titleBarOverlay = {
       ...initialColors,
-      height: 32 // Slightly shorter than TitleBar (33px) so border shows below controls
+      height: 39
     };
   } else {
     // Linux: hidden title bar (behavior varies by desktop environment)
@@ -113,7 +113,7 @@ app.whenReady().then(async () => {
       const colors = getTitleBarColors(theme);
       mainWindow.setTitleBarOverlay({
         ...colors,
-        height: 32 // Slightly shorter than TitleBar (33px) so border shows below controls
+        height: 39
       });
     }
   });

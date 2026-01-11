@@ -25,11 +25,38 @@ export class MSEAudioLoader {
   private bufferBehindLimit = 30; // Remove data older than 30 seconds
   private nextBufferStartTime = 0; // Track where the next track should start in buffer timeline
   private fragmentLoader: FragmentLoader;
+  private debugLogging = true; // Enable buffer state logging
+  private lastBufferLogTime = 0; // Throttle checkBufferAndLoad logs
 
   constructor() {
     this.audioElement = new Audio();
     this.fragmentLoader = new FragmentLoader();
     this.setupAudioEventListeners();
+  }
+
+  private logBufferState(context: string): void {
+    if (!this.debugLogging || !this.sourceBuffer) return;
+
+    const currentTime = this.audioElement.currentTime;
+    const buffered = this.sourceBuffer.buffered;
+    const ranges: string[] = [];
+
+    for (let i = 0; i < buffered.length; i++) {
+      ranges.push(`[${buffered.start(i).toFixed(2)}-${buffered.end(i).toFixed(2)}]`);
+    }
+
+    const trackInfo = this.currentTrackId ? this.tracks.get(this.currentTrackId) : null;
+
+    console.info(
+      `[MSE Buffer] ${context}\n` +
+      `  currentTime: ${currentTime.toFixed(2)}s\n` +
+      `  buffered: ${ranges.length > 0 ? ranges.join(', ') : '(empty)'}\n` +
+      `  mediaSource.readyState: ${this.mediaSource?.readyState || 'null'}\n` +
+      `  sourceBuffer.updating: ${this.sourceBuffer.updating}\n` +
+      `  appendQueue.length: ${this.appendQueue.length}\n` +
+      `  currentTrackId: ${this.currentTrackId || 'null'}\n` +
+      `  trackInfo: ${trackInfo ? `fragmentIndex=${trackInfo.currentFragmentIndex}, bufferTime=${trackInfo.bufferStartTime.toFixed(2)}-${trackInfo.bufferEndTime.toFixed(2)}, isLoading=${trackInfo.isLoadingFragments}` : 'null'}`
+    );
   }
 
   private setupAudioEventListeners() {
@@ -40,7 +67,25 @@ export class MSEAudioLoader {
 
     // Also check buffer after seeking completes
     this.audioElement.addEventListener('seeked', () => {
+      if (this.debugLogging) {
+        console.info(`[MSE] Audio element 'seeked' event at ${this.audioElement.currentTime.toFixed(2)}s`);
+      }
       this.checkBufferAndLoad();
+    });
+
+    // Log waiting/stalled events for debugging
+    this.audioElement.addEventListener('waiting', () => {
+      if (this.debugLogging) {
+        console.info(`[MSE] Audio element 'waiting' - buffer underrun at ${this.audioElement.currentTime.toFixed(2)}s`);
+        this.logBufferState('Waiting/stalled');
+      }
+    });
+
+    this.audioElement.addEventListener('stalled', () => {
+      if (this.debugLogging) {
+        console.info(`[MSE] Audio element 'stalled' at ${this.audioElement.currentTime.toFixed(2)}s`);
+        this.logBufferState('Stalled');
+      }
     });
   }
 
@@ -98,11 +143,15 @@ export class MSEAudioLoader {
     // Use 'segments' mode to preserve timestamps from fMP4 container
     this.sourceBuffer.mode = 'segments';
 
+    console.info(`[MSE] Initialized SourceBuffer with codec: ${mimeType}`);
+
     // Load init segment
     await this.loadInitSegment(trackId);
 
     // Load first 2 fragments (~20 seconds) - conservative due to 50MB buffer quota
     await this.loadFragments(trackId, 2);
+
+    this.logBufferState('After initialize');
   }
 
   async appendTrack(trackId: string): Promise<void> {
@@ -157,6 +206,10 @@ export class MSEAudioLoader {
 
     const startIndex = trackInfo.currentFragmentIndex;
 
+    if (this.debugLogging) {
+      console.info(`[MSE] loadFragments: trackId=${trackId}, startIndex=${startIndex}, count=${count}, totalFragments=${trackInfo.levelDetails.fragments.length}`);
+    }
+
     // For live/EVENT streams, ALWAYS refetch playlist before loading fragments
     // to ensure we have the latest fragment data
     if (trackInfo.levelDetails.live) {
@@ -184,6 +237,7 @@ export class MSEAudioLoader {
 
     try {
       await this.loadFragmentRange(trackInfo, fragments, startIndex, endIndex);
+      this.logBufferState(`After loading fragments ${startIndex}-${endIndex} for track ${trackId}`);
     } catch (error) {
       console.error('[MSE] Error loading fragments:', error);
       trackInfo.currentFragmentIndex = originalIndex;
@@ -257,6 +311,19 @@ export class MSEAudioLoader {
     // Only load if buffer is getting low
     const needsData = !inBufferedRange || bufferedAhead < this.bufferAheadTarget;
 
+    // Throttle logging to every 2 seconds to avoid console spam
+    const now = Date.now();
+    if (this.debugLogging && (now - this.lastBufferLogTime > 2000 || needsData)) {
+      this.lastBufferLogTime = now;
+      console.info(
+        `[MSE Buffer] checkBufferAndLoad\n` +
+        `  currentTime: ${currentTime.toFixed(2)}s\n` +
+        `  inBufferedRange: ${inBufferedRange}\n` +
+        `  bufferedAhead: ${bufferedAhead.toFixed(2)}s\n` +
+        `  needsData: ${needsData}`
+      );
+    }
+
     if (needsData) {
       const trackInfo = this.tracks.get(this.currentTrackId);
 
@@ -329,6 +396,9 @@ export class MSEAudioLoader {
       const end = buffered.end(i);
 
       if (end < currentTime - this.bufferBehindLimit) {
+        if (this.debugLogging) {
+          console.info(`[MSE Buffer] Removing old buffer: [${start.toFixed(2)}-${end.toFixed(2)}] (currentTime: ${currentTime.toFixed(2)})`);
+        }
         try {
           this.sourceBuffer.remove(start, end);
         } catch {
@@ -355,6 +425,9 @@ export class MSEAudioLoader {
 
       // Remove ranges that are completely outside our buffer window
       if (end < currentTime - this.bufferBehindLimit || start > currentTime + maxBufferRange) {
+        if (this.debugLogging) {
+          console.info(`[MSE Buffer] Cleaning distant buffer: [${start.toFixed(2)}-${end.toFixed(2)}] (currentTime: ${currentTime.toFixed(2)}, maxRange: ${maxBufferRange})`);
+        }
         try {
           this.sourceBuffer.remove(start, end);
           // Wait for remove operation to complete before continuing
@@ -394,10 +467,17 @@ export class MSEAudioLoader {
       }
 
       try {
+        if (this.debugLogging) {
+          console.info(`[MSE Buffer] Appending ${(data.byteLength / 1024).toFixed(1)}KB to SourceBuffer`);
+        }
         this.sourceBuffer.appendBuffer(data);
         await this.waitForUpdateEnd();
+        if (this.debugLogging) {
+          this.logBufferState('After append');
+        }
       } catch (error) {
         console.error('[MSE] ❌ Error appending buffer:', error);
+        this.logBufferState('Append failed');
       }
     }
 
@@ -448,10 +528,22 @@ export class MSEAudioLoader {
     // Calculate relative time within the current track
     const relativeTime = absoluteTime - trackInfo.bufferStartTime;
 
-    trackInfo.currentFragmentIndex = this.findFragmentIndexForTime(
+    const newFragmentIndex = this.findFragmentIndexForTime(
       trackInfo.levelDetails.fragments,
       relativeTime
     );
+
+    if (this.debugLogging) {
+      console.info(
+        `[MSE Buffer] resetToPosition\n` +
+        `  absoluteTime: ${absoluteTime.toFixed(2)}s\n` +
+        `  relativeTime: ${relativeTime.toFixed(2)}s\n` +
+        `  oldFragmentIndex: ${trackInfo.currentFragmentIndex}\n` +
+        `  newFragmentIndex: ${newFragmentIndex}`
+      );
+    }
+
+    trackInfo.currentFragmentIndex = newFragmentIndex;
   }
 
   /**

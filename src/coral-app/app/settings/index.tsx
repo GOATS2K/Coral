@@ -56,7 +56,7 @@ function WebSettingsPage() {
         className="flex-1 bg-background"
         contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
       >
-        <View className="p-4 pt-6 max-w-2xl">
+        <View className="p-4 pt-6">
           <Text variant="h2" className="mb-6">Settings</Text>
 
           {/* Horizontal nav buttons */}

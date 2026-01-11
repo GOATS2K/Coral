@@ -94,7 +94,7 @@ function TitleBarContent({ isElectron }: TitleBarContentProps) {
     <View
       className="bg-background border-b border-border flex-row items-center justify-between px-2"
       style={{
-        height: 33,
+        height: 40,
         // @ts-expect-error - webkit-app-region is not in React Native types but works in Electron
         WebkitAppRegion: isElectron ? 'drag' : undefined,
       }}

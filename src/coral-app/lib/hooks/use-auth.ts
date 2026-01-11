@@ -47,17 +47,23 @@ function detectOsFromUserAgent(): OperatingSystem {
 /**
  * Get the system/computer name (Electron only)
  */
-function getElectronSystemName(): string | null {
+async function getElectronSystemName(): Promise<string | null> {
   if (typeof window === 'undefined' || !('electronAPI' in window)) return null;
 
   const electronAPI = (window as any).electronAPI;
-  return electronAPI?.getSystemName?.() ?? null;
+  if (!electronAPI?.getSystemName) return null;
+
+  try {
+    return await electronAPI.getSystemName();
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Get device information for auth requests
  */
-function getDeviceInfo(): DeviceInfo {
+async function getDeviceInfo(): Promise<DeviceInfo> {
   // Native iOS
   if (Platform.OS === 'ios') {
     const name = Device.deviceName || 'iOS Device';
@@ -73,7 +79,7 @@ function getDeviceInfo(): DeviceInfo {
   // Electron desktop app
   if (Config.isElectron()) {
     const os = detectOsFromUserAgent();
-    const name = getElectronSystemName() || 'Coral Desktop';
+    const name = (await getElectronSystemName()) || 'Coral Desktop';
     return { name, type: 'Electron', os };
   }
 
@@ -152,7 +158,7 @@ export function useAuth(): UseAuthResult {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const deviceInfo = getDeviceInfo();
+      const deviceInfo = await getDeviceInfo();
       const existingDeviceId = await Config.getDeviceId();
 
       const response = await loginMutation.mutateAsync({
@@ -174,7 +180,7 @@ export function useAuth(): UseAuthResult {
 
   const register = async (username: string, password: string): Promise<boolean> => {
     try {
-      const deviceInfo = getDeviceInfo();
+      const deviceInfo = await getDeviceInfo();
 
       const response = await registerMutation.mutateAsync({
         body: {

@@ -1,6 +1,7 @@
 /* eslint-env node */
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import serve from 'electron-serve';
 import { setupMpvIpcHandlers, cleanupMpvIpcHandlers } from './mpv-ipc-main.mjs';
@@ -100,6 +101,9 @@ app.whenReady().then(async () => {
   // Initialize MPV IPC handlers BEFORE creating window to avoid race condition
   // (renderer may try to invoke handlers immediately on load)
   setupMpvIpcHandlers();
+
+  // System info handlers
+  ipcMain.handle('system:getHostname', () => os.hostname());
 
   await createMainWindow();
 

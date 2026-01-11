@@ -37,4 +37,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setTheme: (theme) => {
     ipcRenderer.send('theme:changed', theme);
   },
+  // Get system/computer name for device identification (async, calls main process)
+  getSystemName: () => ipcRenderer.invoke('system:getHostname'),
 });

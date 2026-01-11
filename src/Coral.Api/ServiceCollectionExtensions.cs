@@ -55,6 +55,7 @@ namespace Coral.Api
 
             // Auth services
             services.AddSingleton(TimeProvider.System);
+            services.AddSingleton<ISessionCacheService, SessionCacheService>();
             services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthService, AuthService>();

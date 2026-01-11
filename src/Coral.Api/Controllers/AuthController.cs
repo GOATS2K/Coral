@@ -36,19 +36,19 @@ public class AuthController : ControllerBase
 
         // Check if user has a valid session (not just a valid cookie)
         var isAuthenticated = false;
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var deviceIdClaim = User.FindFirst(AuthConstants.ClaimTypes.DeviceId)?.Value;
-            var tokenIdClaim = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value
-                ?? User.FindFirst(AuthConstants.ClaimTypes.TokenId)?.Value;
+        if (User.Identity?.IsAuthenticated != true) 
+            return Ok(new AuthStatusResponse(requiresSetup, isAuthenticated));
+        
+        var deviceIdClaim = User.FindFirst(AuthConstants.ClaimTypes.DeviceId)?.Value;
+        var tokenIdClaim = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value
+                           ?? User.FindFirst(AuthConstants.ClaimTypes.TokenId)?.Value;
 
-            if (Guid.TryParse(deviceIdClaim, out var deviceId) &&
-                Guid.TryParse(tokenIdClaim, out var tokenId))
-            {
-                var result = await _authService.ValidateAndExtendSessionAsync(deviceId, tokenId);
-                isAuthenticated = result.IsValid;
-            }
-        }
+        if (!Guid.TryParse(deviceIdClaim, out var deviceId) ||
+            !Guid.TryParse(tokenIdClaim, out var tokenId))
+            return Ok(new AuthStatusResponse(requiresSetup, isAuthenticated));
+        
+        var result = await _authService.ValidateAndExtendSessionAsync(deviceId, tokenId);
+        isAuthenticated = result.IsValid;
 
         return Ok(new AuthStatusResponse(requiresSetup, isAuthenticated));
     }

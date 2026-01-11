@@ -16,11 +16,13 @@ public class DeviceService : IDeviceService
 {
     private readonly CoralDbContext _context;
     private readonly IMapper _mapper;
+    private readonly ISessionCacheService _sessionCache;
 
-    public DeviceService(CoralDbContext context, IMapper mapper)
+    public DeviceService(CoralDbContext context, IMapper mapper, ISessionCacheService sessionCache)
     {
         _context = context;
         _mapper = mapper;
+        _sessionCache = sessionCache;
     }
 
     public async Task<List<DeviceDto>> GetUserDevicesAsync(Guid userId, Guid? currentDeviceId = null)
@@ -45,6 +47,7 @@ public class DeviceService : IDeviceService
         if (device == null)
             return false;
 
+        _sessionCache.InvalidateSession(deviceId);
         _context.Devices.Remove(device);
         await _context.SaveChangesAsync();
         return true;

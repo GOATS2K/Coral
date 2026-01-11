@@ -4,6 +4,8 @@ using Coral.Database.Models;
 using Coral.Dto.Auth;
 using Coral.TestProviders;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 using OS = Coral.Database.Models.OperatingSystem;
@@ -13,6 +15,9 @@ namespace Coral.Services.Tests;
 public class AuthServiceTests(DatabaseFixture fixture) : TransactionTestBase(fixture)
 {
     private readonly IPasswordHasher<User> _passwordHasher = new PasswordHasher<User>();
+    private readonly ISessionCacheService _sessionCache = new SessionCacheService(
+        new MemoryCache(new MemoryCacheOptions()),
+        NullLogger<SessionCacheService>.Instance);
 
     private static readonly JwtSettings TestJwtSettings = new()
     {
@@ -27,8 +32,8 @@ public class AuthServiceTests(DatabaseFixture fixture) : TransactionTestBase(fix
     private IAuthService AuthService => new AuthService(
         TestDatabase.Context,
         UserService,
-        TestDatabase.Mapper,
-        Options.Create(new ServerConfiguration { Jwt = TestJwtSettings }));
+        Options.Create(new ServerConfiguration { Jwt = TestJwtSettings }),
+        _sessionCache);
 
     private static DeviceInfo CreateDeviceInfo(string name = "Test Device") =>
         new(name, DeviceType.Web, OS.Windows);

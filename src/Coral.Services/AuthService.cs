@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using AutoMapper;
 using Coral.Configuration;
 using Coral.Configuration.Models;
 using Coral.Database;
@@ -26,19 +25,19 @@ public class AuthService : IAuthService
 {
     private readonly CoralDbContext _context;
     private readonly IUserService _userService;
-    private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
+    private readonly ISessionCacheService _sessionCache;
 
     public AuthService(
         CoralDbContext context,
         IUserService userService,
-        IMapper mapper,
-        IOptions<ServerConfiguration> config)
+        IOptions<ServerConfiguration> config,
+        ISessionCacheService sessionCache)
     {
         _context = context;
         _userService = userService;
-        _mapper = mapper;
         _jwtSettings = config.Value.Jwt;
+        _sessionCache = sessionCache;
     }
 
     public async Task<AuthResult?> LoginAsync(LoginRequest request)
@@ -73,28 +72,62 @@ public class AuthService : IAuthService
 
     public async Task<SessionValidationResult> ValidateAndExtendSessionAsync(Guid deviceId, Guid tokenId)
     {
-        var device = await _context.Devices.FindAsync(deviceId);
-        if (device == null || device.TokenId != tokenId || device.SessionExpiresAt == null || device.SessionExpiresAt < DateTime.UtcNow)
-            return new SessionValidationResult(false, false);
+        // Check cache first
+        var cachedSession = _sessionCache.GetSession(deviceId);
+        if (cachedSession != null)
+            return await ValidateFromCache(cachedSession, deviceId, tokenId);
 
-        // Update last seen
-        device.LastSeenAt = DateTime.UtcNow;
+        return await ValidateFromDatabase(deviceId, tokenId);
+    }
 
-        // Sliding expiration: if less than 7 days remaining, extend
-        var daysRemaining = (device.SessionExpiresAt.Value - DateTime.UtcNow).TotalDays;
-        var extended = false;
-        if (daysRemaining < 7)
+    private async Task<SessionValidationResult> ValidateFromCache(CachedSession cachedSession, Guid deviceId, Guid tokenId)
+    {
+        // Cached session is invalid - tokenId mismatch or expired
+        if (cachedSession.TokenId != tokenId || cachedSession.SessionExpiresAt < DateTime.UtcNow)
         {
-            device.SessionExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.SessionExpirationDays);
-            extended = true;
+            _sessionCache.InvalidateSession(deviceId);
+            return new SessionValidationResult(false, false);
         }
 
+        var daysRemaining = (cachedSession.SessionExpiresAt - DateTime.UtcNow).TotalDays;
+        var needsExtension = daysRemaining < 7;
+        var needsLastSeenUpdate = _sessionCache.ShouldUpdateLastSeen(cachedSession);
+
+        // No DB update needed - return immediately
+        if (!needsLastSeenUpdate && !needsExtension)
+            return new SessionValidationResult(true, false);
+
+        // Needs DB update - fall through to database validation
+        return await ValidateFromDatabase(deviceId, tokenId);
+    }
+
+    private async Task<SessionValidationResult> ValidateFromDatabase(Guid deviceId, Guid tokenId)
+    {
+        var device = await _context.Devices.FindAsync(deviceId);
+        if (device == null || device.TokenId != tokenId || device.SessionExpiresAt == null || device.SessionExpiresAt < DateTime.UtcNow)
+        {
+            _sessionCache.InvalidateSession(deviceId);
+            return new SessionValidationResult(false, false);
+        }
+
+        device.LastSeenAt = DateTime.UtcNow;
+
+        var daysRemaining = (device.SessionExpiresAt.Value - DateTime.UtcNow).TotalDays;
+        var extended = daysRemaining < 7;
+        if (extended)
+            device.SessionExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.SessionExpirationDays);
+
         await _context.SaveChangesAsync();
+
+        _sessionCache.SetSession(deviceId, device.TokenId.Value, device.SessionExpiresAt.Value, device.LastSeenAt);
+
         return new SessionValidationResult(true, extended);
     }
 
     public async Task LogoutAsync(Guid deviceId)
     {
+        _sessionCache.InvalidateSession(deviceId);
+
         var device = await _context.Devices.FindAsync(deviceId);
         if (device == null)
             return;
@@ -111,14 +144,13 @@ public class AuthService : IAuthService
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
+            Subject = new ClaimsIdentity([
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Name, user.Username),
                 new Claim(JwtRegisteredClaimNames.Jti, device.TokenId!.Value.ToString()),
                 new Claim(AuthConstants.ClaimTypes.Role, user.Role.ToString()),
                 new Claim(AuthConstants.ClaimTypes.DeviceId, device.Id.ToString())
-            }),
+            ]),
             // No expiry - session validity is controlled by the database
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),

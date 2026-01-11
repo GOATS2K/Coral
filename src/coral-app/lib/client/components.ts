@@ -14,6 +14,809 @@ type QueryFnOptions = {
   signal?: AbortController["signal"];
 };
 
+export type AlbumsQueryParams = {
+  /**
+   * @format int32
+   * @default 10
+   */
+  limit?: number;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+};
+
+export type AlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type AlbumsVariables = {
+  queryParams?: AlbumsQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchAlbums = (variables: AlbumsVariables, signal?: AbortSignal) =>
+  fetch<
+    Schemas.SimpleAlbumDtoPaginatedQuery,
+    AlbumsError,
+    undefined,
+    {},
+    AlbumsQueryParams,
+    {}
+  >({ url: "/api/albums", method: "get", ...variables, signal });
+
+export function albumsQuery(variables: AlbumsVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<Schemas.SimpleAlbumDtoPaginatedQuery>;
+};
+
+export function albumsQuery(
+  variables: AlbumsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((
+        options: QueryFnOptions,
+      ) => Promise<Schemas.SimpleAlbumDtoPaginatedQuery>)
+    | reactQuery.SkipToken;
+};
+
+export function albumsQuery(variables: AlbumsVariables | reactQuery.SkipToken) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums",
+      operationId: "albums",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchAlbums(variables, signal),
+  };
+}
+
+export const useSuspenseAlbums = <
+  TData = Schemas.SimpleAlbumDtoPaginatedQuery,
+>(
+  variables: AlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleAlbumDtoPaginatedQuery,
+      AlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.SimpleAlbumDtoPaginatedQuery,
+    AlbumsError,
+    TData
+  >({
+    ...albumsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useAlbums = <TData = Schemas.SimpleAlbumDtoPaginatedQuery,>(
+  variables: AlbumsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleAlbumDtoPaginatedQuery,
+      AlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.SimpleAlbumDtoPaginatedQuery,
+    AlbumsError,
+    TData
+  >({
+    ...albumsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type AllAlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type AllAlbumsResponse = Schemas.SimpleAlbumDto[];
+
+export type AllAlbumsVariables = Context["fetcherOptions"];
+
+export const fetchAllAlbums = (
+  variables: AllAlbumsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<AllAlbumsResponse, AllAlbumsError, undefined, {}, {}, {}>({
+    url: "/api/albums/all",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function allAlbumsQuery(variables: AllAlbumsVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<AllAlbumsResponse>;
+};
+
+export function allAlbumsQuery(
+  variables: AllAlbumsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<AllAlbumsResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function allAlbumsQuery(
+  variables: AllAlbumsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums/all",
+      operationId: "allAlbums",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchAllAlbums(variables, signal),
+  };
+}
+
+export const useSuspenseAllAlbums = <TData = AllAlbumsResponse,>(
+  variables: AllAlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AllAlbumsResponse, AllAlbumsError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<AllAlbumsResponse, AllAlbumsError, TData>({
+    ...allAlbumsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useAllAlbums = <TData = AllAlbumsResponse,>(
+  variables: AllAlbumsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AllAlbumsResponse, AllAlbumsError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<AllAlbumsResponse, AllAlbumsError, TData>({
+    ...allAlbumsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type RecentlyAddedAlbumsError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecentlyAddedAlbumsResponse = Schemas.SimpleAlbumDto[];
+
+export type RecentlyAddedAlbumsVariables = Context["fetcherOptions"];
+
+export const fetchRecentlyAddedAlbums = (
+  variables: RecentlyAddedAlbumsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    undefined,
+    {},
+    {},
+    {}
+  >({ url: "/api/albums/recently-added", method: "get", ...variables, signal });
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>;
+};
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recentlyAddedAlbumsQuery(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums/recently-added",
+      operationId: "recentlyAddedAlbums",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecentlyAddedAlbums(variables, signal),
+  };
+}
+
+export const useSuspenseRecentlyAddedAlbums = <
+  TData = RecentlyAddedAlbumsResponse,
+>(
+  variables: RecentlyAddedAlbumsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecentlyAddedAlbumsResponse,
+      RecentlyAddedAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    TData
+  >({
+    ...recentlyAddedAlbumsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecentlyAddedAlbums = <TData = RecentlyAddedAlbumsResponse,>(
+  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecentlyAddedAlbumsResponse,
+      RecentlyAddedAlbumsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecentlyAddedAlbumsResponse,
+    RecentlyAddedAlbumsError,
+    TData
+  >({
+    ...recentlyAddedAlbumsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type AlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type AlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type AlbumVariables = {
+  pathParams: AlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchAlbum = (variables: AlbumVariables, signal?: AbortSignal) =>
+  fetch<Schemas.AlbumDto, AlbumError, undefined, {}, {}, AlbumPathParams>({
+    url: "/api/albums/{albumId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function albumQuery(variables: AlbumVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.AlbumDto>;
+};
+
+export function albumQuery(variables: AlbumVariables | reactQuery.SkipToken): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.AlbumDto>)
+    | reactQuery.SkipToken;
+};
+
+export function albumQuery(variables: AlbumVariables | reactQuery.SkipToken) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums/{albumId}",
+      operationId: "album",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchAlbum(variables, signal),
+  };
+}
+
+export const useSuspenseAlbum = <TData = Schemas.AlbumDto,>(
+  variables: AlbumVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.AlbumDto, AlbumError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<Schemas.AlbumDto, AlbumError, TData>({
+    ...albumQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useAlbum = <TData = Schemas.AlbumDto,>(
+  variables: AlbumVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.AlbumDto, AlbumError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.AlbumDto, AlbumError, TData>({
+    ...albumQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type AlbumTracksPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type AlbumTracksError = Fetcher.ErrorWrapper<undefined>;
+
+export type AlbumTracksResponse = Schemas.SimpleTrackDto[];
+
+export type AlbumTracksVariables = {
+  pathParams: AlbumTracksPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchAlbumTracks = (
+  variables: AlbumTracksVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    AlbumTracksResponse,
+    AlbumTracksError,
+    undefined,
+    {},
+    {},
+    AlbumTracksPathParams
+  >({
+    url: "/api/albums/{albumId}/tracks",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function albumTracksQuery(variables: AlbumTracksVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<AlbumTracksResponse>;
+};
+
+export function albumTracksQuery(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<AlbumTracksResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function albumTracksQuery(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums/{albumId}/tracks",
+      operationId: "albumTracks",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchAlbumTracks(variables, signal),
+  };
+}
+
+export const useSuspenseAlbumTracks = <TData = AlbumTracksResponse,>(
+  variables: AlbumTracksVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    AlbumTracksResponse,
+    AlbumTracksError,
+    TData
+  >({
+    ...albumTracksQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useAlbumTracks = <TData = AlbumTracksResponse,>(
+  variables: AlbumTracksVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<AlbumTracksResponse, AlbumTracksError, TData>({
+    ...albumTracksQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type RecommendationsForAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type RecommendationsForAlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecommendationsForAlbumResponse = Schemas.AlbumRecommendationDto[];
+
+export type RecommendationsForAlbumVariables = {
+  pathParams: RecommendationsForAlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRecommendationsForAlbum = (
+  variables: RecommendationsForAlbumVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    undefined,
+    {},
+    {},
+    RecommendationsForAlbumPathParams
+  >({
+    url: "/api/albums/{albumId}/recommendations",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<RecommendationsForAlbumResponse>;
+};
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecommendationsForAlbumResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recommendationsForAlbumQuery(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/albums/{albumId}/recommendations",
+      operationId: "recommendationsForAlbum",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecommendationsForAlbum(variables, signal),
+  };
+}
+
+export const useSuspenseRecommendationsForAlbum = <
+  TData = RecommendationsForAlbumResponse,
+>(
+  variables: RecommendationsForAlbumVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForAlbumResponse,
+      RecommendationsForAlbumError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    TData
+  >({
+    ...recommendationsForAlbumQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecommendationsForAlbum = <
+  TData = RecommendationsForAlbumResponse,
+>(
+  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForAlbumResponse,
+      RecommendationsForAlbumError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecommendationsForAlbumResponse,
+    RecommendationsForAlbumError,
+    TData
+  >({
+    ...recommendationsForAlbumQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type ArtistsQueryParams = {
+  /**
+   * @format int32
+   * @default 10
+   */
+  limit?: number;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+};
+
+export type ArtistsError = Fetcher.ErrorWrapper<undefined>;
+
+export type ArtistsVariables = {
+  queryParams?: ArtistsQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchArtists = (
+  variables: ArtistsVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.SimpleArtistDtoPaginatedQuery,
+    ArtistsError,
+    undefined,
+    {},
+    ArtistsQueryParams,
+    {}
+  >({ url: "/api/artists", method: "get", ...variables, signal });
+
+export function artistsQuery(variables: ArtistsVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<Schemas.SimpleArtistDtoPaginatedQuery>;
+};
+
+export function artistsQuery(
+  variables: ArtistsVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((
+        options: QueryFnOptions,
+      ) => Promise<Schemas.SimpleArtistDtoPaginatedQuery>)
+    | reactQuery.SkipToken;
+};
+
+export function artistsQuery(
+  variables: ArtistsVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/artists",
+      operationId: "artists",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchArtists(variables, signal),
+  };
+}
+
+export const useSuspenseArtists = <
+  TData = Schemas.SimpleArtistDtoPaginatedQuery,
+>(
+  variables: ArtistsVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleArtistDtoPaginatedQuery,
+      ArtistsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.SimpleArtistDtoPaginatedQuery,
+    ArtistsError,
+    TData
+  >({
+    ...artistsQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useArtists = <TData = Schemas.SimpleArtistDtoPaginatedQuery,>(
+  variables: ArtistsVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SimpleArtistDtoPaginatedQuery,
+      ArtistsError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.SimpleArtistDtoPaginatedQuery,
+    ArtistsError,
+    TData
+  >({
+    ...artistsQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type ArtistPathParams = {
+  /**
+   * @format uuid
+   */
+  artistId: string;
+};
+
+export type ArtistError = Fetcher.ErrorWrapper<undefined>;
+
+export type ArtistVariables = {
+  pathParams: ArtistPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchArtist = (variables: ArtistVariables, signal?: AbortSignal) =>
+  fetch<Schemas.ArtistDto, ArtistError, undefined, {}, {}, ArtistPathParams>({
+    url: "/api/artists/{artistId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function artistQuery(variables: ArtistVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.ArtistDto>;
+};
+
+export function artistQuery(
+  variables: ArtistVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.ArtistDto>)
+    | reactQuery.SkipToken;
+};
+
+export function artistQuery(variables: ArtistVariables | reactQuery.SkipToken) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/artists/{artistId}",
+      operationId: "artist",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchArtist(variables, signal),
+  };
+}
+
+export const useSuspenseArtist = <TData = Schemas.ArtistDto,>(
+  variables: ArtistVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<Schemas.ArtistDto, ArtistError, TData>({
+    ...artistQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useArtist = <TData = Schemas.ArtistDto,>(
+  variables: ArtistVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.ArtistDto, ArtistError, TData>({
+    ...artistQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type GetArtworkQueryParams = {
   /**
    * @format uuid
@@ -793,1002 +1596,6 @@ export const useDeleteDevice = (
   });
 };
 
-export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
-
-export type RunIndexerVariables = Context["fetcherOptions"];
-
-export const fetchRunIndexer = (
-  variables: RunIndexerVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<Schemas.ScanInitiatedDto, RunIndexerError, undefined, {}, {}, {}>({
-    url: "/api/Library/scan",
-    method: "post",
-    ...variables,
-    signal,
-  });
-
-export const useRunIndexer = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      Schemas.ScanInitiatedDto,
-      RunIndexerError,
-      RunIndexerVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    Schemas.ScanInitiatedDto,
-    RunIndexerError,
-    RunIndexerVariables
-  >({
-    mutationFn: (variables: RunIndexerVariables) =>
-      fetchRunIndexer(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
-export type GetScanProgressPathParams = {
-  /**
-   * @format uuid
-   */
-  requestId: string;
-};
-
-export type GetScanProgressError = Fetcher.ErrorWrapper<undefined>;
-
-export type GetScanProgressVariables = {
-  pathParams: GetScanProgressPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchGetScanProgress = (
-  variables: GetScanProgressVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    Schemas.ScanJobProgress,
-    GetScanProgressError,
-    undefined,
-    {},
-    {},
-    GetScanProgressPathParams
-  >({
-    url: "/api/Library/scan/progress/{requestId}",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function getScanProgressQuery(variables: GetScanProgressVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>;
-};
-
-export function getScanProgressQuery(
-  variables: GetScanProgressVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>)
-    | reactQuery.SkipToken;
-};
-
-export function getScanProgressQuery(
-  variables: GetScanProgressVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/scan/progress/{requestId}",
-      operationId: "getScanProgress",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchGetScanProgress(variables, signal),
-  };
-}
-
-export const useSuspenseGetScanProgress = <TData = Schemas.ScanJobProgress,>(
-  variables: GetScanProgressVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.ScanJobProgress,
-      GetScanProgressError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.ScanJobProgress,
-    GetScanProgressError,
-    TData
-  >({
-    ...getScanProgressQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useGetScanProgress = <TData = Schemas.ScanJobProgress,>(
-  variables: GetScanProgressVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.ScanJobProgress,
-      GetScanProgressError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    Schemas.ScanJobProgress,
-    GetScanProgressError,
-    TData
-  >({
-    ...getScanProgressQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type GetActiveScansError = Fetcher.ErrorWrapper<undefined>;
-
-export type GetActiveScansResponse = Schemas.ScanJobProgress[];
-
-export type GetActiveScansVariables = Context["fetcherOptions"];
-
-export const fetchGetActiveScans = (
-  variables: GetActiveScansVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<GetActiveScansResponse, GetActiveScansError, undefined, {}, {}, {}>({
-    url: "/api/Library/scan/active",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function getActiveScansQuery(variables: GetActiveScansVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<GetActiveScansResponse>;
-};
-
-export function getActiveScansQuery(
-  variables: GetActiveScansVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<GetActiveScansResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function getActiveScansQuery(
-  variables: GetActiveScansVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/scan/active",
-      operationId: "getActiveScans",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchGetActiveScans(variables, signal),
-  };
-}
-
-export const useSuspenseGetActiveScans = <TData = GetActiveScansResponse,>(
-  variables: GetActiveScansVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      GetActiveScansResponse,
-      GetActiveScansError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    GetActiveScansResponse,
-    GetActiveScansError,
-    TData
-  >({
-    ...getActiveScansQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useGetActiveScans = <TData = GetActiveScansResponse,>(
-  variables: GetActiveScansVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      GetActiveScansResponse,
-      GetActiveScansError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    GetActiveScansResponse,
-    GetActiveScansError,
-    TData
-  >({
-    ...getActiveScansQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type SearchQueryParams = {
-  query?: string;
-  /**
-   * @format int32
-   * @default 0
-   */
-  offset?: number;
-  /**
-   * @format int32
-   * @default 100
-   */
-  limit?: number;
-};
-
-export type SearchError = Fetcher.ErrorWrapper<undefined>;
-
-export type SearchVariables = {
-  queryParams?: SearchQueryParams;
-} & Context["fetcherOptions"];
-
-export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
-  fetch<
-    Schemas.SearchResultPaginatedCustomData,
-    SearchError,
-    undefined,
-    {},
-    SearchQueryParams,
-    {}
-  >({ url: "/api/Library/search", method: "get", ...variables, signal });
-
-export function searchQuery(variables: SearchVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (
-    options: QueryFnOptions,
-  ) => Promise<Schemas.SearchResultPaginatedCustomData>;
-};
-
-export function searchQuery(
-  variables: SearchVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((
-        options: QueryFnOptions,
-      ) => Promise<Schemas.SearchResultPaginatedCustomData>)
-    | reactQuery.SkipToken;
-};
-
-export function searchQuery(variables: SearchVariables | reactQuery.SkipToken) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/search",
-      operationId: "search",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchSearch(variables, signal),
-  };
-}
-
-export const useSuspenseSearch = <
-  TData = Schemas.SearchResultPaginatedCustomData,
->(
-  variables: SearchVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SearchResultPaginatedCustomData,
-      SearchError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.SearchResultPaginatedCustomData,
-    SearchError,
-    TData
-  >({
-    ...searchQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData,>(
-  variables: SearchVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SearchResultPaginatedCustomData,
-      SearchError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    Schemas.SearchResultPaginatedCustomData,
-    SearchError,
-    TData
-  >({
-    ...searchQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type LogPlaybackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type LogPlaybackError = Fetcher.ErrorWrapper<undefined>;
-
-export type LogPlaybackVariables = {
-  pathParams: LogPlaybackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchLogPlayback = (
-  variables: LogPlaybackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<undefined, LogPlaybackError, undefined, {}, {}, LogPlaybackPathParams>({
-    url: "/api/Library/tracks/{trackId}/logPlayback",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function logPlaybackQuery(variables: LogPlaybackVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<undefined>;
-};
-
-export function logPlaybackQuery(
-  variables: LogPlaybackVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<undefined>)
-    | reactQuery.SkipToken;
-};
-
-export function logPlaybackQuery(
-  variables: LogPlaybackVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/logPlayback",
-      operationId: "logPlayback",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchLogPlayback(variables, signal),
-  };
-}
-
-export const useSuspenseLogPlayback = <TData = undefined,>(
-  variables: LogPlaybackVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, LogPlaybackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<undefined, LogPlaybackError, TData>({
-    ...logPlaybackQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useLogPlayback = <TData = undefined,>(
-  variables: LogPlaybackVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, LogPlaybackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<undefined, LogPlaybackError, TData>({
-    ...logPlaybackQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type FileFromLibraryPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type FileFromLibraryError = Fetcher.ErrorWrapper<undefined>;
-
-export type FileFromLibraryVariables = {
-  pathParams: FileFromLibraryPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchFileFromLibrary = (
-  variables: FileFromLibraryVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    FileFromLibraryError,
-    undefined,
-    {},
-    {},
-    FileFromLibraryPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/original",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function fileFromLibraryQuery(variables: FileFromLibraryVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<undefined>;
-};
-
-export function fileFromLibraryQuery(
-  variables: FileFromLibraryVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<undefined>)
-    | reactQuery.SkipToken;
-};
-
-export function fileFromLibraryQuery(
-  variables: FileFromLibraryVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/original",
-      operationId: "fileFromLibrary",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchFileFromLibrary(variables, signal),
-  };
-}
-
-export const useSuspenseFileFromLibrary = <TData = undefined,>(
-  variables: FileFromLibraryVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, FileFromLibraryError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<undefined, FileFromLibraryError, TData>({
-    ...fileFromLibraryQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useFileFromLibrary = <TData = undefined,>(
-  variables: FileFromLibraryVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<undefined, FileFromLibraryError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<undefined, FileFromLibraryError, TData>({
-    ...fileFromLibraryQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type TranscodeTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type TranscodeTrackQueryParams = {
-  /**
-   * @format int32
-   */
-  bitrate?: number;
-};
-
-export type TranscodeTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type TranscodeTrackVariables = {
-  pathParams: TranscodeTrackPathParams;
-  queryParams?: TranscodeTrackQueryParams;
-} & Context["fetcherOptions"];
-
-export const fetchTranscodeTrack = (
-  variables: TranscodeTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    Schemas.StreamDto,
-    TranscodeTrackError,
-    undefined,
-    {},
-    TranscodeTrackQueryParams,
-    TranscodeTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/transcode",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function transcodeTrackQuery(variables: TranscodeTrackVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<Schemas.StreamDto>;
-};
-
-export function transcodeTrackQuery(
-  variables: TranscodeTrackVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<Schemas.StreamDto>)
-    | reactQuery.SkipToken;
-};
-
-export function transcodeTrackQuery(
-  variables: TranscodeTrackVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/transcode",
-      operationId: "transcodeTrack",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchTranscodeTrack(variables, signal),
-  };
-}
-
-export const useSuspenseTranscodeTrack = <TData = Schemas.StreamDto,>(
-  variables: TranscodeTrackVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.StreamDto, TranscodeTrackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.StreamDto,
-    TranscodeTrackError,
-    TData
-  >({
-    ...transcodeTrackQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useTranscodeTrack = <TData = Schemas.StreamDto,>(
-  variables: TranscodeTrackVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.StreamDto, TranscodeTrackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<Schemas.StreamDto, TranscodeTrackError, TData>({
-    ...transcodeTrackQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type StreamTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type StreamTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type StreamTrackVariables = {
-  pathParams: StreamTrackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchStreamTrack = (
-  variables: StreamTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    Schemas.StreamDto,
-    StreamTrackError,
-    undefined,
-    {},
-    {},
-    StreamTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/stream",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function streamTrackQuery(variables: StreamTrackVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<Schemas.StreamDto>;
-};
-
-export function streamTrackQuery(
-  variables: StreamTrackVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<Schemas.StreamDto>)
-    | reactQuery.SkipToken;
-};
-
-export function streamTrackQuery(
-  variables: StreamTrackVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/stream",
-      operationId: "streamTrack",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchStreamTrack(variables, signal),
-  };
-}
-
-export const useSuspenseStreamTrack = <TData = Schemas.StreamDto,>(
-  variables: StreamTrackVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.StreamDto, StreamTrackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.StreamDto,
-    StreamTrackError,
-    TData
-  >({
-    ...streamTrackQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useStreamTrack = <TData = Schemas.StreamDto,>(
-  variables: StreamTrackVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.StreamDto, StreamTrackError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<Schemas.StreamDto, StreamTrackError, TData>({
-    ...streamTrackQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type RecommendationsForTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type RecommendationsForTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type RecommendationsForTrackResponse = Schemas.SimpleTrackDto[];
-
-export type RecommendationsForTrackVariables = {
-  pathParams: RecommendationsForTrackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchRecommendationsForTrack = (
-  variables: RecommendationsForTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    RecommendationsForTrackResponse,
-    RecommendationsForTrackError,
-    undefined,
-    {},
-    {},
-    RecommendationsForTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/recommendations",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function recommendationsForTrackQuery(
-  variables: RecommendationsForTrackVariables,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (
-    options: QueryFnOptions,
-  ) => Promise<RecommendationsForTrackResponse>;
-};
-
-export function recommendationsForTrackQuery(
-  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<RecommendationsForTrackResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function recommendationsForTrackQuery(
-  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks/{trackId}/recommendations",
-      operationId: "recommendationsForTrack",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchRecommendationsForTrack(variables, signal),
-  };
-}
-
-export const useSuspenseRecommendationsForTrack = <
-  TData = RecommendationsForTrackResponse,
->(
-  variables: RecommendationsForTrackVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecommendationsForTrackResponse,
-      RecommendationsForTrackError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    RecommendationsForTrackResponse,
-    RecommendationsForTrackError,
-    TData
-  >({
-    ...recommendationsForTrackQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useRecommendationsForTrack = <
-  TData = RecommendationsForTrackResponse,
->(
-  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecommendationsForTrackResponse,
-      RecommendationsForTrackError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    RecommendationsForTrackResponse,
-    RecommendationsForTrackError,
-    TData
-  >({
-    ...recommendationsForTrackQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type RecommendationsForAlbumPathParams = {
-  /**
-   * @format uuid
-   */
-  albumId: string;
-};
-
-export type RecommendationsForAlbumError = Fetcher.ErrorWrapper<undefined>;
-
-export type RecommendationsForAlbumResponse = Schemas.AlbumRecommendationDto[];
-
-export type RecommendationsForAlbumVariables = {
-  pathParams: RecommendationsForAlbumPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchRecommendationsForAlbum = (
-  variables: RecommendationsForAlbumVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    RecommendationsForAlbumResponse,
-    RecommendationsForAlbumError,
-    undefined,
-    {},
-    {},
-    RecommendationsForAlbumPathParams
-  >({
-    url: "/api/Library/albums/{albumId}/recommendations",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function recommendationsForAlbumQuery(
-  variables: RecommendationsForAlbumVariables,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (
-    options: QueryFnOptions,
-  ) => Promise<RecommendationsForAlbumResponse>;
-};
-
-export function recommendationsForAlbumQuery(
-  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<RecommendationsForAlbumResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function recommendationsForAlbumQuery(
-  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums/{albumId}/recommendations",
-      operationId: "recommendationsForAlbum",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchRecommendationsForAlbum(variables, signal),
-  };
-}
-
-export const useSuspenseRecommendationsForAlbum = <
-  TData = RecommendationsForAlbumResponse,
->(
-  variables: RecommendationsForAlbumVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecommendationsForAlbumResponse,
-      RecommendationsForAlbumError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    RecommendationsForAlbumResponse,
-    RecommendationsForAlbumError,
-    TData
-  >({
-    ...recommendationsForAlbumQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useRecommendationsForAlbum = <
-  TData = RecommendationsForAlbumResponse,
->(
-  variables: RecommendationsForAlbumVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecommendationsForAlbumResponse,
-      RecommendationsForAlbumError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    RecommendationsForAlbumResponse,
-    RecommendationsForAlbumError,
-    TData
-  >({
-    ...recommendationsForAlbumQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
 export type FavoriteTracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type FavoriteTracksVariables = Context["fetcherOptions"];
@@ -1798,7 +1605,7 @@ export const fetchFavoriteTracks = (
   signal?: AbortSignal,
 ) =>
   fetch<Schemas.PlaylistDto, FavoriteTracksError, undefined, {}, {}, {}>({
-    url: "/api/Library/tracks/favorites",
+    url: "/api/favorites/tracks",
     method: "get",
     ...variables,
     signal,
@@ -1823,7 +1630,7 @@ export function favoriteTracksQuery(
 ) {
   return {
     queryKey: queryKeyFn({
-      path: "/api/Library/tracks/favorites",
+      path: "/api/favorites/tracks",
       operationId: "favoriteTracks",
       variables,
     }),
@@ -1873,6 +1680,166 @@ export const useFavoriteTracks = <TData = Schemas.PlaylistDto,>(
   });
 };
 
+export type FavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type FavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type FavoriteTrackVariables = {
+  pathParams: FavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchFavoriteTrack = (
+  variables: FavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    FavoriteTrackError,
+    undefined,
+    {},
+    {},
+    FavoriteTrackPathParams
+  >({
+    url: "/api/favorites/tracks/{trackId}",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      FavoriteTrackError,
+      FavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    FavoriteTrackError,
+    FavoriteTrackVariables
+  >({
+    mutationFn: (variables: FavoriteTrackVariables) =>
+      fetchFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type RemoveFavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type RemoveFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type RemoveFavoriteTrackVariables = {
+  pathParams: RemoveFavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRemoveFavoriteTrack = (
+  variables: RemoveFavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    RemoveFavoriteTrackError,
+    undefined,
+    {},
+    {},
+    RemoveFavoriteTrackPathParams
+  >({
+    url: "/api/favorites/tracks/{trackId}",
+    method: "delete",
+    ...variables,
+    signal,
+  });
+
+export const useRemoveFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      RemoveFavoriteTrackError,
+      RemoveFavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RemoveFavoriteTrackError,
+    RemoveFavoriteTrackVariables
+  >({
+    mutationFn: (variables: RemoveFavoriteTrackVariables) =>
+      fetchRemoveFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type ReorderFavoriteTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  playlistTrackId: string;
+};
+
+export type ReorderFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type ReorderFavoriteTrackVariables = {
+  body?: number;
+  pathParams: ReorderFavoriteTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchReorderFavoriteTrack = (
+  variables: ReorderFavoriteTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ReorderFavoriteTrackError,
+    number,
+    {},
+    {},
+    ReorderFavoriteTrackPathParams
+  >({
+    url: "/api/favorites/tracks/{playlistTrackId}/reorder",
+    method: "put",
+    ...variables,
+    signal,
+  });
+
+export const useReorderFavoriteTrack = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      ReorderFavoriteTrackError,
+      ReorderFavoriteTrackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    ReorderFavoriteTrackError,
+    ReorderFavoriteTrackVariables
+  >({
+    mutationFn: (variables: ReorderFavoriteTrackVariables) =>
+      fetchReorderFavoriteTrack(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
 export type FavoriteAlbumsError = Fetcher.ErrorWrapper<undefined>;
 
 export type FavoriteAlbumsResponse = Schemas.SimpleAlbumDto[];
@@ -1884,7 +1851,7 @@ export const fetchFavoriteAlbums = (
   signal?: AbortSignal,
 ) =>
   fetch<FavoriteAlbumsResponse, FavoriteAlbumsError, undefined, {}, {}, {}>({
-    url: "/albums/favorites",
+    url: "/api/favorites/albums",
     method: "get",
     ...variables,
     signal,
@@ -1909,7 +1876,7 @@ export function favoriteAlbumsQuery(
 ) {
   return {
     queryKey: queryKeyFn({
-      path: "/albums/favorites",
+      path: "/api/favorites/albums",
       operationId: "favoriteAlbums",
       variables,
     }),
@@ -1971,112 +1938,109 @@ export const useFavoriteAlbums = <TData = FavoriteAlbumsResponse,>(
   });
 };
 
-export type RecentlyAddedAlbumsError = Fetcher.ErrorWrapper<undefined>;
+export type FavoriteAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
 
-export type RecentlyAddedAlbumsResponse = Schemas.SimpleAlbumDto[];
+export type FavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
 
-export type RecentlyAddedAlbumsVariables = Context["fetcherOptions"];
+export type FavoriteAlbumVariables = {
+  pathParams: FavoriteAlbumPathParams;
+} & Context["fetcherOptions"];
 
-export const fetchRecentlyAddedAlbums = (
-  variables: RecentlyAddedAlbumsVariables,
+export const fetchFavoriteAlbum = (
+  variables: FavoriteAlbumVariables,
   signal?: AbortSignal,
 ) =>
   fetch<
-    RecentlyAddedAlbumsResponse,
-    RecentlyAddedAlbumsError,
+    undefined,
+    FavoriteAlbumError,
     undefined,
     {},
     {},
-    {}
+    FavoriteAlbumPathParams
   >({
-    url: "/api/Library/albums/recently-added",
-    method: "get",
+    url: "/api/favorites/albums/{albumId}",
+    method: "post",
     ...variables,
     signal,
   });
 
-export function recentlyAddedAlbumsQuery(
-  variables: RecentlyAddedAlbumsVariables,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>;
-};
-
-export function recentlyAddedAlbumsQuery(
-  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<RecentlyAddedAlbumsResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function recentlyAddedAlbumsQuery(
-  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums/recently-added",
-      operationId: "recentlyAddedAlbums",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchRecentlyAddedAlbums(variables, signal),
-  };
-}
-
-export const useSuspenseRecentlyAddedAlbums = <
-  TData = RecentlyAddedAlbumsResponse,
->(
-  variables: RecentlyAddedAlbumsVariables,
+export const useFavoriteAlbum = (
   options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecentlyAddedAlbumsResponse,
-      RecentlyAddedAlbumsError,
-      TData
+    reactQuery.UseMutationOptions<
+      undefined,
+      FavoriteAlbumError,
+      FavoriteAlbumVariables
     >,
-    "queryKey" | "queryFn" | "initialData"
+    "mutationFn"
   >,
 ) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    RecentlyAddedAlbumsResponse,
-    RecentlyAddedAlbumsError,
-    TData
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    FavoriteAlbumError,
+    FavoriteAlbumVariables
   >({
-    ...recentlyAddedAlbumsQuery(deepMerge(fetcherOptions, variables)),
+    mutationFn: (variables: FavoriteAlbumVariables) =>
+      fetchFavoriteAlbum(deepMerge(fetcherOptions, variables)),
     ...options,
-    ...queryOptions,
   });
 };
 
-export const useRecentlyAddedAlbums = <TData = RecentlyAddedAlbumsResponse,>(
-  variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken,
+export type RemoveFavoriteAlbumPathParams = {
+  /**
+   * @format uuid
+   */
+  albumId: string;
+};
+
+export type RemoveFavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
+
+export type RemoveFavoriteAlbumVariables = {
+  pathParams: RemoveFavoriteAlbumPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRemoveFavoriteAlbum = (
+  variables: RemoveFavoriteAlbumVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    RemoveFavoriteAlbumError,
+    undefined,
+    {},
+    {},
+    RemoveFavoriteAlbumPathParams
+  >({
+    url: "/api/favorites/albums/{albumId}",
+    method: "delete",
+    ...variables,
+    signal,
+  });
+
+export const useRemoveFavoriteAlbum = (
   options?: Omit<
-    reactQuery.UseQueryOptions<
-      RecentlyAddedAlbumsResponse,
-      RecentlyAddedAlbumsError,
-      TData
+    reactQuery.UseMutationOptions<
+      undefined,
+      RemoveFavoriteAlbumError,
+      RemoveFavoriteAlbumVariables
     >,
-    "queryKey" | "queryFn" | "initialData"
+    "mutationFn"
   >,
 ) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    RecentlyAddedAlbumsResponse,
-    RecentlyAddedAlbumsError,
-    TData
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    RemoveFavoriteAlbumError,
+    RemoveFavoriteAlbumVariables
   >({
-    ...recentlyAddedAlbumsQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
+    mutationFn: (variables: RemoveFavoriteAlbumVariables) =>
+      fetchRemoveFavoriteAlbum(deepMerge(fetcherOptions, variables)),
     ...options,
-    ...queryOptions,
   });
 };
 
@@ -2091,7 +2055,7 @@ export const fetchFavoriteArtists = (
   signal?: AbortSignal,
 ) =>
   fetch<FavoriteArtistsResponse, FavoriteArtistsError, undefined, {}, {}, {}>({
-    url: "/api/Library/artists/favorites",
+    url: "/api/favorites/artists",
     method: "get",
     ...variables,
     signal,
@@ -2116,7 +2080,7 @@ export function favoriteArtistsQuery(
 ) {
   return {
     queryKey: queryKeyFn({
-      path: "/api/Library/artists/favorites",
+      path: "/api/favorites/artists",
       operationId: "favoriteArtists",
       variables,
     }),
@@ -2178,166 +2142,6 @@ export const useFavoriteArtists = <TData = FavoriteArtistsResponse,>(
   });
 };
 
-export type FavoriteTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type FavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type FavoriteTrackVariables = {
-  pathParams: FavoriteTrackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchFavoriteTrack = (
-  variables: FavoriteTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    FavoriteTrackError,
-    undefined,
-    {},
-    {},
-    FavoriteTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/favorite",
-    method: "post",
-    ...variables,
-    signal,
-  });
-
-export const useFavoriteTrack = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      undefined,
-      FavoriteTrackError,
-      FavoriteTrackVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    undefined,
-    FavoriteTrackError,
-    FavoriteTrackVariables
-  >({
-    mutationFn: (variables: FavoriteTrackVariables) =>
-      fetchFavoriteTrack(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
-export type RemoveFavoriteTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  trackId: string;
-};
-
-export type RemoveFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type RemoveFavoriteTrackVariables = {
-  pathParams: RemoveFavoriteTrackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchRemoveFavoriteTrack = (
-  variables: RemoveFavoriteTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    RemoveFavoriteTrackError,
-    undefined,
-    {},
-    {},
-    RemoveFavoriteTrackPathParams
-  >({
-    url: "/api/Library/tracks/{trackId}/favorite",
-    method: "delete",
-    ...variables,
-    signal,
-  });
-
-export const useRemoveFavoriteTrack = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      undefined,
-      RemoveFavoriteTrackError,
-      RemoveFavoriteTrackVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    undefined,
-    RemoveFavoriteTrackError,
-    RemoveFavoriteTrackVariables
-  >({
-    mutationFn: (variables: RemoveFavoriteTrackVariables) =>
-      fetchRemoveFavoriteTrack(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
-export type ReorderFavoriteTrackPathParams = {
-  /**
-   * @format uuid
-   */
-  playlistTrackId: string;
-};
-
-export type ReorderFavoriteTrackError = Fetcher.ErrorWrapper<undefined>;
-
-export type ReorderFavoriteTrackVariables = {
-  body?: number;
-  pathParams: ReorderFavoriteTrackPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchReorderFavoriteTrack = (
-  variables: ReorderFavoriteTrackVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    ReorderFavoriteTrackError,
-    number,
-    {},
-    {},
-    ReorderFavoriteTrackPathParams
-  >({
-    url: "/api/Library/tracks/favorites/{playlistTrackId}/reorder",
-    method: "put",
-    ...variables,
-    signal,
-  });
-
-export const useReorderFavoriteTrack = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      undefined,
-      ReorderFavoriteTrackError,
-      ReorderFavoriteTrackVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    undefined,
-    ReorderFavoriteTrackError,
-    ReorderFavoriteTrackVariables
-  >({
-    mutationFn: (variables: ReorderFavoriteTrackVariables) =>
-      fetchReorderFavoriteTrack(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
 export type FavoriteArtistPathParams = {
   /**
    * @format uuid
@@ -2363,7 +2167,7 @@ export const fetchFavoriteArtist = (
     {},
     FavoriteArtistPathParams
   >({
-    url: "/api/Library/artists/{artistId}/favorite",
+    url: "/api/favorites/artists/{artistId}",
     method: "post",
     ...variables,
     signal,
@@ -2416,7 +2220,7 @@ export const fetchRemoveFavoriteArtist = (
     {},
     RemoveFavoriteArtistPathParams
   >({
-    url: "/api/Library/artists/{artistId}/favorite",
+    url: "/api/favorites/artists/{artistId}",
     method: "delete",
     ...variables,
     signal,
@@ -2441,781 +2245,6 @@ export const useRemoveFavoriteArtist = (
     mutationFn: (variables: RemoveFavoriteArtistVariables) =>
       fetchRemoveFavoriteArtist(deepMerge(fetcherOptions, variables)),
     ...options,
-  });
-};
-
-export type FavoriteAlbumPathParams = {
-  /**
-   * @format uuid
-   */
-  albumId: string;
-};
-
-export type FavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
-
-export type FavoriteAlbumVariables = {
-  pathParams: FavoriteAlbumPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchFavoriteAlbum = (
-  variables: FavoriteAlbumVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    FavoriteAlbumError,
-    undefined,
-    {},
-    {},
-    FavoriteAlbumPathParams
-  >({
-    url: "/api/Library/albums/{albumId}/favorite",
-    method: "post",
-    ...variables,
-    signal,
-  });
-
-export const useFavoriteAlbum = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      undefined,
-      FavoriteAlbumError,
-      FavoriteAlbumVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    undefined,
-    FavoriteAlbumError,
-    FavoriteAlbumVariables
-  >({
-    mutationFn: (variables: FavoriteAlbumVariables) =>
-      fetchFavoriteAlbum(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
-export type RemoveFavoriteAlbumPathParams = {
-  /**
-   * @format uuid
-   */
-  albumId: string;
-};
-
-export type RemoveFavoriteAlbumError = Fetcher.ErrorWrapper<undefined>;
-
-export type RemoveFavoriteAlbumVariables = {
-  pathParams: RemoveFavoriteAlbumPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchRemoveFavoriteAlbum = (
-  variables: RemoveFavoriteAlbumVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    undefined,
-    RemoveFavoriteAlbumError,
-    undefined,
-    {},
-    {},
-    RemoveFavoriteAlbumPathParams
-  >({
-    url: "/api/Library/albums/{albumId}/favorite",
-    method: "delete",
-    ...variables,
-    signal,
-  });
-
-export const useRemoveFavoriteAlbum = (
-  options?: Omit<
-    reactQuery.UseMutationOptions<
-      undefined,
-      RemoveFavoriteAlbumError,
-      RemoveFavoriteAlbumVariables
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { fetcherOptions } = useContext();
-  return reactQuery.useMutation<
-    undefined,
-    RemoveFavoriteAlbumError,
-    RemoveFavoriteAlbumVariables
-  >({
-    mutationFn: (variables: RemoveFavoriteAlbumVariables) =>
-      fetchRemoveFavoriteAlbum(deepMerge(fetcherOptions, variables)),
-    ...options,
-  });
-};
-
-export type TracksError = Fetcher.ErrorWrapper<undefined>;
-
-export type TracksResponse = Schemas.TrackDto[];
-
-export type TracksVariables = Context["fetcherOptions"];
-
-export const fetchTracks = (variables: TracksVariables, signal?: AbortSignal) =>
-  fetch<TracksResponse, TracksError, undefined, {}, {}, {}>({
-    url: "/api/Library/tracks",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function tracksQuery(variables: TracksVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<TracksResponse>;
-};
-
-export function tracksQuery(
-  variables: TracksVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<TracksResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function tracksQuery(variables: TracksVariables | reactQuery.SkipToken) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/tracks",
-      operationId: "tracks",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchTracks(variables, signal),
-  };
-}
-
-export const useSuspenseTracks = <TData = TracksResponse,>(
-  variables: TracksVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<TracksResponse, TracksError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<TracksResponse, TracksError, TData>({
-    ...tracksQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useTracks = <TData = TracksResponse,>(
-  variables: TracksVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<TracksResponse, TracksError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<TracksResponse, TracksError, TData>({
-    ...tracksQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type AlbumsError = Fetcher.ErrorWrapper<undefined>;
-
-export type AlbumsResponse = Schemas.SimpleAlbumDto[];
-
-export type AlbumsVariables = Context["fetcherOptions"];
-
-export const fetchAlbums = (variables: AlbumsVariables, signal?: AbortSignal) =>
-  fetch<AlbumsResponse, AlbumsError, undefined, {}, {}, {}>({
-    url: "/api/Library/albums",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function albumsQuery(variables: AlbumsVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<AlbumsResponse>;
-};
-
-export function albumsQuery(
-  variables: AlbumsVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<AlbumsResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function albumsQuery(variables: AlbumsVariables | reactQuery.SkipToken) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums",
-      operationId: "albums",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchAlbums(variables, signal),
-  };
-}
-
-export const useSuspenseAlbums = <TData = AlbumsResponse,>(
-  variables: AlbumsVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<AlbumsResponse, AlbumsError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<AlbumsResponse, AlbumsError, TData>({
-    ...albumsQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useAlbums = <TData = AlbumsResponse,>(
-  variables: AlbumsVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<AlbumsResponse, AlbumsError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<AlbumsResponse, AlbumsError, TData>({
-    ...albumsQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type PaginatedAlbumsQueryParams = {
-  /**
-   * @format int32
-   * @default 10
-   */
-  limit?: number;
-  /**
-   * @format int32
-   * @default 0
-   */
-  offset?: number;
-};
-
-export type PaginatedAlbumsError = Fetcher.ErrorWrapper<undefined>;
-
-export type PaginatedAlbumsVariables = {
-  queryParams?: PaginatedAlbumsQueryParams;
-} & Context["fetcherOptions"];
-
-export const fetchPaginatedAlbums = (
-  variables: PaginatedAlbumsVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    Schemas.SimpleAlbumDtoPaginatedQuery,
-    PaginatedAlbumsError,
-    undefined,
-    {},
-    PaginatedAlbumsQueryParams,
-    {}
-  >({
-    url: "/api/Library/albums/paginated",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function paginatedAlbumsQuery(variables: PaginatedAlbumsVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (
-    options: QueryFnOptions,
-  ) => Promise<Schemas.SimpleAlbumDtoPaginatedQuery>;
-};
-
-export function paginatedAlbumsQuery(
-  variables: PaginatedAlbumsVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((
-        options: QueryFnOptions,
-      ) => Promise<Schemas.SimpleAlbumDtoPaginatedQuery>)
-    | reactQuery.SkipToken;
-};
-
-export function paginatedAlbumsQuery(
-  variables: PaginatedAlbumsVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums/paginated",
-      operationId: "paginatedAlbums",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchPaginatedAlbums(variables, signal),
-  };
-}
-
-export const useSuspensePaginatedAlbums = <
-  TData = Schemas.SimpleAlbumDtoPaginatedQuery,
->(
-  variables: PaginatedAlbumsVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SimpleAlbumDtoPaginatedQuery,
-      PaginatedAlbumsError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.SimpleAlbumDtoPaginatedQuery,
-    PaginatedAlbumsError,
-    TData
-  >({
-    ...paginatedAlbumsQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const usePaginatedAlbums = <
-  TData = Schemas.SimpleAlbumDtoPaginatedQuery,
->(
-  variables: PaginatedAlbumsVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SimpleAlbumDtoPaginatedQuery,
-      PaginatedAlbumsError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    Schemas.SimpleAlbumDtoPaginatedQuery,
-    PaginatedAlbumsError,
-    TData
-  >({
-    ...paginatedAlbumsQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type PaginatedArtistsQueryParams = {
-  /**
-   * @format int32
-   * @default 10
-   */
-  limit?: number;
-  /**
-   * @format int32
-   * @default 0
-   */
-  offset?: number;
-};
-
-export type PaginatedArtistsError = Fetcher.ErrorWrapper<undefined>;
-
-export type PaginatedArtistsVariables = {
-  queryParams?: PaginatedArtistsQueryParams;
-} & Context["fetcherOptions"];
-
-export const fetchPaginatedArtists = (
-  variables: PaginatedArtistsVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    Schemas.SimpleArtistDtoPaginatedQuery,
-    PaginatedArtistsError,
-    undefined,
-    {},
-    PaginatedArtistsQueryParams,
-    {}
-  >({
-    url: "/api/Library/artists/paginated",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function paginatedArtistsQuery(variables: PaginatedArtistsVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (
-    options: QueryFnOptions,
-  ) => Promise<Schemas.SimpleArtistDtoPaginatedQuery>;
-};
-
-export function paginatedArtistsQuery(
-  variables: PaginatedArtistsVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((
-        options: QueryFnOptions,
-      ) => Promise<Schemas.SimpleArtistDtoPaginatedQuery>)
-    | reactQuery.SkipToken;
-};
-
-export function paginatedArtistsQuery(
-  variables: PaginatedArtistsVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/artists/paginated",
-      operationId: "paginatedArtists",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) =>
-            fetchPaginatedArtists(variables, signal),
-  };
-}
-
-export const useSuspensePaginatedArtists = <
-  TData = Schemas.SimpleArtistDtoPaginatedQuery,
->(
-  variables: PaginatedArtistsVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SimpleArtistDtoPaginatedQuery,
-      PaginatedArtistsError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    Schemas.SimpleArtistDtoPaginatedQuery,
-    PaginatedArtistsError,
-    TData
-  >({
-    ...paginatedArtistsQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const usePaginatedArtists = <
-  TData = Schemas.SimpleArtistDtoPaginatedQuery,
->(
-  variables: PaginatedArtistsVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<
-      Schemas.SimpleArtistDtoPaginatedQuery,
-      PaginatedArtistsError,
-      TData
-    >,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<
-    Schemas.SimpleArtistDtoPaginatedQuery,
-    PaginatedArtistsError,
-    TData
-  >({
-    ...paginatedArtistsQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type AlbumPathParams = {
-  /**
-   * @format uuid
-   */
-  albumId: string;
-};
-
-export type AlbumError = Fetcher.ErrorWrapper<undefined>;
-
-export type AlbumVariables = {
-  pathParams: AlbumPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchAlbum = (variables: AlbumVariables, signal?: AbortSignal) =>
-  fetch<Schemas.AlbumDto, AlbumError, undefined, {}, {}, AlbumPathParams>({
-    url: "/api/Library/albums/{albumId}",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function albumQuery(variables: AlbumVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<Schemas.AlbumDto>;
-};
-
-export function albumQuery(variables: AlbumVariables | reactQuery.SkipToken): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<Schemas.AlbumDto>)
-    | reactQuery.SkipToken;
-};
-
-export function albumQuery(variables: AlbumVariables | reactQuery.SkipToken) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums/{albumId}",
-      operationId: "album",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchAlbum(variables, signal),
-  };
-}
-
-export const useSuspenseAlbum = <TData = Schemas.AlbumDto,>(
-  variables: AlbumVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.AlbumDto, AlbumError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<Schemas.AlbumDto, AlbumError, TData>({
-    ...albumQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useAlbum = <TData = Schemas.AlbumDto,>(
-  variables: AlbumVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.AlbumDto, AlbumError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<Schemas.AlbumDto, AlbumError, TData>({
-    ...albumQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type AlbumTracksPathParams = {
-  /**
-   * @format uuid
-   */
-  albumId: string;
-};
-
-export type AlbumTracksError = Fetcher.ErrorWrapper<undefined>;
-
-export type AlbumTracksResponse = Schemas.SimpleTrackDto[];
-
-export type AlbumTracksVariables = {
-  pathParams: AlbumTracksPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchAlbumTracks = (
-  variables: AlbumTracksVariables,
-  signal?: AbortSignal,
-) =>
-  fetch<
-    AlbumTracksResponse,
-    AlbumTracksError,
-    undefined,
-    {},
-    {},
-    AlbumTracksPathParams
-  >({
-    url: "/api/Library/albums/{albumId}/tracks",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function albumTracksQuery(variables: AlbumTracksVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<AlbumTracksResponse>;
-};
-
-export function albumTracksQuery(
-  variables: AlbumTracksVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<AlbumTracksResponse>)
-    | reactQuery.SkipToken;
-};
-
-export function albumTracksQuery(
-  variables: AlbumTracksVariables | reactQuery.SkipToken,
-) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/albums/{albumId}/tracks",
-      operationId: "albumTracks",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchAlbumTracks(variables, signal),
-  };
-}
-
-export const useSuspenseAlbumTracks = <TData = AlbumTracksResponse,>(
-  variables: AlbumTracksVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<
-    AlbumTracksResponse,
-    AlbumTracksError,
-    TData
-  >({
-    ...albumTracksQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useAlbumTracks = <TData = AlbumTracksResponse,>(
-  variables: AlbumTracksVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<AlbumTracksResponse, AlbumTracksError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<AlbumTracksResponse, AlbumTracksError, TData>({
-    ...albumTracksQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export type ArtistPathParams = {
-  /**
-   * @format uuid
-   */
-  artistId: string;
-};
-
-export type ArtistError = Fetcher.ErrorWrapper<undefined>;
-
-export type ArtistVariables = {
-  pathParams: ArtistPathParams;
-} & Context["fetcherOptions"];
-
-export const fetchArtist = (variables: ArtistVariables, signal?: AbortSignal) =>
-  fetch<Schemas.ArtistDto, ArtistError, undefined, {}, {}, ArtistPathParams>({
-    url: "/api/Library/artists/{artistId}",
-    method: "get",
-    ...variables,
-    signal,
-  });
-
-export function artistQuery(variables: ArtistVariables): {
-  queryKey: reactQuery.QueryKey;
-  queryFn: (options: QueryFnOptions) => Promise<Schemas.ArtistDto>;
-};
-
-export function artistQuery(
-  variables: ArtistVariables | reactQuery.SkipToken,
-): {
-  queryKey: reactQuery.QueryKey;
-  queryFn:
-    | ((options: QueryFnOptions) => Promise<Schemas.ArtistDto>)
-    | reactQuery.SkipToken;
-};
-
-export function artistQuery(variables: ArtistVariables | reactQuery.SkipToken) {
-  return {
-    queryKey: queryKeyFn({
-      path: "/api/Library/artists/{artistId}",
-      operationId: "artist",
-      variables,
-    }),
-    queryFn:
-      variables === reactQuery.skipToken
-        ? reactQuery.skipToken
-        : ({ signal }: QueryFnOptions) => fetchArtist(variables, signal),
-  };
-}
-
-export const useSuspenseArtist = <TData = Schemas.ArtistDto,>(
-  variables: ArtistVariables,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useSuspenseQuery<Schemas.ArtistDto, ArtistError, TData>({
-    ...artistQuery(deepMerge(fetcherOptions, variables)),
-    ...options,
-    ...queryOptions,
-  });
-};
-
-export const useArtist = <TData = Schemas.ArtistDto,>(
-  variables: ArtistVariables | reactQuery.SkipToken,
-  options?: Omit<
-    reactQuery.UseQueryOptions<Schemas.ArtistDto, ArtistError, TData>,
-    "queryKey" | "queryFn" | "initialData"
-  >,
-) => {
-  const { queryOptions, fetcherOptions } = useContext(options);
-  return reactQuery.useQuery<Schemas.ArtistDto, ArtistError, TData>({
-    ...artistQuery(
-      variables === reactQuery.skipToken
-        ? variables
-        : deepMerge(fetcherOptions, variables),
-    ),
-    ...options,
-    ...queryOptions,
   });
 };
 
@@ -3634,7 +2663,1072 @@ export const useUnloadPlugins = <TData = undefined,>(
   });
 };
 
+export type RunIndexerError = Fetcher.ErrorWrapper<undefined>;
+
+export type RunIndexerVariables = Context["fetcherOptions"];
+
+export const fetchRunIndexer = (
+  variables: RunIndexerVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<Schemas.ScanInitiatedDto, RunIndexerError, undefined, {}, {}, {}>({
+    url: "/api/scan",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useRunIndexer = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      Schemas.ScanInitiatedDto,
+      RunIndexerError,
+      RunIndexerVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    Schemas.ScanInitiatedDto,
+    RunIndexerError,
+    RunIndexerVariables
+  >({
+    mutationFn: (variables: RunIndexerVariables) =>
+      fetchRunIndexer(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type GetScanProgressPathParams = {
+  /**
+   * @format uuid
+   */
+  requestId: string;
+};
+
+export type GetScanProgressError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetScanProgressVariables = {
+  pathParams: GetScanProgressPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchGetScanProgress = (
+  variables: GetScanProgressVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    undefined,
+    {},
+    {},
+    GetScanProgressPathParams
+  >({
+    url: "/api/scan/progress/{requestId}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getScanProgressQuery(variables: GetScanProgressVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>;
+};
+
+export function getScanProgressQuery(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.ScanJobProgress>)
+    | reactQuery.SkipToken;
+};
+
+export function getScanProgressQuery(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/scan/progress/{requestId}",
+      operationId: "getScanProgress",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetScanProgress(variables, signal),
+  };
+}
+
+export const useSuspenseGetScanProgress = <TData = Schemas.ScanJobProgress,>(
+  variables: GetScanProgressVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ScanJobProgress,
+      GetScanProgressError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    TData
+  >({
+    ...getScanProgressQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetScanProgress = <TData = Schemas.ScanJobProgress,>(
+  variables: GetScanProgressVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.ScanJobProgress,
+      GetScanProgressError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.ScanJobProgress,
+    GetScanProgressError,
+    TData
+  >({
+    ...getScanProgressQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type GetActiveScansError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetActiveScansResponse = Schemas.ScanJobProgress[];
+
+export type GetActiveScansVariables = Context["fetcherOptions"];
+
+export const fetchGetActiveScans = (
+  variables: GetActiveScansVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<GetActiveScansResponse, GetActiveScansError, undefined, {}, {}, {}>({
+    url: "/api/scan/active",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getActiveScansQuery(variables: GetActiveScansVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<GetActiveScansResponse>;
+};
+
+export function getActiveScansQuery(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<GetActiveScansResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function getActiveScansQuery(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/scan/active",
+      operationId: "getActiveScans",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetActiveScans(variables, signal),
+  };
+}
+
+export const useSuspenseGetActiveScans = <TData = GetActiveScansResponse,>(
+  variables: GetActiveScansVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      GetActiveScansResponse,
+      GetActiveScansError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    GetActiveScansResponse,
+    GetActiveScansError,
+    TData
+  >({
+    ...getActiveScansQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetActiveScans = <TData = GetActiveScansResponse,>(
+  variables: GetActiveScansVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      GetActiveScansResponse,
+      GetActiveScansError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    GetActiveScansResponse,
+    GetActiveScansError,
+    TData
+  >({
+    ...getActiveScansQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type SearchQueryParams = {
+  query?: string;
+  /**
+   * @format int32
+   * @default 0
+   */
+  offset?: number;
+  /**
+   * @format int32
+   * @default 100
+   */
+  limit?: number;
+};
+
+export type SearchError = Fetcher.ErrorWrapper<undefined>;
+
+export type SearchVariables = {
+  queryParams?: SearchQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchSearch = (variables: SearchVariables, signal?: AbortSignal) =>
+  fetch<
+    Schemas.SearchResultPaginatedCustomData,
+    SearchError,
+    undefined,
+    {},
+    SearchQueryParams,
+    {}
+  >({ url: "/api/search", method: "get", ...variables, signal });
+
+export function searchQuery(variables: SearchVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<Schemas.SearchResultPaginatedCustomData>;
+};
+
+export function searchQuery(
+  variables: SearchVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((
+        options: QueryFnOptions,
+      ) => Promise<Schemas.SearchResultPaginatedCustomData>)
+    | reactQuery.SkipToken;
+};
+
+export function searchQuery(variables: SearchVariables | reactQuery.SkipToken) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/search",
+      operationId: "search",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchSearch(variables, signal),
+  };
+}
+
+export const useSuspenseSearch = <
+  TData = Schemas.SearchResultPaginatedCustomData,
+>(
+  variables: SearchVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SearchResultPaginatedCustomData,
+      SearchError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.SearchResultPaginatedCustomData,
+    SearchError,
+    TData
+  >({
+    ...searchQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useSearch = <TData = Schemas.SearchResultPaginatedCustomData,>(
+  variables: SearchVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SearchResultPaginatedCustomData,
+      SearchError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.SearchResultPaginatedCustomData,
+    SearchError,
+    TData
+  >({
+    ...searchQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type StreamFilePathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type StreamFileQueryParams = {
+  /**
+   * @format int64
+   */
+  expires?: number;
+  signature?: string;
+};
+
+export type StreamFileError = Fetcher.ErrorWrapper<undefined>;
+
+export type StreamFileVariables = {
+  pathParams: StreamFilePathParams;
+  queryParams?: StreamFileQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchStreamFile = (
+  variables: StreamFileVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    StreamFileError,
+    undefined,
+    {},
+    StreamFileQueryParams,
+    StreamFilePathParams
+  >({ url: "/api/stream/{trackId}", method: "get", ...variables, signal });
+
+export function streamFileQuery(variables: StreamFileVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<undefined>;
+};
+
+export function streamFileQuery(
+  variables: StreamFileVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<undefined>)
+    | reactQuery.SkipToken;
+};
+
+export function streamFileQuery(
+  variables: StreamFileVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/stream/{trackId}",
+      operationId: "streamFile",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchStreamFile(variables, signal),
+  };
+}
+
+export const useSuspenseStreamFile = <TData = undefined,>(
+  variables: StreamFileVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, StreamFileError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<undefined, StreamFileError, TData>({
+    ...streamFileQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useStreamFile = <TData = undefined,>(
+  variables: StreamFileVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, StreamFileError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<undefined, StreamFileError, TData>({
+    ...streamFileQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type GetOriginalStreamUrlPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type GetOriginalStreamUrlError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetOriginalStreamUrlVariables = {
+  pathParams: GetOriginalStreamUrlPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchGetOriginalStreamUrl = (
+  variables: GetOriginalStreamUrlVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.StreamDto,
+    GetOriginalStreamUrlError,
+    undefined,
+    {},
+    {},
+    GetOriginalStreamUrlPathParams
+  >({
+    url: "/api/stream/tracks/{trackId}/original",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getOriginalStreamUrlQuery(
+  variables: GetOriginalStreamUrlVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.StreamDto>;
+};
+
+export function getOriginalStreamUrlQuery(
+  variables: GetOriginalStreamUrlVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.StreamDto>)
+    | reactQuery.SkipToken;
+};
+
+export function getOriginalStreamUrlQuery(
+  variables: GetOriginalStreamUrlVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/stream/tracks/{trackId}/original",
+      operationId: "getOriginalStreamUrl",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchGetOriginalStreamUrl(variables, signal),
+  };
+}
+
+export const useSuspenseGetOriginalStreamUrl = <TData = Schemas.StreamDto,>(
+  variables: GetOriginalStreamUrlVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.StreamDto,
+      GetOriginalStreamUrlError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.StreamDto,
+    GetOriginalStreamUrlError,
+    TData
+  >({
+    ...getOriginalStreamUrlQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetOriginalStreamUrl = <TData = Schemas.StreamDto,>(
+  variables: GetOriginalStreamUrlVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.StreamDto,
+      GetOriginalStreamUrlError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    Schemas.StreamDto,
+    GetOriginalStreamUrlError,
+    TData
+  >({
+    ...getOriginalStreamUrlQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type TranscodeTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type TranscodeTrackQueryParams = {
+  /**
+   * @format int32
+   */
+  bitrate?: number;
+};
+
+export type TranscodeTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type TranscodeTrackVariables = {
+  pathParams: TranscodeTrackPathParams;
+  queryParams?: TranscodeTrackQueryParams;
+} & Context["fetcherOptions"];
+
+export const fetchTranscodeTrack = (
+  variables: TranscodeTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.StreamDto,
+    TranscodeTrackError,
+    undefined,
+    {},
+    TranscodeTrackQueryParams,
+    TranscodeTrackPathParams
+  >({
+    url: "/api/stream/tracks/{trackId}/transcode",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function transcodeTrackQuery(variables: TranscodeTrackVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.StreamDto>;
+};
+
+export function transcodeTrackQuery(
+  variables: TranscodeTrackVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.StreamDto>)
+    | reactQuery.SkipToken;
+};
+
+export function transcodeTrackQuery(
+  variables: TranscodeTrackVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/stream/tracks/{trackId}/transcode",
+      operationId: "transcodeTrack",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchTranscodeTrack(variables, signal),
+  };
+}
+
+export const useSuspenseTranscodeTrack = <TData = Schemas.StreamDto,>(
+  variables: TranscodeTrackVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.StreamDto, TranscodeTrackError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.StreamDto,
+    TranscodeTrackError,
+    TData
+  >({
+    ...transcodeTrackQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useTranscodeTrack = <TData = Schemas.StreamDto,>(
+  variables: TranscodeTrackVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.StreamDto, TranscodeTrackError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.StreamDto, TranscodeTrackError, TData>({
+    ...transcodeTrackQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type StreamTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type StreamTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type StreamTrackVariables = {
+  pathParams: StreamTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchStreamTrack = (
+  variables: StreamTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    Schemas.StreamDto,
+    StreamTrackError,
+    undefined,
+    {},
+    {},
+    StreamTrackPathParams
+  >({
+    url: "/api/stream/tracks/{trackId}/hls",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function streamTrackQuery(variables: StreamTrackVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.StreamDto>;
+};
+
+export function streamTrackQuery(
+  variables: StreamTrackVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.StreamDto>)
+    | reactQuery.SkipToken;
+};
+
+export function streamTrackQuery(
+  variables: StreamTrackVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/stream/tracks/{trackId}/hls",
+      operationId: "streamTrack",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchStreamTrack(variables, signal),
+  };
+}
+
+export const useSuspenseStreamTrack = <TData = Schemas.StreamDto,>(
+  variables: StreamTrackVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.StreamDto, StreamTrackError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.StreamDto,
+    StreamTrackError,
+    TData
+  >({
+    ...streamTrackQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useStreamTrack = <TData = Schemas.StreamDto,>(
+  variables: StreamTrackVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<Schemas.StreamDto, StreamTrackError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.StreamDto, StreamTrackError, TData>({
+    ...streamTrackQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type TracksError = Fetcher.ErrorWrapper<undefined>;
+
+export type TracksResponse = Schemas.TrackDto[];
+
+export type TracksVariables = Context["fetcherOptions"];
+
+export const fetchTracks = (variables: TracksVariables, signal?: AbortSignal) =>
+  fetch<TracksResponse, TracksError, undefined, {}, {}, {}>({
+    url: "/api/tracks",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function tracksQuery(variables: TracksVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<TracksResponse>;
+};
+
+export function tracksQuery(
+  variables: TracksVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<TracksResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function tracksQuery(variables: TracksVariables | reactQuery.SkipToken) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/tracks",
+      operationId: "tracks",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchTracks(variables, signal),
+  };
+}
+
+export const useSuspenseTracks = <TData = TracksResponse,>(
+  variables: TracksVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<TracksResponse, TracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<TracksResponse, TracksError, TData>({
+    ...tracksQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useTracks = <TData = TracksResponse,>(
+  variables: TracksVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<TracksResponse, TracksError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<TracksResponse, TracksError, TData>({
+    ...tracksQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type LogPlaybackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type LogPlaybackError = Fetcher.ErrorWrapper<undefined>;
+
+export type LogPlaybackVariables = {
+  pathParams: LogPlaybackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchLogPlayback = (
+  variables: LogPlaybackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<undefined, LogPlaybackError, undefined, {}, {}, LogPlaybackPathParams>({
+    url: "/api/tracks/{trackId}/log-playback",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useLogPlayback = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      LogPlaybackError,
+      LogPlaybackVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    LogPlaybackError,
+    LogPlaybackVariables
+  >({
+    mutationFn: (variables: LogPlaybackVariables) =>
+      fetchLogPlayback(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
+export type RecommendationsForTrackPathParams = {
+  /**
+   * @format uuid
+   */
+  trackId: string;
+};
+
+export type RecommendationsForTrackError = Fetcher.ErrorWrapper<undefined>;
+
+export type RecommendationsForTrackResponse = Schemas.SimpleTrackDto[];
+
+export type RecommendationsForTrackVariables = {
+  pathParams: RecommendationsForTrackPathParams;
+} & Context["fetcherOptions"];
+
+export const fetchRecommendationsForTrack = (
+  variables: RecommendationsForTrackVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    undefined,
+    {},
+    {},
+    RecommendationsForTrackPathParams
+  >({
+    url: "/api/tracks/{trackId}/recommendations",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (
+    options: QueryFnOptions,
+  ) => Promise<RecommendationsForTrackResponse>;
+};
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RecommendationsForTrackResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function recommendationsForTrackQuery(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/tracks/{trackId}/recommendations",
+      operationId: "recommendationsForTrack",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRecommendationsForTrack(variables, signal),
+  };
+}
+
+export const useSuspenseRecommendationsForTrack = <
+  TData = RecommendationsForTrackResponse,
+>(
+  variables: RecommendationsForTrackVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForTrackResponse,
+      RecommendationsForTrackError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    TData
+  >({
+    ...recommendationsForTrackQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRecommendationsForTrack = <
+  TData = RecommendationsForTrackResponse,
+>(
+  variables: RecommendationsForTrackVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RecommendationsForTrackResponse,
+      RecommendationsForTrackError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RecommendationsForTrackResponse,
+    RecommendationsForTrackError,
+    TData
+  >({
+    ...recommendationsForTrackQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type QueryOperation =
+  | {
+      path: "/api/albums";
+      operationId: "albums";
+      variables: AlbumsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/albums/all";
+      operationId: "allAlbums";
+      variables: AllAlbumsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/albums/recently-added";
+      operationId: "recentlyAddedAlbums";
+      variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/albums/{albumId}";
+      operationId: "album";
+      variables: AlbumVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/albums/{albumId}/tracks";
+      operationId: "albumTracks";
+      variables: AlbumTracksVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/albums/{albumId}/recommendations";
+      operationId: "recommendationsForAlbum";
+      variables: RecommendationsForAlbumVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/artists";
+      operationId: "artists";
+      variables: ArtistsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/artists/{artistId}";
+      operationId: "artist";
+      variables: ArtistVariables | reactQuery.SkipToken;
+    }
   | {
       path: "/api/Artwork";
       operationId: "getArtwork";
@@ -3666,104 +3760,19 @@ export type QueryOperation =
       variables: GetDevicesVariables | reactQuery.SkipToken;
     }
   | {
-      path: "/api/Library/scan/progress/{requestId}";
-      operationId: "getScanProgress";
-      variables: GetScanProgressVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/scan/active";
-      operationId: "getActiveScans";
-      variables: GetActiveScansVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/search";
-      operationId: "search";
-      variables: SearchVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/logPlayback";
-      operationId: "logPlayback";
-      variables: LogPlaybackVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/original";
-      operationId: "fileFromLibrary";
-      variables: FileFromLibraryVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/transcode";
-      operationId: "transcodeTrack";
-      variables: TranscodeTrackVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/stream";
-      operationId: "streamTrack";
-      variables: StreamTrackVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/{trackId}/recommendations";
-      operationId: "recommendationsForTrack";
-      variables: RecommendationsForTrackVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/albums/{albumId}/recommendations";
-      operationId: "recommendationsForAlbum";
-      variables: RecommendationsForAlbumVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks/favorites";
+      path: "/api/favorites/tracks";
       operationId: "favoriteTracks";
       variables: FavoriteTracksVariables | reactQuery.SkipToken;
     }
   | {
-      path: "/albums/favorites";
+      path: "/api/favorites/albums";
       operationId: "favoriteAlbums";
       variables: FavoriteAlbumsVariables | reactQuery.SkipToken;
     }
   | {
-      path: "/api/Library/albums/recently-added";
-      operationId: "recentlyAddedAlbums";
-      variables: RecentlyAddedAlbumsVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/artists/favorites";
+      path: "/api/favorites/artists";
       operationId: "favoriteArtists";
       variables: FavoriteArtistsVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/tracks";
-      operationId: "tracks";
-      variables: TracksVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/albums";
-      operationId: "albums";
-      variables: AlbumsVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/albums/paginated";
-      operationId: "paginatedAlbums";
-      variables: PaginatedAlbumsVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/artists/paginated";
-      operationId: "paginatedArtists";
-      variables: PaginatedArtistsVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/albums/{albumId}";
-      operationId: "album";
-      variables: AlbumVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/albums/{albumId}/tracks";
-      operationId: "albumTracks";
-      variables: AlbumTracksVariables | reactQuery.SkipToken;
-    }
-  | {
-      path: "/api/Library/artists/{artistId}";
-      operationId: "artist";
-      variables: ArtistVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Onboarding/listDirectories";
@@ -3784,4 +3793,49 @@ export type QueryOperation =
       path: "/api/Plugin/unload";
       operationId: "unloadPlugins";
       variables: UnloadPluginsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/scan/progress/{requestId}";
+      operationId: "getScanProgress";
+      variables: GetScanProgressVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/scan/active";
+      operationId: "getActiveScans";
+      variables: GetActiveScansVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/search";
+      operationId: "search";
+      variables: SearchVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/stream/{trackId}";
+      operationId: "streamFile";
+      variables: StreamFileVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/stream/tracks/{trackId}/original";
+      operationId: "getOriginalStreamUrl";
+      variables: GetOriginalStreamUrlVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/stream/tracks/{trackId}/transcode";
+      operationId: "transcodeTrack";
+      variables: TranscodeTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/stream/tracks/{trackId}/hls";
+      operationId: "streamTrack";
+      variables: StreamTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/tracks";
+      operationId: "tracks";
+      variables: TracksVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/tracks/{trackId}/recommendations";
+      operationId: "recommendationsForTrack";
+      variables: RecommendationsForTrackVariables | reactQuery.SkipToken;
     };

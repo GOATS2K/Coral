@@ -31,10 +31,11 @@ export const PlayerEventNames = {
 };
 
 export class MpvPlayer extends EventEmitter {
-  constructor(baseUrl) {
+  constructor() {
     super();
     this.handle = null;
     this.tracks = [];
+    this.trackUrls = {}; // Map of trackId -> signed URL
     this.currentTrackIndex = 0;
     this.isPlaying = false;
     this.repeatMode = 'off'; // 'off' | 'all' | 'one'
@@ -42,7 +43,6 @@ export class MpvPlayer extends EventEmitter {
     this.isRunning = false;
     this.eventPollingInterval = null;
     this.isInitialized = false;
-    this.baseUrl = baseUrl;
     this._loggedInvalidEvent = false;
 
     // Property observation IDs
@@ -248,12 +248,13 @@ export class MpvPlayer extends EventEmitter {
     // Let mpv handle playlist advancement for gapless playback
   }
 
-  async loadQueue(tracks, startIndex = 0) {
+  async loadQueue(tracks, startIndex = 0, trackUrls = {}) {
     if (!this.handle) {
       throw new Error('[MpvPlayer] Not initialized');
     }
 
     this.tracks = tracks;
+    this.trackUrls = trackUrls; // Store signed URLs for later use
     this.currentTrackIndex = startIndex;
 
     try {
@@ -262,10 +263,14 @@ export class MpvPlayer extends EventEmitter {
 
       this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: true });
 
-      // Load all tracks into playlist
+      // Load all tracks into playlist using pre-signed URLs
       for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
-        const url = `${this.baseUrl}/api/library/tracks/${track.id}/original`;
+        const url = trackUrls[track.id];
+        if (!url) {
+          console.error(`[MpvPlayer] No signed URL for track ${track.id}, skipping`);
+          continue;
+        }
         const mode = i === 0 ? 'replace' : 'append';
 
         const loadCmd = `loadfile "${url}" ${mode}`;
@@ -300,10 +305,13 @@ export class MpvPlayer extends EventEmitter {
     return parseInt(countStr, 10) || 0;
   }
 
-  updateQueue(tracks, currentIndex) {
+  updateQueue(tracks, currentIndex, trackUrls = {}) {
     if (!this.handle) {
       throw new Error('[MpvPlayer] Not initialized');
     }
+
+    // Merge new URLs with existing ones
+    this.trackUrls = { ...this.trackUrls, ...trackUrls };
 
     try {
       // Get actual playlist count from mpv to verify sync
@@ -317,7 +325,11 @@ export class MpvPlayer extends EventEmitter {
 
         for (let i = 0; i < tracks.length; i++) {
           const track = tracks[i];
-          const url = `${this.baseUrl}/api/library/tracks/${track.id}/original`;
+          const url = this.trackUrls[track.id];
+          if (!url) {
+            console.error(`[MpvPlayer] No signed URL for track ${track.id}, skipping`);
+            continue;
+          }
           const mode = i === 0 ? 'replace' : 'append';
           mpv_command_string(this.handle, `loadfile "${url}" ${mode}`);
         }
@@ -351,7 +363,11 @@ export class MpvPlayer extends EventEmitter {
           const [movedTrack] = mpvState.splice(currentPos, 1);
           mpvState.splice(targetPos, 0, movedTrack);
         } else if (currentPos === -1) {
-          const url = `${this.baseUrl}/api/library/tracks/${desiredTrack.id}/original`;
+          const url = this.trackUrls[desiredTrack.id];
+          if (!url) {
+            console.error(`[MpvPlayer] No signed URL for track ${desiredTrack.id}, skipping`);
+            continue;
+          }
 
           // Get playlist count BEFORE appending to know where it will go
           const beforeAppendCountStr = mpv_get_property_string(this.handle, 'playlist-count');

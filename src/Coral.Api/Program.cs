@@ -93,13 +93,10 @@ builder.Services.AddAuthentication(options =>
         }
 
         // Check for cookie
-        if (context.Request.Cookies.ContainsKey(AuthConstants.Cookies.AuthCookie))
-        {
-            return CookieAuthenticationDefaults.AuthenticationScheme;
-        }
-
-        // Default to JWT (will fail auth if no token, which is correct behavior)
-        return JwtBearerDefaults.AuthenticationScheme;
+        return context.Request.Cookies.ContainsKey(AuthConstants.Cookies.AuthCookie) 
+            ? CookieAuthenticationDefaults.AuthenticationScheme
+            // Default to JWT (will fail auth if no token, which is correct behavior)
+            : JwtBearerDefaults.AuthenticationScheme;
     };
 });
 builder.Services.AddAuthorization();

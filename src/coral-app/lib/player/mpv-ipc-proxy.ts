@@ -1,8 +1,17 @@
 import type { SimpleTrackDto } from '@/lib/client/schemas';
+import { fetchGetOriginalStreamUrl } from '@/lib/client/components';
 import type { RepeatMode } from '@/lib/state';
 import EventEmitter from 'eventemitter3';
 import type { PlayerBackend, PlayerEvents } from './player-backend';
 import { PlayerEventNames } from './player-backend';
+
+interface CachedUrl {
+  url: string;
+  expiresAt: number; // Unix timestamp in seconds
+}
+
+// Buffer time before expiry to refresh URLs (5 minutes)
+const URL_REFRESH_BUFFER_SECONDS = 5 * 60;
 
 /**
  * IPC Proxy for MpvPlayer that runs in the Electron renderer process
@@ -13,6 +22,9 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> implements PlayerBac
   private isInitialized = false;
   private dummyAudio: HTMLAudioElement | null = null;
   private dummyAudioBlobUrl: string | null = null;
+
+  // Cache of signed URLs by track ID
+  private urlCache: Map<string, CachedUrl> = new Map();
 
   // Cached state updated by IPC events (matches MSE player API pattern)
   private cachedState = {
@@ -31,13 +43,13 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> implements PlayerBac
   }
 
   /**
-   * Initialize the player with the backend URL
+   * Initialize the player
    * Must be called after construction
    */
-  async initialize(baseUrl: string): Promise<void> {
+  async initialize(): Promise<void> {
     try {
-      console.info('[MpvIpcProxy] Initializing with baseUrl:', baseUrl);
-      const result = await this.invoke('mpv:initialize', baseUrl);
+      console.info('[MpvIpcProxy] Initializing');
+      const result = await this.invoke('mpv:initialize');
       if (result.success) {
         this.isInitialized = true;
         console.info('[MpvIpcProxy] Initialized successfully');
@@ -183,15 +195,80 @@ export class MpvIpcProxy extends EventEmitter<PlayerEvents> implements PlayerBac
     return await ipcRenderer.invoke(channel, ...args);
   }
 
+  /**
+   * Check if a cached URL is still valid (not expired or about to expire)
+   */
+  private isUrlValid(cached: CachedUrl): boolean {
+    const now = Math.floor(Date.now() / 1000);
+    return cached.expiresAt > now + URL_REFRESH_BUFFER_SECONDS;
+  }
+
+  /**
+   * Parse expiry timestamp from a signed URL
+   */
+  private parseExpiryFromUrl(url: string): number {
+    try {
+      const urlObj = new URL(url);
+      const expires = urlObj.searchParams.get('expires');
+      return expires ? parseInt(expires, 10) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get signed URLs for tracks, using cache where possible
+   */
+  private async getSignedUrls(tracks: SimpleTrackDto[]): Promise<Record<string, string>> {
+    const trackUrls: Record<string, string> = {};
+    const tracksToFetch: SimpleTrackDto[] = [];
+
+    // Check cache first
+    for (const track of tracks) {
+      const cached = this.urlCache.get(track.id);
+      if (cached && this.isUrlValid(cached)) {
+        trackUrls[track.id] = cached.url;
+      } else {
+        tracksToFetch.push(track);
+      }
+    }
+
+    // Fetch URLs for tracks not in cache or with expired URLs
+    if (tracksToFetch.length > 0) {
+      console.info(`[MpvIpcProxy] Fetching signed URLs for ${tracksToFetch.length}/${tracks.length} tracks (${tracks.length - tracksToFetch.length} cached)`);
+      await Promise.all(
+        tracksToFetch.map(async (track) => {
+          try {
+            const streamData = await fetchGetOriginalStreamUrl({ pathParams: { trackId: track.id } });
+            const url = streamData.link;
+            const expiresAt = this.parseExpiryFromUrl(url);
+
+            // Cache the URL
+            this.urlCache.set(track.id, { url, expiresAt });
+            trackUrls[track.id] = url;
+          } catch (err) {
+            console.error(`[MpvIpcProxy] Failed to get signed URL for track ${track.id}:`, err);
+          }
+        })
+      );
+    }
+
+    return trackUrls;
+  }
+
   async loadQueue(tracks: SimpleTrackDto[], startIndex: number = 0) {
-    const result = await this.invoke('mpv:loadQueue', tracks, startIndex);
+    const trackUrls = await this.getSignedUrls(tracks);
+
+    const result = await this.invoke('mpv:loadQueue', tracks, startIndex, trackUrls);
     if (!result.success) {
       throw new Error(result.error || 'Failed to load queue');
     }
   }
 
-  updateQueue(tracks: SimpleTrackDto[], currentIndex: number) {
-    this.invoke('mpv:updateQueue', tracks, currentIndex).catch(err => {
+  async updateQueue(tracks: SimpleTrackDto[], currentIndex: number) {
+    const trackUrls = await this.getSignedUrls(tracks);
+
+    this.invoke('mpv:updateQueue', tracks, currentIndex, trackUrls).catch(err => {
       console.error('[MpvIpcProxy] updateQueue failed:', err);
     });
   }

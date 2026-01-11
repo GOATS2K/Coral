@@ -22,9 +22,6 @@ if (isDevelopment) {
 // Keep a global reference of window to prevent garbage collection
 let mainWindow = null;
 
-// Default backend URL (should match Config.ts default)
-const DEFAULT_BACKEND_URL = 'http://localhost:5031';
-
 // Setup electron-serve for production (called before app.whenReady)
 const loadURL = serve({ directory: 'dist' });
 
@@ -102,7 +99,7 @@ function getTitleBarColors(theme) {
 app.whenReady().then(async () => {
   // Initialize MPV IPC handlers BEFORE creating window to avoid race condition
   // (renderer may try to invoke handlers immediately on load)
-  setupMpvIpcHandlers(DEFAULT_BACKEND_URL);
+  setupMpvIpcHandlers();
 
   await createMainWindow();
 

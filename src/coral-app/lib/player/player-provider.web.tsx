@@ -30,10 +30,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     const initializePlayer = async () => {
       if (isElectron) {
-        // Electron: Create MpvIpcProxy and initialize with backend URL from config
-        const baseUrl = await Config.getBackendUrl();
+        // Electron: Create MpvIpcProxy and initialize
         const mpvPlayer = new MpvIpcProxy();
-        await mpvPlayer.initialize(baseUrl);
+        await mpvPlayer.initialize();
         playerInstance = mpvPlayer;
       } else {
         // Web: Use MSE player (no async initialization needed)

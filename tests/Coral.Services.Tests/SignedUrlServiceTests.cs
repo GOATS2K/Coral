@@ -253,6 +253,135 @@ public class SignedUrlServiceTests
         Assert.True(isValid);
     }
 
+    // Track ID-based signing tests
+
+    [Fact]
+    public void GenerateSignedUrl_TrackId_ReturnsUrlWithQueryParams()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = "https://example.com/api/stream/" + trackId;
+
+        // act
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl);
+
+        // assert
+        Assert.StartsWith(baseUrl, signedUrl);
+        Assert.Contains("?expires=", signedUrl);
+        Assert.Contains("&signature=", signedUrl);
+    }
+
+    [Fact]
+    public void GenerateSignedUrl_TrackIdWithQueryString_AppendsWithAmpersand()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}?format=flac";
+
+        // act
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl);
+
+        // assert
+        Assert.StartsWith(baseUrl, signedUrl);
+        Assert.Contains("&expires=", signedUrl);
+        Assert.Contains("&signature=", signedUrl);
+    }
+
+    [Fact]
+    public void ValidateSignature_TrackId_ValidSignature_ReturnsTrue()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}";
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl);
+        var (expires, signature) = ExtractParamsFromUrl(signedUrl);
+
+        // act
+        var isValid = service.ValidateSignature(trackId, expires, signature);
+
+        // assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public void ValidateSignature_TrackId_TamperedTrackId_ReturnsFalse()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}";
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl);
+        var (expires, signature) = ExtractParamsFromUrl(signedUrl);
+
+        var tamperedTrackId = Guid.NewGuid();
+
+        // act
+        var isValid = service.ValidateSignature(tamperedTrackId, expires, signature);
+
+        // assert
+        Assert.False(isValid);
+    }
+
+    [Fact]
+    public void ValidateSignature_TrackId_ExpiredSignature_ReturnsFalse()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}";
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl, TimeSpan.FromMinutes(5));
+        var (expires, signature) = ExtractParamsFromUrl(signedUrl);
+
+        // Advance time past expiry
+        _timeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        // act
+        var isValid = service.ValidateSignature(trackId, expires, signature);
+
+        // assert
+        Assert.False(isValid);
+    }
+
+    [Fact]
+    public void ValidateSignature_TrackId_NotYetExpired_ReturnsTrue()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}";
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl, TimeSpan.FromMinutes(10));
+        var (expires, signature) = ExtractParamsFromUrl(signedUrl);
+
+        // Advance time but not past expiry
+        _timeProvider.Advance(TimeSpan.FromMinutes(5));
+
+        // act
+        var isValid = service.ValidateSignature(trackId, expires, signature);
+
+        // assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public void GenerateSignedUrl_TrackId_DefaultExpiry_ExpiresIn24Hours()
+    {
+        // arrange
+        var service = CreateService();
+        var trackId = Guid.NewGuid();
+        var baseUrl = $"https://example.com/api/stream/{trackId}";
+
+        // act
+        var signedUrl = service.GenerateSignedUrl(trackId, baseUrl);
+
+        // assert
+        var expires = ExtractExpiresFromUrl(signedUrl);
+        var expectedExpires = _timeProvider.GetUtcNow().AddHours(24).ToUnixTimeSeconds();
+        Assert.Equal(expectedExpires, expires);
+    }
+
     private static long ExtractExpiresFromUrl(string url)
     {
         var match = System.Text.RegularExpressions.Regex.Match(url, @"expires=(\d+)");

@@ -42,14 +42,14 @@ export function usePlayer() {
       originalQueue: null,
       initializer: initializer || null,
     });
-    loadTrack(playerA, track.id);
+    await loadTrack(playerA, track.id);
     playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(playerA);
     playerA.play();
 
     const nextTrack = tracks[startIndex + 1];
     if (nextTrack) {
-      loadTrack(playerB, nextTrack.id);
+      loadTrack(playerB, nextTrack.id).catch(console.error);
       playerBTrackIdRef.current = nextTrack.id;
     }
   };
@@ -109,7 +109,7 @@ export function usePlayer() {
       }
       const nextTrack = state.queue[nextIndex];
       if (nextTrack) {
-        loadTrack(currentActive, nextTrack.id);
+        loadTrack(currentActive, nextTrack.id).catch(console.error);
         // currentActive becomes the new buffer after swap
         if (state.activePlayer === 'A') {
           playerATrackIdRef.current = nextTrack.id;
@@ -124,7 +124,7 @@ export function usePlayer() {
     if (direction === -1) {
       currentActive.pause();
       currentActive.seekTo(0);
-      loadTrack(currentBuffer, track.id);
+      await loadTrack(currentBuffer, track.id);
       // currentBuffer becomes the new active after swap
       if (state.activePlayer === 'A') {
         playerBTrackIdRef.current = track.id;
@@ -150,7 +150,7 @@ export function usePlayer() {
         }
         const nextTrack = nextIndex < state.queue.length ? state.queue[nextIndex] : null;
         if (nextTrack) {
-          loadTrack(currentActive, nextTrack.id);
+          loadTrack(currentActive, nextTrack.id).catch(console.error);
           // currentActive becomes the new buffer after swap
           if (state.activePlayer === 'A') {
             playerATrackIdRef.current = nextTrack.id;
@@ -165,7 +165,7 @@ export function usePlayer() {
     }
 
     // Forward skip without buffer - load on active player
-    loadTrack(currentActive, track.id);
+    await loadTrack(currentActive, track.id);
     // Update ref for active player (stays the same, no swap)
     if (state.activePlayer === 'A') {
       playerATrackIdRef.current = track.id;
@@ -190,7 +190,7 @@ export function usePlayer() {
       }
       const nextTrack = state.queue[nextIndex];
       if (nextTrack) {
-        loadTrack(currentBuffer, nextTrack.id);
+        loadTrack(currentBuffer, nextTrack.id).catch(console.error);
         // Update ref for buffer player
         if (state.activePlayer === 'A') {
           playerBTrackIdRef.current = nextTrack.id;
@@ -226,14 +226,14 @@ export function usePlayer() {
     bufferPlayer.seekTo(0);
 
     setState({ ...state, currentIndex: index, currentTrack: track, activePlayer: 'A' });
-    loadTrack(playerA, track.id);
+    await loadTrack(playerA, track.id);
     playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(playerA);
     playerA.play();
 
     const nextTrack = state.queue[index + 1];
     if (nextTrack) {
-      loadTrack(playerB, nextTrack.id);
+      loadTrack(playerB, nextTrack.id).catch(console.error);
       playerBTrackIdRef.current = nextTrack.id;
     }
   };
@@ -307,7 +307,7 @@ export function usePlayer() {
         const trackIdToLoad = nextTrack.id;
         const targetBufferName = bufferPlayerName;
         setTimeout(() => {
-          loadTrack(bufferPlayer, trackIdToLoad);
+          loadTrack(bufferPlayer, trackIdToLoad).catch(console.error);
           if (targetBufferName === 'A') {
             // eslint-disable-next-line react-compiler/react-compiler
             playerATrackIdRef.current = trackIdToLoad;
@@ -318,7 +318,7 @@ export function usePlayer() {
         return;
       }
 
-      loadTrack(bufferPlayer, nextTrack.id);
+      loadTrack(bufferPlayer, nextTrack.id).catch(console.error);
       bufferTrackIdRef.current = nextTrack.id;
     }
   }, [state.queue, state.currentIndex, state.activePlayer, state.repeat, bufferPlayer, playerATrackIdRef, playerBTrackIdRef]);
@@ -371,14 +371,14 @@ export function usePlayerActions() {
       originalQueue: null,
       initializer: initializer || null,
     });
-    loadTrack(context.playerA, track.id);
+    await loadTrack(context.playerA, track.id);
     context.playerATrackIdRef.current = track.id;
     await waitForPlayerLoaded(context.playerA);
     context.playerA.play();
 
     const nextTrack = tracks[startIndex + 1];
     if (nextTrack) {
-      loadTrack(context.playerB, nextTrack.id);
+      loadTrack(context.playerB, nextTrack.id).catch(console.error);
       context.playerBTrackIdRef.current = nextTrack.id;
     }
   };

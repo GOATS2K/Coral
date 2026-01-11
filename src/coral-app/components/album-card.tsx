@@ -1,6 +1,7 @@
 import { View, Image, Pressable, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { baseUrl } from '@/lib/client/fetcher';
+import { fetchAlbumTracks } from '@/lib/client/components';
 import { Link } from 'expo-router';
 import { useState, useMemo, useCallback } from 'react';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
@@ -34,10 +35,8 @@ export function AlbumCard({ album }: AlbumCardProps) {
     return 'Unknown Artist';
   }, [album.artists]);
 
-  const fetchAlbumTracks = useCallback(async () => {
-    const response = await fetch(`${baseUrl}/api/library/albums/${album.id}/tracks`);
-    if (!response.ok) throw new Error('Failed to fetch tracks');
-    return await response.json();
+  const getAlbumTracks = useCallback(async () => {
+    return await fetchAlbumTracks({ pathParams: { albumId: album.id } });
   }, [album.id]);
 
   const handlePlayAlbum = useCallback(async (e: any) => {
@@ -45,7 +44,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
     e.stopPropagation();
 
     try {
-      const tracks = await fetchAlbumTracks();
+      const tracks = await getAlbumTracks();
       if (tracks && tracks.length > 0) {
         play(tracks, 0, {
           source: PlaybackSource.Album,
@@ -55,7 +54,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
     } catch (error) {
       console.error('Error playing album:', error);
     }
-  }, [fetchAlbumTracks, play, album.id]);
+  }, [getAlbumTracks, play, album.id]);
 
   return (
     <Link href={`/albums/${album.id}`} asChild>

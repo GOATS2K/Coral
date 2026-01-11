@@ -3,11 +3,11 @@ import { Heart, ListPlus, User } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import type { SimpleAlbumDto } from '@/lib/client/schemas';
+import { fetchAlbumTracks } from '@/lib/client/components';
 import { useToggleFavoriteAlbum } from '@/lib/hooks/use-toggle-favorite-album';
 import { useRouter } from 'expo-router';
 import { useSetAtom } from 'jotai';
 import { playerStateAtom } from '@/lib/state';
-import { baseUrl } from '@/lib/client/fetcher';
 
 interface MenuComponents {
   MenuItem: ComponentType<any>;
@@ -34,9 +34,7 @@ export function AlbumMenuItems({ album, components }: AlbumMenuItemsProps) {
 
   const handleAddToQueue = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/library/albums/${album.id}/tracks`);
-      if (!response.ok) throw new Error('Failed to fetch tracks');
-      const tracks = await response.json();
+      const tracks = await fetchAlbumTracks({ pathParams: { albumId: album.id } });
       if (tracks && tracks.length > 0) {
         setState({ type: 'addMultipleToQueue', tracks });
       }

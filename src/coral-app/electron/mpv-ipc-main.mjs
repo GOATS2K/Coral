@@ -19,41 +19,18 @@ function forwardEventToRenderer(channel, ...args) {
 
 /**
  * Sets up IPC handlers for the MpvPlayer in the Electron main process
- * @param {string} defaultBaseUrl - Default backend URL
  */
-export function setupMpvIpcHandlers(defaultBaseUrl) {
+export function setupMpvIpcHandlers() {
   let player = null;
-  let baseUrl = defaultBaseUrl;
-
-  // Update base URL (called from renderer when config loads)
-  ipcMain.handle('mpv:setBaseUrl', (_, newBaseUrl) => {
-    try {
-      baseUrl = newBaseUrl;
-      console.info('[MpvIpcMain] Base URL updated to:', baseUrl);
-
-      // If player exists, recreate it with new URL
-      if (player) {
-        player.destroy();
-        player = new MpvPlayer(baseUrl);
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('[MpvIpcMain] Failed to set base URL:', error);
-      return { success: false, error: String(error) };
-    }
-  });
 
   // Initialize player
-  ipcMain.handle('mpv:initialize', (_, providedBaseUrl) => {
+  ipcMain.handle('mpv:initialize', () => {
     try {
       if (player) {
         player.destroy();
       }
 
-      // Use provided base URL if available, otherwise use stored one
-      const urlToUse = providedBaseUrl || baseUrl;
-      player = new MpvPlayer(urlToUse);
+      player = new MpvPlayer();
 
       // Forward player events to renderer
       player.on('playbackStateChanged', ({ isPlaying }) => {
@@ -81,12 +58,12 @@ export function setupMpvIpcHandlers(defaultBaseUrl) {
   });
 
   // Load queue
-  ipcMain.handle('mpv:loadQueue', async (_, tracks, startIndex) => {
+  ipcMain.handle('mpv:loadQueue', async (_, tracks, startIndex, trackUrls) => {
     try {
       if (!player) {
         throw new Error('Player not initialized');
       }
-      await player.loadQueue(tracks, startIndex);
+      await player.loadQueue(tracks, startIndex, trackUrls);
       return { success: true };
     } catch (error) {
       console.error('[MpvIpcMain] loadQueue failed:', error);
@@ -95,12 +72,12 @@ export function setupMpvIpcHandlers(defaultBaseUrl) {
   });
 
   // Update queue
-  ipcMain.handle('mpv:updateQueue', (_, tracks, currentIndex) => {
+  ipcMain.handle('mpv:updateQueue', (_, tracks, currentIndex, trackUrls) => {
     try {
       if (!player) {
         throw new Error('Player not initialized');
       }
-      player.updateQueue(tracks, currentIndex);
+      player.updateQueue(tracks, currentIndex, trackUrls);
       return { success: true };
     } catch (error) {
       console.error('[MpvIpcMain] updateQueue failed:', error);
@@ -270,7 +247,6 @@ export function setupMpvIpcHandlers(defaultBaseUrl) {
  */
 export function cleanupMpvIpcHandlers() {
   const channels = [
-    'mpv:setBaseUrl',
     'mpv:initialize',
     'mpv:loadQueue',
     'mpv:updateQueue',

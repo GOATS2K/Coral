@@ -9,6 +9,9 @@ public interface ISignedUrlService
 {
     string GenerateSignedUrl(string path, TimeSpan? expiresIn = null);
     bool ValidateSignature(string path, long expires, string signature);
+
+    string GenerateSignedUrl(Guid trackId, string baseUrl, TimeSpan? expiresIn = null);
+    bool ValidateSignature(Guid trackId, long expires, string signature);
 }
 
 public class SignedUrlService : ISignedUrlService
@@ -50,6 +53,39 @@ public class SignedUrlService : ISignedUrlService
     private string ComputeSignature(string path, long expires)
     {
         var dataToSign = $"{path}{expires}";
+        using var hmac = new HMACSHA256(_secretBytes);
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToSign));
+        return Convert.ToBase64String(hash)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
+    }
+
+    public string GenerateSignedUrl(Guid trackId, string baseUrl, TimeSpan? expiresIn = null)
+    {
+        var expires = _timeProvider.GetUtcNow().Add(expiresIn ?? _defaultExpiry).ToUnixTimeSeconds();
+        var signature = ComputeSignature(trackId, expires);
+
+        var separator = baseUrl.Contains('?') ? '&' : '?';
+        return $"{baseUrl}{separator}expires={expires}&signature={signature}";
+    }
+
+    public bool ValidateSignature(Guid trackId, long expires, string signature)
+    {
+        var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expires);
+        if (expiresAt < _timeProvider.GetUtcNow())
+            return false;
+
+        var expectedSignature = ComputeSignature(trackId, expires);
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(signature),
+            Encoding.UTF8.GetBytes(expectedSignature)
+        );
+    }
+
+    private string ComputeSignature(Guid trackId, long expires)
+    {
+        var dataToSign = $"{trackId}{expires}";
         using var hmac = new HMACSHA256(_secretBytes);
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToSign));
         return Convert.ToBase64String(hash)

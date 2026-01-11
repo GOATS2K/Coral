@@ -1,12 +1,13 @@
 import type { AudioPlayer } from 'expo-audio';
-import { baseUrl } from '@/lib/client/fetcher';
+import { fetchGetOriginalStreamUrl } from '@/lib/client/components';
 
-export const getTrackUrl = (trackId: string) => {
-  // Both web (Web Audio API) and native (expo-audio) use original files
-  return `${baseUrl}/api/library/tracks/${trackId}/original`;
+export const getTrackUrl = async (trackId: string): Promise<string> => {
+  // Fetch the signed URL from the API
+  const streamData = await fetchGetOriginalStreamUrl({ pathParams: { trackId } });
+  return streamData.link;
 };
 
-export const loadTrack = (player: AudioPlayer, trackId: string) => {
+export const loadTrack = async (player: AudioPlayer, trackId: string) => {
   // Don't interrupt a currently playing track - let it finish naturally
   // Only pause/seek if the player is NOT playing
   if (!player.playing) {
@@ -14,7 +15,8 @@ export const loadTrack = (player: AudioPlayer, trackId: string) => {
     player.seekTo(0);
   }
 
-  player.replace(getTrackUrl(trackId));
+  const url = await getTrackUrl(trackId);
+  player.replace(url);
 };
 
 export const waitForPlayerLoaded = (player: AudioPlayer, timeoutMs = 5000): Promise<void> => {

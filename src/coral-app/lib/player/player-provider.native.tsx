@@ -316,23 +316,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             activePlayer.pause();
             activePlayer.seekTo(0);
 
-            // Load next track
-            loadTrack(activePlayer, nextTrack.id);
-            if (currentState.activePlayer === 'A') {
-              playerATrackIdRef.current = nextTrack.id;
-            } else {
-              playerBTrackIdRef.current = nextTrack.id;
-            }
+            // Load next track and wait for it to be ready, then play
+            loadTrack(activePlayer, nextTrack.id).then(() => {
+              if (currentState.activePlayer === 'A') {
+                playerATrackIdRef.current = nextTrack.id;
+              } else {
+                playerBTrackIdRef.current = nextTrack.id;
+              }
 
-            // Update state
-            setState((latestState) => ({
-              ...latestState,
-              currentIndex: nextIndex,
-              currentTrack: latestState.queue[nextIndex],
-            }));
+              // Update state
+              setState((latestState) => ({
+                ...latestState,
+                currentIndex: nextIndex,
+                currentTrack: latestState.queue[nextIndex],
+              }));
 
-            // Wait for load and play
-            waitForPlayerLoaded(activePlayer).then(() => {
+              // Wait for load and play
+              return waitForPlayerLoaded(activePlayer);
+            }).then(() => {
               activePlayer.play();
             }).catch(err => {
               console.error('Failed to load next track:', err);

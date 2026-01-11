@@ -1,4 +1,4 @@
-import { baseUrl } from '@/lib/client/fetcher';
+import { fetchStreamTrack } from '@/lib/client/components';
 import M3U8Parser from '@/lib/vendor/hls.js/src/loader/m3u8-parser';
 import type { LevelDetails } from '@/lib/vendor/hls.js/src/loader/level-details';
 
@@ -24,12 +24,7 @@ export class FragmentLoader {
    * Fetch stream information for a track from the API
    */
   async fetchStreamInfo(trackId: string): Promise<StreamInfo> {
-    const streamInfoResponse = await fetch(`${baseUrl}/api/library/tracks/${trackId}/stream`);
-    if (!streamInfoResponse.ok) {
-      throw new Error(`Failed to get stream info: ${streamInfoResponse.status}`);
-    }
-
-    const streamData = await streamInfoResponse.json();
+    const streamData = await fetchStreamTrack({ pathParams: { trackId } });
     const codec = streamData.transcodeInfo?.codec;
 
     if (!codec) {

@@ -176,9 +176,6 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> implements Pla
     // Reset fragment index to match the seek position
     this.mseLoader.resetToPosition(absoluteTime);
 
-    // Check if we need to refetch playlist (for live/EVENT streams)
-    await this.mseLoader.checkAndRefetchIfNeeded();
-
     // Set currentTime - browser may reject if unbuffered
     this.audioElement.currentTime = absoluteTime;
 
@@ -244,6 +241,11 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> implements Pla
   }
 
   private checkTrackTransition() {
+    // Don't transition if current track is still transcoding - duration may grow
+    if (this.mseLoader.isCurrentTrackTranscoding()) {
+      return;
+    }
+
     const currentTime = this.audioElement.currentTime;
     const actualTrackId = this.mseLoader.getTrackIdAtTime(currentTime);
     const currentTrackId = this.mseLoader.getCurrentTrackId();

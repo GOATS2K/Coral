@@ -201,28 +201,15 @@ export class MSEAudioLoader {
 
   private async loadFragments(trackId: string, count: number): Promise<void> {
     const trackInfo = this.tracks.get(trackId);
-    if (!trackInfo || !trackInfo.levelDetails) return;
+    if (!trackInfo?.levelDetails) return;
     if (trackInfo.isLoadingFragments) return;
 
     const startIndex = trackInfo.currentFragmentIndex;
+    const fragments = trackInfo.levelDetails.fragments;
 
     if (this.debugLogging) {
-      console.info(`[MSE] loadFragments: trackId=${trackId}, startIndex=${startIndex}, count=${count}, totalFragments=${trackInfo.levelDetails.fragments.length}`);
+      console.info(`[MSE] loadFragments: trackId=${trackId}, startIndex=${startIndex}, count=${count}, totalFragments=${fragments.length}`);
     }
-
-    // For live/EVENT streams, ALWAYS refetch playlist before loading fragments
-    // to ensure we have the latest fragment data
-    if (trackInfo.levelDetails.live) {
-      try {
-        const updatedInfo = await this.fragmentLoader.fetchStreamInfo(trackId);
-        trackInfo.levelDetails = updatedInfo.levelDetails;
-      } catch (error) {
-        console.error('[MSE] Failed to refetch playlist:', error);
-        return;
-      }
-    }
-
-    const fragments = trackInfo.levelDetails.fragments;
 
     // If still out of bounds after refetch, fragment doesn't exist yet
     if (startIndex >= fragments.length) {
@@ -324,57 +311,58 @@ export class MSEAudioLoader {
       );
     }
 
-    if (needsData) {
-      const trackInfo = this.tracks.get(this.currentTrackId);
+    // Refresh playlist if track is still transcoding (always, regardless of needsData)
+    await this.refreshPlaylistAndUpdateDuration(this.currentTrackId);
 
-      if (trackInfo && trackInfo.currentFragmentIndex < trackInfo.levelDetails!.fragments.length) {
-        // Only correct timestampOffset if it's pointing to a different track's timeline
-        // (don't correct during normal progressive loading or when next track is pre-loading)
-        if (this.sourceBuffer) {
-          const currentTrackEnd = trackInfo.bufferStartTime + this.getTrackDuration(this.currentTrackId);
-          const offsetOutsideCurrentTrack = this.sourceBuffer.timestampOffset < trackInfo.bufferStartTime ||
-                                             this.sourceBuffer.timestampOffset >= currentTrackEnd;
+    const trackInfo = this.tracks.get(this.currentTrackId);
+    if (!needsData) return;
 
-          if (offsetOutsideCurrentTrack) {
-            this.sourceBuffer.timestampOffset = trackInfo.bufferStartTime;
-          }
-        }
-        // Load 1 fragment at a time to avoid quota issues
-        await this.loadFragments(this.currentTrackId, 1);
-      } else if (trackInfo && trackInfo.levelDetails && trackInfo.levelDetails.live) {
-        // Live stream - all current fragments loaded, refetch playlist for new fragments
-        try {
-          const updatedInfo = await this.fragmentLoader.fetchStreamInfo(this.currentTrackId);
-          trackInfo.levelDetails = updatedInfo.levelDetails;
-
-          // Check if new fragments are available
-          if (trackInfo.currentFragmentIndex < trackInfo.levelDetails.fragments.length) {
-            await this.loadFragments(this.currentTrackId, 1);
-          }
-        } catch (error) {
-          console.error('[MSE] Failed to refetch live playlist:', error);
-        }
-      } else {
-        // Current track is fully loaded (non-live), check if we should start loading next track
-        const bufferInfo = this.getCurrentTrackBufferInfo();
-        if (bufferInfo) {
-          const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
-
-          if (timeUntilEnd < this.bufferAheadTarget) {
-            // Find next track in queue
-            const nextTrackId = this.findNextQueuedTrack();
-            if (nextTrackId) {
-              const nextTrackInfo = this.tracks.get(nextTrackId);
-              if (nextTrackInfo && nextTrackInfo.currentFragmentIndex === 0) {
-                await this.loadInitSegment(nextTrackId);
-                // Load 2 fragments for next track to ensure smooth transition
-                await this.loadFragments(nextTrackId, 2);
-              }
-            }
-          }
-        }
-      }
+    // Current track has fragments to load
+    if (trackInfo?.levelDetails && trackInfo.currentFragmentIndex < trackInfo.levelDetails.fragments.length) {
+      this.correctTimestampOffsetIfNeeded(trackInfo);
+      await this.loadFragments(this.currentTrackId, 1);
+      return;
     }
+
+    // Current track fully loaded - check if we should load next track
+    if (!trackInfo?.levelDetails?.live) {
+      await this.maybeLoadNextTrack(currentTime);
+    }
+  }
+
+  /**
+   * Correct timestampOffset if it's pointing to a different track's timeline
+   */
+  private correctTimestampOffsetIfNeeded(trackInfo: TrackInfo): void {
+    if (!this.sourceBuffer || !this.currentTrackId) return;
+
+    const currentTrackEnd = trackInfo.bufferStartTime + this.getTrackDuration(this.currentTrackId);
+    const offsetOutsideCurrentTrack = this.sourceBuffer.timestampOffset < trackInfo.bufferStartTime ||
+                                       this.sourceBuffer.timestampOffset >= currentTrackEnd;
+
+    if (offsetOutsideCurrentTrack) {
+      this.sourceBuffer.timestampOffset = trackInfo.bufferStartTime;
+    }
+  }
+
+  /**
+   * Load fragments for the next track if current track is near completion
+   */
+  private async maybeLoadNextTrack(currentTime: number): Promise<void> {
+    const bufferInfo = this.getCurrentTrackBufferInfo();
+    if (!bufferInfo) return;
+
+    const timeUntilEnd = bufferInfo.bufferEndTime - currentTime;
+    if (timeUntilEnd >= this.bufferAheadTarget) return;
+
+    const nextTrackId = this.findNextQueuedTrack();
+    if (!nextTrackId) return;
+
+    const nextTrackInfo = this.tracks.get(nextTrackId);
+    if (!nextTrackInfo || nextTrackInfo.currentFragmentIndex !== 0) return;
+
+    await this.loadInitSegment(nextTrackId);
+    await this.loadFragments(nextTrackId, 2);
   }
 
   private findNextQueuedTrack(): string | null {
@@ -385,6 +373,58 @@ export class MSEAudioLoader {
       }
     }
     return null;
+  }
+
+  /**
+   * Shift buffer times for all tracks queued after the given track
+   * Used when a transcoding track's duration increases
+   */
+  private shiftQueuedTrackTimes(afterTrackId: string, delta: number): void {
+    let foundCurrent = false;
+    for (const [trackId, trackInfo] of this.tracks) {
+      if (trackId === afterTrackId) {
+        foundCurrent = true;
+        continue;
+      }
+      if (foundCurrent) {
+        trackInfo.bufferStartTime += delta;
+        trackInfo.bufferEndTime += delta;
+      }
+    }
+  }
+
+  /**
+   * Refresh playlist for a transcoding track and update duration
+   * Single source of truth for playlist refresh + duration updates
+   */
+  private async refreshPlaylistAndUpdateDuration(trackId: string): Promise<void> {
+    const trackInfo = this.tracks.get(trackId);
+    if (!trackInfo?.levelDetails?.live) return;
+
+    try {
+      const updatedInfo = await this.fragmentLoader.fetchStreamInfo(trackId);
+      const oldDuration = trackInfo.bufferEndTime - trackInfo.bufferStartTime;
+      const newDuration = updatedInfo.duration;
+
+      if (newDuration > oldDuration) {
+        const durationDelta = newDuration - oldDuration;
+        trackInfo.bufferEndTime = trackInfo.bufferStartTime + newDuration;
+        this.nextBufferStartTime += durationDelta;
+        this.shiftQueuedTrackTimes(trackId, durationDelta);
+
+        if (this.debugLogging) {
+          console.info(`[MSE] Track duration updated: ${oldDuration.toFixed(2)}s -> ${newDuration.toFixed(2)}s`);
+        }
+      }
+
+      trackInfo.levelDetails = updatedInfo.levelDetails;
+
+      if (!updatedInfo.levelDetails.live && this.debugLogging) {
+        console.info(`[MSE] Transcoding complete, final duration: ${newDuration.toFixed(2)}s`);
+      }
+    } catch (error) {
+      console.error('[MSE] Failed to refresh playlist:', error);
+    }
   }
 
   private removeOldBuffer(currentTime: number): void {
@@ -546,31 +586,6 @@ export class MSEAudioLoader {
     trackInfo.currentFragmentIndex = newFragmentIndex;
   }
 
-  /**
-   * Check if playlist needs refetching and refetch if necessary
-   * Returns true if playlist was refetched
-   */
-  async checkAndRefetchIfNeeded(): Promise<boolean> {
-    if (!this.currentTrackId) return false;
-
-    const trackInfo = this.tracks.get(this.currentTrackId);
-    if (!trackInfo?.levelDetails) return false;
-
-    // If fragment index is beyond available and stream is live, refetch playlist
-    if (trackInfo.currentFragmentIndex >= trackInfo.levelDetails.fragments.length &&
-        trackInfo.levelDetails.live) {
-      try {
-        const updatedInfo = await this.fragmentLoader.fetchStreamInfo(this.currentTrackId);
-        trackInfo.levelDetails = updatedInfo.levelDetails;
-        return true;
-      } catch (error) {
-        console.error('[MSE] Failed to refetch playlist before seek:', error);
-        return false;
-      }
-    }
-    return false;
-  }
-
   getAudioElement(): HTMLAudioElement {
     return this.audioElement;
   }
@@ -637,6 +652,15 @@ export class MSEAudioLoader {
       bufferStartTime: trackInfo.bufferStartTime,
       bufferEndTime: trackInfo.bufferEndTime,
     };
+  }
+
+  /**
+   * Check if the current track is still being transcoded (live playlist)
+   */
+  isCurrentTrackTranscoding(): boolean {
+    if (!this.currentTrackId) return false;
+    const trackInfo = this.tracks.get(this.currentTrackId);
+    return trackInfo?.levelDetails?.live ?? false;
   }
 
   private getCodecMimeType(codec: string): string {

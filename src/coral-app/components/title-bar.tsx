@@ -1,8 +1,8 @@
 import { Platform, View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { useAtomValue } from 'jotai';
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SettingsIcon, LogOutIcon, UserIcon } from 'lucide-react-native';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SettingsIcon, LogOutIcon, UserIcon, RefreshCwIcon } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { currentUserAtom, themeAtom, lastSearchQueryAtom } from '@/lib/state';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useRunIndexer } from '@/lib/client/components';
+import { useToast } from '@/lib/hooks/use-toast';
+import { updateScanProgressAtom } from '@/lib/signalr/signalr-atoms';
 
 /**
  * Custom title bar with navigation, search, and user menu.
@@ -52,9 +55,35 @@ function TitleBarContent({ isElectron }: TitleBarContentProps) {
   const currentUser = useAtomValue(currentUserAtom);
   const theme = useAtomValue(themeAtom);
   const { logout } = useAuth();
+  const { showToast } = useToast();
+  const updateScanProgress = useSetAtom(updateScanProgressAtom);
+
+  const runIndexer = useRunIndexer({
+    onSuccess: (data) => {
+      showToast('Library scan started');
+      data.scans.forEach((scan) => {
+        updateScanProgress({
+          requestId: scan.requestId,
+          libraryName: scan.libraryName,
+          expectedTracks: 0,
+          tracksAdded: 0,
+          tracksUpdated: 0,
+          tracksDeleted: 0,
+          embeddingsCompleted: 0,
+        });
+      });
+    },
+    onError: () => {
+      showToast('Failed to start library scan');
+    },
+  });
 
   // Detect platform for control positioning (only relevant for Electron)
   const isMac = isElectron && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+  const handleScan = () => {
+    runIndexer.mutate({});
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -122,6 +151,8 @@ function TitleBarContent({ isElectron }: TitleBarContentProps) {
             role={currentUser?.role}
             onAccount={() => router.push('/settings/account')}
             onSettings={() => router.push('/settings')}
+            onScan={handleScan}
+            isScanPending={runIndexer.isPending}
             onLogout={handleLogout}
           />
         </View>
@@ -192,10 +223,12 @@ interface UserMenuProps {
   role?: string;
   onAccount: () => void;
   onSettings: () => void;
+  onScan: () => void;
+  isScanPending: boolean;
   onLogout: () => void;
 }
 
-function UserMenu({ username, role, onAccount, onSettings, onLogout }: UserMenuProps) {
+function UserMenu({ username, role, onAccount, onSettings, onScan, isScanPending, onLogout }: UserMenuProps) {
   const theme = useAtomValue(themeAtom);
   const iconColor = theme === 'dark' ? '#a1a1aa' : '#71717a';
 
@@ -212,7 +245,7 @@ function UserMenu({ username, role, onAccount, onSettings, onLogout }: UserMenuP
           )}
         </Pressable>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="bottom" className="w-40">
+      <DropdownMenuContent align="end" side="bottom" className="w-44">
         <DropdownMenuItem onPress={onAccount}>
           <View>
             <Text className="text-sm font-medium leading-tight">
@@ -224,6 +257,10 @@ function UserMenu({ username, role, onAccount, onSettings, onLogout }: UserMenuP
           </View>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onPress={onScan} disabled={isScanPending}>
+          <Icon as={RefreshCwIcon} className={isScanPending ? "size-4 mr-2 animate-spin" : "size-4 mr-2"} />
+          <Text>Rescan Library</Text>
+        </DropdownMenuItem>
         <DropdownMenuItem onPress={onSettings}>
           <Icon as={SettingsIcon} className="size-4 mr-2" />
           <Text>Settings</Text>

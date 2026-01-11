@@ -5,7 +5,6 @@ import { Text } from '@/components/ui/text';
 import { useAtomValue } from 'jotai';
 import { themeAtom } from '@/lib/state';
 import { cn } from '@/lib/utils';
-import { RescanButton } from '@/components/util/rescan-button';
 import { useState } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
@@ -142,9 +141,6 @@ export function Sidebar() {
             />
           ))}
         </View>
-      </View>
-      <View className={cn(collapsed ? "flex-col items-center" : "flex-row items-center justify-center", "px-2")}>
-        <RescanButton />
       </View>
     </View>
   );

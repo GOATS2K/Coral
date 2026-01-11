@@ -127,10 +127,19 @@ public class StreamController : ControllerBase
         var ffprobeResult = await Ffprobe.GetAudioMetadata(dbTrack.AudioFile.FilePath);
         var audioStream = ffprobeResult?.Streams.FirstOrDefault(s => s.CodecType == "audio");
         var codec = audioStream?.CodecName;
+        string targetScheme;
+        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-Proto", out var scheme))
+        {
+            targetScheme = scheme;
+        }
+        else
+        {
+            targetScheme = HttpContext.Request.Scheme;
+        }
 
         var streamData = new StreamDto()
         {
-            Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
+            Link = $"{targetScheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
             TranscodeInfo = new TranscodeInfoDto()
             {
                 JobId = job.Id,

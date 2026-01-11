@@ -57,8 +57,8 @@ builder.Services.AddAuthentication(options =>
 {
     options.Cookie.Name = AuthConstants.Cookies.AuthCookie;
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
     options.ExpireTimeSpan = TimeSpan.FromDays(jwtSettings.SessionExpirationDays);
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>

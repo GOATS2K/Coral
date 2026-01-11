@@ -1,6 +1,6 @@
 import { View, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { fetchPaginatedAlbums } from '@/lib/client/components';
+import { fetchAlbums } from '@/lib/client/components';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { UniversalAlbumCard } from '@/components/universal-album-card';
 import { DebouncedLoader } from '@/components/debounced-loader';
@@ -19,7 +19,7 @@ export default function AlbumsScreen() {
   } = useInfiniteQuery({
     queryKey: ['albums', 'paginated'],
     queryFn: ({ pageParam }) =>
-      fetchPaginatedAlbums({
+      fetchAlbums({
         queryParams: {
           limit: ITEMS_PER_PAGE,
           offset: pageParam,

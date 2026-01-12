@@ -12,13 +12,62 @@ const DEFAULT_SERVER_URL = 'http://localhost:5031';
 
 export class Config {
   /**
+   * Detect if the app is served from the same origin as the API
+   * by attempting a health check on window.location.origin
+   */
+  static async detectSameOriginApi(): Promise<string | null> {
+    // Only applicable on web platform (not Electron or native)
+    if (typeof window === 'undefined') return null;
+    if (Config.isElectron()) return null;
+
+    const origin = window.location.origin;
+
+    // Skip detection for development servers (localhost with dev ports)
+    if (origin.includes(':8081') || origin.includes(':3000')) {
+      return null;
+    }
+
+    try {
+      // Try to reach the API at the same origin
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(`${origin}/api/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        return origin;
+      }
+    } catch {
+      // API not available at same origin
+    }
+
+    return null;
+  }
+
+  /**
    * Get the server URL
    * @returns Promise<string> The configured server URL or default
    */
   static async getBackendUrl(): Promise<string> {
     try {
-      const url = await AsyncStorage.getItem(CONFIG_KEYS.SERVER_URL);
-      return url || DEFAULT_SERVER_URL;
+      // First check if user has explicitly set a URL
+      const savedUrl = await AsyncStorage.getItem(CONFIG_KEYS.SERVER_URL);
+      if (savedUrl) {
+        return savedUrl;
+      }
+
+      // Try same-origin detection (web only, not Electron)
+      const sameOriginUrl = await Config.detectSameOriginApi();
+      if (sameOriginUrl) {
+        return sameOriginUrl;
+      }
+
+      return DEFAULT_SERVER_URL;
     } catch (error) {
       console.error('Failed to get server URL:', error);
       return DEFAULT_SERVER_URL;

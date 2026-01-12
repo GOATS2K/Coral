@@ -13,6 +13,8 @@
 		<SpaProxyLaunchCommand>bun run web</SpaProxyLaunchCommand>
 		<RuntimeIdentifiers>win-x64;osx-arm64;linux-x64</RuntimeIdentifiers>
 		<SkipSwaggerGen>false</SkipSwaggerGen>
+		<SkipFrontendBuild>false</SkipFrontendBuild>
+		<SkipEssentiaBuild>false</SkipEssentiaBuild>
 		<PublishSingleFile>true</PublishSingleFile>
 		<DebugType>embedded</DebugType>
 		<Version>0.2.0</Version>
@@ -44,21 +46,34 @@
 	  <Folder Include="Properties\PublishProfiles\" />
 	</ItemGroup>
 
-    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild">
+    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild" Condition="'$(SkipEssentiaBuild)' != 'true'">
         <ItemGroup>
             <BindingLibraries Include="..\Coral.Essentia.Cli\build\Debug\**" />
         </ItemGroup>
         <Copy SourceFiles="@(BindingLibraries)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
     </Target>
-	
-	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
-		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install" />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="pnpm run build" />
 
-		<!-- Include the newly-built files in the publish output -->
+    <Target Name="PublishEssentiaCli" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipEssentiaBuild)' != 'true'">
+        <!-- Include Essentia CLI executable in publish output (Linux/macOS: no extension, Windows: .exe) -->
+        <ItemGroup>
+            <EssentiaCliFiles Include="..\Coral.Essentia.Cli\build\Coral.Essentia.Cli*" />
+            <EssentiaCliFiles Include="..\Coral.Essentia.Cli\build\Debug\Coral.Essentia.Cli*" />
+            <ResolvedFileToPublish Include="@(EssentiaCliFiles)" Exclude="@(ResolvedFileToPublish)">
+                <RelativePath>%(FileName)%(Extension)</RelativePath>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+                <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+            </ResolvedFileToPublish>
+        </ItemGroup>
+    </Target>
+	
+	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipFrontendBuild)' != 'true'">
+		<!-- Build coral-app frontend for web -->
+		<Exec WorkingDirectory="$(SpaRoot)" Command="bun install" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="bun run web:export" />
+
+		<!-- Include the built files in publish output -->
 		<ItemGroup>
-			<DistFiles Include="$(SpaRoot)out\**" />
+			<DistFiles Include="$(SpaRoot)dist\**" />
 			<ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
 				<RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
 				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

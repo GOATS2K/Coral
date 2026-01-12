@@ -2248,6 +2248,104 @@ export const useRemoveFavoriteArtist = (
   });
 };
 
+export type RootDirectoriesError = Fetcher.ErrorWrapper<undefined>;
+
+export type RootDirectoriesResponse = string[];
+
+export type RootDirectoriesVariables = Context["fetcherOptions"];
+
+export const fetchRootDirectories = (
+  variables: RootDirectoriesVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<RootDirectoriesResponse, RootDirectoriesError, undefined, {}, {}, {}>({
+    url: "/api/Onboarding/root-directories",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function rootDirectoriesQuery(variables: RootDirectoriesVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<RootDirectoriesResponse>;
+};
+
+export function rootDirectoriesQuery(
+  variables: RootDirectoriesVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<RootDirectoriesResponse>)
+    | reactQuery.SkipToken;
+};
+
+export function rootDirectoriesQuery(
+  variables: RootDirectoriesVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Onboarding/root-directories",
+      operationId: "rootDirectories",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) =>
+            fetchRootDirectories(variables, signal),
+  };
+}
+
+export const useSuspenseRootDirectories = <TData = RootDirectoriesResponse,>(
+  variables: RootDirectoriesVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RootDirectoriesResponse,
+      RootDirectoriesError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    RootDirectoriesResponse,
+    RootDirectoriesError,
+    TData
+  >({
+    ...rootDirectoriesQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useRootDirectories = <TData = RootDirectoriesResponse,>(
+  variables: RootDirectoriesVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      RootDirectoriesResponse,
+      RootDirectoriesError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<
+    RootDirectoriesResponse,
+    RootDirectoriesError,
+    TData
+  >({
+    ...rootDirectoriesQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type DirectoriesInPathQueryParams = {
   path?: string;
 };
@@ -2272,7 +2370,7 @@ export const fetchDirectoriesInPath = (
     DirectoriesInPathQueryParams,
     {}
   >({
-    url: "/api/Onboarding/listDirectories",
+    url: "/api/Onboarding/list-directories",
     method: "get",
     ...variables,
     signal,
@@ -2297,7 +2395,7 @@ export function directoriesInPathQuery(
 ) {
   return {
     queryKey: queryKeyFn({
-      path: "/api/Onboarding/listDirectories",
+      path: "/api/Onboarding/list-directories",
       operationId: "directoriesInPath",
       variables,
     }),
@@ -2372,7 +2470,7 @@ export const fetchMusicLibraries = (
   signal?: AbortSignal,
 ) =>
   fetch<MusicLibrariesResponse, MusicLibrariesError, undefined, {}, {}, {}>({
-    url: "/api/Onboarding/musicLibraries",
+    url: "/api/Onboarding/music-libraries",
     method: "get",
     ...variables,
     signal,
@@ -2397,7 +2495,7 @@ export function musicLibrariesQuery(
 ) {
   return {
     queryKey: queryKeyFn({
-      path: "/api/Onboarding/musicLibraries",
+      path: "/api/Onboarding/music-libraries",
       operationId: "musicLibraries",
       variables,
     }),
@@ -3775,12 +3873,17 @@ export type QueryOperation =
       variables: FavoriteArtistsVariables | reactQuery.SkipToken;
     }
   | {
-      path: "/api/Onboarding/listDirectories";
+      path: "/api/Onboarding/root-directories";
+      operationId: "rootDirectories";
+      variables: RootDirectoriesVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Onboarding/list-directories";
       operationId: "directoriesInPath";
       variables: DirectoriesInPathVariables | reactQuery.SkipToken;
     }
   | {
-      path: "/api/Onboarding/musicLibraries";
+      path: "/api/Onboarding/music-libraries";
       operationId: "musicLibraries";
       variables: MusicLibrariesVariables | reactQuery.SkipToken;
     }

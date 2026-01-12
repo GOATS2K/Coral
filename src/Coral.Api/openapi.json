@@ -1044,7 +1044,46 @@
         }
       }
     },
-    "/api/Onboarding/listDirectories": {
+    "/api/Onboarding/root-directories": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "RootDirectories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Onboarding/list-directories": {
       "get": {
         "tags": [
           "Onboarding"
@@ -1092,7 +1131,7 @@
         }
       }
     },
-    "/api/Onboarding/musicLibraries": {
+    "/api/Onboarding/music-libraries": {
       "get": {
         "tags": [
           "Onboarding"
@@ -2118,6 +2157,19 @@
         },
         "additionalProperties": false
       },
+      "InferenceSettings": {
+        "required": [
+          "maxConcurrentInstances"
+        ],
+        "type": "object",
+        "properties": {
+          "maxConcurrentInstances": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "JwtSettings": {
         "required": [
           "secret",
@@ -2525,6 +2577,7 @@
         "required": [
           "configVersion",
           "fileWatcher",
+          "inference",
           "jwt",
           "paths"
         ],
@@ -2542,6 +2595,9 @@
           },
           "jwt": {
             "$ref": "#/components/schemas/JwtSettings"
+          },
+          "inference": {
+            "$ref": "#/components/schemas/InferenceSettings"
           }
         },
         "additionalProperties": false

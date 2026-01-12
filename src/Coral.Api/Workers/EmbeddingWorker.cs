@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+using Coral.Configuration.Models;
 using Coral.Database;
 using Coral.Services;
 using Coral.Services.ChannelWrappers;
+using Microsoft.Extensions.Options;
 
 namespace Coral.Api.Workers;
 
@@ -12,16 +14,22 @@ public class EmbeddingWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly InferenceService _inferenceService;
     private readonly IEmbeddingService _embeddingService;
-    private readonly SemaphoreSlim _semaphore = new(10);
+    private readonly SemaphoreSlim _semaphore;
 
-    public EmbeddingWorker(IEmbeddingChannel channel, ILogger<EmbeddingWorker> logger,
-        IServiceScopeFactory scopeFactory, InferenceService inferenceService, IEmbeddingService embeddingService)
+    public EmbeddingWorker(
+        IEmbeddingChannel channel,
+        ILogger<EmbeddingWorker> logger,
+        IServiceScopeFactory scopeFactory,
+        InferenceService inferenceService,
+        IEmbeddingService embeddingService,
+        IOptions<ServerConfiguration> config)
     {
         _channel = channel;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _inferenceService = inferenceService;
         _embeddingService = embeddingService;
+        _semaphore = new SemaphoreSlim(config.Value.Inference.MaxConcurrentInstances);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

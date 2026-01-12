@@ -21,14 +21,21 @@ namespace Coral.Api.Controllers
         }
 
         [HttpGet]
-        [Route("listDirectories")]
+        [Route("root-directories")]
+        public ActionResult<List<string>> RootDirectories()
+        {
+            return Ok(_fileSystemService.GetRootDirectories());
+        }
+
+        [HttpGet]
+        [Route("list-directories")]
         public ActionResult<List<string>> DirectoriesInPath([FromQuery] string path)
         {
             return Ok(_fileSystemService.GetDirectoriesInPath(path));
         }
 
         [HttpGet]
-        [Route("musicLibraries")]
+        [Route("music-libraries")]
         public async Task<ActionResult<List<MusicLibraryDto>>> MusicLibraries()
         {
             return Ok(await _libraryService.GetMusicLibraries());

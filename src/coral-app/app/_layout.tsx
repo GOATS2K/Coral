@@ -26,9 +26,10 @@ import { Config } from '@/lib/config';
 import OnboardingScreen from './onboarding';
 import LoginScreen from './(auth)/login';
 import SetupScreen from './(auth)/setup';
+import LibrarySetupScreen from './library-setup';
 import { TitleBar } from '@/components/title-bar';
 import { DebouncedLoader } from '@/components/debounced-loader';
-import { fetchGetStatus, fetchGetCurrentUser } from '@/lib/client/components';
+import { fetchGetStatus, fetchGetCurrentUser, fetchMusicLibraries } from '@/lib/client/components';
 import { onUnauthorized } from '@/lib/client/fetcher';
 import { useAuth } from '@/lib/hooks/use-auth';
 
@@ -50,7 +51,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppState = 'loading' | 'onboarding' | 'setup' | 'login' | 'authenticated';
+type AppState = 'loading' | 'onboarding' | 'setup' | 'login' | 'library-setup' | 'authenticated';
 
 function AppContent() {
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -103,7 +104,15 @@ function AppContent() {
           console.info('[RootLayout] Authenticated');
           const user = await fetchGetCurrentUser({});
           setCurrentUser(user);
-          setAppState('authenticated');
+
+          // Check if user has any music libraries
+          const libraries = await fetchMusicLibraries({});
+          if (libraries.length === 0) {
+            console.info('[RootLayout] No libraries, showing library setup');
+            setAppState('library-setup');
+          } else {
+            setAppState('authenticated');
+          }
         }
       } catch (error: any) {
         console.error('[RootLayout] Error checking initial state:', error);
@@ -221,6 +230,18 @@ function AppContent() {
         <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <LoginScreen />
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Show library setup wizard for users without any music libraries
+  if (appState === 'library-setup') {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <LibrarySetupScreen onComplete={() => setAppState('authenticated')} />
         </ThemeProvider>
       </GestureHandlerRootView>
     );

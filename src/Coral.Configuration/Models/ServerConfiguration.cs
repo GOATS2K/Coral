@@ -4,12 +4,13 @@ namespace Coral.Configuration.Models;
 
 public class ServerConfiguration
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     public int ConfigVersion { get; set; } = CurrentVersion;
     public PathSettings Paths { get; set; } = new();
     public FileWatcherSettings FileWatcher { get; set; } = new();
     public JwtSettings Jwt { get; set; } = new();
+    public InferenceSettings Inference { get; set; } = new();
 }
 
 public class FileWatcherSettings
@@ -30,4 +31,13 @@ public class JwtSettings
         rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes);
     }
+}
+
+public class InferenceSettings
+{
+    /// <summary>
+    /// Maximum number of concurrent Essentia CLI instances for audio embedding extraction.
+    /// Default: 4 (conservative to avoid memory issues)
+    /// </summary>
+    public int MaxConcurrentInstances { get; set; } = 4;
 }

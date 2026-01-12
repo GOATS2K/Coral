@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { Config } from '@/lib/config';
@@ -13,7 +13,37 @@ export default function OnboardingScreen() {
   const [serverUrl, setServerUrl] = useState('http://localhost:5031');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoDetecting, setIsAutoDetecting] = useState(true);
   const router = useRouter();
+
+  // Try same-origin auto-detection on mount
+  useEffect(() => {
+    const tryAutoDetect = async () => {
+      try {
+        const sameOriginUrl = await Config.detectSameOriginApi();
+        if (sameOriginUrl) {
+          console.info('[Onboarding] Auto-detected same-origin API:', sameOriginUrl);
+          // Auto-configure and proceed
+          await Config.setBackendUrl(sameOriginUrl);
+          await Config.completeFirstRun();
+          await resetBaseUrl();
+
+          // Reload to apply configuration
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          } else {
+            router.replace('/(tabs)');
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('[Onboarding] Auto-detection failed:', err);
+      }
+      setIsAutoDetecting(false);
+    };
+
+    tryAutoDetect();
+  }, [router]);
 
   const handleContinue = async () => {
     setError('');
@@ -74,6 +104,15 @@ export default function OnboardingScreen() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while auto-detecting
+  if (isAutoDetecting) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background items-center justify-center px-4">

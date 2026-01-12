@@ -575,7 +575,7 @@ public class IndexerService : IIndexerService
     private List<string> SplitArtist(string? artistName)
     {
         if (artistName == null) return new List<string>();
-        string[] splitChars = [",", "&", ";", " x "];
+        string[] splitChars = [",", "&", ";", " x ", " feat. ", " ft. ", " Feat. ", " Ft. "];
         var split = artistName.Split(splitChars, StringSplitOptions.TrimEntries);
         return split.Distinct().ToList();
     }

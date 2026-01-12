@@ -18,7 +18,7 @@ export function LibrariesSettings() {
         <Text className="text-lg font-medium mb-2">Music Libraries</Text>
         <Text className="text-muted-foreground text-center">
           Library management coming soon.{'\n'}
-          You'll be able to add, remove, and scan music libraries here.
+          You&apos;ll be able to add, remove, and scan music libraries here.
         </Text>
       </View>
     </View>

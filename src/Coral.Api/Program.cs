@@ -42,6 +42,7 @@ builder.Services.AddAutoMapper(opt =>
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Services.AddHealthChecks();
 
 // Authentication with Cookie + JWT Bearer schemes
 var jwtSettings = coralConfig.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
@@ -170,12 +171,12 @@ app.UseAuthentication();
 app.UseSessionValidation();
 app.UseAuthorization();
 
+app.MapHealthChecks("/api/health").AllowAnonymous();
 app.MapControllers();
 app.MapHub<LibraryHub>("/hubs/library");
-// could probably remap these to use query params instead in the frontend
-app.MapFallbackToFile("/albums/{id}", "albums/[id].html");
-app.MapFallbackToFile("/artists/{id}", "artists/[id].html");
-app.MapFallbackToFile("/search/{id}", "search/search.html");
+// Map dynamic routes to their static HTML files
+app.MapFallbackToFile("/albums/{id}", "albums/[albumId].html");
+app.MapFallbackToFile("/artists/{id}", "artists/[artistId].html");
 app.MapFallbackToFile("index.html");
 
 try

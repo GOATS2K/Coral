@@ -114,7 +114,10 @@ public static class ApplicationConfiguration
             Paths = new PathSettings
             {
                 Data = PathSettings.GetDefaultDataDirectory()
-            }
+            },
+            FileWatcher = new FileWatcherSettings(),
+            Jwt = new JwtSettings(),
+            Inference = new InferenceSettings()
         };
     }
 

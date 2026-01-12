@@ -1,0 +1,14 @@
+**/node_modules
+**/bin
+**/obj
+**/.git
+**/dist
+**/build
+**/*.log
+.vs/
+.vscode/
+*.md
+!CLAUDE.md
+# Exclude platform-specific Essentia builds (downloaded fresh in Docker)
+src/Coral.Essentia.Cli/lib
+src/Coral.Essentia.Cli/include

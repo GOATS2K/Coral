@@ -1,0 +1,13 @@
+services:
+  coral:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coral
+    ports:
+      - "5031:5000"
+    volumes:
+      - /path/to/coral/config:/config
+      - /path/to/coral/data:/data
+      - /path/to/your/music:/music:ro
+    restart: unless-stopped

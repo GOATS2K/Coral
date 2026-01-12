@@ -181,6 +181,13 @@ export type GenreDto = {
   name: string;
 };
 
+export type InferenceSettings = {
+  /**
+   * @format int32
+   */
+  maxConcurrentInstances: number;
+};
+
 export type JwtSettings = {
   secret: string;
   /**
@@ -378,6 +385,7 @@ export type ServerConfiguration = {
   paths: PathSettings;
   fileWatcher: FileWatcherSettings;
   jwt: JwtSettings;
+  inference: InferenceSettings;
 };
 
 export type SimpleAlbumDto = {

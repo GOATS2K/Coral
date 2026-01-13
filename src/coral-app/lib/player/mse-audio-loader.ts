@@ -148,8 +148,8 @@ export class MSEAudioLoader {
     // Load init segment
     await this.loadInitSegment(trackId);
 
-    // Load first 2 fragments (~20 seconds) - conservative due to 50MB buffer quota
-    await this.loadFragments(trackId, 2);
+    // Load first fragment only - start playback quickly, let checkBufferAndLoad() handle the rest
+    await this.loadFragments(trackId, 1);
 
     this.logBufferState('After initialize');
   }
@@ -362,7 +362,7 @@ export class MSEAudioLoader {
     if (!nextTrackInfo || nextTrackInfo.currentFragmentIndex !== 0) return;
 
     await this.loadInitSegment(nextTrackId);
-    await this.loadFragments(nextTrackId, 2);
+    await this.loadFragments(nextTrackId, 1);
   }
 
   private findNextQueuedTrack(): string | null {

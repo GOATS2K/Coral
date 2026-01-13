@@ -51,9 +51,9 @@ public class RemuxFFmpeg : IEncoder
                 "-map", "0:a",  // Select only audio stream (ignore embedded artwork)
                 "-c:a", "copy",
                 "-movflags", "frag_keyframe+empty_moov+default_base_moof",
-                "-frag_duration", "10000000",  // 10 seconds in microseconds
+                "-frag_duration", "2000000",  // 2 seconds in microseconds
                 "-f", "hls",
-                "-hls_time", "10",  // 10 second segments (matches frag_duration)
+                "-hls_time", "2",  // 2 second segments (matches frag_duration)
                 "-hls_playlist_type", "event",
                 "-hls_segment_type", "fmp4",
                 "-hls_flags", "single_file",

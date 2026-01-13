@@ -115,10 +115,31 @@ namespace Coral.Services
 
         private static async Task WaitForFile(string filePath, Action? action = null)
         {
-            while (!File.Exists(filePath))
+            while (true)
             {
-                await Task.Delay(20);
                 action?.Invoke();
+
+                if (!File.Exists(filePath))
+                {
+                    await Task.Delay(20);
+                    continue;
+                }
+
+                // Verify file is readable (not locked by FFmpeg mid-write)
+                try
+                {
+                    using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    if (stream.Length > 0)
+                    {
+                        return;
+                    }
+                }
+                catch (IOException)
+                {
+                    // File exists but is locked or inaccessible, keep waiting
+                }
+
+                await Task.Delay(20);
             }
         }
 

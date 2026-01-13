@@ -3,9 +3,9 @@ import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { fetchRootDirectories, fetchDirectoriesInPath, fetchRegisterMusicLibrary, fetchMusicLibraries } from '@/lib/client/components';
-import { Folder, ChevronRight, ArrowLeft, Music, HardDrive } from 'lucide-react-native';
+import { Folder, ChevronRight, ArrowLeft, HardDrive } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import type { MusicLibraryDto } from '@/lib/client/types';
+import type { MusicLibraryDto } from '@/lib/client/schemas';
 
 interface LibrarySetupScreenProps {
   onComplete: () => void;
@@ -18,6 +18,7 @@ export default function LibrarySetupScreen({ onComplete }: LibrarySetupScreenPro
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [directories, setDirectories] = useState<string[]>([]);
   const [libraries, setLibraries] = useState<MusicLibraryDto[]>([]);
+  const [pendingPaths, setPendingPaths] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -86,14 +87,34 @@ export default function LibrarySetupScreen({ onComplete }: LibrarySetupScreenPro
     }
   };
 
-  const addLibrary = async () => {
+  const addLibrary = () => {
     if (!currentPath) return;
+    // Don't add duplicates
+    if (pendingPaths.includes(currentPath) || libraries.some(lib => lib.libraryPath === currentPath)) {
+      return;
+    }
+    setPendingPaths(prev => [...prev, currentPath]);
+  };
+
+  const removePendingPath = (path: string) => {
+    setPendingPaths(prev => prev.filter(p => p !== path));
+  };
+
+  const handleDone = async () => {
+    if (pendingPaths.length === 0) {
+      onComplete();
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     try {
-      await fetchRegisterMusicLibrary({ queryParams: { path: currentPath } });
-      await loadLibraries();
+      for (const path of pendingPaths) {
+        await fetchRegisterMusicLibrary({ queryParams: { path } });
+      }
+      onComplete();
     } catch {
-      setError('Failed to add library');
+      setError('Failed to add libraries');
     } finally {
       setIsLoading(false);
     }
@@ -106,21 +127,39 @@ export default function LibrarySetupScreen({ onComplete }: LibrarySetupScreenPro
   };
 
   return (
-    <View className="flex-1 bg-background px-4 py-8">
-      <View className="max-w-lg w-full mx-auto flex-1">
-        <View className="items-center mb-6">
-          <Music size={32} color={iconColor} />
-          <Text variant="h2" className="mt-2 border-b-0">Add Your Music</Text>
-        </View>
+    <View className="flex-1 bg-background items-center justify-center px-4">
+      <View className="max-w-md w-full">
+        <Text variant="h2" className="mb-3 border-b-0">
+          Add Your Music
+        </Text>
+        <Text variant="muted" className="mb-8">
+          Select a folder containing your music library.
+        </Text>
 
-        {/* Added libraries */}
+        {/* Existing libraries */}
         {libraries.length > 0 && (
-          <View className="mb-6">
-            <Text variant="muted" className="text-sm mb-2">Added libraries:</Text>
+          <View className="mb-4">
+            <Text variant="muted" className="text-sm mb-2">Existing libraries:</Text>
             {libraries.map((lib) => (
               <View key={lib.id} className="flex-row items-center bg-muted rounded-lg p-3 mb-2">
                 <Folder size={16} color={iconColor} />
-                <Text className="flex-1 ml-2 font-mono text-sm" numberOfLines={1}>{lib.path}</Text>
+                <Text className="flex-1 ml-2 font-mono text-sm" numberOfLines={1}>{lib.libraryPath}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Pending libraries to add */}
+        {pendingPaths.length > 0 && (
+          <View className="mb-4">
+            <Text variant="muted" className="text-sm mb-2">Libraries to add:</Text>
+            {pendingPaths.map((path) => (
+              <View key={path} className="flex-row items-center bg-muted rounded-lg p-3 mb-2">
+                <Folder size={16} color={iconColor} />
+                <Text className="flex-1 ml-2 font-mono text-sm" numberOfLines={1}>{path}</Text>
+                <Pressable onPress={() => removePendingPath(path)} className="ml-2 p-1">
+                  <Text className="text-destructive text-sm">Remove</Text>
+                </Pressable>
               </View>
             ))}
           </View>
@@ -169,11 +208,14 @@ export default function LibrarySetupScreen({ onComplete }: LibrarySetupScreenPro
         <View className="gap-3">
           {currentPath && (
             <Button onPress={addLibrary} disabled={isLoading}>
-              <Text>Add This Folder</Text>
+              <Text>Add {currentPath}</Text>
             </Button>
           )}
-          <Button variant={libraries.length > 0 ? 'default' : 'outline'} onPress={onComplete}>
-            <Text>{libraries.length > 0 ? 'Done' : 'Skip for now'}</Text>
+          <Button
+            onPress={handleDone}
+            disabled={isLoading || (pendingPaths.length === 0 && libraries.length === 0)}
+          >
+            <Text>{isLoading ? 'Adding...' : 'Done'}</Text>
           </Button>
         </View>
       </View>

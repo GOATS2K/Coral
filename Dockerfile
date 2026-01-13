@@ -59,8 +59,8 @@ RUN dotnet publish src/Coral.Api/Coral.Api.csproj -c Release -o /app/publish \
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-noble AS runtime
 # Install runtime dependencies for Essentia CLI (Ubuntu Noble / FFmpeg 6.x versions)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libfftw3-double3 libavcodec60 libavformat60 libavutil58 libswresample4 \
-    libsamplerate0 libtag1v5 libchromaprint1 libyaml-0-2 wget && \
+    libfftw3-double3 libfftw3-single3 libavcodec60 libavformat60 libavutil58 libswresample4 \
+    libsamplerate0 libtag1v5 libchromaprint1 libyaml-0-2 wget ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # Install TensorFlow C library (same as build stage)
@@ -72,6 +72,8 @@ RUN wget -q --no-check-certificate https://storage.googleapis.com/tensorflow/ver
 WORKDIR /app
 COPY --from=backend-build /app/publish ./
 COPY --from=essentia-build /app/build/Coral.Essentia.Cli ./
+COPY --from=essentia-build /app/lib/* /usr/local/lib/
+RUN ldconfig
 # Create directories:
 # - /config: for config.json (detected via /.dockerenv)
 # - /data: default data directory (configurable in config.json:Paths.Data)

@@ -14,7 +14,7 @@ public class EmbeddingWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly InferenceService _inferenceService;
     private readonly IEmbeddingService _embeddingService;
-    private readonly IDisposable? _optionsChangeListener;
+    private readonly object _semaphoreLock = new();
     private SemaphoreSlim _semaphore;
 
     public EmbeddingWorker(
@@ -23,27 +23,27 @@ public class EmbeddingWorker : BackgroundService
         IServiceScopeFactory scopeFactory,
         InferenceService inferenceService,
         IEmbeddingService embeddingService,
-        IOptionsMonitor<ServerConfiguration> config)
+        IOptions<ServerConfiguration> config)
     {
         _channel = channel;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _inferenceService = inferenceService;
         _embeddingService = embeddingService;
-        _semaphore = new SemaphoreSlim(config.CurrentValue.Inference.MaxConcurrentInstances);
-
-        _optionsChangeListener = config.OnChange(newConfig =>
-        {
-            var newCount = newConfig.Inference.MaxConcurrentInstances;
-            _logger.LogInformation("Inference concurrency changed to {Count}", newCount);
-            _semaphore = new SemaphoreSlim(newCount);
-        });
+        _semaphore = new SemaphoreSlim(config.Value.Inference.MaxConcurrentInstances);
     }
 
-    public override void Dispose()
+    /// <summary>
+    /// Synchronously updates the concurrency limit. Called by OnboardingController
+    /// before library registration to ensure correct semaphore count.
+    /// </summary>
+    public void UpdateConcurrency(int maxConcurrentInstances)
     {
-        _optionsChangeListener?.Dispose();
-        base.Dispose();
+        lock (_semaphoreLock)
+        {
+            _logger.LogInformation("Updating inference concurrency to {Count}", maxConcurrentInstances);
+            _semaphore = new SemaphoreSlim(maxConcurrentInstances);
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -86,7 +86,14 @@ public class EmbeddingWorker : BackgroundService
                     return;
             }
 
-            await _semaphore.WaitAsync(stoppingToken);
+            // Capture semaphore reference under lock to ensure we release to the same one we acquired
+            SemaphoreSlim semaphore;
+            lock (_semaphoreLock)
+            {
+                semaphore = _semaphore;
+            }
+
+            await semaphore.WaitAsync(stoppingToken);
             try
             {
                 // Check if embedding already exists in DuckDB
@@ -106,7 +113,7 @@ public class EmbeddingWorker : BackgroundService
             }
             finally
             {
-                _semaphore.Release();
+                semaphore.Release();
             }
         }
         catch (Exception ex)

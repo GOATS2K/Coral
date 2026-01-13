@@ -1,3 +1,4 @@
+using Coral.Api.Workers;
 using Coral.Configuration;
 using Coral.Configuration.Models;
 using Coral.Database.Models;
@@ -19,11 +20,16 @@ namespace Coral.Api.Controllers
     {
         private readonly ILibraryService _libraryService;
         private readonly IFileSystemService _fileSystemService;
+        private readonly EmbeddingWorker _embeddingWorker;
 
-        public OnboardingController(ILibraryService libraryService, IFileSystemService fileSystemService)
+        public OnboardingController(
+            ILibraryService libraryService,
+            IFileSystemService fileSystemService,
+            EmbeddingWorker embeddingWorker)
         {
             _libraryService = libraryService;
             _fileSystemService = fileSystemService;
+            _embeddingWorker = embeddingWorker;
         }
 
         [HttpGet("system-info")]
@@ -46,6 +52,10 @@ namespace Coral.Api.Controllers
             ApplicationConfiguration.GetConfiguration().Bind(config);
             config.Inference.MaxConcurrentInstances = request.MaxConcurrentInstances;
             ApplicationConfiguration.WriteConfiguration(config);
+
+            // Synchronously update worker before returning to ensure correct concurrency
+            // when library registration immediately follows this call
+            _embeddingWorker.UpdateConcurrency(request.MaxConcurrentInstances);
 
             return Ok();
         }

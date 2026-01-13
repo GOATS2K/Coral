@@ -2248,6 +2248,143 @@ export const useRemoveFavoriteArtist = (
   });
 };
 
+export type GetSystemInfoError = Fetcher.ErrorWrapper<undefined>;
+
+export type GetSystemInfoVariables = Context["fetcherOptions"];
+
+export const fetchGetSystemInfo = (
+  variables: GetSystemInfoVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<Schemas.SystemInfoDto, GetSystemInfoError, undefined, {}, {}, {}>({
+    url: "/api/Onboarding/system-info",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function getSystemInfoQuery(variables: GetSystemInfoVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<Schemas.SystemInfoDto>;
+};
+
+export function getSystemInfoQuery(
+  variables: GetSystemInfoVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<Schemas.SystemInfoDto>)
+    | reactQuery.SkipToken;
+};
+
+export function getSystemInfoQuery(
+  variables: GetSystemInfoVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/Onboarding/system-info",
+      operationId: "getSystemInfo",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchGetSystemInfo(variables, signal),
+  };
+}
+
+export const useSuspenseGetSystemInfo = <TData = Schemas.SystemInfoDto,>(
+  variables: GetSystemInfoVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SystemInfoDto,
+      GetSystemInfoError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<
+    Schemas.SystemInfoDto,
+    GetSystemInfoError,
+    TData
+  >({
+    ...getSystemInfoQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useGetSystemInfo = <TData = Schemas.SystemInfoDto,>(
+  variables: GetSystemInfoVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<
+      Schemas.SystemInfoDto,
+      GetSystemInfoError,
+      TData
+    >,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<Schemas.SystemInfoDto, GetSystemInfoError, TData>({
+    ...getSystemInfoQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export type ConfigureInferenceError = Fetcher.ErrorWrapper<undefined>;
+
+export type ConfigureInferenceVariables = {
+  body: Schemas.InferenceConfigRequest;
+} & Context["fetcherOptions"];
+
+export const fetchConfigureInference = (
+  variables: ConfigureInferenceVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ConfigureInferenceError,
+    Schemas.InferenceConfigRequest,
+    {},
+    {},
+    {}
+  >({
+    url: "/api/Onboarding/configure-inference",
+    method: "post",
+    ...variables,
+    signal,
+  });
+
+export const useConfigureInference = (
+  options?: Omit<
+    reactQuery.UseMutationOptions<
+      undefined,
+      ConfigureInferenceError,
+      ConfigureInferenceVariables
+    >,
+    "mutationFn"
+  >,
+) => {
+  const { fetcherOptions } = useContext();
+  return reactQuery.useMutation<
+    undefined,
+    ConfigureInferenceError,
+    ConfigureInferenceVariables
+  >({
+    mutationFn: (variables: ConfigureInferenceVariables) =>
+      fetchConfigureInference(deepMerge(fetcherOptions, variables)),
+    ...options,
+  });
+};
+
 export type RootDirectoriesError = Fetcher.ErrorWrapper<undefined>;
 
 export type RootDirectoriesResponse = string[];
@@ -3871,6 +4008,11 @@ export type QueryOperation =
       path: "/api/favorites/artists";
       operationId: "favoriteArtists";
       variables: FavoriteArtistsVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/Onboarding/system-info";
+      operationId: "getSystemInfo";
+      variables: GetSystemInfoVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/Onboarding/root-directories";

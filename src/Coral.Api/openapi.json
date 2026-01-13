@@ -1044,6 +1044,68 @@
         }
       }
     },
+    "/api/Onboarding/system-info": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "GetSystemInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfoDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Onboarding/configure-inference": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "operationId": "ConfigureInference",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceConfigRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceConfigRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Onboarding/root-directories": {
       "get": {
         "tags": [
@@ -2157,6 +2219,19 @@
         },
         "additionalProperties": false
       },
+      "InferenceConfigRequest": {
+        "required": [
+          "maxConcurrentInstances"
+        ],
+        "type": "object",
+        "properties": {
+          "maxConcurrentInstances": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "InferenceSettings": {
         "required": [
           "maxConcurrentInstances"
@@ -2809,6 +2884,19 @@
           "artworkUrl": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SystemInfoDto": {
+        "required": [
+          "cpuCores"
+        ],
+        "type": "object",
+        "properties": {
+          "cpuCores": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

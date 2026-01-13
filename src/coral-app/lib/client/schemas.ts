@@ -181,6 +181,13 @@ export type GenreDto = {
   name: string;
 };
 
+export type InferenceConfigRequest = {
+  /**
+   * @format int32
+   */
+  maxConcurrentInstances: number;
+};
+
 export type InferenceSettings = {
   /**
    * @format int32
@@ -485,6 +492,13 @@ export type StreamDto = {
   link: string;
   transcodeInfo?: TranscodeInfoDto;
   artworkUrl?: string | null;
+};
+
+export type SystemInfoDto = {
+  /**
+   * @format int32
+   */
+  cpuCores: number;
 };
 
 export type TrackDto = {

@@ -14,7 +14,8 @@ public class EmbeddingWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly InferenceService _inferenceService;
     private readonly IEmbeddingService _embeddingService;
-    private readonly SemaphoreSlim _semaphore;
+    private readonly IDisposable? _optionsChangeListener;
+    private SemaphoreSlim _semaphore;
 
     public EmbeddingWorker(
         IEmbeddingChannel channel,
@@ -22,14 +23,27 @@ public class EmbeddingWorker : BackgroundService
         IServiceScopeFactory scopeFactory,
         InferenceService inferenceService,
         IEmbeddingService embeddingService,
-        IOptions<ServerConfiguration> config)
+        IOptionsMonitor<ServerConfiguration> config)
     {
         _channel = channel;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _inferenceService = inferenceService;
         _embeddingService = embeddingService;
-        _semaphore = new SemaphoreSlim(config.Value.Inference.MaxConcurrentInstances);
+        _semaphore = new SemaphoreSlim(config.CurrentValue.Inference.MaxConcurrentInstances);
+
+        _optionsChangeListener = config.OnChange(newConfig =>
+        {
+            var newCount = newConfig.Inference.MaxConcurrentInstances;
+            _logger.LogInformation("Inference concurrency changed to {Count}", newCount);
+            _semaphore = new SemaphoreSlim(newCount);
+        });
+    }
+
+    public override void Dispose()
+    {
+        _optionsChangeListener?.Dispose();
+        base.Dispose();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

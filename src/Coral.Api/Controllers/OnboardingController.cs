@@ -1,4 +1,7 @@
+using Coral.Configuration;
+using Coral.Configuration.Models;
 using Coral.Database.Models;
+using Coral.Dto;
 using Coral.Dto.Models;
 using Coral.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Coral.Api.Controllers
 {
+    public record SystemInfoDto(int CpuCores);
+    public record InferenceConfigRequest(int MaxConcurrentInstances);
+
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -18,6 +24,30 @@ namespace Coral.Api.Controllers
         {
             _libraryService = libraryService;
             _fileSystemService = fileSystemService;
+        }
+
+        [HttpGet("system-info")]
+        public ActionResult<SystemInfoDto> GetSystemInfo()
+        {
+            return Ok(new SystemInfoDto(Environment.ProcessorCount));
+        }
+
+        [HttpPost("configure-inference")]
+        public IActionResult ConfigureInference([FromBody] InferenceConfigRequest request)
+        {
+            var maxCores = Environment.ProcessorCount;
+
+            if (request.MaxConcurrentInstances < 1 || request.MaxConcurrentInstances > maxCores)
+            {
+                return BadRequest(new ApiError($"MaxConcurrentInstances must be between 1 and {maxCores}"));
+            }
+
+            var config = new ServerConfiguration();
+            ApplicationConfiguration.GetConfiguration().Bind(config);
+            config.Inference.MaxConcurrentInstances = request.MaxConcurrentInstances;
+            ApplicationConfiguration.WriteConfiguration(config);
+
+            return Ok();
         }
 
         [HttpGet]

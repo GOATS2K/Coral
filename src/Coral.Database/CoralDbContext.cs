@@ -13,7 +13,6 @@ public class CoralDbContext : DbContext
     public DbSet<ArtistWithRole> ArtistsWithRoles { get; set; } = null!;
     public DbSet<Album> Albums { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
-    public DbSet<Keyword> Keywords { get; set; } = null!;
     public DbSet<AudioFile> AudioFiles { get; set; } = null!;
     public DbSet<MusicLibrary> MusicLibraries { get; set; } = null!;
     public DbSet<AudioMetadata> AudioMetadata { get; set; } = null!;

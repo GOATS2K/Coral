@@ -63,6 +63,9 @@ public class TestDatabase
         Mapper = _serviceProvider.GetRequiredService<IMapper>();
         Context.Database.EnsureCreated();
 
+        // Create FTS5 virtual tables for search
+        CreateFts5Tables();
+
         var currentTime = DateTime.UtcNow;
 
         Context.Artists.Add(Tatora = new Artist()
@@ -253,7 +256,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
 
         Context.Tracks.Add(BlankPages = new Track()
@@ -289,7 +291,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
 
         Context.Tracks.Add(LilSouljah = new Track()
@@ -322,7 +323,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Zusterliefde = new Track()
         {
@@ -353,7 +353,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(GimmeASec = new Track()
         {
@@ -385,7 +384,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(OldTimesSake = new Track()
         {
@@ -416,7 +414,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Starlight = new Track()
         {
@@ -447,7 +444,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Yasukuni = new Track()
         {
@@ -478,7 +474,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(Combo = new Track()
         {
@@ -509,7 +504,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
         Context.Tracks.Add(DownForWhatever = new Track()
         {
@@ -540,7 +534,6 @@ public class TestDatabase
                     LibraryPath = ""
                 },
             },
-            Keywords = new List<Keyword>(),
         });
 
         Context.Tracks.Add(Fuwarin = new Track()
@@ -572,15 +565,105 @@ public class TestDatabase
                 },
             },
             Genre = Folk,
-            Keywords = new List<Keyword>(),
         });
 
         Context.SaveChanges();
+
+        // Populate SearchText and FTS tables after initial data is saved
+        PopulateSearchTextAndFts();
     }
 
     public void Dispose()
     {
         Context.Database.CloseConnection();
         Context.Dispose();
+    }
+
+    private void CreateFts5Tables()
+    {
+        // Create FTS5 virtual tables
+        Context.Database.ExecuteSqlRaw("CREATE VIRTUAL TABLE IF NOT EXISTS TrackSearch USING fts5(id UNINDEXED, search_text);");
+        Context.Database.ExecuteSqlRaw("CREATE VIRTUAL TABLE IF NOT EXISTS AlbumSearch USING fts5(id UNINDEXED, search_text);");
+        Context.Database.ExecuteSqlRaw("CREATE VIRTUAL TABLE IF NOT EXISTS ArtistSearch USING fts5(id UNINDEXED, search_text);");
+
+        // Create triggers for FTS sync
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Tracks_fts_ai AFTER INSERT ON Tracks BEGIN
+                INSERT INTO TrackSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Tracks_fts_ad AFTER DELETE ON Tracks BEGIN
+                DELETE FROM TrackSearch WHERE id = old.Id;
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Tracks_fts_au AFTER UPDATE OF SearchText ON Tracks BEGIN
+                DELETE FROM TrackSearch WHERE id = old.Id;
+                INSERT INTO TrackSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Albums_fts_ai AFTER INSERT ON Albums BEGIN
+                INSERT INTO AlbumSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Albums_fts_ad AFTER DELETE ON Albums BEGIN
+                DELETE FROM AlbumSearch WHERE id = old.Id;
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Albums_fts_au AFTER UPDATE OF SearchText ON Albums BEGIN
+                DELETE FROM AlbumSearch WHERE id = old.Id;
+                INSERT INTO AlbumSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Artists_fts_ai AFTER INSERT ON Artists BEGIN
+                INSERT INTO ArtistSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Artists_fts_ad AFTER DELETE ON Artists BEGIN
+                DELETE FROM ArtistSearch WHERE id = old.Id;
+            END;");
+        Context.Database.ExecuteSqlRaw(@"
+            CREATE TRIGGER IF NOT EXISTS Artists_fts_au AFTER UPDATE OF SearchText ON Artists BEGIN
+                DELETE FROM ArtistSearch WHERE id = old.Id;
+                INSERT INTO ArtistSearch(id, search_text) VALUES (new.Id, new.SearchText);
+            END;");
+    }
+
+    private void PopulateSearchTextAndFts()
+    {
+        // Populate SearchText for Artists
+        Context.Database.ExecuteSqlRaw("UPDATE Artists SET SearchText = LOWER(Name);");
+
+        // Populate SearchText for Albums
+        Context.Database.ExecuteSqlRaw(@"
+            UPDATE Albums SET SearchText = LOWER(
+                Name || ' ' ||
+                COALESCE((SELECT GROUP_CONCAT(a.Name, ' ')
+                          FROM Artists a
+                          INNER JOIN ArtistsWithRoles awr ON a.Id = awr.ArtistId
+                          INNER JOIN AlbumArtistWithRole aawr ON awr.Id = aawr.ArtistsId
+                          WHERE aawr.AlbumsId = Albums.Id), '') || ' ' ||
+                COALESCE(ReleaseYear, '')
+            );");
+
+        // Populate SearchText for Tracks
+        Context.Database.ExecuteSqlRaw(@"
+            UPDATE Tracks SET SearchText = LOWER(
+                Title || ' ' ||
+                COALESCE((SELECT GROUP_CONCAT(a.Name, ' ')
+                          FROM Artists a
+                          INNER JOIN ArtistsWithRoles awr ON a.Id = awr.ArtistId
+                          INNER JOIN ArtistWithRoleTrack awrt ON awr.Id = awrt.ArtistsId
+                          WHERE awrt.TracksId = Tracks.Id), '') || ' ' ||
+                COALESCE((SELECT Name FROM Albums WHERE Id = Tracks.AlbumId), '') || ' ' ||
+                COALESCE((SELECT ReleaseYear FROM Albums WHERE Id = Tracks.AlbumId), '') || ' ' ||
+                COALESCE((SELECT Name FROM Genres WHERE Id = Tracks.GenreId), '')
+            );");
+
+        // Populate FTS tables
+        Context.Database.ExecuteSqlRaw("INSERT INTO ArtistSearch(id, search_text) SELECT Id, SearchText FROM Artists;");
+        Context.Database.ExecuteSqlRaw("INSERT INTO AlbumSearch(id, search_text) SELECT Id, SearchText FROM Albums;");
+        Context.Database.ExecuteSqlRaw("INSERT INTO TrackSearch(id, search_text) SELECT Id, SearchText FROM Tracks;");
     }
 }

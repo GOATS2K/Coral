@@ -1,273 +1,185 @@
-﻿using AutoMapper;
-using Coral.BulkExtensions;
-using Coral.Database;
+﻿using Coral.Database;
 using Coral.Database.Models;
-using Coral.Dto.Comparers;
 using Coral.Dto.Models;
 using Coral.Services.Helpers;
 using Coral.Services.Models;
-using Diacritics.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace Coral.Services
 {
     public interface ISearchService
     {
-        public Task InsertKeywordsForTrack(Track track);
-        public Task InsertKeywordsForTracksBulk(Dictionary<Track, string> trackKeywordStrings);
         public Task<PaginatedCustomData<SearchResult>> Search(string query, int offset = 0, int limit = 100);
     }
 
     public class SearchService : ISearchService
     {
-        private readonly IMapper _mapper;
-        private readonly ILogger<SearchService> _logger;
         private readonly CoralDbContext _context;
-        private readonly IPaginationService _paginationService;
-        private readonly IArtworkMappingHelper _artworkMappingHelper;
         private readonly IFavoritedMappingHelper _favoritedMappingHelper;
         private static readonly Regex _keywordExtractionRegex = RegexPatterns.KeywordExtraction();
 
-        public SearchService(IMapper mapper, CoralDbContext context, ILogger<SearchService> logger,
-            IPaginationService paginationService, IArtworkMappingHelper artworkMappingHelper, IFavoritedMappingHelper favoritedMappingHelper)
+        public SearchService(CoralDbContext context, IFavoritedMappingHelper favoritedMappingHelper)
         {
-            _mapper = mapper;
             _context = context;
-            _logger = logger;
-            _paginationService = paginationService;
-            _artworkMappingHelper = artworkMappingHelper;
             _favoritedMappingHelper = favoritedMappingHelper;
-        }
-
-        public async Task InsertKeywordsForTrack(Track track)
-        {
-            var keywords = ProcessInputString(track.ToString());
-            // check for existing keywords
-            var existingKeywords = await _context
-                .Keywords
-                .Where(k => keywords.Contains(k.Value))
-                .ToListAsync();
-
-            var missingKeywordsOnTrack = existingKeywords
-                .Where(k => !track.Keywords.Contains(k))
-                .ToList();
-
-            // in the event we've indexed all the keywords present on a track before
-            if (existingKeywords.Count() == keywords.Count()
-                && !missingKeywordsOnTrack.Any())
-            {
-                return;
-            }
-
-            foreach (var missingKeyword in missingKeywordsOnTrack)
-            {
-                // if existing keyword is not on track, add to track
-                track.Keywords.Add(missingKeyword);
-
-                // remove keyword from list of incoming keywords
-                keywords.Remove(missingKeyword.Value);
-            }
-
-            if (keywords.Count > 0)
-            {
-                var newKeywords = keywords.Select(k => new Keyword()
-                {
-                    Value = k
-                });
-                track.Keywords.AddRange(newKeywords);
-            }
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task InsertKeywordsForTracksBulk(Dictionary<Track, string> trackKeywordStrings)
-        {
-            if (!trackKeywordStrings.Any())
-                return;
-
-            _logger.LogInformation("Starting bulk keyword insertion for {TrackCount} tracks", trackKeywordStrings.Count);
-
-            // Step 1: Extract all keywords from pre-computed keyword strings
-            var trackKeywords = new Dictionary<Guid, List<string>>();
-            var allKeywordValues = new HashSet<string>();
-
-            foreach (var (track, keywordString) in trackKeywordStrings)
-            {
-                var keywords = ProcessInputString(keywordString);
-                trackKeywords[track.Id] = keywords;
-                foreach (var keyword in keywords)
-                {
-                    allKeywordValues.Add(keyword);
-                }
-            }
-
-            _logger.LogDebug("Extracted {KeywordCount} unique keyword values from {TrackCount} tracks",
-                allKeywordValues.Count, trackKeywordStrings.Count);
-
-            // Step 2: Query database for existing keywords (single query)
-            var existingKeywords = await _context.Keywords
-                .Where(k => allKeywordValues.Contains(k.Value))
-                .ToListAsync();
-
-            var existingKeywordDict = new Dictionary<string, Keyword>();
-
-            // Add existing keywords to BulkContext cache so they can be used in relationships
-            foreach (var existingKeyword in existingKeywords)
-            {
-                var keyword = await _context.Keywords.GetOrAddBulk(
-                    k => k.Value,
-                    () => existingKeyword);
-                existingKeywordDict[existingKeyword.Value] = keyword;
-            }
-
-            _logger.LogDebug("Found {ExistingCount} existing keywords in database", existingKeywords.Count);
-
-            // Step 3: Create new keywords that don't exist yet using BulkContext
-            var newKeywordValues = allKeywordValues.Except(existingKeywords.Select(k => k.Value)).ToList();
-
-            if (newKeywordValues.Any())
-            {
-                _logger.LogInformation("Creating {NewKeywordCount} new keywords", newKeywordValues.Count);
-
-                // Use bulk insert for new keywords (they'll be saved by the caller)
-                foreach (var keywordValue in newKeywordValues)
-                {
-                    var keyword = await _context.Keywords.GetOrAddBulk(
-                        k => k.Value,
-                        () => new Keyword
-                        {
-                            Id = Guid.NewGuid(),
-                            Value = keywordValue,
-                            CreatedAt = DateTime.UtcNow,
-                            Tracks = new List<Track>()
-                        });
-
-                    existingKeywordDict[keywordValue] = keyword;
-                }
-            }
-
-            // Step 4: Register track-keyword relationships using BulkContext
-            // First ensure all tracks are in BulkContext cache (handles both new and existing tracks during rescan)
-            // IMPORTANT: We must use the returned track instances from GetOrAddBulk for relationship registration
-            var cachedTracks = new Dictionary<Guid, Track>();
-            foreach (var (track, _) in trackKeywordStrings)
-            {
-                var cachedTrack = await _context.Tracks.GetOrAddBulk(
-                    t => t.Id,
-                    () => track);
-                cachedTracks[track.Id] = cachedTrack;
-            }
-
-            var relationshipCount = 0;
-            foreach (var (track, _) in trackKeywordStrings)
-            {
-                var cachedTrack = cachedTracks[track.Id];
-                var keywordValues = trackKeywords[track.Id];
-                foreach (var keywordValue in keywordValues)
-                {
-                    if (existingKeywordDict.TryGetValue(keywordValue, out var keyword))
-                    {
-                        _context.AddRelationshipBulk<Keyword, Track>(keyword, cachedTrack);
-                        relationshipCount++;
-                    }
-                }
-            }
-
-            _logger.LogInformation("Registered {RelationshipCount} track-keyword relationships in BulkContext",
-                relationshipCount);
         }
 
         public async Task<PaginatedCustomData<SearchResult>> Search(string query, int offset = 0, int limit = 100)
         {
-            var searchResult = await GetTracksForKeywords(query);
-
-            // fetch tracks matching query
-            var paginated =
-                await _paginationService.PaginateQuery<Track, TrackDto>(
-                    t => t.Where(tr => searchResult.Contains(tr.Id)), offset, limit);
-            var tracks = paginated.Data;
-
-            var artists = tracks.Select(a => a.Artists)
-                .SelectMany(a => a);
-
-            var albums = tracks.Select(t => t.Album)
-                .DistinctBy(t => t.Id)
-                .ToList();
-
-            // Populate artworks for albums
-            await _artworkMappingHelper.MapArtworksToAlbums(albums);
-            await _favoritedMappingHelper.MapFavoritedToTracks(tracks);
-
-            var finalResults = new SearchResult()
+            var ftsQuery = BuildFts5Query(query);
+            if (string.IsNullOrEmpty(ftsQuery))
             {
-                Albums = albums,
-                Artists = artists
-                    .DistinctBy(t => t.Id)
-                    .Select(t => new SimpleArtistDto()
+                return new PaginatedCustomData<SearchResult>
+                {
+                    Data = new SearchResult { Albums = [], Artists = [], Tracks = [] },
+                    AvailableRecords = 0,
+                    ResultCount = 0,
+                    TotalRecords = 0
+                };
+            }
+
+            // Query FTS tables - track results drive discovery, album/artist results drive ranking
+            var trackIds = await QueryFts5<Guid>("TrackSearch", ftsQuery, offset, limit);
+            var totalTrackCount = await CountFts5("TrackSearch", ftsQuery);
+            var directAlbumIds = await QueryFts5<Guid>("AlbumSearch", ftsQuery, 0, limit);
+            var directArtistIds = await QueryFts5<Guid>("ArtistSearch", ftsQuery, 0, limit);
+
+            var directAlbumIdSet = directAlbumIds.ToHashSet();
+            var directArtistIdSet = directArtistIds.ToHashSet();
+
+            // Fetch tracks with album/artist data included
+            var tracks = trackIds.Any()
+                ? await _context.Tracks
+                    .AsNoTracking()
+                    .Where(t => trackIds.Contains(t.Id))
+                    .Select(t => new TrackDto
                     {
                         Id = t.Id,
-                        Name = t.Name
+                        Title = t.Title,
+                        DurationInSeconds = t.DurationInSeconds,
+                        Comment = t.Comment,
+                        TrackNumber = t.TrackNumber ?? 0,
+                        DiscNumber = t.DiscNumber ?? 0,
+                        Favorited = false, // Set via MapFavoritedToTracks
+                        Artists = t.Artists.Select(a => new ArtistWithRoleDto
+                        {
+                            Id = a.Artist.Id,
+                            Name = a.Artist.Name,
+                            Role = a.Role
+                        }).ToList(),
+                        Album = new SimpleAlbumDto
+                        {
+                            Id = t.Album.Id,
+                            Name = t.Album.Name,
+                            ReleaseYear = t.Album.ReleaseYear ?? 0,
+                            Type = t.Album.Type,
+                            CreatedAt = t.Album.CreatedAt,
+                            Favorited = t.Album.Favorite != null,
+                            Artists = t.Album.Artists
+                                .Where(a => a.Role == ArtistRole.Main)
+                                .Select(a => new SimpleArtistDto { Id = a.Artist.Id, Name = a.Artist.Name })
+                                .ToList(),
+                            Artworks = t.Album.Artwork != null ? new ArtworkDto
+                            {
+                                Small = "/api/artwork/" + t.Album.Artwork.Id + "?size=Small",
+                                Medium = "/api/artwork/" + t.Album.Artwork.Id + "?size=Medium",
+                                Original = "/api/artwork/" + t.Album.Artwork.Id + "?size=Original",
+                                Colors = t.Album.Artwork.Colors
+                            } : null
+                        },
+                        Genre = t.Genre != null ? new GenreDto { Id = t.Genre.Id, Name = t.Genre.Name } : null
                     })
-                    .ToList(),
-                Tracks = tracks
-            };
+                    .ToListAsync()
+                : [];
 
-            return new PaginatedCustomData<SearchResult>()
+            // Extract unique albums/artists discovered from tracks
+            var discoveredAlbums = tracks
+                .Select(t => t.Album)
+                .DistinctBy(a => a.Id)
+                .ToList();
+
+            var discoveredArtists = tracks
+                .SelectMany(t => t.Artists)
+                .Select(a => new SimpleArtistDto { Id = a.Id, Name = a.Name })
+                .DistinctBy(a => a.Id)
+                .ToList();
+
+            // Rank albums: direct FTS matches first (preserve bm25 order), then discovered
+            var albums = discoveredAlbums
+                .Where(a => directAlbumIdSet.Contains(a.Id))
+                .OrderBy(a => directAlbumIds.IndexOf(a.Id))
+                .Concat(discoveredAlbums.Where(a => !directAlbumIdSet.Contains(a.Id)))
+                .ToList();
+
+            // Rank artists: direct FTS matches first (preserve bm25 order), then discovered
+            var artists = discoveredArtists
+                .Where(a => directArtistIdSet.Contains(a.Id))
+                .OrderBy(a => directArtistIds.IndexOf(a.Id))
+                .Concat(discoveredArtists.Where(a => !directArtistIdSet.Contains(a.Id)))
+                .ToList();
+
+            await _favoritedMappingHelper.MapFavoritedToTracks(tracks);
+
+            return new PaginatedCustomData<SearchResult>
             {
-                AvailableRecords = paginated.AvailableRecords,
-                ResultCount = paginated.ResultCount,
-                TotalRecords = paginated.TotalRecords,
-                Data = finalResults
+                Data = new SearchResult { Albums = albums, Artists = artists, Tracks = tracks },
+                AvailableRecords = Math.Max(0, totalTrackCount - offset - limit),
+                ResultCount = tracks.Count,
+                TotalRecords = totalTrackCount
             };
         }
 
-        private async Task<List<Guid>> GetTracksForKeywords(string query)
+        private async Task<List<T>> QueryFts5<T>(string tableName, string ftsQuery, int offset, int limit)
         {
-            // get all tracks matching keywords
-            var keywords = ProcessInputString(query);
-            var lastResult = new List<Guid>();
-            var currentSearchResult = new List<Guid>();
-            foreach (var keyword in keywords)
-            {
-                var currentKeywordResult = await _context.Keywords
-                    .AsNoTracking()
-                    .Where(k => EF.Functions.Like(k.Value, $"%{keyword}%"))
-                    .Select(k => k.Tracks)
-                    .SelectMany(t => t)
-                    .Select(t => t.Id)
-                    .ToListAsync();
+            // Use raw SQL to query FTS5 virtual table
+            // bm25() returns negative values, lower = better match
+            var sql = $"SELECT id FROM {tableName} WHERE {tableName} MATCH {{0}} ORDER BY bm25({tableName}) LIMIT {{1}} OFFSET {{2}}";
+            return await _context.Database
+                .SqlQueryRaw<T>(sql, ftsQuery, limit, offset)
+                .ToListAsync();
+        }
 
-                // if last keyword is not empty, perform an intersection with new result
-                if (lastResult.Any())
-                {
-                    currentSearchResult = lastResult.Intersect(currentKeywordResult).ToList();
-                }
+        private async Task<int> CountFts5(string tableName, string ftsQuery)
+        {
+            var sql = $"SELECT COUNT(*) AS Value FROM {tableName} WHERE {tableName} MATCH {{0}}";
+            return await _context.Database
+                .SqlQueryRaw<int>(sql, ftsQuery)
+                .FirstAsync();
+        }
 
-                // return current search if only one keyword was searched for
-                if (keywords.Count() == 1)
-                {
-                    return currentKeywordResult;
-                }
+        private string? BuildFts5Query(string query)
+        {
+            var terms = ProcessInputString(query);
+            if (!terms.Any())
+                return null;
 
-                lastResult = currentSearchResult.Any() ? currentSearchResult : currentKeywordResult;
-            }
+            // Convert to FTS5 prefix query: "calibre shelflife" -> "calibre* AND shelflife*"
+            var ftsTerms = terms.Select(t => $"{EscapeFts5Term(t)}*");
+            return string.Join(" AND ", ftsTerms);
+        }
 
-            return currentSearchResult;
+        private static string EscapeFts5Term(string term)
+        {
+            // Escape FTS5 special characters: " * ( ) ^
+            return term
+                .Replace("\"", "\"\"")
+                .Replace("*", "")
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("^", "");
         }
 
         private List<string> ProcessInputString(string inputString)
         {
-            // sanitize string for diacritics first
-            var sanitized = inputString.RemoveDiacritics();
-
             // split by word boundary and alphanumerical values using source-generated regex
             // \p{L}    => matches unicode letters / L     Letter
             // \p{Nd}   => matches unicode numbers / Nd    Decimal number
             // +        => one or more of
             // http://www.pcre.org/original/doc/html/pcrepattern.html
-            var matches = _keywordExtractionRegex.Matches(sanitized);
+            // Note: We don't remove diacritics here - SearchText contains both original and normalized
+            // versions, so users can search with or without diacritics
+            var matches = _keywordExtractionRegex.Matches(inputString);
             // return split
             return matches?.Select(m => m.Value.ToLower()).Distinct().ToList() ?? new List<string>();
         }

@@ -3,6 +3,7 @@ using System;
 using Coral.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Coral.Database.Migrations
 {
     [DbContext(typeof(CoralDbContext))]
-    partial class CoralDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260113210103_AddFts5Search")]
+    partial class AddFts5Search
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
@@ -390,6 +393,31 @@ namespace Coral.Database.Migrations
                     b.ToTable("Genres");
                 });
 
+            modelBuilder.Entity("Coral.Database.Models.Keyword", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Keywords");
+                });
+
             modelBuilder.Entity("Coral.Database.Models.MusicLibrary", b =>
                 {
                     b.Property<Guid>("Id")
@@ -606,6 +634,21 @@ namespace Coral.Database.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("KeywordTrack", b =>
+                {
+                    b.Property<Guid>("KeywordsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TracksId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("KeywordsId", "TracksId");
+
+                    b.HasIndex("TracksId");
+
+                    b.ToTable("KeywordTrack");
+                });
+
             modelBuilder.Entity("AlbumArtistWithRole", b =>
                 {
                     b.HasOne("Coral.Database.Models.Album", null)
@@ -795,6 +838,21 @@ namespace Coral.Database.Migrations
                     b.Navigation("AudioFile");
 
                     b.Navigation("Genre");
+                });
+
+            modelBuilder.Entity("KeywordTrack", b =>
+                {
+                    b.HasOne("Coral.Database.Models.Keyword", null)
+                        .WithMany()
+                        .HasForeignKey("KeywordsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Coral.Database.Models.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TracksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Coral.Database.Models.Album", b =>

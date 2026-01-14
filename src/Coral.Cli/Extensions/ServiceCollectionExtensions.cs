@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
 
         // Services from Coral.Api
         services.AddScoped<IArtworkMappingHelper, ArtworkMappingHelper>();
+        services.AddScoped<IFavoritedMappingHelper, FavoritedMappingHelper>();
         services.AddScoped<ILibraryService, LibraryService>();
         services.AddScoped<IIndexerService, IndexerService>();
         services.AddScoped<ISearchService, SearchService>();

@@ -85,11 +85,6 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
             .WithExample("test-album-recommendations", "--album-id", "\"00000000-0000-0000-0000-000000000000\"")
             .WithExample("test-album-recommendations", "--album-name", "\"A Little While Longer\"", "--verbose", "--limit 20");
 
-        // Sync keywords command
-        opt.AddCommand<SyncKeywordsCommand>("sync-keywords")
-            .WithDescription("Fix missing keywords for tracks")
-            .WithExample("sync-keywords");
-
         // Clean orphaned embeddings command
         opt.AddCommand<CleanOrphanedEmbeddingsCommand>("clean-orphaned-embeddings")
             .WithDescription("Remove embeddings for tracks that no longer exist in the database")
@@ -107,6 +102,11 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
         opt.AddCommand<DebugPlaylistCommand>("debug-playlist")
             .WithDescription("Debug playlist migration and AutoMapper projection")
             .WithExample("debug-playlist");
+
+        // Rebuild search text command
+        opt.AddCommand<RebuildSearchTextCommand>("rebuild-search-text")
+            .WithDescription("Rebuild SearchText columns for all tracks, albums, and artists, then refresh FTS tables")
+            .WithAlias("rst");
     });
 
     await app.RunAsync(args);

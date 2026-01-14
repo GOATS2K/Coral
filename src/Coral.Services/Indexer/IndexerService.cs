@@ -1,8 +1,10 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Coral.BulkExtensions;
 using Coral.Database;
 using Coral.Database.Models;
 using Coral.Services.Helpers;
+using Diacritics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -87,8 +89,6 @@ public class IndexerService : IIndexerService
         await _context.SaveChangesAsync();
     }
 
-
-    private readonly Dictionary<Track, string> _tracksForKeywordInsertion = new();
     private readonly Dictionary<Guid, string> _albumsForArtworkProcessing = new();
 
     private async Task<List<IndexEvent>> IndexDirectory(List<FileInfo> tracksInDirectory, MusicLibrary library)
@@ -235,27 +235,40 @@ public class IndexerService : IIndexerService
                 CreatedAt = DateTime.UtcNow
             });
 
+        // Build SearchText for track
+        var trackTitle = TextSanitizer.SanitizeForUtf8(!string.IsNullOrEmpty(atlTrack.Title)
+            ? atlTrack.Title
+            : Path.GetFileName(atlTrack.Path))!;
+        var trackIsrc = TextSanitizer.SanitizeForUtf8(atlTrack.ISRC);
+        var searchText = BuildTrackSearchText(
+            trackTitle,
+            artists,
+            album.Name,
+            album.ReleaseYear,
+            genre?.Name,
+            album.Label?.Name,
+            album.CatalogNumber,
+            trackIsrc);
+
         // Create new track using bulk extensions
         var track = await _context.Tracks.GetOrAddBulk(
             t => t.AudioFile!.FilePath,
             () => new Track
             {
                 Id = Guid.NewGuid(),
-                Title = TextSanitizer.SanitizeForUtf8(!string.IsNullOrEmpty(atlTrack.Title)
-                    ? atlTrack.Title
-                    : Path.GetFileName(atlTrack.Path))!,
+                Title = trackTitle,
                 Comment = TextSanitizer.SanitizeForUtf8(atlTrack.Comment),
                 Genre = genre,
                 GenreId = genre?.Id,
                 DiscNumber = atlTrack.DiscNumber,
                 TrackNumber = atlTrack.TrackNumber,
                 DurationInSeconds = atlTrack.Duration,
-                Isrc = TextSanitizer.SanitizeForUtf8(atlTrack.ISRC),
+                Isrc = trackIsrc,
                 Album = album,
                 AlbumId = album.Id,
                 AudioFile = audioFile,
                 AudioFileId = audioFile.Id,
-                Keywords = new List<Keyword>(),
+                SearchText = searchText,
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -264,10 +277,6 @@ public class IndexerService : IIndexerService
         {
             _context.AddRelationshipBulk(track, artistWithRole);
         }
-
-        // Defer keyword insertion until after SaveBulkChangesAsync
-        // Build keyword string manually since navigation properties aren't populated yet
-        _tracksForKeywordInsertion[track] = BuildKeywordString(artists, album, track.Title);
 
         _logger.LogDebug("Created new track: {TrackPath}", atlTrack.Path);
         return track;
@@ -404,6 +413,29 @@ public class IndexerService : IIndexerService
             _logger.LogDebug("Track {TrackPath} artists changed", atlTrack.Path);
         }
 
+        // Update SearchText for the track
+        existingTrack.SearchText = BuildTrackSearchText(
+            existingTrack.Title,
+            newArtists,
+            existingTrack.Album?.Name ?? newAlbum.Name,
+            existingTrack.Album?.ReleaseYear ?? newAlbum.ReleaseYear,
+            newGenre?.Name,
+            existingTrack.Album?.Label?.Name ?? newAlbum.Label?.Name,
+            existingTrack.Album?.CatalogNumber ?? newAlbum.CatalogNumber,
+            existingTrack.Isrc);
+
+        // Also update album SearchText if album metadata changed
+        if (existingTrack.Album != null)
+        {
+            existingTrack.Album.SearchText = BuildAlbumSearchText(
+                existingTrack.Album.Name,
+                newArtists,
+                existingTrack.Album.ReleaseYear,
+                newGenre?.Name,
+                existingTrack.Album.Label?.Name,
+                existingTrack.Album.CatalogNumber);
+        }
+
         // Save updates immediately via EF Core (don't mix with bulk operations)
         await _context.SaveChangesAsync();
 
@@ -411,20 +443,8 @@ public class IndexerService : IIndexerService
         // - If only one track changes, old entities might not be empty yet
         // - Cleanup happens once at the end in FinalizeIndexing after all tracks are processed
 
-        // Insert keywords immediately for updated track (non-bulk, single track)
-        // Reload track with all navigation properties needed by InsertKeywordsForTrack
-        var reloadedTrack = await _context.Tracks
-            .Include(t => t.Artists)
-            .ThenInclude(a => a.Artist)
-            .Include(t => t.Album)
-            .ThenInclude(a => a.Label)
-            .Include(t => t.Keywords)
-            .FirstAsync(t => t.Id == existingTrack.Id);
-
-        await _searchService.InsertKeywordsForTrack(reloadedTrack);
-
         _logger.LogDebug("Updated existing track: {TrackPath}", atlTrack.Path);
-        return reloadedTrack;
+        return existingTrack;
     }
 
 
@@ -454,10 +474,13 @@ public class IndexerService : IIndexerService
             createFunc: () =>
             {
                 _logger.LogDebug("Creating new artist: {Artist}", sanitizedName);
+                var original = sanitizedName.ToLowerInvariant();
+                var normalized = original.RemoveDiacritics();
                 return new Artist
                 {
                     Id = Guid.NewGuid(),
                     Name = sanitizedName,
+                    SearchText = original == normalized ? original : $"{original} {normalized}",
                     CreatedAt = DateTime.UtcNow
                 };
             });
@@ -541,6 +564,17 @@ public class IndexerService : IIndexerService
             : Directory.GetParent(atlTrack.Path)?.Name;
 
         var label = await GetRecordLabelBulk(atlTrack);
+        var sanitizedAlbumName = TextSanitizer.SanitizeForUtf8(albumName)!;
+        var sanitizedCatalogNumber = TextSanitizer.SanitizeForUtf8(atlTrack.CatalogNumber);
+
+        // Build SearchText for album
+        var searchText = BuildAlbumSearchText(
+            sanitizedAlbumName,
+            artists,
+            atlTrack.Year,
+            atlTrack.Genre,
+            label?.Name,
+            sanitizedCatalogNumber);
 
         // Use composite key for album uniqueness
         var album = await _context.Albums.GetOrAddBulk(
@@ -554,12 +588,13 @@ public class IndexerService : IIndexerService
             createFunc: () => new Album
             {
                 Id = Guid.NewGuid(),
-                Name = TextSanitizer.SanitizeForUtf8(albumName)!,
+                Name = sanitizedAlbumName,
                 ReleaseYear = atlTrack.Year,
                 DiscTotal = atlTrack.DiscTotal,
                 TrackTotal = atlTrack.TrackTotal,
-                CatalogNumber = TextSanitizer.SanitizeForUtf8(atlTrack.CatalogNumber),
+                CatalogNumber = sanitizedCatalogNumber,
                 Label = label,
+                SearchText = searchText,
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -604,26 +639,59 @@ public class IndexerService : IIndexerService
 
         return artwork?.FullName ?? await _artworkService.ExtractEmbeddedArtwork(atlTrack);
     }
-    
-    private static string BuildKeywordString(IEnumerable<ArtistWithRole> artists, Album album, string trackTitle)
+
+    private static string BuildTrackSearchText(
+        string title,
+        IEnumerable<ArtistWithRole> artists,
+        string albumName,
+        int? releaseYear,
+        string? genreName,
+        string? labelName,
+        string? catalogNumber,
+        string? isrc)
     {
-        var artistString = string.Join(", ", artists.Select(a => a.Artist.Name));
-        var releaseYear = album.ReleaseYear != null ? $"({album.ReleaseYear})" : "";
-        var label = album.Label != null ? $"({album.Label.Name} - {album.CatalogNumber})" : "";
-        return $"{artistString} - {trackTitle} - {album.Name} {releaseYear} {label}";
+        var sb = new StringBuilder();
+        sb.Append(title);
+        foreach (var artist in artists)
+        {
+            sb.Append(' ').Append(artist.Artist.Name);
+        }
+        sb.Append(' ').Append(albumName);
+        if (releaseYear.HasValue) sb.Append(' ').Append(releaseYear.Value);
+        if (!string.IsNullOrEmpty(genreName)) sb.Append(' ').Append(genreName);
+        if (!string.IsNullOrEmpty(labelName)) sb.Append(' ').Append(labelName);
+        if (!string.IsNullOrEmpty(catalogNumber)) sb.Append(' ').Append(catalogNumber);
+        if (!string.IsNullOrEmpty(isrc)) sb.Append(' ').Append(isrc);
+
+        // Store both original (for exact match) and normalized (for diacritics-insensitive match)
+        var original = sb.ToString().ToLowerInvariant();
+        var normalized = original.RemoveDiacritics();
+        return original == normalized ? original : $"{original} {normalized}";
     }
 
-    private async Task InsertKeywordsForTracksBulkAsync(Dictionary<Track, string> trackKeywordStrings)
+    private static string BuildAlbumSearchText(
+        string albumName,
+        IEnumerable<ArtistWithRole> artists,
+        int? releaseYear,
+        string? genreName,
+        string? labelName,
+        string? catalogNumber)
     {
-        if (!trackKeywordStrings.Any()) return;
+        var sb = new StringBuilder();
+        sb.Append(albumName);
+        foreach (var artist in artists)
+        {
+            sb.Append(' ').Append(artist.Artist.Name);
+        }
+        if (releaseYear.HasValue) sb.Append(' ').Append(releaseYear.Value);
+        if (!string.IsNullOrEmpty(genreName)) sb.Append(' ').Append(genreName);
+        if (!string.IsNullOrEmpty(labelName)) sb.Append(' ').Append(labelName);
+        if (!string.IsNullOrEmpty(catalogNumber)) sb.Append(' ').Append(catalogNumber);
 
-        // Note: Keyword strings are pre-computed during CreateTrackBulk
-        // when navigation properties are still available. This avoids reloading 50k+ tracks
-        // with all their navigation properties just to generate keyword strings.
-        // Updates use InsertKeywordsForTrack (non-bulk) directly in UpdateTrackBulk.
-
-        // Insert keywords for all tracks in bulk
-        await _searchService.InsertKeywordsForTracksBulk(trackKeywordStrings);
+        // Store both original (for exact match) and normalized (for diacritics-insensitive match)
+        var original = sb.ToString().ToLowerInvariant();
+        var normalized = original.RemoveDiacritics();
+        return original == normalized ? original : $"{original} {normalized}";
     }
 
     private async Task<List<IndexEvent>> DeleteMissingTracks(MusicLibrary library)
@@ -801,7 +869,7 @@ public class IndexerService : IIndexerService
     }
 
     /// <summary>
-    /// Finalizes indexing by saving all pending bulk operations and processing artworks/keywords.
+    /// Finalizes indexing by saving all pending bulk operations and processing artworks.
     /// Must be called after IndexDirectoryGroups completes.
     /// </summary>
     public async Task FinalizeIndexing(MusicLibrary library, CancellationToken cancellationToken)
@@ -823,10 +891,10 @@ public class IndexerService : IIndexerService
                 () => artwork);
         }
 
-        // Save all bulk operations but retain cache for keyword relationship registration
+        // Save all bulk operations
         var stats = await _context.SaveBulkChangesAsync(
             new BulkInsertOptions {Logger = _logger},
-            retainCache: true,
+            retainCache: false,
             cancellationToken);
 
         _logger.LogInformation(
@@ -835,25 +903,6 @@ public class IndexerService : IIndexerService
             stats.TotalRelationshipsInserted,
             stats.TotalTime.TotalSeconds,
             stats.TotalEntitiesInserted / stats.TotalTime.TotalSeconds);
-
-        // Clear change tracker before keyword insertion to avoid stale entity conflicts
-        _context.ChangeTracker.Clear();
-
-        // Insert keywords and relationships into BulkContext (tracks still cached from previous save)
-        await InsertKeywordsForTracksBulkAsync(_tracksForKeywordInsertion);
-        _tracksForKeywordInsertion.Clear();
-
-        // Save keywords and relationships in one bulk operation, now clear cache
-        var keywordStats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions {Logger = _logger},
-            retainCache: false,
-            cancellationToken);
-
-        _logger.LogInformation(
-            "Bulk saved {Entities} keyword entities and {Relationships} keyword relationships in {Time:F2}s",
-            keywordStats.TotalEntitiesInserted,
-            keywordStats.TotalRelationshipsInserted,
-            keywordStats.TotalTime.TotalSeconds);
 
         // Clear change tracker before cleanup to ensure fresh queries
         _context.ChangeTracker.Clear();

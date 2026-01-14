@@ -33,4 +33,6 @@ public class Album : BaseTable
     public Artwork? Artwork { get; set; }
 
     public FavoriteAlbum? Favorite { get; set; }
+
+    public string SearchText { get; set; } = string.Empty;
 }

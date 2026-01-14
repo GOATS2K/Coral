@@ -18,7 +18,8 @@ public class Track : BaseTable
 
     public Guid AudioFileId { get; set; }
     public AudioFile AudioFile { get; set; } = null!;
-    public List<Keyword> Keywords { get; set; } = null!;
+
+    public string SearchText { get; set; } = string.Empty;
 
     public override string ToString()
     {

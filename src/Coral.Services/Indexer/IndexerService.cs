@@ -38,6 +38,7 @@ public class IndexerService : IIndexerService
     private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<IndexerService> _logger;
 
+    private const int DirectoriesPerBatch = 50; // ~500-1000 tracks per batch
     private static readonly string[] ImageFileFormats = [".jpg", ".png"];
 
     private static readonly Regex RemixerParsingRegex = RegexPatterns.RemixerParsing();
@@ -846,6 +847,7 @@ public class IndexerService : IIndexerService
             yield return deleteEvent;
         }
 
+        var directoryCount = 0;
         await foreach (var directoryGroup in directoryGroups.WithCancellation(cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
@@ -865,6 +867,44 @@ public class IndexerService : IIndexerService
             }
 
             _logger.LogDebug("Completed indexing of {Path}", directoryGroup.DirectoryPath);
+            directoryCount++;
+
+            // Save incrementally to make tracks available for playback sooner
+            if (directoryCount % DirectoriesPerBatch == 0)
+            {
+                await ProcessPendingArtworksAsync();
+                var stats = await _context.SaveBulkChangesAsync(
+                    new BulkInsertOptions { Logger = _logger },
+                    retainCache: true,
+                    cancellationToken);
+
+                _logger.LogInformation(
+                    "Incremental save: {Entities} entities, {Relationships} relationships ({Directories} directories processed)",
+                    stats.TotalEntitiesInserted,
+                    stats.TotalRelationshipsInserted,
+                    directoryCount);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Processes pending artworks and adds them to the bulk context.
+    /// Clears the artwork processing queue after completion.
+    /// </summary>
+    private async Task ProcessPendingArtworksAsync()
+    {
+        if (_albumsForArtworkProcessing.Count == 0)
+            return;
+
+        _logger.LogDebug("Processing artworks for {AlbumCount} albums", _albumsForArtworkProcessing.Count);
+        var artworkEntities = await _artworkService.ProcessArtworksParallel(_albumsForArtworkProcessing);
+        _albumsForArtworkProcessing.Clear();
+
+        foreach (var artwork in artworkEntities)
+        {
+            await _context.Artworks.GetOrAddBulk(
+                a => new { a.AlbumId },
+                () => artwork);
         }
     }
 
@@ -877,23 +917,12 @@ public class IndexerService : IIndexerService
         if (cancellationToken.IsCancellationRequested)
             return;
 
-        // Process artworks in parallel (CPU-intensive image operations)
-        _logger.LogInformation("Processing artworks for {AlbumCount} albums in parallel",
-            _albumsForArtworkProcessing.Count);
-        var artworkEntities = await _artworkService.ProcessArtworksParallel(_albumsForArtworkProcessing);
-        _albumsForArtworkProcessing.Clear();
+        // Process any remaining artworks from the final batch
+        await ProcessPendingArtworksAsync();
 
-        // Sequentially add artwork entities to BulkContext (thread-safe)
-        foreach (var artwork in artworkEntities)
-        {
-            await _context.Artworks.GetOrAddBulk(
-                a => new {a.AlbumId},
-                () => artwork);
-        }
-
-        // Save all bulk operations
+        // Save all remaining bulk operations
         var stats = await _context.SaveBulkChangesAsync(
-            new BulkInsertOptions {Logger = _logger},
+            new BulkInsertOptions { Logger = _logger },
             retainCache: false,
             cancellationToken);
 

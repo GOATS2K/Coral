@@ -2,6 +2,7 @@ using Coral.Database;
 using Coral.Services;
 using Coral.Services.ChannelWrappers;
 using Coral.Services.Indexer;
+using Microsoft.EntityFrameworkCore;
 
 namespace Coral.Api.Workers;
 
@@ -113,7 +114,19 @@ public class ScanWorker : BackgroundService
 
         _logger.LogInformation("Completed indexing of {Directory}", library.LibraryPath);
 
-        // If no Create events occurred, no embeddings will be generated, so complete immediately
+        // Check for existing tracks missing embeddings (e.g., from previous failed scans)
+        var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
+        var missingEmbeddingCount = await QueueMissingEmbeddings(
+            context, embeddingService, embeddingChannel, library.Id, job.RequestId, cancellationToken);
+
+        if (missingEmbeddingCount > 0)
+        {
+            hasCreateEvents = true;
+            reporter.AddExpectedEmbeddings(job.RequestId, missingEmbeddingCount);
+            _logger.LogInformation("Queued {Count} existing tracks missing embeddings", missingEmbeddingCount);
+        }
+
+        // If no Create events occurred and no missing embeddings, complete immediately
         if (!hasCreateEvents)
         {
             _logger.LogInformation("No new tracks created for {Directory}, completing scan immediately", library.LibraryPath);
@@ -166,5 +179,58 @@ public class ScanWorker : BackgroundService
         await reporter.CompleteScan(job.RequestId);
         _logger.LogInformation("Completed processing {Count} renames for library {Library}",
             job.Renames.Count, job.Library.LibraryPath);
+    }
+
+    /// <summary>
+    /// Finds tracks in the library that are eligible for embeddings but don't have one yet,
+    /// and queues them for embedding generation.
+    /// </summary>
+    private async Task<int> QueueMissingEmbeddings(
+        CoralDbContext context,
+        IEmbeddingService embeddingService,
+        IEmbeddingChannel embeddingChannel,
+        Guid libraryId,
+        Guid? requestId,
+        CancellationToken cancellationToken)
+    {
+        const int minDurationSeconds = 60;
+        const int maxDurationSeconds = 60 * 15; // 15 minutes
+
+        // Get all track IDs in the library that are eligible for embeddings
+        var eligibleTrackIds = await context.Tracks
+            .Where(t => t.AudioFile.LibraryId == libraryId)
+            .Where(t => t.DurationInSeconds >= minDurationSeconds && t.DurationInSeconds <= maxDurationSeconds)
+            .Select(t => t.Id)
+            .ToListAsync(cancellationToken);
+
+        if (eligibleTrackIds.Count == 0)
+            return 0;
+
+        // Get all track IDs that already have embeddings
+        var trackIdsWithEmbeddings = await embeddingService.GetAllTrackIdsWithEmbeddingsAsync();
+
+        // Find tracks missing embeddings
+        var missingEmbeddingIds = eligibleTrackIds
+            .Where(id => !trackIdsWithEmbeddings.Contains(id))
+            .ToList();
+
+        if (missingEmbeddingIds.Count == 0)
+            return 0;
+
+        // Load the full track entities for the missing ones
+        var tracksToQueue = await context.Tracks
+            .Include(t => t.AudioFile)
+            .Where(t => missingEmbeddingIds.Contains(t.Id))
+            .ToListAsync(cancellationToken);
+
+        // Queue them for embedding generation
+        foreach (var track in tracksToQueue)
+        {
+            await embeddingChannel.GetWriter().WriteAsync(
+                new EmbeddingJob(track, requestId),
+                cancellationToken);
+        }
+
+        return tracksToQueue.Count;
     }
 }

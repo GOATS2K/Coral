@@ -9,6 +9,7 @@ public interface IEmbeddingService
     Task InitializeAsync();
     Task InsertEmbeddingAsync(Guid trackId, float[] embedding);
     Task<bool> HasEmbeddingAsync(Guid trackId);
+    Task<HashSet<Guid>> GetAllTrackIdsWithEmbeddingsAsync();
     Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds);
     Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(
         Guid trackId, int limit = 100, double maxDistance = 0.2);
@@ -105,6 +106,25 @@ public class EmbeddingService : IEmbeddingService
 
         var count = (long)await command.ExecuteScalarAsync()!;
         return count > 0;
+    }
+
+    public async Task<HashSet<Guid>> GetAllTrackIdsWithEmbeddingsAsync()
+    {
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT track_id FROM track_embeddings";
+
+        var trackIds = new HashSet<Guid>();
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            trackIds.Add(reader.GetGuid(0));
+        }
+
+        return trackIds;
     }
 
     public async Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds)

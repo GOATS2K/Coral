@@ -9,6 +9,7 @@ namespace Coral.Api;
 public interface IScanReporter
 {
     void RegisterScan(Guid? requestId, int expectedTracks, MusicLibrary library);
+    void AddExpectedEmbeddings(Guid? requestId, int count);
     Task ReportIndexOperation(Guid? requestId, IndexEvent indexEvent);
     Task ReportEmbeddingCompleted(Guid? requestId);
     Task CompleteScan(Guid? requestId);
@@ -45,6 +46,16 @@ public class ScanReporter : IScanReporter
         };
 
         _ = _scanJobs.TryAdd(requestId.Value, progress);
+    }
+
+    public void AddExpectedEmbeddings(Guid? requestId, int count)
+    {
+        if (requestId == null || count <= 0) return;
+
+        if (_scanJobs.TryGetValue(requestId.Value, out var progress))
+        {
+            progress.ExpectedTracks += count;
+        }
     }
 
     public async Task ReportIndexOperation(Guid? requestId, IndexEvent indexEvent)

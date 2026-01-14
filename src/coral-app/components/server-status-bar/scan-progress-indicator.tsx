@@ -9,11 +9,12 @@ interface ScanProgressIndicatorProps {
 }
 
 export function ScanProgressIndicator({ progress }: ScanProgressIndicatorProps) {
-  // Calculate files processed and embedding progress
+  // Calculate files processed
   const filesProcessed = progress.tracksAdded + progress.tracksUpdated;
 
-  const embeddingProgress = filesProcessed > 0
-    ? Math.round((progress.embeddingsCompleted / filesProcessed) * 100)
+  // expectedTracks includes both new tracks and tracks missing embeddings
+  const embeddingProgress = progress.expectedTracks > 0
+    ? Math.round((progress.embeddingsCompleted / progress.expectedTracks) * 100)
     : 0;
 
   // Progress bar shows total progress: tracks added + embeddings stored
@@ -58,9 +59,9 @@ export function ScanProgressIndicator({ progress }: ScanProgressIndicatorProps) 
       parts.push('No changes');
     }
 
-    // Add embedding progress if there are embeddings and not complete
-    if (filesProcessed > 0 && !progress.isComplete) {
-      parts.push(`Embeddings: ${progress.embeddingsCompleted}/${filesProcessed}`);
+    // Add embedding progress if there are embeddings to process and not complete
+    if (progress.expectedTracks > 0 && !progress.isComplete) {
+      parts.push(`Embeddings: ${progress.embeddingsCompleted}/${progress.expectedTracks}`);
     }
 
     // Add overall progress percentage if not complete

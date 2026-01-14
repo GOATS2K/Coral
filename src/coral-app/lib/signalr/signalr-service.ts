@@ -140,6 +140,7 @@ export class SignalRService {
       const scanDataArray = activeScans.map(scan => ({
         requestId: scan.requestId,
         libraryName: scan.libraryName,
+        expectedTracks: scan.expectedTracks,
         tracksAdded: scan.tracksAdded,
         tracksUpdated: scan.tracksUpdated,
         tracksDeleted: scan.tracksDeleted,

@@ -5,7 +5,7 @@ public class ScanJobProgress
     public required Guid RequestId { get; init; }
     public required Guid LibraryId { get; init; }
     public required string LibraryName { get; init; }
-    public required int ExpectedTracks { get; init; }
+    public int ExpectedTracks { get; set; }
     public int TracksAdded { get; set; }
     public int TracksUpdated { get; set; }
     public int TracksDeleted { get; set; }

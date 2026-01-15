@@ -114,16 +114,20 @@ public class ScanWorker : BackgroundService
 
         _logger.LogInformation("Completed indexing of {Directory}", library.LibraryPath);
 
-        // Check for existing tracks missing embeddings (e.g., from previous failed scans)
-        var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
-        var missingEmbeddingCount = await QueueMissingEmbeddings(
-            context, embeddingService, embeddingChannel, library.Id, job.RequestId, cancellationToken);
-
-        if (missingEmbeddingCount > 0)
+        // Only check for missing embeddings on re-scans, not initial library additions
+        // (initial scans already queue all tracks via Create events)
+        if (job.Trigger != ScanTrigger.LibraryAdded)
         {
-            hasCreateEvents = true;
-            reporter.AddExpectedEmbeddings(job.RequestId, missingEmbeddingCount);
-            _logger.LogInformation("Queued {Count} existing tracks missing embeddings", missingEmbeddingCount);
+            var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
+            var missingEmbeddingCount = await QueueMissingEmbeddings(
+                context, embeddingService, embeddingChannel, library.Id, job.RequestId, cancellationToken);
+
+            if (missingEmbeddingCount > 0)
+            {
+                hasCreateEvents = true;
+                reporter.AddExpectedEmbeddings(job.RequestId, missingEmbeddingCount);
+                _logger.LogInformation("Queued {Count} existing tracks missing embeddings", missingEmbeddingCount);
+            }
         }
 
         // If no Create events occurred and no missing embeddings, complete immediately

@@ -45,7 +45,13 @@ function QueueHeader() {
   const isShuffled = playerState.isShuffled;
 
   const handleClearQueue = () => {
-    setState({ type: 'setQueue', queue: [], index: 0 });
+    const currentTrack = playerState.currentTrack;
+    if (currentTrack) {
+      // Keep only the currently playing track
+      setState({ type: 'setQueue', queue: [currentTrack], index: 0 });
+    } else {
+      setState({ type: 'setQueue', queue: [], index: 0 });
+    }
   };
 
   return (

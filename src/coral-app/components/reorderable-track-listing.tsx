@@ -9,17 +9,7 @@ import { MissingAlbumCover } from '@/components/ui/missing-album-cover';
 import { usePlayerActions } from '@/lib/player/use-player';
 import { PlaybackInitializer, playerStateAtom } from '@/lib/state';
 import { useAtomValue } from 'jotai';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
-import { TrackMenuItems } from '@/components/menu-items/track-menu-items';
+import { TrackMenu } from '@/components/track-menu';
 
 export interface ReorderableTrack {
   id: string;
@@ -206,28 +196,11 @@ function ReorderableTrackRow({
     </div>
   );
 
-  // Wrap with context menu on web
-  if (isWeb) {
-    return (
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{rowContent}</ContextMenuTrigger>
-        <ContextMenuContent className="w-56">
-          <TrackMenuItems
-            track={track}
-            components={{
-              MenuItem: ContextMenuItem,
-              MenuSub: ContextMenuSub,
-              MenuSubTrigger: ContextMenuSubTrigger,
-              MenuSubContent: ContextMenuSubContent,
-              MenuSeparator: ContextMenuSeparator,
-            }}
-          />
-        </ContextMenuContent>
-      </ContextMenu>
-    );
-  }
-
-  return rowContent;
+  return (
+    <TrackMenu track={track} isQueueContext>
+      {rowContent}
+    </TrackMenu>
+  );
 }
 
 export function ReorderableTrackListing({

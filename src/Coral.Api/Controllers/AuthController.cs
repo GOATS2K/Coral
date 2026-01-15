@@ -54,6 +54,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [SkipSessionValidation]
     public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
         AuthResult? result;

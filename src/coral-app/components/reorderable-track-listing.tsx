@@ -10,6 +10,7 @@ import { usePlayerActions } from '@/lib/player/use-player';
 import { PlaybackInitializer, playerStateAtom } from '@/lib/state';
 import { useAtomValue } from 'jotai';
 import { TrackMenu } from '@/components/track-menu';
+import { formatTime } from '@/lib/player/player-format-utils';
 
 export interface ReorderableTrack {
   id: string;
@@ -42,12 +43,6 @@ interface ReorderableTrackRowProps {
   onDragEnd: () => void;
   onMouseEnter: (index: number) => void;
   onMouseLeave: () => void;
-}
-
-function formatDuration(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function ReorderableTrackRow({
@@ -191,7 +186,7 @@ function ReorderableTrackRow({
             : 'text-muted-foreground'
         }`}
       >
-        {formatDuration(track.durationInSeconds)}
+        {formatTime(track.durationInSeconds)}
       </Text>
     </div>
   );

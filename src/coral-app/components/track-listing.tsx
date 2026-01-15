@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { TrackMenu } from '@/components/track-menu';
 import { PlaybackInitializer, playerStateAtom } from '@/lib/state';
 import { useAtomValue } from 'jotai';
+import { formatTime } from '@/lib/player/player-format-utils';
 
 interface TrackListingProps {
   tracks: SimpleTrackDto[];
@@ -54,12 +55,6 @@ function TrackRow({
   hasMultipleDiscs,
   onPlay
 }: TrackRowProps) {
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const formatTrackNumber = (track: SimpleTrackDto, index: number) => {
     // Use track number if available, otherwise fall back to index + 1
     const trackNum = track.trackNumber || (index + 1);
@@ -91,7 +86,7 @@ function TrackRow({
           </Text>
         </View>
         <Text variant="small" className={`hidden sm:block w-12 text-right select-none text-xs ${isActive ? 'text-orange-700 dark:text-orange-500 font-bold' : 'text-muted-foreground'}`}>
-          {formatDuration(track.durationInSeconds)}
+          {formatTime(track.durationInSeconds)}
         </Text>
       </Pressable>
     </TrackMenu>

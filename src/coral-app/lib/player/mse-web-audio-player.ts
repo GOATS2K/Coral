@@ -167,14 +167,36 @@ export class MSEWebAudioPlayer extends EventEmitter<PlayerEvents> implements Pla
       return;
     }
 
+    // Cancel any pending seek wait (allows user to seek elsewhere while waiting)
+    this.mseLoader.cancelPendingSeek();
+
     // Track if we were playing before the seek
     const wasPlaying = this.isPlaying;
 
     // Convert relative position to absolute buffer time
     const absoluteTime = bufferInfo.bufferStartTime + position;
 
-    // Reset fragment index to match the seek position
-    this.mseLoader.resetToPosition(absoluteTime);
+    // Check if seeking past available transcoded data
+    if (this.mseLoader.isSeekBeyondAvailable(absoluteTime)) {
+      // Pause audio immediately - don't let it keep playing from old position
+      this.audioElement.pause();
+
+      // Show buffering state while waiting for transcoding to catch up
+      this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: true });
+
+      // Wait for the target fragment to become available
+      const success = await this.mseLoader.waitForSeekFragment(absoluteTime);
+
+      this.emit(PlayerEventNames.BUFFERING_STATE_CHANGED, { isBuffering: false });
+
+      if (!success) {
+        console.warn('[MSE] Seek target fragment never became available');
+        return;
+      }
+    } else {
+      // Fragment exists - set the index immediately
+      this.mseLoader.resetToPosition(absoluteTime);
+    }
 
     // Set currentTime - browser may reject if unbuffered
     this.audioElement.currentTime = absoluteTime;

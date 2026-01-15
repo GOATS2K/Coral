@@ -27,6 +27,7 @@ export class MSEAudioLoader {
   private fragmentLoader: FragmentLoader;
   private debugLogging = true; // Enable buffer state logging
   private lastBufferLogTime = 0; // Throttle checkBufferAndLoad logs
+  private pendingSeekTime: number | null = null; // Track pending seek position for transcoding tracks
 
   constructor() {
     this.audioElement = new Audio();
@@ -584,6 +585,95 @@ export class MSEAudioLoader {
     }
 
     trackInfo.currentFragmentIndex = newFragmentIndex;
+  }
+
+  /**
+   * Check if a seek position is beyond the currently available transcoded data
+   */
+  isSeekBeyondAvailable(absoluteTime: number): boolean {
+    if (!this.currentTrackId) return false;
+
+    const trackInfo = this.tracks.get(this.currentTrackId);
+    if (!trackInfo?.levelDetails) return false;
+
+    // Only relevant for transcoding (live) tracks
+    if (!trackInfo.levelDetails.live) return false;
+
+    const relativeTime = absoluteTime - trackInfo.bufferStartTime;
+    const fragmentIndex = this.findFragmentIndexForTime(trackInfo.levelDetails.fragments, relativeTime);
+
+    return fragmentIndex >= trackInfo.levelDetails.fragments.length;
+  }
+
+  /**
+   * Wait for a seek position to become available by polling the playlist
+   * Returns true when the fragment is available, false on timeout, cancellation, or if transcoding completes without the fragment
+   */
+  async waitForSeekFragment(absoluteTime: number, maxWaitMs: number = 30000): Promise<boolean> {
+    if (!this.currentTrackId) return false;
+
+    this.pendingSeekTime = absoluteTime;
+    const startTime = Date.now();
+
+    if (this.debugLogging) {
+      console.info(`[MSE] Waiting for seek position ${absoluteTime.toFixed(2)}s to become available`);
+    }
+
+    while (Date.now() - startTime < maxWaitMs) {
+      // Check if this wait was cancelled (e.g., user seeked elsewhere)
+      if (this.pendingSeekTime !== absoluteTime) {
+        if (this.debugLogging) {
+          console.info(`[MSE] Seek wait cancelled (new seek requested)`);
+        }
+        return false;
+      }
+
+      // Refresh the playlist to get new fragments
+      await this.refreshPlaylistAndUpdateDuration(this.currentTrackId);
+
+      const trackInfo = this.tracks.get(this.currentTrackId);
+      if (!trackInfo?.levelDetails) {
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+
+      const relativeTime = absoluteTime - trackInfo.bufferStartTime;
+      const fragmentIndex = this.findFragmentIndexForTime(trackInfo.levelDetails.fragments, relativeTime);
+
+      // Check if the target fragment now exists
+      if (fragmentIndex < trackInfo.levelDetails.fragments.length) {
+        if (this.debugLogging) {
+          console.info(`[MSE] Seek position now available at fragment ${fragmentIndex}`);
+        }
+        this.pendingSeekTime = null;
+        trackInfo.currentFragmentIndex = fragmentIndex;
+        return true;
+      }
+
+      // If transcoding is complete and we still don't have the fragment, fail
+      if (!trackInfo.levelDetails.live) {
+        if (this.debugLogging) {
+          console.info(`[MSE] Transcoding complete but seek position not available`);
+        }
+        this.pendingSeekTime = null;
+        return false;
+      }
+
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    if (this.debugLogging) {
+      console.info(`[MSE] Timeout waiting for seek position`);
+    }
+    this.pendingSeekTime = null;
+    return false;
+  }
+
+  /**
+   * Cancel any pending seek wait
+   */
+  cancelPendingSeek(): void {
+    this.pendingSeekTime = null;
   }
 
   getAudioElement(): HTMLAudioElement {

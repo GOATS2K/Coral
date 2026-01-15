@@ -279,13 +279,33 @@ export function ReorderableTrackListing({
     [tracks, play, initializer, onPlayOverride]
   );
 
+  // Find the closest scrollable ancestor
+  const getScrollableParent = useCallback((element: HTMLElement | null): HTMLElement | null => {
+    if (!element) return null;
+
+    let current: HTMLElement | null = element;
+    while (current) {
+      const style = getComputedStyle(current);
+      const overflowY = style.overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') && current.scrollHeight > current.clientHeight) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }, []);
+
   // Auto-scroll when dragging near edges
   const handleContainerDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       if (draggedIndex === null || !containerRef.current) return;
 
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
+      // Prevent the "no-drop" cursor when dragging within the container
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      const scrollable = getScrollableParent(containerRef.current) || containerRef.current;
+      const rect = scrollable.getBoundingClientRect();
       const mouseY = e.clientY - rect.top;
       const scrollThreshold = 100;
       const maxScrollSpeed = 25;
@@ -306,13 +326,11 @@ export function ReorderableTrackListing({
 
       if (scrollSpeed !== 0) {
         scrollIntervalRef.current = window.setInterval(() => {
-          if (containerRef.current) {
-            containerRef.current.scrollTop += scrollSpeed;
-          }
+          scrollable.scrollTop += scrollSpeed;
         }, 16);
       }
     },
-    [draggedIndex]
+    [draggedIndex, getScrollableParent]
   );
 
   useEffect(() => {
@@ -320,6 +338,19 @@ export function ReorderableTrackListing({
       clearInterval(scrollIntervalRef.current);
       scrollIntervalRef.current = null;
     }
+  }, [draggedIndex]);
+
+  // Prevent "no-drop" cursor when dragging outside the container
+  useEffect(() => {
+    if (draggedIndex === null) return;
+
+    const handleGlobalDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'move';
+    };
+
+    document.addEventListener('dragover', handleGlobalDragOver);
+    return () => document.removeEventListener('dragover', handleGlobalDragOver);
   }, [draggedIndex]);
 
   useEffect(() => {

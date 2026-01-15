@@ -39,7 +39,7 @@ public class UserService : IUserService
         var user = new User
         {
             Username = username,
-            PasswordHash = _passwordHasher.HashPassword(null, password),
+            PasswordHash = _passwordHasher.HashPassword(null!, password),
             Role = isFirstUser ? UserRole.Admin : UserRole.User
         };
 

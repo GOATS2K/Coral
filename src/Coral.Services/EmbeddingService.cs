@@ -61,7 +61,7 @@ public class EmbeddingService : IEmbeddingService
 
         // Check if we have data
         command.CommandText = "SELECT COUNT(*) FROM track_embeddings";
-        var count = (long)await command.ExecuteScalarAsync()!;
+        var count = (long)(await command.ExecuteScalarAsync() ?? 0L);
 
         _logger.LogInformation("DuckDB initialized with {Count} embeddings", count);
 
@@ -116,7 +116,7 @@ public class EmbeddingService : IEmbeddingService
             SELECT COUNT(*) FROM track_embeddings WHERE track_id = $1";
         command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
 
-        var count = (long)await command.ExecuteScalarAsync()!;
+        var count = (long)(await command.ExecuteScalarAsync() ?? 0L);
         return count > 0;
     }
 
@@ -176,7 +176,7 @@ public class EmbeddingService : IEmbeddingService
         command.CommandText = "SELECT COUNT(*) FROM failed_embeddings WHERE track_id = $1";
         command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
 
-        var count = (long)await command.ExecuteScalarAsync()!;
+        var count = (long)(await command.ExecuteScalarAsync() ?? 0L);
         return count > 0;
     }
 

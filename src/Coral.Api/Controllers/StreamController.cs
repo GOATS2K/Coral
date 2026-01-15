@@ -128,9 +128,9 @@ public class StreamController : ControllerBase
         var audioStream = ffprobeResult?.Streams.FirstOrDefault(s => s.CodecType == "audio");
         var codec = audioStream?.CodecName;
         string targetScheme;
-        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-Proto", out var scheme))
+        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-Proto", out var scheme) && scheme.Count > 0)
         {
-            targetScheme = scheme;
+            targetScheme = scheme.ToString();
         }
         else
         {

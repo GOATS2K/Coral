@@ -20,7 +20,7 @@ public class InferenceException : Exception
 
 internal class Embeddings
 {
-    public float[] FlattenedEmbeddings { get; set; }
+    public required float[] FlattenedEmbeddings { get; set; }
     public int Size { get; set; }
     public int Count { get; set; }
 }

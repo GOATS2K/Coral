@@ -57,6 +57,13 @@ public class AuthController : ControllerBase
     [SkipSessionValidation]
     public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
+        // Only allow registration if no users exist or the request is authenticated
+        var isFirstUser = await _userService.IsFirstUserAsync();
+        if (!isFirstUser && User.Identity?.IsAuthenticated != true)
+        {
+            return Forbid();
+        }
+
         AuthResult? result;
         try
         {

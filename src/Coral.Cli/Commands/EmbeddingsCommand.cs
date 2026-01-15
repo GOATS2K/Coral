@@ -34,6 +34,9 @@ internal class EmbeddingsCommand : AsyncCommand<EmbeddingsCommand.Settings>
         [CommandOption("-s|--skip-existing")]
         public bool SkipExisting { get; set; } = true;
 
+        [CommandOption("--retry-failed")]
+        public bool RetryFailed { get; set; } = false;
+
         [CommandOption("--min-duration")]
         public int MinDurationSeconds { get; set; } = 60;
 
@@ -75,19 +78,34 @@ internal class EmbeddingsCommand : AsyncCommand<EmbeddingsCommand.Settings>
 
         _console.MarkupLine($"[blue]{eligibleTracks.Count} tracks meet duration criteria ({settings.MinDurationSeconds}s - {settings.MaxDurationSeconds}s)[/]");
 
+        // Get failed track IDs if retrying
+        HashSet<Guid> failedTrackIds = new();
+        if (settings.RetryFailed)
+        {
+            failedTrackIds = await _embeddingService.GetAllFailedTrackIdsAsync();
+            _console.MarkupLine($"[blue]{failedTrackIds.Count} previously failed tracks will be retried[/]");
+        }
+
         // Check for existing embeddings if skip is enabled
         if (settings.SkipExisting)
         {
-            var tracksToProcess = new List<Database.Models.Track>();
-            foreach (var track in eligibleTracks)
-            {
-                if (!await _embeddingService.HasEmbeddingAsync(track.Id))
-                {
-                    tracksToProcess.Add(track);
-                }
-            }
+            var existingEmbeddings = await _embeddingService.GetAllTrackIdsWithEmbeddingsAsync();
+            var tracksToProcess = eligibleTracks
+                .Where(t => !existingEmbeddings.Contains(t.Id) || failedTrackIds.Contains(t.Id))
+                .ToList();
             eligibleTracks = tracksToProcess;
             _console.MarkupLine($"[blue]{eligibleTracks.Count} tracks need embeddings[/]");
+        }
+
+        // Clear failed embeddings for tracks we're about to retry
+        if (settings.RetryFailed && failedTrackIds.Count > 0)
+        {
+            var trackIdsToRetry = eligibleTracks.Select(t => t.Id).Where(failedTrackIds.Contains).ToList();
+            if (trackIdsToRetry.Count > 0)
+            {
+                await _embeddingService.ClearFailedEmbeddingsAsync(trackIdsToRetry);
+                _console.MarkupLine($"[blue]Cleared {trackIdsToRetry.Count} failed embedding records[/]");
+            }
         }
 
         if (eligibleTracks.Count == 0)
@@ -129,7 +147,9 @@ internal class EmbeddingsCommand : AsyncCommand<EmbeddingsCommand.Settings>
                     }
                     catch (Exception ex)
                     {
-                        _console.MarkupLine($"[red]ERROR:[/] {Path.GetFileName(track.AudioFile.FilePath)}: {ex.Message}");
+                        var fileName = Markup.Escape(Path.GetFileName(track.AudioFile.FilePath));
+                        var errorMsg = Markup.Escape(ex.Message);
+                        _console.MarkupLine($"[red]ERROR:[/] {fileName}: {errorMsg}");
                         Interlocked.Increment(ref embeddingsFailed);
                     }
                     finally

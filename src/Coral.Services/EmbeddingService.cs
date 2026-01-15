@@ -14,6 +14,7 @@ public interface IEmbeddingService
     Task<HashSet<Guid>> GetAllTrackIdsWithEmbeddingsAsync();
     Task<HashSet<Guid>> GetAllFailedTrackIdsAsync();
     Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds);
+    Task ClearFailedEmbeddingsAsync(IEnumerable<Guid>? trackIds = null);
     Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(
         Guid trackId, int limit = 100, double maxDistance = 0.2);
 }
@@ -93,17 +94,22 @@ public class EmbeddingService : IEmbeddingService
         using var connection = new DuckDBConnection(_connectionString);
         await connection.OpenAsync();
 
-        using var command = connection.CreateCommand();
+        // DuckDB.NET doesn't support array parameters with INSERT OR REPLACE,
+        // so we delete first then insert to achieve upsert behavior
+        using var deleteCommand = connection.CreateCommand();
+        deleteCommand.CommandText = "DELETE FROM track_embeddings WHERE track_id = $1";
+        deleteCommand.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+        await deleteCommand.ExecuteNonQueryAsync();
 
-        // Use INSERT OR REPLACE for upsert behavior
-        command.CommandText = @"
-            INSERT OR REPLACE INTO track_embeddings (track_id, embedding, created_at)
+        using var insertCommand = connection.CreateCommand();
+        insertCommand.CommandText = @"
+            INSERT INTO track_embeddings (track_id, embedding, created_at)
             VALUES ($1, $2, CURRENT_TIMESTAMP)";
 
-        command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
-        command.Parameters.Add(new DuckDBParameter(embedding));
+        insertCommand.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+        insertCommand.Parameters.Add(new DuckDBParameter(embedding));
 
-        await command.ExecuteNonQueryAsync();
+        await insertCommand.ExecuteNonQueryAsync();
     }
 
     public async Task<bool> HasEmbeddingAsync(Guid trackId)
@@ -213,6 +219,38 @@ public class EmbeddingService : IEmbeddingService
         }
 
         return trackIds;
+    }
+
+    public async Task ClearFailedEmbeddingsAsync(IEnumerable<Guid>? trackIds = null)
+    {
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+
+        if (trackIds == null)
+        {
+            // Clear all failed embeddings
+            command.CommandText = "DELETE FROM failed_embeddings";
+            var count = await command.ExecuteNonQueryAsync();
+            _logger.LogInformation("Cleared all {Count} failed embeddings", count);
+            return;
+        }
+
+        var trackIdList = trackIds.ToList();
+        if (trackIdList.Count == 0) return;
+
+        // Build the IN clause with parameters
+        var parameters = trackIdList.Select((_, i) => $"${i + 1}").ToArray();
+        command.CommandText = $"DELETE FROM failed_embeddings WHERE track_id IN ({string.Join(", ", parameters)})";
+
+        foreach (var trackId in trackIdList)
+        {
+            command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+        }
+
+        var deletedCount = await command.ExecuteNonQueryAsync();
+        _logger.LogInformation("Cleared {Count} failed embeddings", deletedCount);
     }
 
     public async Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(

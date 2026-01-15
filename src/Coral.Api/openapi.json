@@ -2592,6 +2592,23 @@
         },
         "additionalProperties": false
       },
+      "ScheduledTaskSettings": {
+        "required": [
+          "libraryScanIntervalMinutes",
+          "scanOnStartup"
+        ],
+        "type": "object",
+        "properties": {
+          "scanOnStartup": {
+            "type": "boolean"
+          },
+          "libraryScanIntervalMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "SearchResult": {
         "required": [
           "albums",
@@ -2654,7 +2671,8 @@
           "fileWatcher",
           "inference",
           "jwt",
-          "paths"
+          "paths",
+          "scheduledTasks"
         ],
         "type": "object",
         "properties": {
@@ -2673,6 +2691,9 @@
           },
           "inference": {
             "$ref": "#/components/schemas/InferenceSettings"
+          },
+          "scheduledTasks": {
+            "$ref": "#/components/schemas/ScheduledTaskSettings"
           }
         },
         "additionalProperties": false

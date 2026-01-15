@@ -29,7 +29,8 @@ public enum ScanTrigger
 {
     Manual,          // User-requested via API
     FileSystemEvent, // FileSystemWatcher detected change
-    LibraryAdded     // Initial scan after library registration
+    LibraryAdded,    // Initial scan after library registration
+    Scheduled        // Periodic scheduled scan
 }
 
 public record FileRename(

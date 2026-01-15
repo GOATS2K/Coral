@@ -35,6 +35,7 @@ builder.Services.AddSingleton<EmbeddingWorker>();
 builder.Services.AddHostedService<EmbeddingWorker>(sp => sp.GetRequiredService<EmbeddingWorker>());
 builder.Services.AddHostedService<ScanWorker>();
 builder.Services.AddHostedService<FileSystemWatcherWorker>();
+builder.Services.AddHostedService<ScheduledTasksWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAutoMapper(opt =>
 {

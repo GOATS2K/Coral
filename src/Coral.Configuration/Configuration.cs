@@ -117,7 +117,8 @@ public static class ApplicationConfiguration
             },
             FileWatcher = new FileWatcherSettings(),
             Jwt = new JwtSettings(),
-            Inference = new InferenceSettings()
+            Inference = new InferenceSettings(),
+            ScheduledTasks = new ScheduledTaskSettings()
         };
     }
 

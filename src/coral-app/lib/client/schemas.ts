@@ -362,6 +362,14 @@ export type ScanRequestInfo = {
   libraryName: string;
 };
 
+export type ScheduledTaskSettings = {
+  scanOnStartup: boolean;
+  /**
+   * @format int32
+   */
+  libraryScanIntervalMinutes: number;
+};
+
 export type SearchResult = {
   artists: SimpleArtistDto[];
   albums: SimpleAlbumDto[];
@@ -393,6 +401,7 @@ export type ServerConfiguration = {
   fileWatcher: FileWatcherSettings;
   jwt: JwtSettings;
   inference: InferenceSettings;
+  scheduledTasks: ScheduledTaskSettings;
 };
 
 export type SimpleAlbumDto = {

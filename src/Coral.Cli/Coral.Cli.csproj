@@ -28,9 +28,9 @@
       <ProjectReference Include="..\Coral.Services\Coral.Services.csproj" />
     </ItemGroup>
 
-    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild">
+    <Target Name="CopyBindingLibraries" AfterTargets="AfterBuild" Condition="'$(SkipEssentiaBuild)' != 'true'">
         <ItemGroup>
-            <BindingLibraries Include="..\Coral.Essentia.Cli\x64\Debug\**" />
+            <BindingLibraries Include="..\Coral.Essentia.Cli\build\Debug\**" />
         </ItemGroup>
         <Copy SourceFiles="@(BindingLibraries)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="false" />
     </Target>

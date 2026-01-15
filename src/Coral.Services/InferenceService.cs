@@ -1,10 +1,22 @@
 ﻿using System.Text;
 using CliWrap;
-using CliWrap.Exceptions;
 using Coral.Configuration;
 using NumSharp;
 
 namespace Coral.Services;
+
+public class InferenceException : Exception
+{
+    public string FilePath { get; }
+    public int ExitCode { get; }
+
+    public InferenceException(string message, string filePath, int exitCode)
+        : base(message)
+    {
+        FilePath = filePath;
+        ExitCode = exitCode;
+    }
+}
 
 internal class Embeddings
 {
@@ -56,10 +68,16 @@ public class InferenceService
         var stdErr = new StringBuilder();
         var cmd = Cli.Wrap(GetExecutableName())
             .WithArguments([filePath, _modelPath, outputFile], escape: true)
-            .WithValidation(CommandResultValidation.ZeroExitCode)
+            .WithValidation(CommandResultValidation.None)
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr));
-        await cmd.ExecuteAsync();
+
+        var result = await cmd.ExecuteAsync();
+        if (result.ExitCode != 0)
+        {
+            var errorMessage = stdErr.Length > 0 ? stdErr.ToString().Trim() : $"Exit code {result.ExitCode}";
+            throw new InferenceException(errorMessage, filePath, result.ExitCode);
+        }
 
         var embeddings = await File.ReadAllLinesAsync(outputFile);
         File.Delete(outputFile);

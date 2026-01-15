@@ -206,12 +206,13 @@ public class ScanWorker : BackgroundService
         if (eligibleTrackIds.Count == 0)
             return 0;
 
-        // Get all track IDs that already have embeddings
+        // Get all track IDs that already have embeddings or have previously failed
         var trackIdsWithEmbeddings = await embeddingService.GetAllTrackIdsWithEmbeddingsAsync();
+        var failedTrackIds = await embeddingService.GetAllFailedTrackIdsAsync();
 
-        // Find tracks missing embeddings
+        // Find tracks missing embeddings (exclude those that have failed)
         var missingEmbeddingIds = eligibleTrackIds
-            .Where(id => !trackIdsWithEmbeddings.Contains(id))
+            .Where(id => !trackIdsWithEmbeddings.Contains(id) && !failedTrackIds.Contains(id))
             .ToList();
 
         if (missingEmbeddingIds.Count == 0)

@@ -9,7 +9,10 @@ public interface IEmbeddingService
     Task InitializeAsync();
     Task InsertEmbeddingAsync(Guid trackId, float[] embedding);
     Task<bool> HasEmbeddingAsync(Guid trackId);
+    Task<bool> HasFailedEmbeddingAsync(Guid trackId);
+    Task RecordFailedEmbeddingAsync(Guid trackId, string errorMessage);
     Task<HashSet<Guid>> GetAllTrackIdsWithEmbeddingsAsync();
+    Task<HashSet<Guid>> GetAllFailedTrackIdsAsync();
     Task DeleteEmbeddingsAsync(IEnumerable<Guid> trackIds);
     Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(
         Guid trackId, int limit = 100, double maxDistance = 0.2);
@@ -44,6 +47,15 @@ public class EmbeddingService : IEmbeddingService
                 track_id UUID PRIMARY KEY,
                 embedding FLOAT[1280],
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
+        await command.ExecuteNonQueryAsync();
+
+        // Create failed embeddings table to track tracks that failed inference
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS failed_embeddings (
+                track_id UUID PRIMARY KEY,
+                error_message VARCHAR,
+                failed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )";
         await command.ExecuteNonQueryAsync();
 
@@ -153,6 +165,54 @@ public class EmbeddingService : IEmbeddingService
         {
             _logger.LogInformation("Deleted {Count} embeddings from DuckDB", deletedCount);
         }
+    }
+
+    public async Task<bool> HasFailedEmbeddingAsync(Guid trackId)
+    {
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM failed_embeddings WHERE track_id = $1";
+        command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+
+        var count = (long)await command.ExecuteScalarAsync()!;
+        return count > 0;
+    }
+
+    public async Task RecordFailedEmbeddingAsync(Guid trackId, string errorMessage)
+    {
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT OR REPLACE INTO failed_embeddings (track_id, error_message, failed_at)
+            VALUES ($1, $2, CURRENT_TIMESTAMP)";
+
+        command.Parameters.Add(new DuckDBParameter(trackId.ToString()));
+        command.Parameters.Add(new DuckDBParameter(errorMessage));
+
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public async Task<HashSet<Guid>> GetAllFailedTrackIdsAsync()
+    {
+        using var connection = new DuckDBConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT track_id FROM failed_embeddings";
+
+        var trackIds = new HashSet<Guid>();
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            trackIds.Add(reader.GetGuid(0));
+        }
+
+        return trackIds;
     }
 
     public async Task<List<(Guid TrackId, double Distance)>> GetSimilarTracksAsync(

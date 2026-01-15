@@ -107,6 +107,12 @@ async Task RunCommandLineApp(ServiceCollection services, string[] args)
         opt.AddCommand<RebuildSearchTextCommand>("rebuild-search-text")
             .WithDescription("Rebuild SearchText columns for all tracks, albums, and artists, then refresh FTS tables")
             .WithAlias("rst");
+
+        // Debug embeddings command - test inference on specific files
+        opt.AddCommand<DebugEmbeddingsCommand>("debug-embeddings")
+            .WithDescription("Debug embedding generation by running inference on files in a directory")
+            .WithAlias("de")
+            .WithExample("debug-embeddings", @"""C:\path\to\broken-files""");
     });
 
     await app.RunAsync(args);

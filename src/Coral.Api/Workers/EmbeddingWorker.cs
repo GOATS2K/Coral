@@ -14,7 +14,6 @@ public class EmbeddingWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly InferenceService _inferenceService;
     private readonly IEmbeddingService _embeddingService;
-    private readonly object _semaphoreLock = new();
     private SemaphoreSlim _semaphore;
 
     public EmbeddingWorker(
@@ -34,16 +33,13 @@ public class EmbeddingWorker : BackgroundService
     }
 
     /// <summary>
-    /// Synchronously updates the concurrency limit. Called by OnboardingController
-    /// before library registration to ensure correct semaphore count.
+    /// Updates the concurrency limit. Called by OnboardingController.
+    /// In-flight operations will continue using the previous semaphore until they complete.
     /// </summary>
     public void UpdateConcurrency(int maxConcurrentInstances)
     {
-        lock (_semaphoreLock)
-        {
-            _logger.LogInformation("Updating inference concurrency to {Count}", maxConcurrentInstances);
-            _semaphore = new SemaphoreSlim(maxConcurrentInstances);
-        }
+        _logger.LogInformation("Updating inference concurrency to {Count}", maxConcurrentInstances);
+        _semaphore = new SemaphoreSlim(maxConcurrentInstances);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -71,6 +67,8 @@ public class EmbeddingWorker : BackgroundService
         await using var scope = _scopeFactory.CreateAsyncScope();
         var reporter = scope.ServiceProvider.GetRequiredService<IScanReporter>();
 
+        var semaphore = _semaphore;
+        await semaphore.WaitAsync(stoppingToken);
         try
         {
             switch (track.DurationInSeconds)
@@ -79,50 +77,46 @@ public class EmbeddingWorker : BackgroundService
                     _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too short.",
                         track.AudioFile.FilePath);
                     return;
-                // if the track is longer than 15 minutes, it's probably a podcast/radio show/mix
                 case > 60 * 15:
                     _logger.LogWarning("Skipping getting embeddings for track: {FilePath}, track too long.",
                         track.AudioFile.FilePath);
                     return;
             }
 
-            // Capture semaphore reference under lock to ensure we release to the same one we acquired
-            SemaphoreSlim semaphore;
-            lock (_semaphoreLock)
+            if (await _embeddingService.HasEmbeddingAsync(track.Id))
             {
-                semaphore = _semaphore;
+                _logger.LogDebug("Embedding already exists for track {FilePath}", track.AudioFile.FilePath);
+                return;
             }
 
-            await semaphore.WaitAsync(stoppingToken);
-            try
+            if (await _embeddingService.HasFailedEmbeddingAsync(track.Id))
             {
-                // Check if embedding already exists in DuckDB
-                if (await _embeddingService.HasEmbeddingAsync(track.Id))
-                {
-                    _logger.LogDebug("Embedding already exists for track {FilePath}", track.AudioFile.FilePath);
-                    return;
-                }
-
-                var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
-
-                // Store embedding in DuckDB
-                await _embeddingService.InsertEmbeddingAsync(track.Id, embeddings);
-
-                _logger.LogInformation("Stored embeddings for track {FilePath} in {Time:F2}s",
-                    track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
+                _logger.LogDebug("Skipping previously failed embedding for track {FilePath}", track.AudioFile.FilePath);
+                return;
             }
-            finally
-            {
-                semaphore.Release();
-            }
+
+            var embeddings = await _inferenceService.RunInference(track.AudioFile.FilePath);
+            await _embeddingService.InsertEmbeddingAsync(track.Id, embeddings);
+
+            _logger.LogInformation("Stored embeddings for track {FilePath} in {Time:F2}s",
+                track.AudioFile.FilePath, sw.Elapsed.TotalSeconds);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get embeddings for track: {Path}", track.AudioFile.FilePath);
+
+            try
+            {
+                await _embeddingService.RecordFailedEmbeddingAsync(track.Id, ex.Message);
+            }
+            catch (Exception recordEx)
+            {
+                _logger.LogError(recordEx, "Failed to record embedding failure for track: {Path}", track.AudioFile.FilePath);
+            }
         }
         finally
         {
-            // Always report embedding completed (even if skipped) so scan can finish
+            semaphore.Release();
             await reporter.ReportEmbeddingCompleted(job.RequestId);
         }
     }

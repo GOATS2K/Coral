@@ -3679,6 +3679,102 @@ export const useStreamTrack = <TData = Schemas.StreamDto,>(
   });
 };
 
+export type ServeHlsFilePathParams = {
+  /**
+   * @format uuid
+   */
+  jobId: string;
+  fileName: string;
+};
+
+export type ServeHlsFileError = Fetcher.ErrorWrapper<undefined>;
+
+export type ServeHlsFileVariables = {
+  pathParams: ServeHlsFilePathParams;
+} & Context["fetcherOptions"];
+
+export const fetchServeHlsFile = (
+  variables: ServeHlsFileVariables,
+  signal?: AbortSignal,
+) =>
+  fetch<
+    undefined,
+    ServeHlsFileError,
+    undefined,
+    {},
+    {},
+    ServeHlsFilePathParams
+  >({
+    url: "/api/stream/hls/{jobId}/{fileName}",
+    method: "get",
+    ...variables,
+    signal,
+  });
+
+export function serveHlsFileQuery(variables: ServeHlsFileVariables): {
+  queryKey: reactQuery.QueryKey;
+  queryFn: (options: QueryFnOptions) => Promise<undefined>;
+};
+
+export function serveHlsFileQuery(
+  variables: ServeHlsFileVariables | reactQuery.SkipToken,
+): {
+  queryKey: reactQuery.QueryKey;
+  queryFn:
+    | ((options: QueryFnOptions) => Promise<undefined>)
+    | reactQuery.SkipToken;
+};
+
+export function serveHlsFileQuery(
+  variables: ServeHlsFileVariables | reactQuery.SkipToken,
+) {
+  return {
+    queryKey: queryKeyFn({
+      path: "/api/stream/hls/{jobId}/{fileName}",
+      operationId: "serveHlsFile",
+      variables,
+    }),
+    queryFn:
+      variables === reactQuery.skipToken
+        ? reactQuery.skipToken
+        : ({ signal }: QueryFnOptions) => fetchServeHlsFile(variables, signal),
+  };
+}
+
+export const useSuspenseServeHlsFile = <TData = undefined,>(
+  variables: ServeHlsFileVariables,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, ServeHlsFileError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useSuspenseQuery<undefined, ServeHlsFileError, TData>({
+    ...serveHlsFileQuery(deepMerge(fetcherOptions, variables)),
+    ...options,
+    ...queryOptions,
+  });
+};
+
+export const useServeHlsFile = <TData = undefined,>(
+  variables: ServeHlsFileVariables | reactQuery.SkipToken,
+  options?: Omit<
+    reactQuery.UseQueryOptions<undefined, ServeHlsFileError, TData>,
+    "queryKey" | "queryFn" | "initialData"
+  >,
+) => {
+  const { queryOptions, fetcherOptions } = useContext(options);
+  return reactQuery.useQuery<undefined, ServeHlsFileError, TData>({
+    ...serveHlsFileQuery(
+      variables === reactQuery.skipToken
+        ? variables
+        : deepMerge(fetcherOptions, variables),
+    ),
+    ...options,
+    ...queryOptions,
+  });
+};
+
 export type TracksError = Fetcher.ErrorWrapper<undefined>;
 
 export type TracksResponse = Schemas.TrackDto[];
@@ -4073,6 +4169,11 @@ export type QueryOperation =
       path: "/api/stream/tracks/{trackId}/hls";
       operationId: "streamTrack";
       variables: StreamTrackVariables | reactQuery.SkipToken;
+    }
+  | {
+      path: "/api/stream/hls/{jobId}/{fileName}";
+      operationId: "serveHlsFile";
+      variables: ServeHlsFileVariables | reactQuery.SkipToken;
     }
   | {
       path: "/api/tracks";

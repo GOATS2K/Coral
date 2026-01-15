@@ -1,3 +1,4 @@
+using Coral.Configuration;
 using Coral.Dto.EncodingModels;
 using Coral.Dto.Models;
 using Coral.Services;
@@ -15,15 +16,30 @@ public class StreamController : ControllerBase
     private readonly ILibraryService _libraryService;
     private readonly ITranscoderService _transcoderService;
     private readonly ISignedUrlService _signedUrlService;
+    private readonly ILogger<StreamController> _logger;
+
+    private const int MaxRetries = 10;
+    private const int RetryDelayMs = 50;
+
+    private string GetRequestScheme()
+    {
+        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-Proto", out var scheme) && scheme.Count > 0)
+        {
+            return scheme.ToString();
+        }
+        return HttpContext.Request.Scheme;
+    }
 
     public StreamController(
         ILibraryService libraryService,
         ITranscoderService transcoderService,
-        ISignedUrlService signedUrlService)
+        ISignedUrlService signedUrlService,
+        ILogger<StreamController> logger)
     {
         _libraryService = libraryService;
         _transcoderService = transcoderService;
         _signedUrlService = signedUrlService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -92,7 +108,7 @@ public class StreamController : ControllerBase
 
         var streamData = new StreamDto()
         {
-            Link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
+            Link = $"{GetRequestScheme()}://{HttpContext.Request.Host}/api/stream/hls/{job.Id}/{job.FinalOutputFile}",
             TranscodeInfo = new TranscodeInfoDto()
             {
                 JobId = job.Id,
@@ -127,19 +143,10 @@ public class StreamController : ControllerBase
         var ffprobeResult = await Ffprobe.GetAudioMetadata(dbTrack.AudioFile.FilePath);
         var audioStream = ffprobeResult?.Streams.FirstOrDefault(s => s.CodecType == "audio");
         var codec = audioStream?.CodecName;
-        string targetScheme;
-        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-Proto", out var scheme) && scheme.Count > 0)
-        {
-            targetScheme = scheme.ToString();
-        }
-        else
-        {
-            targetScheme = HttpContext.Request.Scheme;
-        }
 
         var streamData = new StreamDto()
         {
-            Link = $"{targetScheme}://{HttpContext.Request.Host}/hls/{job.Id}/{job.FinalOutputFile}",
+            Link = $"{GetRequestScheme()}://{HttpContext.Request.Host}/api/stream/hls/{job.Id}/{job.FinalOutputFile}",
             TranscodeInfo = new TranscodeInfoDto()
             {
                 JobId = job.Id,
@@ -150,5 +157,69 @@ public class StreamController : ControllerBase
         };
 
         return streamData;
+    }
+
+    private static readonly HashSet<string> AllowedHlsExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".m3u8",
+        ".m4s",
+        ".ts"
+    };
+
+    /// <summary>
+    /// Serves HLS files (manifests and segments) with retry logic for files being written.
+    /// </summary>
+    [HttpGet, HttpHead]
+    [Route("hls/{jobId}/{fileName}")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ServeHlsFile(Guid jobId, string fileName)
+    {
+        var extension = Path.GetExtension(fileName);
+        if (!AllowedHlsExtensions.Contains(extension))
+        {
+            return BadRequest();
+        }
+
+        var fullPath = Path.Combine(ApplicationConfiguration.HLSDirectory, jobId.ToString(), fileName);
+
+        var contentType = extension.ToLowerInvariant() switch
+        {
+            ".m3u8" => "application/vnd.apple.mpegurl",
+            ".m4s" => "audio/mp4",
+            ".ts" => "video/mp2t",
+            _ => "application/octet-stream"
+        };
+
+        var attempt = 0;
+        while (true)
+        {
+            try
+            {
+                var stream = new FileStream(
+                    fullPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite);
+
+                Response.Headers.Append("Cache-Control", "no-cache, no-store");
+                return File(stream, contentType, enableRangeProcessing: true);
+            }
+            catch (FileNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (IOException ex) when (attempt < MaxRetries)
+            {
+                attempt++;
+                _logger.LogDebug(
+                    "IOException reading HLS file {FilePath}, attempt {Attempt}/{MaxRetries}: {Message}",
+                    fullPath,
+                    attempt,
+                    MaxRetries,
+                    ex.Message);
+
+                await Task.Delay(RetryDelayMs);
+            }
+        }
     }
 }

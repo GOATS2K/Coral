@@ -147,25 +147,6 @@ app.UseCors(cors =>
 
 app.UseHttpsRedirection();
 
-// setup content type provider
-var contentTypeProvider = new FileExtensionContentTypeProvider();
-contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
-contentTypeProvider.Mappings[".m4s"] = "audio/mp4";
-
-// serve HLS
-app.UseStaticFiles(new StaticFileOptions()
-{
-    OnPrepareResponse = (ctx) =>
-    {
-        // HLS chunks should not be cached.
-        ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store");
-    },
-    FileProvider = new PhysicalFileProvider(ApplicationConfiguration.HLSDirectory),
-    RequestPath = "/hls",
-    ServeUnknownFileTypes = true,
-    ContentTypeProvider = contentTypeProvider,
-});
-
 // serve SPA route
 app.UseStaticFiles();
 
